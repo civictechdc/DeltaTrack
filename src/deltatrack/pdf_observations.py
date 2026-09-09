@@ -1,15 +1,9 @@
 """PDF observation identity: an ADR 0019 address bound to a block, and the parser revision.
 
-Slice 3 of the ADR 0020 PDF convergence work
-(``docs/research/pdf-matching-convergence/``). This is the PDF counterpart of
-``diff_bill.Observation`` / ``diff_bill.ObservationRegistry``, plus the piece XML never
-needed a runtime home for: a **derived** ADR 0019 parser revision for PDF observation
-production.
-
-**Nothing in the engine consumes this yet, and that is the design.** Slices 4-7 move
-matching behaviour; introducing the representation in the same change would make every
-preservation gate uninterpretable, because the two edits would be inseparable in the
-result. ``deltatrack.matching`` was introduced the same way for the same reason.
+The PDF counterpart of ``diff_bill.Observation`` / ``diff_bill.ObservationRegistry``, plus
+the piece XML never needed a runtime home for: a **derived** ADR 0019 parser revision for
+PDF observation production. Background:
+``docs/research/pdf-matching-convergence/``.
 
 ## Why this module, and not ``parsers/pdf_blocks``
 
@@ -18,15 +12,15 @@ lives in ``deltatrack.matching``. Defining :class:`PdfObservation` next to ``_Bl
 therefore mean ``parsers/pdf_blocks`` importing ``deltatrack.matching`` — and the parser
 revision below is a content hash over exactly the modules reachable from
 ``parsers.pdf_blocks``. That import would put ``matching`` back inside PDF observation
-production, undoing the repair slices 1 and 1a exist to make: editing a matching threshold
-would once again change observation identity and quarantine every stored artifact.
+production: editing a matching threshold would then change observation identity and
+quarantine every stored artifact.
 
 ``tests/test_pdf_observation_identity.py`` demonstrates this rather than asserting it, by
 injecting an import of the threshold module into ``parsers/pdf_blocks`` and showing the
 revision move.
 
-And not ``diff_pdf`` either: that module is the matcher, must stay downstream of observation
-production, and is what slices 4-7 dismantle.
+And not ``diff_pdf`` either: that module is the matcher and must stay downstream of
+observation production.
 
 ## Two identities that are easy to conflate, kept apart
 
@@ -55,9 +49,9 @@ ordinal is on the runtime address — see ``matching``'s module docstring for th
 full. The other two are properties of the comparison, and a consumer that stores a PDF
 ordinal must re-attach them; :func:`pdf_parser_revision` is where the second comes from.
 
-**No stored artifact is introduced here.** Nothing in this slice writes an ordinal to disk,
-so the residual ADR 0019 open question 2 leaves open for PDF — emission determinism is
-measured in-process only (research record §4.1) — is not yet cashed in. It becomes
+**No stored artifact is introduced here.** Nothing writes an ordinal to disk, so the
+residual ADR 0019 open question 2 leaves open for PDF — emission determinism is measured
+in-process only (research record §4.1) — is not yet cashed in. It becomes
 load-bearing the moment a PDF ordinal is committed to a fixture, golden or labelled dataset,
 and that is the point at which the cross-process check is owed. The revision itself is
 cross-process stable and tested to be.
@@ -173,7 +167,7 @@ def observation_closure() -> dict[str, Path]:
 
     Measured today as ``amounts``, ``parsers.pdf_anchors``, ``parsers.pdf_blocks``,
     ``parsers.pdf_text`` and the two package ``__init__`` files. ``diff_pdf``, ``similarity``
-    and ``matching`` are outside it, which is the property slices 1 and 1a bought.
+    and ``matching`` are outside it.
     """
     closure: dict[str, Path] = {}
     queue = [OBSERVATION_ENTRY_MODULE]
@@ -245,10 +239,10 @@ class PdfObservation:
     (a half-open range into the flattened ``_IndexedLine`` stream) and ``printed_lines`` (the
     pre-strip lines, for full-fidelity provenance) are not projections of a ``_Block``:
     ``_group_into_blocks`` does not retain either, so producing them means changing what the
-    parser derives. That is a semantic change to observation production, which is exactly what
-    this slice may not make. Neither has a consumer today; both remain available to a later
-    slice that has one, and the block-to-source path is not lost meanwhile — ``page_range``
-    and the anchor's ``(page, line)`` already resolve an observation into the printed bill.
+    parser derives — a semantic change to observation production, which adding a field must
+    not smuggle in. Neither has a consumer today, and the block-to-source path is not lost
+    meanwhile: ``page_range`` and the anchor's ``(page, line)`` already resolve an observation
+    into the printed bill.
     """
 
     ref: ObservationRef

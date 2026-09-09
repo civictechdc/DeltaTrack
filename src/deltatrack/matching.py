@@ -5,18 +5,10 @@ classification. This module holds the values that pass between them, and nothing
 no retriever, no measure, no threshold, no orchestration. It is the vocabulary the
 stages are written against.
 
-**Round 1 is now written against it**, through slices B1, B2 and B3: retrieval proposes
-into a :class:`CandidateSet`, that set admits what may be described,
-:class:`CorrespondenceEvidence` describes it, and assignment decides. Round 2 and the
-similarity revocation rule use the same types. ``deltatrack.diff_bill`` is the caller.
-
-These types were nevertheless introduced **before** anything imported them, and that was
-the design rather than an accident of sequencing. ADR 0020's implementation rule is to
-introduce the contracts behaviour-preservingly before changing matching policy, with
-canonical JSON byte-identical over the committed XML corpus as the acceptance criterion
-(``tests/test_canonical_baseline.py``). A slice that both defined the types and rewired
-the differ could not report that criterion as evidence of anything, because the two
-changes would be inseparable in the result. The same rule governs whatever moves next.
+**Round 1 is written against it**: retrieval proposes into a :class:`CandidateSet`, that set
+admits what may be described, :class:`CorrespondenceEvidence` describes it, and assignment
+decides. Round 2 and the similarity revocation rule use the same types.
+``deltatrack.diff_bill`` is the caller.
 
 The line the whole record turns on, restated here because every type below is placed by
 it:
@@ -53,18 +45,12 @@ generalises to PDF where ``element_id`` does not.
 
 ## Rules that shape these types
 
-- **A candidate exists once per observation pair**, however many retrievers found it.
-- **Rank and score belong to a proposal, not to a candidate** — a pair proposed by two
-  retrievers has no single rank, and their scores are on unrelated scales.
-- **A retriever need not produce a number.** A proposal with null rank and score is
-  fully valid; requiring a score pushes retrievers into inventing one, and an invented
-  score is worse than an absent field because it looks comparable.
-- **Proposals are provenance, not votes.** Duplicate proposals change neither candidate
-  multiplicity nor assignment weight.
-- **CorrespondenceEvidence carries no correspondence verdict**, and no assignment policy.
-- **Correspondence is first-class and not pair-shaped**, so a consolidation has a
-  production shape to be measured against — and **every selected link carries the
-  evidence that selected it**, exactly one record per link.
+One candidate per observation pair; rank and score belong to a proposal rather than to the
+candidate; a retriever need not produce a number; proposals are provenance, not votes;
+evidence carries no verdict; and correspondence is first-class rather than pair-shaped, every
+selected link carrying the one evidence record that selected it. Those are ADR 0020's
+candidate/proposal/invocation invariants, and ``tests/test_matching_contracts.py`` holds each
+of them — read the record for the argument, that file for what is actually enforced.
 
 ## Canonical form is an invariant of the type, not of one constructor
 
@@ -384,8 +370,8 @@ class CandidateSet:
         under which invocations?" without walking the set. That it is a lookup rather than
         iteration is the point, and it is what lets the set be load-bearing without becoming an
         ordering: :meth:`candidates` is canonically ordered by ordinal pair, and ADR 0020 keeps
-        that order away from assignment because B0 measured it changing the selected links on
-        174 of 329 greedy invocations. A consumer that must iterate to answer an admission
+        that order away from assignment: using it changes which links are selected, measured
+        on the committed corpus (#590). A consumer that must iterate to answer an admission
         question has the canonical order in hand at exactly the moment it decides something.
 
         Mirrors :meth:`CorrespondenceSet.correspondence_for` on the assignment side.
@@ -435,8 +421,8 @@ class CorrespondenceEvidence:
 
     **An empty signal set is valid**, and deliberately so. A correspondence must carry
     one evidence record per selected link, but *what* a signal is remains Phase 2 work.
-    Requiring a non-empty set would be this slice choosing which signals must exist,
-    which is precisely the policy ADR 0020 leaves open. The structural constraint that
+    Requiring a non-empty set would choose which signals must exist, which is precisely
+    the policy ADR 0020 leaves open. The structural constraint that
     does bite is the count and the addressing: a 1:N with two of its three links
     documented is refused.
 

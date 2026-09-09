@@ -13,9 +13,9 @@ missed added/moved sections.
 **The blocks themselves are produced by `parsers.pdf_blocks`, not here.** That module
 owns observation production — flattening, cross-page hyphen rejoin, anchor-delimited
 grouping, heading-chrome stripping — and this one owns matching and classification
-policy. The split is ADR 0020 slice 1, and it is what lets an ADR 0019 PDF parser
-revision be derived without hashing the matcher; see that module's docstring. This
-module consumes those blocks and must remain downstream of them.
+policy. That split is what lets an ADR 0019 PDF parser revision be derived without
+hashing the matcher (ADR 0020); see that module's docstring. This module consumes
+those blocks and must remain downstream of them.
 
 Within matched blocks, the renderer applies word-level diff against the joined
 block text. The classifier produces:
@@ -26,9 +26,10 @@ block text. The classifier produces:
 - `modified` — paired blocks with different bodies
 
 Reuses text similarity from similarity.py: `text_similarity` for the round-1 similarity
-rule and `move_candidates` for round-2 retrieval, plus both cutoffs. Round 1 deliberately
-no longer uses the gated `text_similarity_at_least` — that call returns 0.0 below its bound, which put a correspondence
-cutoff inside the evidence stage; see `_pdf_similarity_signals`.
+rule and `move_candidates` for round-2 retrieval, plus both cutoffs. Round 1 measures the
+exact ratio rather than the gated `text_similarity_at_least`, whose 0.0-below-bound return
+would put a correspondence cutoff inside the evidence stage (ADR 0020); see
+`_pdf_round1_signals`.
 """
 
 from __future__ import annotations
@@ -74,14 +75,13 @@ from deltatrack.version_stems import label_from_stem
 
 ChangeType = Literal["added", "removed", "modified", "moved"]
 
-# What the two shared cutoffs mean HERE (they are defined in deltatrack.similarity,
-# #492, and were re-declared in this module until then — two copies kept in step by a
-# comment saying they were, which is not a mechanism).
+# What the two shared cutoffs mean HERE. Both are defined in deltatrack.similarity.
+# History: #492 consolidated the copies this module used to declare.
 #
 # MOVE_THRESHOLD: body similarity needed to call a block-pair "moved" rather than
-# "modified", and to reconcile a removed+added pair as moved. Since slice 6a it is read
-# only by ASSIGNMENT — `pdf_round1_move_basis` and `assign_pdf_moves` — and classification
-# reads neither it nor the overlap it bounds.
+# "modified", and to reconcile a removed+added pair as moved. Read only by ASSIGNMENT —
+# `pdf_round1_move_basis` and `assign_pdf_moves` — and classification reads neither it
+# nor the overlap it bounds.
 #
 # SIMILARITY_THRESHOLD: below it, two blocks paired by alignment aren't really a
 # modified pair — they're an unrelated removal + addition that happen to share an
@@ -113,12 +113,12 @@ class PdfDiff:
         return dict(Counter(h.change_type for h in self.hunks))
 
 
-# ---- ADR 0020 stage vocabulary (slice 4) -------------------------------------
+# ---- ADR 0020 stage vocabulary -----------------------------------------------
 #
 # The PDF mirror of `diff_bill`'s round constants and stage types. Round 1 is the
-# `_block_key` + SequenceMatcher alignment followed by the split rule, still fused inside
-# `_align_blocks` (slice 5 extracts the split). Round 2 is the move pass, and slice 4 is
-# what moved it OFF the classified hunk stream and in front of classification.
+# `_block_key` + SequenceMatcher alignment followed by the split rule. Round 2 is the move
+# pass, and it runs in front of classification rather than over a classified hunk stream —
+# classification may read a settled correspondence but may never alter one (ADR 0020).
 
 #: The assignment rounds this pipeline runs, in order. Carried on a
 #: :class:`PdfSettledCorrespondence` so classification can reproduce the legacy record order
@@ -163,8 +163,8 @@ ANCHOR_RELATIONS = frozenset({ANCHOR_EQUAL, ANCHOR_DIFFERENT, ANCHOR_MISSING})
 
 #: Why assignment reports a settled correspondence as a move, or ``None`` where it does not.
 #:
-#: **Provenance, deliberately not a legislative claim.** Slice 6's study established that neither
-#: name below is a measurement of relocation: 13 of the 20 round-1 bases are anchor line-wrap
+#: **Provenance, deliberately not a legislative claim.** Neither name below is a measurement
+#: of relocation: 13 of the 20 round-1 bases are anchor line-wrap
 #: artifacts, and 9 of the 145 round-2 moves relocate with an unchanged anchor
 #: (``docs/research/pdf-matching-convergence/moved-semantics.md``). The semantic target
 #: for canonical ``moved`` is "the same provision at a different legislative location", which
@@ -197,10 +197,9 @@ class _AlignedPairing:
     Provisional throughout. An ``(old, None)`` here is an *unmatched* observation, not a
     settled removal — the similarity rule may not have run yet, and round 2 may still claim it.
 
-    Carries no similarity. Slice 4 hung the word overlap on this record because ``_emit_pair``
-    computed it while deciding the split; slice 5 makes the evidence a stage of its own, so the
-    measurement travels as :class:`~deltatrack.matching.CorrespondenceEvidence` addressed by
-    ADR 0019 refs rather than as a field on the pairing that produced it.
+    Carries no similarity: evidence is a stage of its own, so the measurement travels as
+    :class:`~deltatrack.matching.CorrespondenceEvidence` addressed by ADR 0019 refs rather than
+    as a field on the pairing that produced it.
 
     ``invocation`` names the retriever that proposed a 1:1, and is ``None`` for an unmatched
     side, which no retriever proposed because it forms no pair. It is provenance rather than
@@ -236,7 +235,7 @@ class PdfMoveAssignment:
     :func:`settle_pdf_correspondences` to infer one from the round number. The inference would
     be correct today and would still be the wrong shape: it would put a classification-bearing
     decision in the stage that merely places records, and it would re-establish ``round`` as a
-    policy input two slices spent removing.
+    policy input, which ADR 0020's stage boundaries exclude.
     """
 
     correspondence: Correspondence
@@ -258,12 +257,12 @@ class PdfSettledCorrespondence:
     carrying the slot is what lets the policy live there instead of being an accident of the
     order this function happens to append in.
 
-    ``move_basis`` is what slice 6a exists to add: assignment's answer to "is this a move, and on
-    what basis", settled upstream so classification reads a decision instead of re-deciding from
-    a similarity. ``None`` means assignment did not report a move — it is the ordinary case, not
-    a missing value, which is why it is representable rather than an error.
+    ``move_basis`` is assignment's answer to "is this a move, and on what basis", settled
+    upstream so classification reads a decision instead of re-deciding from a similarity.
+    ``None`` means assignment did not report a move — the ordinary case, not a missing value,
+    which is why it is representable rather than an error.
 
-    ``round`` stays, and stays *provenance only*. Nothing in classification reads it any more.
+    ``round`` is *provenance only*: nothing in classification reads it.
     """
 
     correspondence: Correspondence
@@ -306,15 +305,11 @@ def _has_amendment_annotations(v1_text: str, v2_text: str) -> bool:
 def _hunk_for_paired_blocks(v1_block: _Block, v2_block: _Block) -> PdfHunk:
     """Emit a `modified` hunk for two corresponding blocks. Decides nothing.
 
-    **Slice 6a removed this function's decision.** It used to classify as ``moved`` when the
-    anchors differed and the bodies cleared ``MOVE_THRESHOLD``, which put a threshold over
-    correspondence evidence inside classification — the ADR 0020 violation 6a exists to close.
-    The rule itself is unchanged and unmoved in effect; it now lives in
-    :func:`pdf_round1_move_basis`, an assignment stage, and a pair it selects reaches
-    :func:`_hunk_for_move` instead of arriving here.
-
-    So this is now the ``modified`` emitter and takes no similarity at all — there is no number
-    left for it to compare, which is the property the slice is testable on.
+    The ``modified`` emitter, and it takes no similarity at all: a threshold over
+    correspondence evidence must not sit inside classification (ADR 0020), so there is no
+    number here to compare. The moved-vs-modified rule is :func:`pdf_round1_move_basis`, an
+    assignment stage, and a pair it selects reaches :func:`_hunk_for_move` instead of here.
+    History: #639.
     """
     v1_text = v1_block.text
     v2_text = v2_block.text
@@ -331,9 +326,8 @@ def _hunk_for_paired_blocks(v1_block: _Block, v2_block: _Block) -> PdfHunk:
 
 
 def _hunk_for_added(v2_block: _Block) -> PdfHunk:
-    # #86 paired this side's dollars against the empty other side so an added account
-    # was not silent on money. #671 unpublished the pairs and #687 removed the field, so
-    # the hunk carries no money observation; the amounts themselves stay in `amounts.py`.
+    # Carries no paired-amount observation (why: `diff_bill.financial_change_to_dict`);
+    # the figures stay recoverable through `amounts.py`. History: #86, #671, #687.
     return PdfHunk(
         change_type="added",
         v1_anchor=None,
@@ -366,15 +360,12 @@ def _hunk_for_move(v1_block: _Block, v2_block: _Block) -> PdfHunk:
     One emitter for every move, so the record a move produces does not depend on which path
     settled it.
 
-    History: the field list came from the hunk the pre-slice-4 round-2 reconciler built when it
-    consumed a removed/added pair. That function was retired in #659.
+    Serves both rounds: every move, whichever basis carries it, is emitted here, so
+    ``_hunk_for_paired_blocks`` and this one produce identical fields for identical blocks.
+    ``tests/test_pdf_move_basis.py`` measures that rather than trusting it.
 
-    **Since slice 6a this serves both rounds.** It was round-2-only while
-    ``_hunk_for_paired_blocks`` still decided moved-vs-modified for round-1 pairs from a
-    similarity; now that the decision is assignment's, every move — whichever basis carries it —
-    is emitted here. The two functions produce identical fields for identical blocks, so routing
-    the round-1 moves through this one is a change of *which function names the type*, not of
-    what is emitted. ``tests/test_pdf_move_basis.py`` measures that rather than trusting it.
+    History: #659 retired the round-2 reconciler this field list came from; #639 moved the
+    moved-vs-modified decision into assignment.
     """
     return PdfHunk(
         change_type="moved",
@@ -394,13 +385,11 @@ def _hunk_for_move(v1_block: _Block, v2_block: _Block) -> PdfHunk:
 def _pdf_anchor_relation(v1_block: _Block, v2_block: _Block) -> str:
     """How two aligned blocks' anchors relate. The one place raw anchor state is read.
 
-    Transcribed from the condition the legacy move rule spelled inline
-    (``v1_anchor and v2_anchor and v1_anchor.text != v2_anchor.text``), but split into the three
-    states that condition collapsed. The collapse is what slice 6a removes: written as one
-    boolean, "no anchor on one side" and "two different anchors" were indistinguishable to
-    everything downstream, so no consumer could treat them apart even when it should.
+    Three states rather than one boolean, because "no anchor on one side" and "two different
+    anchors" are different facts: collapsed together, no downstream consumer can treat them
+    apart even where it should.
 
-    Compares anchor **text**, not anchor identity, exactly as the legacy condition did.
+    Compares anchor **text**, not anchor identity. History: #639.
     """
     if v1_block.anchor is None or v2_block.anchor is None:
         return ANCHOR_MISSING
@@ -410,38 +399,26 @@ def _pdf_anchor_relation(v1_block: _Block, v2_block: _Block) -> str:
 def _pdf_round1_signals(v1_block: _Block, v2_block: _Block) -> dict[str, bool | float | str]:
     """The signals round 1's two rules read. Describes; decides nothing.
 
-    Named for the round rather than for one rule since slice 6a, because there are now two
-    consumers: :func:`pdf_pairing_survives_similarity_rule` and :func:`pdf_round1_move_basis`.
-    One description, read by both, is what keeps them from measuring the same pair differently.
+    Named for the round rather than for one rule, because it has two consumers:
+    :func:`pdf_pairing_survives_similarity_rule` and :func:`pdf_round1_move_basis`. One
+    description, read by both, is what keeps them from measuring the same pair differently.
 
-    **The identical-text short-circuit is preserved**: two equal bodies return without any
-    measurement, exactly as ``_emit_pair`` did. ``1.0`` is transcribed from the literal it
-    passed, not computed — identical texts do score 1.0, but production never measured it.
+    **Two equal bodies return without any measurement**, scoring a literal ``1.0``. Identical
+    texts do score 1.0; the short-circuit means nothing measures it.
 
-    **The ratio is exact, and deliberately no longer gated.** ``_emit_pair`` called
-    ``text_similarity_at_least(..., SIMILARITY_THRESHOLD)``, which returns ``0.0`` rather than
-    the true ratio below its bound. That put a correspondence cutoff inside the *evidence*: a
-    pair whose real overlap was 0.30 was recorded as ``0.0``, so assignment handed a threshold
-    of 0.20 revoked a pairing it should have kept, and the threshold parameter was not the sole
-    authority ADR 0020 requires it to be. Evidence describes; it must not censor at the number
-    the next stage is supposed to own.
-
-    The optimization was measured before being dropped rather than after: exact similarity for
-    every non-identical aligned pair costs **+0.9%** on a full-corpus ``diff_pdfs`` sweep
-    (5.552s → 5.600s over 23 pairs), which is inside the 3.2% run-to-run spread, and produces
-    byte-identical output. The gate saved little because the identical-text short-circuit above
-    already removes the large majority of pairs before it, which is the population XML's
-    equivalent gate is actually paying for.
-
-    History: the measurement was corroborated by a transcribed split-rule oracle in
-    ``tests/test_pdf_matching_boundary.py`` that used exact ``text_similarity`` and always agreed
-    with production. That oracle was retired in #659; the figures above stand on the sweep.
+    **The ratio is exact and ungated.** Gating it — as ``text_similarity_at_least`` does,
+    returning ``0.0`` rather than the true ratio below its bound — would put a correspondence
+    cutoff inside the *evidence*: a pair whose real overlap is 0.30 recorded as ``0.0`` lets a
+    threshold of 0.20 revoke a pairing it should keep, so the threshold parameter would not be
+    the sole authority ADR 0020 requires. Evidence describes; it must not censor at the number
+    the next stage owns. Exact similarity for every non-identical aligned pair is inside the
+    run-to-run spread on a full-corpus ``diff_pdfs`` sweep and produces byte-identical output —
+    the identical-text short-circuit above already removes most pairs before the cost lands.
 
     **``word_overlap`` is present even when the texts are identical**, which is where this
     diverges from ``diff_bill``'s equivalent, and the divergence is forced rather than chosen:
     the move-basis rule reads this signal, so a renamed anchor over an identical body needs the
-    value. Before slice 6a that reader was *classification*, which is the coupling 6a removes —
-    the signal stays, and it is now read by an assignment rule instead.
+    value.
 
     ``anchor_relation`` is described here for every aligned pair, including pairs the similarity
     rule is about to revoke, for the same reason every pair gets a record at all: describing only
@@ -510,9 +487,9 @@ def pdf_similarity_correspondence_evidence(
     """CORRESPONDENCE EVIDENCE for the similarity rule: one record per aligned 1:1.
 
     Named for the one rule these signals feed, not for round 1. ``_align_blocks`` controls
-    **consideration**, not correspondence: since slice 5 it selects a provisional partner —
-    by ``_block_key`` alignment, or by position inside a ``replace`` — and declares nothing.
-    Whether an aligned pair corresponds is decided downstream, by the rule these signals feed.
+    **consideration**, not correspondence: it selects a provisional partner — by ``_block_key``
+    alignment, or by position inside a ``replace`` — and declares nothing. Whether an aligned
+    pair corresponds is decided downstream, by the rule these signals feed.
 
     **Every 1:1 pairing gets a record, including the ones the rule will revoke** (ADR 0020
     invariant 8: evidence for candidates reaching assignment stays retained and inspectable). A
@@ -605,16 +582,13 @@ def pdf_pairing_survives_similarity_rule(evidence: CorrespondenceEvidence, thres
 def pdf_round1_move_basis(evidence: CorrespondenceEvidence, threshold: float) -> str | None:
     """ASSIGNMENT: whether round 1 reports this surviving pairing as a move, and on what basis.
 
-    **The rule slice 6a moved out of classification, transcribed unchanged.**
-    ``_hunk_for_paired_blocks`` used to spell it as::
+    Reports a move when the anchors differ and the bodies clear the cutoff — read from named
+    evidence and owned by an assignment stage, so classification receives a decision rather
+    than a number and a threshold.
 
-        if v1_anchor and v2_anchor and v1_anchor.text != v2_anchor.text and similarity >= CUTOFF:
-            change_type = "moved"
-
-    Same rule, same cutoff, same verdicts — but read from named evidence and owned by an
-    assignment stage, so classification receives a decision instead of a number and a threshold.
-    That is the whole of 6a: the policy is deliberately preserved, including the parts slice 6's
-    study falsified, because retiring it is a canonical behaviour change and a separate decision.
+    **The policy is deliberately preserved, including the parts the moved-semantics study
+    falsified** (``docs/research/pdf-matching-convergence/moved-semantics.md``): retiring it is
+    a canonical behaviour change and a separate decision. History: #639.
 
     ``ANCHOR_MISSING`` yields no basis, which is the legacy ``v1_anchor and v2_anchor`` guard.
     Kept explicit rather than folded into "not different", so the three states stay legible.
@@ -742,8 +716,8 @@ def retrieve_pdf_round1_candidates(
 ) -> tuple[list[_AlignedPairing], CandidateSet]:
     """RETRIEVAL, round 1: which block pairs are considered, and in what order.
 
-    Returns the two things round 1 needs, kept apart because they answer different questions and
-    conflating them is the defect this slice exists to prevent.
+    Returns the two things round 1 needs, kept apart because they answer different questions
+    and conflating them is the defect this separation exists to prevent.
 
     **The ``CandidateSet`` is the admission authority.** Every pair the aligner forms is proposed
     into it under the invocation that formed it, and
@@ -762,7 +736,7 @@ def retrieve_pdf_round1_candidates(
 
     Retrieval policy is untouched: ``_block_key``, ``SequenceMatcher(autojunk=False)``, the
     ``equal`` zip, the positional ``replace`` zip, and delete/insert as unmatched observations.
-    Slice 7 names them and materialises what they considered; it reconsiders none of them.
+    This stage names them and materialises what they considered; it reconsiders none of them.
 
     A ``delete`` or ``insert`` observation forms no pair, so it is proposed to nothing and
     carries no invocation.
@@ -791,7 +765,7 @@ def _align_blocks(
 ) -> list[_AlignedPairing]:
     """ROUND 1's opcode walk: which blocks are provisionally paired, and by which rule.
 
-    Unchanged from the pre-slice-4 walk except in what it emits. `_block_key` +
+    `_block_key` +
     ``SequenceMatcher`` decide what is *considered*, and the positional zip inside a ``replace``
     is retrieval too (research record §9); each aligned pair is tagged with the invocation that
     formed it, which is what lets the candidate set attribute a proposal rather than merely hold
@@ -799,8 +773,8 @@ def _align_blocks(
 
     **Retrieval only, and nothing is fused here any more.** Every aligned pair leaves as a
     provisional 1:1: the one round-1 act that can revoke a pairing lives in
-    :func:`apply_pdf_similarity_revocation` (slice 5), and what was considered is materialised by
-    :func:`retrieve_pdf_round1_candidates`, which calls this (slice 7). This function is that
+    :func:`apply_pdf_similarity_revocation`, and what was considered is materialised by
+    :func:`retrieve_pdf_round1_candidates`, which calls this. This function is that
     retriever's traversal and is not called from anywhere else.
 
     The retrieval *policy* — the key, the aligner's ``autojunk=False``, and the positional
@@ -849,10 +823,10 @@ def pdf_unmatched_population(
 ) -> PdfUnmatchedPopulation:
     """Round 2's retrieval population, projected from the round-1 pairing stream.
 
-    **This projection is what slice 4 is for.** Production derived the same two lists by
-    filtering the *classified* hunk stream on ``change_type in {"removed", "added"}``, which
-    made round 2 a consumer of classification output — the ADR 0020 violation the slice
-    removes. Deriving them from the pairings makes the equality true by construction: every
+    **Projected from the pairings, never from the classified hunk stream.** Filtering hunks on
+    ``change_type in {"removed", "added"}`` would make round 2 a consumer of classification
+    output, which ADR 0020 forbids. Deriving them from the pairings makes the equality true by
+    construction: every
     ``removed`` hunk came from an ``(old, None)`` pairing and every ``added`` one from a
     ``(None, new)``, one for one and in the same order, because ``_hunk_for_removed`` /
     ``_hunk_for_added`` are the only producers of those two types and each was called exactly
@@ -989,8 +963,8 @@ def assign_pdf_moves(
     exactly what it selected before; give the two different values and this refuses the
     difference, which is what makes the separation testable rather than decorative.
 
-    Every selection carries :data:`ROUND2_UNMATCHED_RECOVERY`. Slice 6a attaches it here rather
-    than downstream because it is this stage's own finding — these two observations were left
+    Every selection carries :data:`ROUND2_UNMATCHED_RECOVERY`, attached here rather than
+    downstream because it is this stage's own finding — these two observations were left
     unmatched by round 1 and this competition claimed them for each other.
     """
     return tuple(
@@ -1027,8 +1001,7 @@ def settle_pdf_correspondences(
     subset that selected a surviving 1:1 and leaves the rest retained but unattached, so the
     evidence that decided a pairing travels with it rather than a second measurement free to
     disagree. A surviving 1:1 with no record raises rather than falling back to an empty one —
-    the empty record is what slice 5 removed, and a silent fallback would reinstate it wherever
-    the wiring is wrong.
+    a silent fallback to an empty record would hide wiring that is wrong.
 
     ``round1_move_bases`` is the same shape of requirement one stage later: it is
     :func:`assign_pdf_round1_move_bases`' output, and this attaches it to the settled record so
@@ -1155,8 +1128,7 @@ def pdf_round1_with_stage_outputs(
 
     The stage order is the ADR 0020 boundary and is not negotiable here: retrieval admits,
     evidence describes what was admitted, assignment decides. The similarity revocation stays
-    strictly downstream of retrieval, which is what slice 5 established and slice 7 must not
-    disturb.
+    strictly downstream of retrieval.
 
     **Two thresholds, two parameters, deliberately.** ``threshold`` is the revocation cutoff and
     ``move_threshold`` the move-basis cutoff; production passes 0.4 and 0.6 and they have always
@@ -1185,11 +1157,10 @@ def _classified_pdf(item: PdfSettledCorrespondence, registry: PdfObservationRegi
     that policy is applied — classification decides what to emit, and the correspondence still
     exists, which is what keeps both blocks out of round 2's population.
 
-    **``move_basis`` is read, never re-derived.** Slice 6a's whole content is the line below:
-    the moved-vs-modified call arrives settled, and this stage neither compares an overlap
-    against a cutoff nor consults ``item.round``. The basis is checked *before* the
-    unchanged-suppression test, preserving the legacy order in which a renamed anchor over an
-    identical body reached ``moved`` rather than being suppressed.
+    **``move_basis`` is read, never re-derived.** The moved-vs-modified call arrives settled,
+    and this stage neither compares an overlap against a cutoff nor consults ``item.round``.
+    The basis is checked *before* the unchanged-suppression test, so a renamed anchor over an
+    identical body reaches ``moved`` rather than being suppressed.
 
     The suppression test still reads both anchors and both texts, and that is deliberate rather
     than an oversight: ADR 0020 permits classification to compare corresponding content in order
@@ -1227,7 +1198,7 @@ def classify_pdf(
 
     Decides nothing about correspondence: no partner is changed and every block is resolved
     through the complete :class:`PdfObservationRegistry` rather than through a filtered-list
-    position. **Since slice 6a it applies no threshold to correspondence evidence either** — the
+    position. **It applies no threshold to correspondence evidence either** — the
     moved-vs-modified call is read from ``PdfSettledCorrespondence.move_basis``, which assignment
     settled. ``MOVE_THRESHOLD`` and ``word_overlap`` have no result-bearing appearance anywhere
     in this stage, which ``tests/test_pdf_move_basis.py`` pins statically as well as behaviourally.
@@ -1249,23 +1220,21 @@ def classify_pdf(
 def diff_pdfs(v1_pages: list[Page], v2_pages: list[Page]) -> PdfDiff:
     """Block-level diff of two extracted PDF page sequences.
 
-    The body is the ADR 0020 stage sequence. Both rounds now run **before** classification,
-    which is what slice 4 exists to satisfy: a later retrieval round may consult earlier
-    matching state, but none of it may run after classification. Round 2 previously read the
-    classified hunk stream, so a change to what ``_hunk_for_removed`` emitted could silently
-    change which pairs were even considered for a move.
+    The body is the ADR 0020 stage sequence. Both rounds run **before** classification: a later
+    retrieval round may consult earlier matching state, but none of it may run after
+    classification. Reading the classified hunk stream instead would let a change to what
+    ``_hunk_for_removed`` emits silently change which pairs are considered for a move.
 
     Round 2 stays after the similarity revocation, and that ordering is load-bearing rather
     than incidental: a revoked pairing is what puts most of round 2's population on the table
     at all.
 
-    **Nothing is fused any more.** Slice 7 made round-1 retrieval a named retriever emitting a
-    ``CandidateSet``; slice 6a moved the last decision out of classification, so the
-    moved-vs-modified call is now an assignment act recorded as ``move_basis`` and merely read
-    downstream. Every stage boundary ADR 0020 asks for is in place on the PDF side.
+    **Nothing is fused.** Round-1 retrieval is a named retriever emitting a ``CandidateSet``,
+    and the moved-vs-modified call is an assignment act recorded as ``move_basis`` and merely
+    read downstream. Every stage boundary ADR 0020 asks for is in place on the PDF side.
 
-    What is deliberately *not* settled is the semantics: ``moved`` still means what the legacy
-    rule meant, and slice 6's study
+    What is deliberately *not* settled is the semantics: ``moved`` means what the pre-stage rule
+    meant, and the moved-semantics study
     (``docs/research/pdf-matching-convergence/moved-semantics.md``) argues that meaning is
     wrong on measured grounds. Changing it is a canonical behaviour change and a separate
     decision — the architecture now makes it a one-line policy change rather than a refactor.
@@ -1348,14 +1317,8 @@ def render_pdf_diff_json(
 
     The JSON sibling of :func:`render_pdf_diff_html`, delegating to the same
     `compare.pdf` entry point the web app calls, so one bill pair produces one document
-    whichever surface asked for it.
-
-    This command had no JSON output at all before #693, which is a consequence of how
-    the two pipelines are shaped rather than a decision: the XML branch built an
-    intermediate dictionary on the way to canonical and the command line serialized it,
-    while the PDF branch goes from `PdfDiff` straight to canonical and had nothing lying
-    around to serialize. Once `diff_bill.py compare --format json` returns the contract
-    rather than that intermediate, the same flag means the same thing on both commands.
+    whichever surface asked for it, and `--format json` means the same thing here as on
+    `diff_bill.py compare`. History: #693.
     """
     from deltatrack.compare.pdf import compare_pdfs
 
