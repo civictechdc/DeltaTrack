@@ -79,7 +79,7 @@ Alternatives:
   as a display choice the reader makes, not something tied to the source. Plain
   paragraph flow becomes the default for both PDF and XML, and the numbered-gutter
   layout becomes a PDF-only view the reader can switch on (tracked in
-  [DeltaTrack#95](https://github.com/AgoraDMV/DeltaTrack/issues/95)). Once that
+  [DeltaTrack#95](https://github.com/civictechdc/DeltaTrack/issues/95)). Once that
   ships, the renderer never has to ask which source a diff came from. The numbered
   view is kept, not dropped: it is the only one that lets a reader line a change up
   against the printed bill, which is part of the tool's job.

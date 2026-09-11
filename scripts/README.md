@@ -86,7 +86,7 @@ Things worth knowing before running any of it:
   validation fixtures nor the report.
 - **Step 1 currently produces a nine-fixture diff you should not commit.** Six
   committee-report fixtures have drifted from their sources and are never rebuilt
-  from them ([#293](https://github.com/AgoraDMV/DeltaTrack/issues/293)); on the
+  from them ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)); on the
   current tree the rebuild regenerates `match_path` values as `null`, quietly
   dropping those accounts to the agency-scoped fallback. Committing that diff
   degrades the ground truth while looking like a refresh.

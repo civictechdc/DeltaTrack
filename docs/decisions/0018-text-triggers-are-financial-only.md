@@ -52,7 +52,7 @@ fallback was contributing no correct structure anywhere.
 
 The same phrases are genuinely useful somewhere else. `(increased by $X)`,
 `RESCISSION`, `INCLUDING TRANSFER OF FUNDS` say what a dollar change *means*, and
-reading that meaning is a planned layer ([#115](https://github.com/AgoraDMV/DeltaTrack/issues/115)).
+reading that meaning is a planned layer ([#115](https://github.com/civictechdc/DeltaTrack/issues/115)).
 Interpreting an amount is a much weaker claim than defining a boundary: if the
 interpretation is wrong the amount is still right, still attached to the right
 account, and the error is visible next to the number it describes.
@@ -116,7 +116,7 @@ That makes size-band coverage the single thing standing between a bill and its
 account structure, with no second path behind it. Widening it is now a recall
 priority rather than a nicety — the trimodal case that sends reconciliation bills
 down the degraded path is tracked separately
-([#508](https://github.com/AgoraDMV/DeltaTrack/issues/508)), as is the
+([#508](https://github.com/civictechdc/DeltaTrack/issues/508)), as is the
 line-number-independent pass for unnumbered layouts (#261).
 
 The rule is enforced by a test that fails if appropriations vocabulary reappears in

@@ -120,7 +120,7 @@ Our achievable accuracy is bounded by the source. A PDF carries less structure t
 
 Draft legislation may be public or private information, depending on when and how it is released. We seek to guarantee the privacy and security of our users by ensuring no uploaded documents or outputs (bill versions) leave the user's machine. We treat user provided information as confidential and private. 
 
-*Note.* The live site at [deltatrack.agoradmv.org](https://deltatrack.agoradmv.org) is currently in violation of this rule: its active comparison path uploads files and diffs them on the project's server. The page discloses this and warns against uploading non-public bill text, and the local CLI is unaffected. This is a known, deliberate interim state while the in-browser path is finished, tracked in [#112](https://github.com/AgoraDMV/DeltaTrack/issues/112) and recorded in [ADR 0011](decisions/0011-local-only-processing.md). 
+*Note.* The live site at [deltatrack.agoradmv.org](https://deltatrack.agoradmv.org) is currently in violation of this rule: its active comparison path uploads files and diffs them on the project's server. The page discloses this and warns against uploading non-public bill text, and the local CLI is unaffected. This is a known, deliberate interim state while the in-browser path is finished, tracked in [#112](https://github.com/civictechdc/DeltaTrack/issues/112) and recorded in [ADR 0011](decisions/0011-local-only-processing.md). 
 
 ### 5. Leave Nothing Behind
 
@@ -135,8 +135,8 @@ We assume that agents will use DeltaTrack as much, if not more, than human users
 DeltaTrack has a narrow, defined scope that may be of use to other tools. We seek to support and encourage use cases that leverage bill diffs. We will do that by being the best tool for comparing legislative versions. 
 
 ## Execution and supporting documentation
-* **Backlog and active work:** [GitHub Project](https://github.com/orgs/AgoraDMV/projects/1)
-* **Issues:** [GitHub Issues](https://github.com/AgoraDMV/DeltaTrack/issues)
+* **Backlog and active work:** [GitHub Project](https://github.com/orgs/civictechdc/projects/24)
+* **Issues:** [GitHub Issues](https://github.com/civictechdc/DeltaTrack/issues)
 * **Architecture decisions:** [`docs/decisions/`](decisions/)
 * **Research:** [`docs/research/`](research/)
 
