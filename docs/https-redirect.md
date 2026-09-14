@@ -78,14 +78,14 @@ host.
 
 `.github/workflows/deploy.yml` runs on pushes to `main`. It:
 
-1. Sets `IMAGE_NAME` to `ghcr.io/${{ github.repository }}`, then builds and pushes it
-   with `iloveitaly/github-action-railpack`. The action publishes the default `latest`
-   tag and Git's unambiguous short-SHA tag with `GITHUB_TOKEN`.
+1. Sets the lowercase `IMAGE_NAME` to `ghcr.io/civictechdc/deltatrack`, then builds
+   and pushes it with `iloveitaly/github-action-railpack`. The action publishes the
+   default `latest` tag and Git's unambiguous short-SHA tag with `GITHUB_TOKEN`.
 2. Calls `dokku/github-action` with `GIT_REMOTE_URL`, `SSH_PRIVATE_KEY`, and the
    short-SHA image. The action connects to the URL's app and runs the equivalent of:
 
    ```bash
-   dokku git:from-image delta-track ghcr.io/<owner>/<repository>:SHORT_SHA
+   dokku git:from-image delta-track ghcr.io/civictechdc/deltatrack:SHORT_SHA
    ```
 
 The Procfile binds Uvicorn to `0.0.0.0` and `${PORT:-5000}`. It intentionally has no

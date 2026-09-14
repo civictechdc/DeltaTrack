@@ -6,7 +6,7 @@ on:
       - develop
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  IMAGE_NAME: ghcr.io/civictechdc/deltatrack
 
 permissions:
   contents: read
