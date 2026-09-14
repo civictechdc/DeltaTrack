@@ -14,7 +14,7 @@ Promotion updates both at once. Neither tracks `develop`.
 
 | Surface | What it is | How it updates |
 |---|---|---|
-| The hosted comparison app | The FastAPI upload app | The server pulls from `main`, then a redeploy (below) |
+| The hosted comparison app | The FastAPI upload app | `.github/workflows/deploy.yml`, on push to `main`. Builds with Railpack, pushes short-SHA and `latest` tags to GHCR, and deploys the short-SHA tag to Dokku |
 | The example reports | Static reports linked from the README's "See it in action" | `.github/workflows/update-examples.yml`, on push to `main`. Copies the already-committed `examples/` directory into a Pages artifact and deploys it |
 
 **The workflow does not render anything.** It used to, and that is worth stating plainly
@@ -69,9 +69,9 @@ attributable.
 3. **Open the promotion pull request** from `develop` to `main`. `main` is protected; the
    maintainer merges.
 
-4. **Watch the post-merge runs on `main` finish.** Three land: CI, security, and
-   `update-examples.yml`. Confirm all three against the actual merge commit before
-   treating the promotion as done.
+4. **Watch every post-merge run on `main` finish.** Four workflows land: CI,
+   security, `update-examples.yml`, and `deploy.yml`. Confirm all four against the actual
+   merge commit before treating the promotion as done.
 
    CI and security are the ones easiest to skip, because both already reported green on
    the pull request. That green describes a *preview* merge, not the commit that landed.
@@ -91,27 +91,29 @@ attributable.
    closely to watch it: the publishing steps run only on `main` and only in the Pages
    environment, so when the action versions have moved, this run is the first evidence
    anyone has about them. A failure there leaves the previous Pages deploy serving, which
-   is stale rather than broken. That is recoverable and does not by itself justify rolling
-   back. A red CI or security run on `main` is a different matter and belongs in the
-   rollback conversation at step 7.
+   is stale rather than broken.
 
-5. **Redeploy the hosted app.** The server pulls from `main` and restarts. The command is
-   in [docs/web-compare.md](web-compare.md); hosting specifics live outside this
-   repository.
+   The app deployment starts from the same `main` push; it is not sequenced behind the
+   separate CI and security workflows. Railpack builds and pushes the short-SHA and
+   `latest` image tags, then `dokku/github-action` deploys the short-SHA tag through
+   `git:from-image`. A red deploy can therefore mean build, registry, SSH, or Dokku
+   failure; inspect the failed step rather than assuming the host changed. Host
+   prerequisites are in [docs/https-redirect.md](https-redirect.md).
 
-6. **Smoke both surfaces.** Run a real comparison on the hosted app, and open the
-   README's "See it in action" links to confirm they serve the promoted reports. Checking
-   only one surface leaves the other unverified, and they fail independently.
+5. **Verify both surfaces manually.** Run one real comparison on the hosted app, then
+   open the README's "See it in action" links to confirm they serve the promoted reports.
+   Checking only one surface leaves the other unverified, and they fail independently.
 
-7. **Leave a rollback window.** Do not start unrelated work on `main` inside it.
+6. **Leave a rollback window.** Do not start unrelated work on `main` inside it.
 
-   Rollback is reverting the promotion pull request and redeploying, and it has a
-   consequence worth knowing before you need it. Promotions land on `main` as merge
-   commits, so reverting one restores the files while leaving the promoted commits in
-   `main`'s ancestry. Git then treats them as already merged, and **the next promotion
-   will not bring them back.** Recovering forward is a deliberate act: revert the revert,
-   or otherwise reapply the release, as part of the following promotion. Nobody should be
-   left assuming the next merge will quietly restore what the rollback removed.
+   Rollback is reverting the promotion pull request. Merging that revert to `main`
+   automatically builds and deploys the restored source as a new image. Promotions land
+   on `main` as merge commits, so reverting one restores the files while leaving the
+   promoted commits in `main`'s ancestry. Git then treats them as already merged, and
+   **the next promotion will not bring them back.** Recovering forward is a deliberate
+   act: revert the revert, or otherwise reapply the release, as part of the following
+   promotion. Nobody should be left assuming the next merge will quietly restore what
+   the rollback removed.
 
 ## What the workflow does not exercise
 
