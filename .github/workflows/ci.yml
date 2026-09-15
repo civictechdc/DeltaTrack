@@ -62,13 +62,13 @@ jobs:
       - name: Set up Python
         run: uv python install
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Lint
         if: ${{ !cancelled() }}
-        run: uv run ruff check .
+        run: uv run --locked ruff check .
       - name: Check formatting
         if: ${{ !cancelled() }}
-        run: uv run ruff format --check .
+        run: uv run --locked ruff format --check .
 
   # Fast tests: run on every supported interpreter.
   fast-tests:
@@ -88,10 +88,10 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Run fast tests
         if: ${{ !cancelled() }}
-        run: uv run pytest -m "not slow and not browser" -v
+        run: uv run --locked pytest -m "not slow and not browser" -v
 
   # Browser tests: run on every supported interpreter. Includes Playwright install.
   browser-tests:
@@ -111,16 +111,16 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Install Playwright browser
         if: ${{ !cancelled() }}
-        run: uv run playwright install --with-deps chromium
+        run: uv run --locked playwright install --with-deps chromium
       - name: Run browser tests
         if: ${{ !cancelled() }}
         # --run-browser: this step runs on dedicated hardware where Chromium is
         # guaranteed, so a launch failure must fail the run rather than skip every
         # test into a green no-op (#599).
-        run: uv run pytest -m browser --run-browser -v
+        run: uv run --locked pytest -m browser --run-browser -v
 
   # External-validation suite: committee reports + legislative branch validation.
   # Runs on every supported interpreter.
@@ -141,11 +141,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Run external-validation suite
         if: ${{ !cancelled() }}
         run: >
-          uv run pytest -v -m slow
+          uv run --locked pytest -v -m slow
           tests/test_committee_report.py
           tests/test_validate_extraction.py
 
@@ -168,11 +168,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Run corpus correctness gates (committed manifest)
         if: ${{ !cancelled() }}
         run: >
-          uv run pytest -v -m slow
+          uv run --locked pytest -v -m slow
           tests/test_corpus_properties.py
           tests/test_corpus_tree_properties.py
           tests/test_diff_validation.py
@@ -212,11 +212,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Run packaging gate (build, install, diff from outside the checkout)
         if: ${{ !cancelled() }}
         run: >
-          uv run pytest -v -m slow
+          uv run --locked pytest -v -m slow
           tests/test_engine_installs.py
 
   # Remaining slow suites: all other @slow modules against committed fixtures.
@@ -238,11 +238,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Run remaining slow suites (committed fixtures)
         if: ${{ !cancelled() }}
         run: >
-          uv run pytest -v -m slow
+          uv run --locked pytest -v -m slow
           tests/test_classify_bill.py
           tests/test_pdf_corpus_smoke.py
           tests/test_bill_tree.py

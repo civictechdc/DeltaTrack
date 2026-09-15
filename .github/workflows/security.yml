@@ -59,7 +59,7 @@ jobs:
       # then the only place that can change what gets audited.
       - name: Export production requirements
         run: >
-          uv export --frozen --no-default-groups --group web --group fetch
+          uv export --locked --no-default-groups --group web --group fetch
           --no-emit-project --format requirements-txt -o requirements-prod.txt
 
       - name: Audit dependencies

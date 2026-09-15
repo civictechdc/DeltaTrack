@@ -53,13 +53,13 @@ jobs:
         run: uv python install
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
 
       - name: Check corpus filenames against live govinfo enumeration
         id: parity
         # --run-network opts into the `network` marker (#278); the gate is skipped
         # without it. No API key: govinfo's bulkdata endpoint is keyless.
-        run: uv run pytest -v -m slow --run-network tests/test_govinfo_corpus_parity.py
+        run: uv run --locked pytest -v -m slow --run-network tests/test_govinfo_corpus_parity.py
 
       - name: Report a failure as an issue
         # `failure()` alone, with no `steps.parity.outcome` term, and that is the whole of
