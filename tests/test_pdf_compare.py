@@ -592,7 +592,7 @@ def test_compare_pdfs_html_returns_standalone_report():
     )
 
     assert html.lstrip().startswith("<!DOCTYPE html>")
-    assert "change-card" in html
+    assert 'id="change-0"' in html
     assert "Reported in House" in html
     assert "Engrossed in House" in html
     # #671, on the PDF entry point the web app calls. The bill's own dollar figures
@@ -621,7 +621,7 @@ def test_compare_api_returns_html():
     )
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
-    assert "change-card" in resp.text
+    assert 'id="change-0"' in resp.text
 
 
 def test_derive_congress_from_cover():

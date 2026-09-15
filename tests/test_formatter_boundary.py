@@ -230,7 +230,7 @@ def test_a_pair_at_or_above_the_cutoff_renders_inline(old_text: str, new_text: s
     assert _text.word_diff(old_text, new_text, threshold=0.0) is not None  # sanity: a diff exists
     assert _ratio(old_text, new_text) == ratio, "fixture drifted off its intended side of the cutoff"
     html = _prose_card(old_text, new_text)
-    assert '<div class="change-body diff-inline">' in html
+    assert '<div class="change__body diff-inline">' in html
     assert '<div class="old-text">' not in html
 
 
@@ -246,7 +246,7 @@ def test_a_pair_immediately_below_the_cutoff_renders_stacked():
     html = _prose_card(BELOW_OLD, BELOW_NEW)
     assert '<div class="old-text">' in html
     assert '<div class="new-text">' in html
-    assert '<div class="change-body diff-inline">' not in html
+    assert '<div class="change__body diff-inline">' not in html
 
 
 def _ratio(old_text: str, new_text: str) -> float:

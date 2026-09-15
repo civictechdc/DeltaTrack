@@ -30,9 +30,9 @@ def _change(**overrides) -> ChangeView:
 
 def test_basic_card_structure():
     html = _build_card(_change(old_text="old prose", new_text="new prose"), 0)
-    assert html.startswith('<div class="change-card modified" id="change-0" data-type="modified">')
+    assert html.startswith('<div class="change" id="change-0" data-type="modified">')
     assert html.rstrip().endswith("</div>")
-    assert '<span class="badge badge-modified">modified</span>' in html
+    assert '<span class="change-type" data-type="modified">modified</span>' in html
     assert "<h3>TITLE I &gt; Customs</h3>" in html
 
 
@@ -62,9 +62,9 @@ def test_citation_block_present_when_provided():
     html = _build_card(_change(citation_html=citation, old_text="a", new_text="b"), 0)
     assert citation in html
     # Citation sits between header close and body.
-    h_close = html.index("</div>", html.index('class="change-header"'))
+    h_close = html.index("</div>", html.index('class="change__header"'))
     cite_pos = html.index('class="citation"')
-    body_pos = html.index("change-body")
+    body_pos = html.index("change__body")
     assert h_close < cite_pos < body_pos
 
 
@@ -83,13 +83,13 @@ def test_degraded_card_adds_unanchored_class_and_h3_class():
         ),
         0,
     )
-    assert '<div class="change-card modified unanchored"' in html
+    assert '<div class="change unanchored"' in html
     assert '<h3 class="degraded">' in html
 
 
 def test_added_card_body_uses_added_text_class():
     html = _build_card(_change(change_type="added", new_text="brand new clause"), 0)
-    assert '<div class="change-body added-text">brand new clause</div>' in html
+    assert '<div class="change__body added-text">brand new clause</div>' in html
 
 
 def test_added_card_escapes_new_text():
@@ -100,7 +100,7 @@ def test_added_card_escapes_new_text():
 
 def test_removed_card_body_uses_removed_text_class():
     html = _build_card(_change(change_type="removed", old_text="old clause"), 0)
-    assert '<div class="change-body removed-text">old clause</div>' in html
+    assert '<div class="change__body removed-text">old clause</div>' in html
 
 
 def test_modified_card_uses_inline_word_diff_when_similar():
@@ -112,7 +112,7 @@ def test_modified_card_uses_inline_word_diff_when_similar():
         ),
         0,
     )
-    assert '<div class="change-body diff-inline">' in html
+    assert '<div class="change__body diff-inline">' in html
     assert "<del>$1,000,000</del>" in html
     assert "<ins>$2,500,000</ins>" in html
 
@@ -126,7 +126,7 @@ def test_modified_card_falls_back_to_stacked_when_dissimilar():
         ),
         0,
     )
-    assert '<div class="change-body">' in html
+    assert '<div class="change__body">' in html
     assert '<div class="old-text">' in html
     assert '<div class="new-text">' in html
 
@@ -146,7 +146,7 @@ def test_moved_card_renders_move_info_then_body():
     )
     assert move_html in html
     # move-info appears before the body.
-    body_pos = html.index("change-body")
+    body_pos = html.index("change__body")
     move_pos = html.index('class="move-info"')
     assert move_pos < body_pos
 
@@ -165,7 +165,7 @@ def test_moved_card_unchanged_body_renders_single_body_div():
     # Single body div, not stacked.
     assert "old-text" not in html
     assert "new-text" not in html
-    assert '<div class="change-body">same</div>' in html
+    assert '<div class="change__body">same</div>' in html
 
 
 def test_moved_card_with_word_diff_fallback_uses_stacked():

@@ -103,11 +103,11 @@ def test_summary_bar_canonical_order():
     Asserts ordering by checking byte position.
     """
     html = format_diff_html(_empty(summary={"modified": 5, "added": 3, "removed": 2, "moved": 1}))
-    # Find each badge marker and confirm ascending positions.
-    pos_modified = html.find('class="badge badge-modified"')
-    pos_added = html.find('class="badge badge-added"')
-    pos_removed = html.find('class="badge badge-removed"')
-    pos_moved = html.find('class="badge badge-moved"')
+    # Find each change-type marker and confirm ascending positions.
+    pos_modified = html.find('class="change-type" data-type="modified"')
+    pos_added = html.find('class="change-type" data-type="added"')
+    pos_removed = html.find('class="change-type" data-type="removed"')
+    pos_moved = html.find('class="change-type" data-type="moved"')
     assert -1 < pos_modified < pos_added < pos_removed < pos_moved
 
 

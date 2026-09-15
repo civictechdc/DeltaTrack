@@ -92,7 +92,7 @@ def test_cards_keep_original_change_order_indices_under_grouping():
 def test_cards_render_flat_when_no_change_has_a_node_path():
     view = _view([_change(), _change()])
     html = _cards_section_html(view)
-    assert "card-group" not in html
+    assert "change-group" not in html
     assert html.find('id="change-0"') < html.find('id="change-1"')
 
 
@@ -127,10 +127,10 @@ def test_degraded_card_without_group_label_lands_in_uncategorized():
 def test_filter_js_hides_empty_card_groups():
     # Pin the hide logic, not just the selector: applyFilters must toggle a
     # card group's display off when none of its cards survive the filter.
-    block_start = _JS.find(".card-group")
+    block_start = _JS.find(".change-group")
     assert block_start != -1
     block = _JS[block_start : block_start + 400]
-    assert ".change-card" in block and "display = vis === 0 ? 'none' : ''" in block
+    assert ".change" in block and "display = vis === 0 ? 'none' : ''" in block
 
 
 def test_group_labels_are_escaped_in_cards_and_sidebar():
