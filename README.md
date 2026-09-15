@@ -66,9 +66,9 @@ The product commands are the executable `.py` scripts in the project root — `d
 | `./tools/fetch_bills.py download-all --start_year <Y> --end_year <Y>` | Download all appropriations bills in a year range (or `--file <csv>` for a specific set; `--source govinfo\|api`) |
 | `./tools/fetch_bills.py search "<terms>" [--congress N] [--type hr] [--appropriations]` | Find bills by title over a local BILLSTATUS index (keyless, offline; **requires the index** — fetch it first with `fetch-index`, see below) |
 | `./tools/fetch_bills.py fetch-index --congress <N> [--type hr]` | Download just the scoped BILLSTATUS ZIP(s) that `search` reads (keyless; tens of MB, not the multi-GB full bulk set) — the lightweight on-ramp for `search` |
-| `./diff_bill.py compare <old.xml> <new.xml>` | Diff two XML versions (HTML by default; `--format json`, `--financial`, `--filter`, `-o`) |
+| `./diff_bill.py compare <old.xml> <new.xml>` | Diff two XML versions (HTML by default; `--format json` for canonical JSON, `--financial`, `--filter`, `-o`) |
 | `./diff_bill.py compare <slug> <n_old> <n_new>` | Diff two versions of a downloaded bill by ordinal, resolved under `--bills-dir` (default `bills/`); a bare `<slug>` lists that bill's local versions |
-| `./diff_pdf.py <old.pdf> <new.pdf> -o <out.html>` | Diff two PDF versions into the same HTML report |
+| `./diff_pdf.py <old.pdf> <new.pdf> -o <out.html>` | Diff two PDF versions into the same HTML report (`--format json` for the same canonical JSON, `--v1-label`/`--v2-label`) |
 | `./tools/fetch_bill_archives.py` | Bulk-build a full bill-metadata index (all of 112–119) from govinfo archives — **see the warning below** |
 | `./tools/fetch_bill_text_archives.py --from-congress <n> --to-congress <n>` | Bulk-download bill text from govinfo into `bills/` (no API key; `--min-versions 2` keeps only bills comparable across versions) |
 
@@ -133,21 +133,19 @@ The index is read from BILLSTATUS ZIPs in `bills/`, which are **not** part of a 
 # Filter to a specific section
 ./diff_bill.py compare old.xml new.xml --filter "military construction"
 
-# Include unchanged sections
-./diff_bill.py compare old.xml new.xml --include-unchanged
-
-# Save the engine's internal diff dictionary (output defaults to HTML, so request json explicitly)
-./diff_bill.py compare old.xml new.xml --format json -o internal-diff.json
+# Save the canonical diff JSON (output defaults to HTML, so request json explicitly)
+./diff_bill.py compare old.xml new.xml --format json -o diff.json
 
 # Generate a standalone HTML report
 ./diff_bill.py compare old.xml new.xml --format html -o reports/report.html
 ```
 
-**Building something against the output?** `--format json` emits the engine's current
-*internal* diff dictionary, not the versioned canonical JSON that is the published
-interchange contract between the engine and its consumers. Use the canonical document
-instead: [`schema/canonical-diff.md`](schema/canonical-diff.md) specifies it, and the HTML
-report's **Export and share → Download `diff.json`** button produces one.
+**Building something against the output?** `--format json` gives you the canonical diff
+JSON, the versioned interchange contract between the engine and its consumers, specified
+in [`schema/canonical-diff.md`](schema/canonical-diff.md). It is the same document
+`POST /api/compare?output=json` returns and the same one the HTML report's **Export and
+share → Download `diff.json`** button saves, so a script, the web service and a browser
+download all read one shape. `./diff_pdf.py --format json` does the same for a PDF pair.
 
 ### HTML report
 

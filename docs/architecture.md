@@ -40,9 +40,11 @@ enter through them — so one bill pair renders one way no matter who asked. Tho
 modules' docstrings name each stage they call, and are the shortest accurate map of the
 pipeline.
 
-One path deliberately does not go through them: `diff_bill.py compare --format json`
-emits the older diff-dict shape straight from `bill_diff_to_dict`, not canonical JSON.
-If you are consuming diff output programmatically, take the canonical JSON.
+Every path now goes through them, in both output formats. `diff_bill.py compare
+--format json` emitted the older diff-dict shape straight from `bill_diff_to_dict` until
+[#693](https://github.com/AgoraDMV/DeltaTrack/issues/693); that shape is a pipeline stage
+rather than a second output format, and only the XML branch has one. It remains available
+as a library call, which is why no flag was kept to select it.
 
 ## Pipeline tour
 

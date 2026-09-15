@@ -271,9 +271,15 @@ def test_the_wrapper_commands_run_against_the_installed_engine(installed_engine,
     Asserts on the diff's actual content, not merely that JSON came back. `assert payload`
     accepted any truthy object, and a review demonstrated the cost concretely: with
     `compare/` excluded from the wheel this test still passed, because `--format json`
-    never enters that subpackage. The headline test above caught that fault, so nothing
+    never entered that subpackage. The headline test above caught that fault, so nothing
     shipped vacuously -- but a wrapper test that cannot tell a real diff from an empty one
     is not evidence about the wrapper.
+
+    That particular blind spot closed with #693: `--format json` now routes through
+    `compare/xml.py` like `--format html`, so this test would fail on a wheel missing the
+    subpackage. Keep the content assertions anyway. They are what makes the test say
+    something about the *diff* rather than about the import, and the next module to drop
+    out of the wheel will not be the one already covered.
     """
     wrapper = tmp_path / "diff_bill.py"
     wrapper.write_text((ROOT / "diff_bill.py").read_text())

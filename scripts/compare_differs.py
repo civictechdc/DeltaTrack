@@ -17,27 +17,32 @@ and pypdfium2.
 """
 
 import difflib
-import json
-import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent.parent
-PY = sys.executable  # the interpreter running this script already has the deps
+from deltatrack.bill_tree import normalize_bill
+from deltatrack.diff_bill import bill_diff_to_dict, diff_bills, filter_diff
 
 
 def our_tool(old_xml: Path, new_xml: Path) -> dict:
-    """DeltaTrack structured financial diff."""
-    out = subprocess.run(
-        [PY, "diff_bill.py", "compare", str(old_xml), str(new_xml), "--financial", "--format", "json"],
-        cwd=HERE,
-        capture_output=True,
-        text=True,
-    )
-    if out.returncode != 0:
-        raise SystemExit(f"diff_bill.py failed ({out.returncode}):\n{out.stderr}")
-    return json.loads(out.stdout)
+    """DeltaTrack structured financial diff.
+
+    Calls the engine as a library rather than shelling out to `diff_bill.py compare
+    --financial --format json`, which returns the canonical diff document since #693.
+    That document deliberately carries no money on a change: #671 removed
+    `amount_entries`, and the account-level model that would let a figure say what it IS
+    (top-line appropriation, sub-allocation, ceiling, limitation) is deferred to #115.
+    The paired old/new amounts this comparison exists to show are therefore not in it.
+
+    `bill_diff_to_dict` is where they do live. It is the engine's internal diff
+    dictionary, a pipeline stage rather than a published contract, and calling it here is
+    the intended way to reach it: #693 removed that shape from the command-line surface
+    precisely because it stays available as a library call. Nothing outside this
+    repository should read it; this script is inside it.
+    """
+    diff = filter_diff(diff_bills(normalize_bill(old_xml), normalize_bill(new_xml)), financial_only=True)
+    return bill_diff_to_dict(diff, financial=True)
 
 
 def xmldiff_actions(old_xml: Path, new_xml: Path) -> list:
@@ -81,7 +86,10 @@ def main() -> None:
     print(f"  {fin} accounts with dollar changes, each as paired old->new amounts")
     for c in d["changes"][:3]:
         f = c["financial"]
-        path = " > ".join(c.get("match_path", []))
+        # Subscript rather than `.get("match_path", [])`: the default silently printed an
+        # empty breadcrumb for every row once the shape changed, which reads as a bill
+        # with unnamed accounts rather than as a broken script (#693).
+        path = " > ".join(c["match_path"])
         print(f"    {path}: {f['old_amounts'][:1]} -> {f['new_amounts'][:1]} ...")
 
     print("\nxmldiff (off-the-shelf structural XML differ)")

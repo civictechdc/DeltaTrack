@@ -586,12 +586,17 @@ class TestFilterDiff:
         assert filtered.summary["unchanged"] == 0
 
 
-def _synthetic_bill_xml(stage: str, army_amount: str) -> str:
-    """One title, two appropriations lines — the smallest bill both forms can diff.
+def _synthetic_bill_xml(stage: str, army_amount: str, housing_note: str = "") -> str:
+    """One title, two appropriations lines, the smallest bill both forms can diff.
 
     Inline rather than from the corpus so these stay in the fast suite: the dispatch and
     the resolver are about argument handling, and a real appropriations bill would add
     seconds of parsing to prove nothing extra about either.
+
+    ``housing_note`` appends prose to the second section without touching its dollar
+    figure. That is what gives ``--financial`` something to filter out: with both
+    sections changed and only one of them changed *financially*, the flag has an
+    observable effect on the canonical document, which carries no money of its own.
     """
     return (
         f'<bill bill-stage="{stage}">'
@@ -609,7 +614,7 @@ def _synthetic_bill_xml(stage: str, army_amount: str) -> str:
         "</appropriations-intermediate>"
         '<appropriations-intermediate id="AI2">'
         "<header>Family housing</header>"
-        "<text>For family housing, $250,000.</text>"
+        f"<text>For family housing, $250,000.{housing_note}</text>"
         "</appropriations-intermediate>"
         "</title>"
         "</legis-body>"
@@ -833,9 +838,16 @@ class TestCompareLegacyTwoPathForm:
     dispatch is wrong but that the old one changed underneath. Every assertion here is a
     literal that was produced by the two-path form before the new form existed, so it
     reads as a pin rather than as a restatement of the code.
+
+    The JSON literals were re-derived once, by #693, which pointed `--format json` at the
+    canonical diff document instead of the engine's internal diff dictionary: a pin on
+    `data["old_version"]` became a pin on `data["versions"]["v1"]["label"]`. What the
+    two-path form resolves did not move with them, which is what these still
+    characterize: the same two files, the same diff, the same version identity.
     """
 
-    def test_json_output_is_unchanged(self, synthetic_bills_dir, monkeypatch, capsys):
+    def test_json_output_is_the_canonical_document(self, synthetic_bills_dir, monkeypatch, capsys):
+        """The same diff, in the vocabulary the endpoint and the schema use (#693)."""
         bill = synthetic_bills_dir / "118-hr-4366"
         _run_compare(
             monkeypatch,
@@ -846,20 +858,18 @@ class TestCompareLegacyTwoPathForm:
         )
         data = json.loads(capsys.readouterr().out)
 
-        assert data["old_version"] == "reported-in-house"
-        assert data["new_version"] == "enrolled-bill"
-        assert data["congress"] == 118
-        assert data["bill_type"] == "hr"
-        assert data["bill_number"] == 4366
+        assert data["schema_version"], "the internal shape carried no version; the contract does"
+        assert data["versions"]["v1"]["label"] == "reported-in-house"
+        assert data["versions"]["v2"]["label"] == "enrolled-bill"
+        assert data["bill"] == {"type": "hr", "number": 4366, "congress": 118}
         assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
-        assert [c["match_path"] for c in data["changes"]] == [["department of defense", "military construction, army"]]
-        assert data["changes"][0]["text_diff"] == [
-            "--- old",
-            "+++ new",
-            "@@ -1 +1 @@",
-            "-For acquisition, $1,000,000.",
-            "+For acquisition, $2,000,000.",
+        assert [c["path"]["v2"] for c in data["changes"]] == [
+            ["TITLE I\u2014DEPARTMENT OF DEFENSE", "Military construction, army"]
         ]
+        assert data["changes"][0]["text"] == {
+            "old": "For acquisition, $1,000,000.",
+            "new": "For acquisition, $2,000,000.",
+        }
 
     def test_version_numbers_still_come_from_the_filename_stems(self, synthetic_bills_dir, monkeypatch, capsys):
         """The two-path form has no slug and no ordinals, so the stems remain the source."""
@@ -872,11 +882,17 @@ class TestCompareLegacyTwoPathForm:
             "json",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["old_version_number"] == 1
-        assert data["new_version_number"] == 6
+        assert data["versions"]["v1"]["version_number"] == 1
+        assert data["versions"]["v2"]["version_number"] == 6
 
     def test_a_path_whose_stem_carries_no_ordinal_still_diffs(self, synthetic_bills_dir, tmp_path, monkeypatch, capsys):
-        """Legacy callers pass any two paths, named anything — no version keys, no error."""
+        """Legacy callers pass any two paths, named anything: no ordinal, no error.
+
+        The canonical document always carries `version_number` and sets it null when the
+        stem holds no ordinal, where the internal shape omitted the key entirely. That is
+        the better shape for a consumer, which no longer has to distinguish "absent" from
+        "unknown", and it is the same null the endpoint returns for an upload.
+        """
         loose = tmp_path / "loose"
         loose.mkdir()
         (loose / "before.xml").write_text(_synthetic_bill_xml("Reported-in-House", "$1,000,000"))
@@ -884,53 +900,70 @@ class TestCompareLegacyTwoPathForm:
         _run_compare(monkeypatch, str(loose / "before.xml"), str(loose / "after.xml"), "--format", "json")
         data = json.loads(capsys.readouterr().out)
         assert data["summary"]["modified"] == 1
-        assert "old_version_number" not in data
-        assert "new_version_number" not in data
+        assert data["versions"]["v1"]["version_number"] is None
+        assert data["versions"]["v2"]["version_number"] is None
 
-    def test_include_unchanged_and_filter_still_reach_cmd_compare(self, synthetic_bills_dir, monkeypatch, capsys):
+    def test_filter_still_reaches_cmd_compare(self, synthetic_bills_dir, monkeypatch, capsys):
+        """`--filter` survived #693; `--include-unchanged`, which was tested alongside it, did not.
+
+        Family housing is unchanged between these two versions, so filtering to it empties
+        the change set. Cutting the `filter_text=` argument out of `cmd_compare` leaves one
+        change here and turns this red.
+        """
         bill = synthetic_bills_dir / "118-hr-4366"
         paths = [str(bill / "1_reported-in-house.xml"), str(bill / "6_enrolled-bill.xml")]
 
-        _run_compare(monkeypatch, *paths, "--format", "json", "--include-unchanged")
-        data = json.loads(capsys.readouterr().out)
-        assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 3, "moved": 0}
+        _run_compare(monkeypatch, *paths, "--format", "json")
+        assert len(json.loads(capsys.readouterr().out)["changes"]) == 1
 
-        _run_compare(monkeypatch, *paths, "--format", "json", "--include-unchanged", "--filter", "family housing")
+        _run_compare(monkeypatch, *paths, "--format", "json", "--filter", "family housing")
         data = json.loads(capsys.readouterr().out)
-        assert [c["match_path"] for c in data["changes"]] == [["department of defense", "family housing"]]
+        assert data["changes"] == []
+        assert data["summary"] == {"added": 0, "removed": 0, "modified": 0, "unchanged": 0, "moved": 0}
 
-    def test_financial_still_reaches_cmd_compare(self, synthetic_bills_dir, monkeypatch, capsys):
-        bill = synthetic_bills_dir / "118-hr-4366"
-        _run_compare(
-            monkeypatch,
-            str(bill / "1_reported-in-house.xml"),
-            str(bill / "6_enrolled-bill.xml"),
-            "--format",
-            "json",
-            "--financial",
+    def test_financial_still_reaches_cmd_compare_and_only_filters(self, tmp_path, monkeypatch, capsys):
+        """`--financial` filters, and after #693 that is the whole of what it does.
+
+        It used to mean two things at once, chosen by a sibling flag (#694): `--format
+        json` passed `financial=args.financial` into `bill_diff_to_dict`, so the flag
+        both filtered and attached a `financial_summary` plus a per-change `financial`
+        block, while `--format html` filtered on the flag and hardcoded enrichment on.
+        Routing both formats through `compare/xml.py` leaves one meaning. The canonical
+        document has carried no money on a change since #671, so there is nothing left
+        for the flag to add.
+
+        The pair here changes prose in one section and dollars in the other, so the
+        filter has something to remove; cutting the `financial_only=` argument leaves
+        two changes and turns this red. The absence assertions below were confirmed to
+        fire against the pre-#693 code, which emitted both keys on this input.
+        """
+        pair = tmp_path / "118-hr-4366"
+        pair.mkdir()
+        old = pair / "1_reported-in-house.xml"
+        new = pair / "6_enrolled-bill.xml"
+        old.write_text(_synthetic_bill_xml("Reported-in-House", "$1,000,000"))
+        new.write_text(
+            _synthetic_bill_xml("Enrolled-Bill", "$2,000,000", housing_note=" Funds remain available until expended.")
         )
+
+        _run_compare(monkeypatch, str(old), str(new), "--format", "json")
+        assert len(json.loads(capsys.readouterr().out)["changes"]) == 2, "both sections changed"
+
+        _run_compare(monkeypatch, str(old), str(new), "--format", "json", "--financial")
         data = json.loads(capsys.readouterr().out)
-        assert data["financial_summary"] == {"sections_with_financial_changes": 1}
-        # End-to-end through the CLI: the multiset facts survive #671, the pairing
-        # does not. Exact dict so a re-added field fails here too, not only in the
-        # serializer unit test.
-        assert data["changes"][0]["financial"] == {
-            "old_amounts": [1000000],
-            "new_amounts": [2000000],
-            "amounts_changed": True,
-            "has_amendment_annotations": False,
-        }
+        assert [c["text"]["new"] for c in data["changes"]] == ["For acquisition, $2,000,000."]
+        assert "financial_summary" not in data
+        assert "financial" not in data["changes"][0]
 
     @pytest.mark.parametrize(
         "middle",
         [
             ["--financial"],
-            ["--include-unchanged"],
             ["--filter", "military"],
             ["--format", "json"],
             ["-o", "OUT"],
         ],
-        ids=["financial", "include-unchanged", "filter", "format", "output"],
+        ids=["financial", "filter", "format", "output"],
     )
     def test_a_flag_between_the_two_paths_is_still_accepted(
         self, synthetic_bills_dir, tmp_path, monkeypatch, capsys, middle
@@ -956,24 +989,28 @@ class TestCompareLegacyTwoPathForm:
         )
         raw = out.read_text() if out.exists() else capsys.readouterr().out
         data = json.loads(raw)
-        assert data["old_version"] == "reported-in-house"
-        assert data["new_version"] == "enrolled-bill"
-        assert data["old_version_number"] == 1
-        assert data["new_version_number"] == 6
+        assert data["versions"]["v1"] == {"label": "reported-in-house", "version_number": 1, "source": "xml"}
+        assert data["versions"]["v2"] == {"label": "enrolled-bill", "version_number": 6, "source": "xml"}
 
     def test_a_flag_between_the_paths_still_takes_effect(self, synthetic_bills_dir, monkeypatch, capsys):
-        """Accepting the ordering is not enough — the flag has to still be applied."""
+        """Accepting the ordering is not enough, the flag has to still be applied.
+
+        `--filter` rather than the `--include-unchanged` this used to run: that flag went
+        with the internal shape (#693), and the filter is the surviving one whose effect
+        is visible in a single invocation.
+        """
         bill = synthetic_bills_dir / "118-hr-4366"
         _run_compare(
             monkeypatch,
             str(bill / "1_reported-in-house.xml"),
-            "--include-unchanged",
+            "--filter",
+            "family housing",
             str(bill / "6_enrolled-bill.xml"),
             "--format",
             "json",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 3, "moved": 0}
+        assert data["changes"] == [], "the one change is under military construction, which the filter excludes"
 
     def test_a_leading_flag_is_still_accepted(self, synthetic_bills_dir, monkeypatch, capsys):
         bill = synthetic_bills_dir / "118-hr-4366"
@@ -986,7 +1023,7 @@ class TestCompareLegacyTwoPathForm:
             str(bill / "6_enrolled-bill.xml"),
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["financial_summary"] == {"sections_with_financial_changes": 1}
+        assert [c["text"]["new"] for c in data["changes"]] == ["For acquisition, $2,000,000."]
 
     def test_an_unknown_flag_is_still_a_usage_error_not_a_target(self, synthetic_bills_dir, monkeypatch):
         """Collecting positionals loosely must not turn a mistyped flag into a file path."""
@@ -1017,8 +1054,44 @@ class TestCompareLegacyTwoPathForm:
         )
         assert capsys.readouterr().out == ""
         data = json.loads(out.read_text())
-        assert data["old_version"] == "reported-in-house"
-        assert data["new_version"] == "enrolled-bill"
+        assert data["versions"]["v1"]["label"] == "reported-in-house"
+        assert data["versions"]["v2"]["label"] == "enrolled-bill"
+
+
+class TestCompareCanonicalJson:
+    """What `--format json` publishes, and what went with the shape it replaced (#693).
+
+    Cross-surface agreement is the gate that matters and it lives in
+    `tests/test_cli_api_parity.py`, which runs one bill pair through this command and
+    through `POST /api/compare` and requires byte-identical JSON. What is pinned here is
+    this command's own surface, which that test cannot see.
+    """
+
+    def test_include_unchanged_is_no_longer_accepted(self, synthetic_bills_dir, monkeypatch, capsys):
+        """The flag is gone rather than renamed, deprecated, or quietly ignored.
+
+        `xml_diff_to_canonical` drops every `unchanged` entry, so the canonical document
+        cannot represent an unchanged node and the flag had no output left to change. Its
+        one remaining effect on `--format html` was to raise `summary.unchanged` from 0 to
+        a count of entries the embedded document does not contain, which is a number with
+        no referent rather than a feature.
+
+        A wrapper still passing it now gets a usage error and exit 2, which is the loud
+        direction: the alternative was accepting an argument that no longer does anything.
+        Re-adding the argument to `build_parser` is the mutation that turns this red.
+        """
+        bill = synthetic_bills_dir / "118-hr-4366"
+        with pytest.raises(SystemExit) as exc:
+            _run_compare(
+                monkeypatch,
+                str(bill / "1_reported-in-house.xml"),
+                str(bill / "6_enrolled-bill.xml"),
+                "--format",
+                "json",
+                "--include-unchanged",
+            )
+        assert exc.value.code == 2, "an unknown flag is a usage error, as argparse makes it"
+        assert "--include-unchanged" in capsys.readouterr().err
 
     def test_html_output_uses_utf8_when_host_default_is_cp1252(self, tmp_path):
         """The real CLI writer is tested under a verified non-UTF-8 child locale."""
@@ -1045,10 +1118,8 @@ class TestCompareVersionAddressableForm:
             "json",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["old_version"] == "reported-in-house"
-        assert data["new_version"] == "enrolled-bill"
-        assert data["old_version_number"] == 1
-        assert data["new_version_number"] == 6
+        assert data["versions"]["v1"] == {"label": "reported-in-house", "version_number": 1, "source": "xml"}
+        assert data["versions"]["v2"] == {"label": "enrolled-bill", "version_number": 6, "source": "xml"}
         assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
 
     def test_the_ordinals_pick_the_versions_named(self, synthetic_bills_dir, monkeypatch, capsys):
@@ -1064,11 +1135,13 @@ class TestCompareVersionAddressableForm:
             "json",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["new_version"] == "placed-on-calendar-senate"
-        assert data["new_version_number"] == 3
-        assert data["changes"][0]["new_text"] == "For acquisition, $1,500,000."
+        assert data["versions"]["v2"]["label"] == "placed-on-calendar-senate"
+        assert data["versions"]["v2"]["version_number"] == 3
+        assert data["changes"][0]["text"]["new"] == "For acquisition, $1,500,000."
 
     def test_the_other_flags_still_apply_to_the_resolved_pair(self, synthetic_bills_dir, monkeypatch, capsys):
+        """`--filter` rather than `--financial`: on this pair the two sections that could
+        tell them apart do not both change, so only the filter has an observable effect."""
         _run_compare(
             monkeypatch,
             "118-hr-4366",
@@ -1078,10 +1151,11 @@ class TestCompareVersionAddressableForm:
             str(synthetic_bills_dir),
             "--format",
             "json",
-            "--financial",
+            "--filter",
+            "family housing",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["financial_summary"] == {"sections_with_financial_changes": 1}
+        assert data["changes"] == [], "family housing is unchanged, so the filter empties the change set"
 
 
 class TestCompareBillsDirAbsoluteConflict:
@@ -1136,8 +1210,8 @@ class TestCompareBillsDirAbsoluteConflict:
         """The conflict check only fires on an absolute target; the common case is untouched."""
         _run_compare(monkeypatch, "118-hr-4366", "1", "6", "--bills-dir", str(synthetic_bills_dir), "--format", "json")
         data = json.loads(capsys.readouterr().out)
-        assert data["old_version_number"] == 1
-        assert data["new_version_number"] == 6
+        assert data["versions"]["v1"]["version_number"] == 1
+        assert data["versions"]["v2"]["version_number"] == 6
 
 
 class TestCompareVersionListing:
@@ -1367,8 +1441,8 @@ class TestCli:
         )
         main()
         data = json.loads(out.read_text())
-        assert data["old_version"] == "reported-in-house"
-        assert data["new_version"] == "enrolled-bill"
+        assert data["versions"]["v1"]["label"] == "reported-in-house"
+        assert data["versions"]["v2"]["label"] == "enrolled-bill"
 
     def test_filter_flag(self, monkeypatch, capsys, fast_normalize_diff):
         monkeypatch.setattr(
@@ -1387,8 +1461,18 @@ class TestCli:
         )
         main()
         data = json.loads(capsys.readouterr().out)
+        # Fail closed: an empty change set would satisfy the loop below while proving
+        # the filter matched nothing at all, which is indistinguishable from it working.
+        assert data["changes"], "the filter matched no changes, so the loop asserted nothing"
+        # `--filter` matches the NORMALIZED path the engine pairs nodes on, which is not
+        # the `path` the document publishes: that one keeps the original casing and leads
+        # with the division. Lowercasing is what bridges the two here, and the gap itself
+        # is #689 (one concept, two names, neither matching the contract).
         for change in data["changes"]:
-            path_str = " ".join(change["match_path"])
+            # `or []` because a canonical change may carry `path: {v1: null, v2: null}`
+            # (front matter has no section breadcrumb on either side), and a TypeError
+            # here would report a filter failure as a crash.
+            path_str = " ".join(change["path"]["v2"] or change["path"]["v1"] or []).lower()
             assert "military construction, army" in path_str
 
     def test_subprocess_entrypoint(self):
