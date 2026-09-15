@@ -100,12 +100,15 @@ def test_required_checks_report_to_a_merge_queue(filename: str, context: str) ->
 def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     """The required `test` context must survive any job rename or resize.
 
-    The workflow now has multiple independent jobs (one non-matrix: `lint-format`,
-    six matrix jobs: `fast-tests`, `browser-tests`, `external-validation`,
-    `corpus-gates`, `packaging-gate`, `remaining-slow`). Each matrix job reports
-    one context per leg (e.g., `fast-tests (3.12)`). The aggregator job named
-    exactly `test` needs ALL of them, runs unconditionally, and fails unless every
-    job succeeded.
+    The workflow now has multiple independent jobs (two non-matrix: `lint-format`
+    and `cwd-independence`; six matrix jobs: `fast-tests`, `browser-tests`,
+    `external-validation`, `corpus-gates`, `packaging-gate`, `remaining-slow`).
+    Each matrix job reports one context per leg (e.g., `fast-tests (3.12)`). The
+    aggregator job named exactly `test` needs ALL of them, runs unconditionally,
+    and fails unless every job succeeded.
+
+    `cwd-independence` is non-matrix: it varies the working directory, not the
+    interpreter.
 
     Each pinned property fails silently without the other: without `if: always()`
     a skipped dependency skips the aggregator too (no verdict at all), and without
@@ -135,9 +138,10 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     )
     needs = aggregator.get("needs")
     needs = [needs] if isinstance(needs, str) else list(needs or [])
-    # The aggregator must need all 7 jobs: 1 non-matrix + 6 matrix
+    # The aggregator must need all 8 jobs: 2 non-matrix + 6 matrix
     expected_jobs = {
         "lint-format",
+        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",
@@ -298,7 +302,7 @@ def test_ci_matrix_jobs_pin_the_interpreter_they_claim_to_test() -> None:
 
 
 def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
-    """The seven leaf jobs must not depend on each other.
+    """The eight leaf jobs must not depend on each other.
 
     Issue #364 exists because independent checks were serialized in a single job.
     The parallel architecture requires that each leaf job runs independently --
@@ -306,11 +310,12 @@ def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
     A `needs:` edge between leaf jobs would reintroduce the serialization #364 fixed.
 
     This guard is deliberately narrow: it does not forbid `needs:` globally (the
-    aggregator legitimately uses it). It only forbids `needs:` on the seven leaf jobs.
+    aggregator legitimately uses it). It only forbids `needs:` on the eight leaf jobs.
     """
     workflow = _workflow()
     leaf_jobs = {
         "lint-format",
+        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",

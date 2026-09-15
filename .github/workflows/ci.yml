@@ -93,6 +93,36 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run pytest -m "not slow and not browser" -v
 
+  # The non-browser suite, run from a directory that is NOT the checkout.
+  #
+  # Every other job runs from the repository root, so a fixture path resolved against the
+  # current working directory is green in all of them (#404). The static rule that polices
+  # this matches only the tree names it enumerates, so a CWD-relative path into any other
+  # directory is unpoliced; varying the CWD tests the property directly and needs no list.
+  #
+  # Not the fast tier alone: several of the dependencies this found are `@pytest.mark.slow`,
+  # including one that skipped rather than failed. The browser tier is excluded because it
+  # needs a Playwright install and reaches no fixture path the other tiers do not.
+  cwd-independence:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Set up Python
+        run: uv python install
+      - name: Install dependencies
+        run: uv sync
+      - name: Make a working directory outside the checkout
+        run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
+      # Absolute paths: a relative one resolves against the directory this job exists to vary.
+      - name: Run the non-browser suite from outside the repository root
+        if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
+        run: uv run --project "$GITHUB_WORKSPACE" pytest "$GITHUB_WORKSPACE/tests" -m "not browser" -q
+
   # Browser tests: run on every supported interpreter. Includes Playwright install.
   browser-tests:
     runs-on: ubuntu-latest
@@ -279,7 +309,7 @@ jobs:
   # without the comparison below those would count as a pass, making the aggregator
   # a rubber stamp.
   test:
-    needs: [lint-format, fast-tests, browser-tests, external-validation, corpus-gates, packaging-gate, remaining-slow]
+    needs: [lint-format, fast-tests, cwd-independence, browser-tests, external-validation, corpus-gates, packaging-gate, remaining-slow]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -289,6 +319,7 @@ jobs:
         env:
           LINT_FORMAT_RESULT: ${{ needs.lint-format.result }}
           FAST_TESTS_RESULT: ${{ needs.fast-tests.result }}
+          CWD_INDEPENDENCE_RESULT: ${{ needs.cwd-independence.result }}
           BROWSER_TESTS_RESULT: ${{ needs.browser-tests.result }}
           EXTERNAL_VALIDATION_RESULT: ${{ needs.external-validation.result }}
           CORPUS_GATES_RESULT: ${{ needs.corpus-gates.result }}
@@ -298,6 +329,7 @@ jobs:
           for result in \
             "$LINT_FORMAT_RESULT" \
             "$FAST_TESTS_RESULT" \
+            "$CWD_INDEPENDENCE_RESULT" \
             "$BROWSER_TESTS_RESULT" \
             "$EXTERNAL_VALIDATION_RESULT" \
             "$CORPUS_GATES_RESULT" \

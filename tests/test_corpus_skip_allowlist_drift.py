@@ -44,6 +44,8 @@ shown to fire cannot distinguish "nothing drifted" from "the check is broken", s
 guard is a directly-unit-testable function proven to fire on a stranded entry.
 """
 
+from pathlib import Path
+
 from tests import conftest
 
 
@@ -144,6 +146,100 @@ def test_ci_slow_allowlist_keys_reference_only_live_manifest_fixtures() -> None:
         f"tests/corpus_manifest.toml (stale — the ceiling now silently permits them): "
         f"{stale}. Remove the entry, or restore the fixture to the manifest."
     )
+
+
+def stale_allowlist_keys(allowlists: dict[str, dict[str, str]], root: Path) -> list[str]:
+    """Allowlist keys naming a test that no longer exists, as readable strings.
+
+    Split out so the guard can be shown to fire. Matched against source text rather than by
+    collecting the suite: the failure being caught is a name that is gone.
+    """
+    stale: list[str] = []
+    for name, allowlist in allowlists.items():
+        for nodeid in allowlist:
+            module, _, case = nodeid.partition("::")
+            # The LAST ``::`` segment, so a class-based id (``Class::test_x``) resolves to
+            # the function rather than to ``Class::test_x``, which no ``def`` ever spells.
+            func = case.rpartition("::")[2].partition("[")[0]
+            path = root / module
+            if not path.is_file():
+                stale.append(f"{name}: {nodeid} (module {module} does not exist)")
+            elif f"def {func}(" not in path.read_text():
+                stale.append(f"{name}: {nodeid} (no `def {func}(` in {module})")
+    return stale
+
+
+def _all_allowlists() -> dict[str, dict[str, str]]:
+    return {
+        "ALLOWED_CORPUS_SKIPS": conftest.ALLOWED_CORPUS_SKIPS,
+        "ALLOWED_CI_SLOW_SKIPS": conftest.ALLOWED_CI_SLOW_SKIPS,
+        "ALLOWED_FAST_GATE_SKIPS": conftest.ALLOWED_FAST_GATE_SKIPS,
+        "ALLOWED_DEFAULT_SKIPS": conftest.ALLOWED_DEFAULT_SKIPS,
+    }
+
+
+def test_the_browser_tier_is_exempt_and_the_exemption_is_narrow() -> None:
+    """The browser tier stays outside the ceiling, and nothing else rides along.
+
+    #599 makes a Chromium-unavailable skip correct for the default tier, and CI's
+    ``--run-browser`` turns the same condition into a failure. The exemption is two named
+    modules rather than the marker or a prefix, so a non-browser module skipping for a
+    browser-shaped reason is still reported.
+    """
+    browser_skip = {
+        "tests/test_frontend_browser.py::test_landing_renders": (
+            "Chromium unavailable (run 'playwright install chromium'): boom"
+        ),
+        "tests/test_labeling_form_browser.py::test_form_loads": (
+            "Chromium unavailable (run 'playwright install chromium'): boom"
+        ),
+    }
+    assert conftest.classify_corpus_skips(browser_skip) == {}, (
+        "the browser tier is being watched again, so a contributor without Chromium gets a "
+        "failed session where #599 gives them a skip"
+    )
+
+    elsewhere = {"tests/test_classify_bill.py::test_x": "Chromium unavailable: boom"}
+    assert conftest.classify_corpus_skips(elsewhere) == elsewhere, (
+        "the browser exemption is matching more than the two modules it names"
+    )
+
+
+def test_every_allowlist_key_names_a_test_that_still_exists() -> None:
+    """A declared skip whose test was renamed or deleted is inert while reading as policy.
+
+    The fixture-id guards above compare an allowlist key's fixture id against the manifest,
+    which is no check at all for keys carrying none -- the environment-gated floors and every
+    ``ALLOWED_DEFAULT_SKIPS`` entry. Those drift when the test is renamed or removed (#424's
+    shape), leaving an entry the ceiling never consults.
+    """
+    root = Path(conftest.__file__).resolve().parent.parent
+    stale = stale_allowlist_keys(_all_allowlists(), root)
+    assert not stale, (
+        f"{len(stale)} allowlist entry/entries name a test that no longer exists:\n  "
+        + "\n  ".join(stale)
+        + "\nThe entry is inert: it reads as a deliberate exemption while the ceiling never "
+        "consults it. Delete it, or repath it to wherever the case moved."
+    )
+
+
+def test_the_allowlist_liveness_guard_can_fire() -> None:
+    """Both shapes of staleness are reported, and a live entry is not."""
+    root = Path(conftest.__file__).resolve().parent.parent
+
+    # A live entry must stay unreported, or the guard would fail on everything.
+    live = next(iter(conftest.ALLOWED_DEFAULT_SKIPS))
+    assert stale_allowlist_keys({"live": {live: "r"}}, root) == []
+
+    # The module went away.
+    gone = stale_allowlist_keys({"X": {"tests/test_not_a_real_module.py::test_x": "r"}}, root)
+    assert len(gone) == 1 and "does not exist" in gone[0]
+
+    # The module is real; the test name is not. This is the shape a rename leaves behind,
+    # and the one a module-only check would miss.
+    module = live.partition("::")[0]
+    renamed = stale_allowlist_keys({"X": {f"{module}::test_a_name_nothing_defines": "r"}}, root)
+    assert len(renamed) == 1 and "no `def test_a_name_nothing_defines(`" in renamed[0]
 
 
 def test_each_allowlist_drift_guard_validates_a_positive_count_of_entries() -> None:

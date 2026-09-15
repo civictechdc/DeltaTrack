@@ -577,14 +577,71 @@ FAST_GATE_MODULES = (
 # dict instead would silently restore the fail-open channel these gates just came out of.
 ALLOWED_FAST_GATE_SKIPS: dict[str, str] = {}
 
+# Every remaining test module. A module absent from the three rosters above would otherwise
+# be exempt from the ceiling the day it is created (#654's shape), so the default is watched
+# and the rosters survive only to route a skip to the allowlist documenting it.
+#
+# Matched LAST in _SKIP_WATCH_GROUPS: every nodeid under `tests/` matches this, so it must
+# not shadow the specific tiers.
+DEFAULT_GATE_MODULES = ("tests/",)
+
+# Skips in modules no tier roster names. Unlike ALLOWED_FAST_GATE_SKIPS, empty is not the
+# goal: every entry is an opt-in mode or an environment requirement rather than a corpus gap
+# (#539's distinction), so none is waiting on a fixture that would retire it.
+ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
+    # Maintenance commands guarded by an env flag, so an ordinary run cannot overwrite the
+    # baseline the real gate compares against. Skipping is their normal state.
+    "tests/test_canonical_baseline.py::test_regenerate_baseline": "not in baseline-update mode",
+    "tests/test_pdf_canonical_baseline.py::test_regenerate_baseline": "not in baseline-update mode",
+    "tests/test_pdf_extraction_golden.py::test_regenerate_golden": "not in golden-update mode",
+    "tests/test_round1_pairing_sentinel.py::test_regenerate_the_pairing_sentinel": "not in sentinel-update mode",
+    # Live network by design (#278), kept out of the PR gates so a third-party outage cannot
+    # redden a contributor's branch; #342 runs it weekly. `--run-network` opts in.
+    "tests/test_govinfo_corpus_parity.py::test_govinfo_enumeration_reproduces_corpus_filenames": (
+        "needs a live network (run with --run-network)"
+    ),
+    # Compares freshly-downloaded bulk-ZIP bytes against the curated corpus; both sides are
+    # gitignored working material, so no fixture can make this runnable in CI.
+    "tests/test_fetch_govinfo.py::test_govinfo_bytes_identical_to_curated_corpus": (
+        "local-only: freshly-downloaded bulk ZIP + curated corpus (both gitignored)"
+    ),
+    # Needs a bill present in BOTH corpus roots to have anything to compare, which is a
+    # property of what a machine has fetched rather than of the committed set.
+    "tests/test_research_probes.py::test_collisions_between_the_two_roots_are_byte_identical": (
+        "no bill+version is present in more than one corpus root on this machine"
+    ),
+    # These read the union of both corpus roots and are gated on `CI == "true"` directly
+    # rather than on the tree being absent, so removing bills/ locally does not reproduce
+    # their skip.
+    "tests/test_research_probes.py::test_adjacent_pairs_are_consecutive": (
+        "the union corpus needs the gitignored bills/ tree, which CI does not have"
+    ),
+    "tests/test_research_probes.py::test_body_less_target_nodes_are_always_containers": (
+        "the union corpus needs the gitignored bills/ tree, which CI does not have"
+    ),
+}
+
+# The browser tier is deliberately not watched. Its `chromium` fixture skips when the
+# browser cannot start, which #599 established as correct for the default tier, while CI's
+# browser step passes `--run-browser` to make the same condition a failure. An allowlist
+# could not express it anyway: the skip reason interpolates the launch exception, so no
+# entry could match.
+_UNWATCHED_MODULES = (
+    "tests/test_frontend_browser.py",
+    "tests/test_labeling_form_browser.py",
+)
+
 # (label, modules, allowlist) — each group's skips are watched and must be declared.
+# Order is significant: the first matching group owns the case, so the specific tiers come
+# before the catch-all.
 _SKIP_WATCH_GROUPS = (
     ("corpus content-skip ceiling (#220)", CORPUS_GATE_MODULES, ALLOWED_CORPUS_SKIPS),
     ("CI slow-suite skip ceiling (#288)", CI_SLOW_MODULES, ALLOWED_CI_SLOW_SKIPS),
     ("fast-tier PDF gate ceiling", FAST_GATE_MODULES, ALLOWED_FAST_GATE_SKIPS),
+    ("default suite-wide skip ceiling", DEFAULT_GATE_MODULES, ALLOWED_DEFAULT_SKIPS),
 )
 
-_WATCHED_SKIP_MODULES = CORPUS_GATE_MODULES + CI_SLOW_MODULES + FAST_GATE_MODULES
+_WATCHED_SKIP_MODULES = CORPUS_GATE_MODULES + CI_SLOW_MODULES + FAST_GATE_MODULES + DEFAULT_GATE_MODULES
 
 # --- Cases CI can never collect ------------------------------------------------
 # Every watched module parametrizes over the committed manifest EXCEPT the ones below,
@@ -697,6 +754,8 @@ def classify_corpus_skips(observed: dict[str, str]) -> dict[str, str]:
     """
     unexpected = {}
     for nodeid, reason in observed.items():
+        if nodeid.startswith(_UNWATCHED_MODULES):
+            continue
         if not is_watched_case(nodeid):
             continue
         for _label, modules, allowed in _SKIP_WATCH_GROUPS:
@@ -755,8 +814,10 @@ def pytest_sessionfinish(session, exitstatus) -> None:
         reporter.write_line(f"  {nodeid}\n      reason: {reason}\n      ceiling: {group}")
     reporter.write_line(
         "If this is a regression, fix it. If the case genuinely cannot assert, add it to "
-        "ALLOWED_CORPUS_SKIPS (a content property) or ALLOWED_CI_SLOW_SKIPS (an "
-        "uncommitted fixture) with a comment saying why."
+        "the allowlist named by its ceiling above — ALLOWED_CORPUS_SKIPS (a content "
+        "property), ALLOWED_CI_SLOW_SKIPS (an uncommitted fixture), ALLOWED_FAST_GATE_SKIPS "
+        "(nothing: commit the fixture instead) or ALLOWED_DEFAULT_SKIPS (an opt-in mode or "
+        "an environment requirement) — with a comment saying why."
     )
 
 
