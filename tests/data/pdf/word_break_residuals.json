@@ -1,0 +1,1394 @@
+{
+  "residuals": [
+    {
+      "expected": "12-month",
+      "left": "12",
+      "produced": "12month",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "month",
+      "version": "113-hr-3547/6_enrolled-bill"
+    },
+    {
+      "expected": "forces-peculiar",
+      "left": "Forces",
+      "produced": "Forcespeculiar\u2019\u2019",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "peculiar\u2019\u2019",
+      "version": "114-hr-2029/1_reported-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "114-hr-2029/1_reported-in-house"
+    },
+    {
+      "expected": "forces-peculiar",
+      "left": "Forces",
+      "produced": "Forcespeculiar\u2019\u2019",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "peculiar\u2019\u2019",
+      "version": "114-hr-2029/3_referred-in-senate"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "114-hr-2029/3_referred-in-senate"
+    },
+    {
+      "expected": "hospital-based",
+      "left": "hospital",
+      "produced": "hospitalbased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "114-hr-2029/3_referred-in-senate"
+    },
+    {
+      "expected": "forces-peculiar",
+      "left": "Forces",
+      "produced": "Forcespeculiar\u2019\u2019",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "peculiar\u2019\u2019",
+      "version": "114-hr-2029/4_reported-in-senate"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "114-hr-2029/4_reported-in-senate"
+    },
+    {
+      "expected": "hospital-based",
+      "left": "hospital",
+      "produced": "hospitalbased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "114-hr-2029/4_reported-in-senate"
+    },
+    {
+      "expected": "3-fiscal",
+      "left": "3",
+      "produced": "3fiscal",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fiscal",
+      "version": "115-hr-1625/6_enrolled-bill"
+    },
+    {
+      "expected": "u.s.-israeli",
+      "left": "U.S.",
+      "produced": "U.S.Israeli",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "Israeli",
+      "version": "115-hr-244/6_enrolled-bill"
+    },
+    {
+      "expected": "grant-in-aid",
+      "left": "grant",
+      "produced": "grantin-aid",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "in-aid",
+      "version": "115-hr-5895/1_reported-in-house"
+    },
+    {
+      "expected": "ninety-first",
+      "left": "Ninety",
+      "produced": "Ninetyfirst",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "first",
+      "version": "115-hr-5895/2_engrossed-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "115-hr-5895/2_engrossed-in-house"
+    },
+    {
+      "expected": "grant-in-aid",
+      "left": "grant",
+      "produced": "grantin-aid",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "in-aid",
+      "version": "115-hr-5895/2_engrossed-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "115-hr-5895/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "high-efficiency",
+      "left": "high",
+      "produced": "highefficiency",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "efficiency",
+      "version": "115-hr-5895/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "value-added",
+      "left": "value",
+      "produced": "valueadded",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "added",
+      "version": "115-hr-5895/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "five-member",
+      "left": "five",
+      "produced": "fivemember",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "member",
+      "version": "117-hr-2471/1_introduced-in-house"
+    },
+    {
+      "expected": "12-week",
+      "left": "12",
+      "produced": "12week",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "week",
+      "version": "117-hr-2471/6_enrolled-bill"
+    },
+    {
+      "expected": "cost-competitive",
+      "left": "cost",
+      "produced": "costcompetitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "117-hr-4432/1_reported-in-house"
+    },
+    {
+      "expected": "end-item",
+      "left": "end",
+      "produced": "enditem",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "item",
+      "version": "117-hr-4432/1_reported-in-house"
+    },
+    {
+      "expected": "man-portable",
+      "left": "man",
+      "produced": "manportable",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "portable",
+      "version": "117-hr-4432/1_reported-in-house"
+    },
+    {
+      "expected": "first-serve",
+      "left": "first",
+      "produced": "firstserve",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "serve",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "hard-sided",
+      "left": "hard",
+      "produced": "hardsided",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "sided",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "high-crime",
+      "left": "high",
+      "produced": "highcrime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "crime",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "in-person",
+      "left": "in",
+      "produced": "inperson",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "person",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "non-payroll",
+      "left": "non",
+      "produced": "nonpayroll",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "payroll",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "re-transmitted",
+      "left": "re",
+      "produced": "retransmitted",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "transmitted",
+      "version": "117-hr-4502/1_reported-in-house"
+    },
+    {
+      "expected": "15-passenger",
+      "left": "15",
+      "produced": "15passenger",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "passenger",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "amtrak-served",
+      "left": "Amtrak",
+      "produced": "Amtrakserved",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "served",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "blue-ribbon",
+      "left": "blue",
+      "produced": "blueribbon",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "ribbon",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "bureau-related",
+      "left": "bureau",
+      "produced": "bureaurelated",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "related",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "dollar-for-dollar",
+      "left": "dollar-for",
+      "produced": "dollar-fordollar",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "dollar",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "first-serve",
+      "left": "first",
+      "produced": "firstserve",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "serve",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "first-time",
+      "left": "first",
+      "produced": "firsttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "gender-specific",
+      "left": "gender",
+      "produced": "genderspecific",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "specific",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "government-driven",
+      "left": "government",
+      "produced": "governmentdriven",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "driven",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "hard-sided",
+      "left": "hard",
+      "produced": "hardsided",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "sided",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "high-crime",
+      "left": "high",
+      "produced": "highcrime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "crime",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "in-person",
+      "left": "in",
+      "produced": "inperson",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "person",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "multi-phased",
+      "left": "multi",
+      "produced": "multiphased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "phased",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "nonentitlement",
+      "left": "non",
+      "produced": "non-entitlement",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "entitlement",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "non-payroll",
+      "left": "non",
+      "produced": "nonpayroll",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "payroll",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "non-tabulating",
+      "left": "non",
+      "produced": "nontabulating",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "tabulating",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "not-for-profit",
+      "left": "not",
+      "produced": "notfor-profit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "for-profit",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "point-of-sale",
+      "left": "point",
+      "produced": "pointof-sale",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "of-sale",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "public-utility",
+      "left": "public",
+      "produced": "publicutility",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "utility",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "re-transmitted",
+      "left": "re",
+      "produced": "retransmitted",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "transmitted",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "self-certification",
+      "left": "self",
+      "produced": "selfcertification",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "certification",
+      "version": "117-hr-4502/2_engrossed-in-house"
+    },
+    {
+      "expected": "irs-wide",
+      "left": "IRS",
+      "produced": "IRSwide",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "wide",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "non-proliferation",
+      "left": "Non",
+      "produced": "NonProliferation",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "Proliferation",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "center-fire",
+      "left": "center",
+      "produced": "centerfire",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fire",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "coexistence",
+      "left": "co",
+      "produced": "co-existence",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "existence",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "country-specific",
+      "left": "country",
+      "produced": "countryspecific",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "specific",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "country-by-country",
+      "left": "country-by",
+      "produced": "country-bycountry",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "country",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "ex-service",
+      "left": "ex",
+      "produced": "exservice",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "service",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "fixed-price",
+      "left": "fixed",
+      "produced": "fixedprice",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "price",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "good-faith",
+      "left": "good",
+      "produced": "goodfaith",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "faith",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "high-risk",
+      "left": "high",
+      "produced": "highrisk",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "risk",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "life-cycle",
+      "left": "life",
+      "produced": "lifecycle",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "cycle",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "non-tracked",
+      "left": "non",
+      "produced": "nontracked",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "tracked",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "not-for-profit",
+      "left": "not",
+      "produced": "notfor-profit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "for-profit",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "other-than-personal",
+      "left": "other",
+      "produced": "otherthan-personal",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "than-personal",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "part-time",
+      "left": "part",
+      "produced": "parttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "point-of-sale",
+      "left": "point-of",
+      "produced": "point-ofsale",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "sale",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "policy-determining",
+      "left": "policy",
+      "produced": "policydetermining",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "determining",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "sub-grantees",
+      "left": "sub",
+      "produced": "subgrantees",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "grantees",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "sub-national",
+      "left": "sub",
+      "produced": "subnational",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "national",
+      "version": "118-hr-2882/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-hr-4366/1_reported-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-hr-4366/2_engrossed-in-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-hr-4366/3_placed-on-calendar-senate"
+    },
+    {
+      "expected": "hud-insured",
+      "left": "HUD",
+      "produced": "HUDinsured",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "insured",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "case-by-case",
+      "left": "case",
+      "produced": "caseby-case",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "by-case",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "cost-of-money",
+      "left": "cost",
+      "produced": "costof-money",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "of-money",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "fossil-fueled",
+      "left": "fossil",
+      "produced": "fossilfueled",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fueled",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "gender-specific",
+      "left": "gender",
+      "produced": "genderspecific",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "specific",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "multi-family",
+      "left": "multi",
+      "produced": "multifamily",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "family",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "non-administrative",
+      "left": "non",
+      "produced": "nonadministrative",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "administrative",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "noncompetitive",
+      "left": "non",
+      "produced": "non-competitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "twice-in-a-pay-period",
+      "left": "twice-in-a",
+      "produced": "twice-in-apay-period",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "pay-period",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "wood-based",
+      "left": "wood",
+      "produced": "woodbased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "118-hr-4366/4_engrossed-amendment-senate"
+    },
+    {
+      "expected": "hud-insured",
+      "left": "HUD",
+      "produced": "HUDinsured",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "insured",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "low-volume",
+      "left": "LOW",
+      "produced": "LOWVOLUME",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "VOLUME",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "nsf-owned",
+      "left": "NSF",
+      "produced": "NSFowned",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "owned",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "u.s.-fsm",
+      "left": "U.S.",
+      "produced": "U.S.FSM",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "FSM",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "u.s.-palau",
+      "left": "U.S.",
+      "produced": "U.S.PALAU",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "PALAU",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "u.s.-palau",
+      "left": "U.S.",
+      "produced": "U.S.Palau",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "Palau",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "u.s.-rmi",
+      "left": "U.S.",
+      "produced": "U.S.RMI",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "RMI",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "college-based",
+      "left": "college",
+      "produced": "collegebased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "cost-of-money",
+      "left": "cost",
+      "produced": "costof-money",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "of-money",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "dual-hatted",
+      "left": "dual",
+      "produced": "dualhatted",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "hatted",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "enterprise-wide",
+      "left": "enterprise",
+      "produced": "enterprisewide",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "wide",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "fossil-fueled",
+      "left": "fossil",
+      "produced": "fossilfueled",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fueled",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "high-priority",
+      "left": "high",
+      "produced": "highpriority",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "priority",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "in-stream",
+      "left": "in",
+      "produced": "instream",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "stream",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "multi-benefit",
+      "left": "multi",
+      "produced": "multibenefit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "benefit",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "multi-family",
+      "left": "multi",
+      "produced": "multifamily",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "family",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "pre-deployment",
+      "left": "pre",
+      "produced": "predeployment",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "deployment",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "twenty-five",
+      "left": "twenty",
+      "produced": "twentyfive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "five",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "victim-centered",
+      "left": "victim",
+      "produced": "victimcentered",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "centered",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "wood-based",
+      "left": "wood",
+      "produced": "woodbased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "118-hr-4366/5_engrossed-amendment-house"
+    },
+    {
+      "expected": "u.s.-fsm",
+      "left": "U.S.",
+      "produced": "U.S.FSM",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "FSM",
+      "version": "118-hr-4366/6_enrolled-bill"
+    },
+    {
+      "expected": "u.s.-rmi",
+      "left": "U.S.",
+      "produced": "U.S.RMI",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "RMI",
+      "version": "118-hr-4366/6_enrolled-bill"
+    },
+    {
+      "expected": "15-passenger",
+      "left": "15",
+      "produced": "15passenger",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "passenger",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "dollar-for-dollar",
+      "left": "dollar-for",
+      "produced": "dollar-fordollar",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "dollar",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "first-time",
+      "left": "first",
+      "produced": "firsttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "government-driven",
+      "left": "government",
+      "produced": "governmentdriven",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "driven",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "multi-phased",
+      "left": "multi",
+      "produced": "multiphased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "phased",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "public-utility",
+      "left": "public",
+      "produced": "publicutility",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "utility",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "re-housing",
+      "left": "re",
+      "produced": "rehousing",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "housing",
+      "version": "118-hr-4820/1_reported-in-house"
+    },
+    {
+      "expected": "part-time",
+      "left": "part",
+      "produced": "parttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "118-hr-8752/1_reported-in-house"
+    },
+    {
+      "expected": "part-time",
+      "left": "part",
+      "produced": "parttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "118-hr-8752/2_engrossed-in-house"
+    },
+    {
+      "expected": "cost-competitive",
+      "left": "cost",
+      "produced": "costcompetitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "118-hr-8774/1_reported-in-house"
+    },
+    {
+      "expected": "cost-competitive",
+      "left": "cost",
+      "produced": "costcompetitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "118-hr-8774/2_engrossed-in-house"
+    },
+    {
+      "expected": "anti-methamphetamine",
+      "left": "anti",
+      "produced": "antimethamphetamine",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "methamphetamine",
+      "version": "118-s-2321/1_reported-in-senate"
+    },
+    {
+      "expected": "pre-release",
+      "left": "pre",
+      "produced": "prerelease",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "release",
+      "version": "118-s-2321/1_reported-in-senate"
+    },
+    {
+      "expected": "self-help",
+      "left": "self",
+      "produced": "selfhelp",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "help",
+      "version": "118-s-2321/1_reported-in-senate"
+    },
+    {
+      "expected": "victim-centered",
+      "left": "victim",
+      "produced": "victimcentered",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "centered",
+      "version": "118-s-2321/1_reported-in-senate"
+    },
+    {
+      "expected": "part-time",
+      "left": "part",
+      "produced": "parttime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "time",
+      "version": "118-s-2625/1_reported-in-senate"
+    },
+    {
+      "expected": "cost-plus-a-fixed-fee",
+      "left": "cost-plus-a",
+      "produced": "cost-plus-afixed-fee",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "fixed-fee",
+      "version": "118-s-4677/1_reported-in-senate"
+    },
+    {
+      "expected": "government-driven",
+      "left": "government",
+      "produced": "governmentdriven",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "driven",
+      "version": "118-s-4677/1_reported-in-senate"
+    },
+    {
+      "expected": "not-for-profit",
+      "left": "not",
+      "produced": "notfor-profit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "for-profit",
+      "version": "118-s-4690/1_reported-in-senate"
+    },
+    {
+      "expected": "pre-development",
+      "left": "pre",
+      "produced": "predevelopment",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "development",
+      "version": "118-s-4690/1_reported-in-senate"
+    },
+    {
+      "expected": "anti-methamphetamine",
+      "left": "anti",
+      "produced": "antimethamphetamine",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "methamphetamine",
+      "version": "118-s-4795/1_reported-in-senate"
+    },
+    {
+      "expected": "pre-release",
+      "left": "pre",
+      "produced": "prerelease",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "release",
+      "version": "118-s-4795/1_reported-in-senate"
+    },
+    {
+      "expected": "self-help",
+      "left": "self",
+      "produced": "selfhelp",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "help",
+      "version": "118-s-4795/1_reported-in-senate"
+    },
+    {
+      "expected": "victim-centered",
+      "left": "victim",
+      "produced": "victimcentered",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "centered",
+      "version": "118-s-4795/1_reported-in-senate"
+    },
+    {
+      "expected": "15-passenger",
+      "left": "15",
+      "produced": "15passenger",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "passenger",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "dollar-for-dollar",
+      "left": "dollar-for",
+      "produced": "dollar-fordollar",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "dollar",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "government-driven",
+      "left": "government",
+      "produced": "governmentdriven",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "driven",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "incentive-based",
+      "left": "incentive",
+      "produced": "incentivebased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "based",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "multi-phased",
+      "left": "multi",
+      "produced": "multiphased",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "phased",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "non-competitive",
+      "left": "non",
+      "produced": "noncompetitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "non-elderly",
+      "left": "non",
+      "produced": "nonelderly",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "elderly",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "one-call",
+      "left": "one",
+      "produced": "onecall",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "call",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "public-utility",
+      "left": "public",
+      "produced": "publicutility",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "utility",
+      "version": "118-s-4796/1_reported-in-senate"
+    },
+    {
+      "expected": "non-proliferation",
+      "left": "Non",
+      "produced": "NonProliferation",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "Proliferation",
+      "version": "118-s-4797/1_reported-in-senate"
+    },
+    {
+      "expected": "country-by-country",
+      "left": "country-by",
+      "produced": "country-bycountry",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "country",
+      "version": "118-s-4797/1_reported-in-senate"
+    },
+    {
+      "expected": "non-conflict",
+      "left": "non",
+      "produced": "nonconflict",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "conflict",
+      "version": "118-s-4797/1_reported-in-senate"
+    },
+    {
+      "expected": "not-for-profit",
+      "left": "not",
+      "produced": "notfor-profit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "for-profit",
+      "version": "118-s-4797/1_reported-in-senate"
+    },
+    {
+      "expected": "pre-obligation",
+      "left": "pre",
+      "produced": "preobligation",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "obligation",
+      "version": "118-s-4797/1_reported-in-senate"
+    },
+    {
+      "expected": "non-profit",
+      "left": "non",
+      "produced": "nonprofit",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "profit",
+      "version": "118-s-4802/1_reported-in-senate"
+    },
+    {
+      "expected": "cost-competitive",
+      "left": "cost",
+      "produced": "costcompetitive",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "competitive",
+      "version": "118-s-4921/1_reported-in-senate"
+    },
+    {
+      "expected": "third-party",
+      "left": "third",
+      "produced": "thirdparty",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "party",
+      "version": "118-s-4921/1_reported-in-senate"
+    },
+    {
+      "expected": "grant-in-aid",
+      "left": "grant",
+      "produced": "grantin-aid",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "in-aid",
+      "version": "118-s-4927/1_reported-in-senate"
+    },
+    {
+      "expected": "government-driven",
+      "left": "government",
+      "produced": "governmentdriven",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "driven",
+      "version": "118-s-4928/1_reported-in-senate"
+    },
+    {
+      "expected": "point-of-sale",
+      "left": "point",
+      "produced": "pointof-sale",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "of-sale",
+      "version": "118-s-4928/1_reported-in-senate"
+    },
+    {
+      "expected": "fixed-price",
+      "left": "fixed",
+      "produced": "fixedprice",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "price",
+      "version": "118-s-4942/1_reported-in-senate"
+    },
+    {
+      "expected": "hard-sided",
+      "left": "hard",
+      "produced": "hardsided",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "sided",
+      "version": "118-s-4942/1_reported-in-senate"
+    },
+    {
+      "expected": "high-crime",
+      "left": "high",
+      "produced": "highcrime",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "crime",
+      "version": "118-s-4942/1_reported-in-senate"
+    },
+    {
+      "expected": "non-payroll",
+      "left": "non",
+      "produced": "nonpayroll",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "payroll",
+      "version": "118-s-4942/1_reported-in-senate"
+    },
+    {
+      "expected": "24-month",
+      "left": "24",
+      "produced": "24month",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "month",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "gross-percentage",
+      "left": "GROSS",
+      "produced": "GROSSPERCENTAGE",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "PERCENTAGE",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "irs-run",
+      "left": "IRS",
+      "produced": "IRSrun",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "run",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "t-ao",
+      "left": "T",
+      "produced": "TAO",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "AO",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "u.s.-cuba",
+      "left": "U.S.",
+      "produced": "U.S.Cuba",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "Cuba",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "anti-ballistic",
+      "left": "anti",
+      "produced": "antiballistic",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "ballistic",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "anti-lock",
+      "left": "anti",
+      "produced": "antilock",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "lock",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "counter-transnational",
+      "left": "counter",
+      "produced": "countertransnational",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "transnational",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "multiple-party",
+      "left": "multiple",
+      "produced": "multipleparty",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "party",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "ship-to-shore",
+      "left": "ship-to",
+      "produced": "ship-toshore",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "shore",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "sponsor-owned",
+      "left": "sponsor",
+      "produced": "sponsorowned",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "owned",
+      "version": "119-hr-1/1_reported-in-house"
+    },
+    {
+      "expected": "weather-related",
+      "left": "weather",
+      "produced": "weatherrelated",
+      "reason": "no in-document or sibling evidence for either form; decided by case shape",
+      "right": "related",
+      "version": "119-hr-1/1_reported-in-house"
+    }
+  ],
+  "undecided": {
+    "113-hr-3547/1_introduced-in-house": 0,
+    "113-hr-3547/2_engrossed-in-house": 0,
+    "113-hr-3547/3_received-in-senate": 0,
+    "113-hr-3547/4_engrossed-amendment-senate": 0,
+    "113-hr-3547/6_enrolled-bill": 0,
+    "113-hr-83/7_enrolled-bill": 0,
+    "114-hr-2029/1_reported-in-house": 0,
+    "114-hr-2029/3_referred-in-senate": 0,
+    "114-hr-2029/4_reported-in-senate": 0,
+    "114-hr-2029/7_enrolled-bill": 0,
+    "115-hr-1625/6_enrolled-bill": 0,
+    "115-hr-244/6_enrolled-bill": 0,
+    "115-hr-5895/1_reported-in-house": 0,
+    "115-hr-5895/2_engrossed-in-house": 0,
+    "115-hr-5895/4_engrossed-amendment-senate": 0,
+    "115-hr-5895/5_enrolled-bill": 0,
+    "116-hr-1865/6_enrolled-bill": 0,
+    "117-hr-2471/1_introduced-in-house": 0,
+    "117-hr-2471/6_enrolled-bill": 0,
+    "117-hr-4432/1_reported-in-house": 3,
+    "117-hr-4502/1_reported-in-house": 3,
+    "117-hr-4502/2_engrossed-in-house": 16,
+    "118-hr-2882/1_introduced-in-house": 0,
+    "118-hr-2882/4_engrossed-amendment-senate": 0,
+    "118-hr-2882/5_engrossed-amendment-house": 17,
+    "118-hr-4366/1_reported-in-house": 0,
+    "118-hr-4366/2_engrossed-in-house": 0,
+    "118-hr-4366/3_placed-on-calendar-senate": 0,
+    "118-hr-4366/4_engrossed-amendment-senate": 2,
+    "118-hr-4366/5_engrossed-amendment-house": 2,
+    "118-hr-4366/6_enrolled-bill": 0,
+    "118-hr-4820/1_reported-in-house": 0,
+    "118-hr-8282/1_introduced-in-house": 0,
+    "118-hr-8752/1_reported-in-house": 0,
+    "118-hr-8752/2_engrossed-in-house": 0,
+    "118-hr-8774/1_reported-in-house": 1,
+    "118-hr-8774/2_engrossed-in-house": 1,
+    "118-hr-9468/1_introduced-in-house": 0,
+    "118-hr-9468/4_enrolled-bill": 0,
+    "118-s-2321/1_reported-in-senate": 0,
+    "118-s-2625/1_reported-in-senate": 0,
+    "118-s-4677/1_reported-in-senate": 0,
+    "118-s-4690/1_reported-in-senate": 1,
+    "118-s-4795/1_reported-in-senate": 0,
+    "118-s-4796/1_reported-in-senate": 0,
+    "118-s-4797/1_reported-in-senate": 0,
+    "118-s-4802/1_reported-in-senate": 0,
+    "118-s-4921/1_reported-in-senate": 0,
+    "118-s-4927/1_reported-in-senate": 1,
+    "118-s-4928/1_reported-in-senate": 4,
+    "118-s-4942/1_reported-in-senate": 0,
+    "119-hr-1/1_reported-in-house": 2
+  }
+}

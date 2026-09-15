@@ -32,20 +32,20 @@
     "message": "This document has no printed line numbers, so DeltaTrack can't diff it accurately yet \u2014 enrolled bills and public-law prints are typeset this way. Use the XML version of the bill instead."
   },
   "114-hr-2029/1_reported-in-house->3_referred-in-senate": {
-    "bytes": 288238,
+    "bytes": 288042,
     "changes": 26,
     "declined": false,
-    "sha256": "10d326513397ba7d939cfc5192c319df8d8376ce606ea7b7957acab1c9b5ac8e",
+    "sha256": "0901b21dc6ea0a9595eac1770aae692f54c8cf9410f20c6f259e7cb7cdacd5e2",
     "summary": {
       "added": 15,
       "modified": 11
     }
   },
   "114-hr-2029/3_referred-in-senate->4_reported-in-senate": {
-    "bytes": 524861,
+    "bytes": 524369,
     "changes": 163,
     "declined": false,
-    "sha256": "969bc44f8867f36cd716538cfb7f39610b5200672b14b4b4e6ccedb0e33b2264",
+    "sha256": "7d543578b7383b0edb1dd06d5a25e9c55180493a2a54d0c7e5036403425808a7",
     "summary": {
       "added": 158,
       "modified": 5
@@ -56,35 +56,35 @@
     "message": "This document has no printed line numbers, so DeltaTrack can't diff it accurately yet \u2014 enrolled bills and public-law prints are typeset this way. Use the XML version of the bill instead."
   },
   "115-hr-5895/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 775561,
-    "changes": 336,
+    "bytes": 774041,
+    "changes": 335,
     "declined": false,
-    "sha256": "f4448734cd6ffbb4221f78c11787573e0cf72dff12cdbc1210d7baef66a1713a",
+    "sha256": "2c7af058a25f026b58def12874b1d2510acf70209545ce3b54951d06f110d2df",
     "summary": {
-      "added": 317,
+      "added": 316,
       "modified": 18,
       "removed": 1
     }
   },
   "115-hr-5895/2_engrossed-in-house->3_placed-on-calendar-senate": {
-    "bytes": 637672,
+    "bytes": 635992,
     "changes": 2,
     "declined": false,
-    "sha256": "35f2524afe122bce39eeb1d242ef81bf84ab5853c462af2be225c09ef9ca52ef",
+    "sha256": "51d24b8b5961ebd248c437cde8d5cb65d398f958418f32bcbd9a240e3935cc14",
     "summary": {
       "modified": 2
     }
   },
   "115-hr-5895/3_placed-on-calendar-senate->4_engrossed-amendment-senate": {
-    "bytes": 1442222,
-    "changes": 467,
+    "bytes": 1440575,
+    "changes": 465,
     "declined": false,
-    "sha256": "35d82cf81a170f4cbc6fedf58b607f71ddd072f872022db617054825a1737f1d",
+    "sha256": "bdb61769253522294bfa728f8172046ecafc8ca53c09e2b926d60849707ca6b8",
     "summary": {
       "added": 120,
-      "modified": 194,
-      "moved": 60,
-      "removed": 93
+      "modified": 195,
+      "moved": 58,
+      "removed": 92
     }
   },
   "115-hr-5895/4_engrossed-amendment-senate->5_enrolled-bill": {
@@ -96,12 +96,12 @@
     "message": "This document has no printed line numbers, so DeltaTrack can't diff it accurately yet \u2014 enrolled bills and public-law prints are typeset this way. Use the XML version of the bill instead."
   },
   "117-hr-4502/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 4009849,
-    "changes": 1500,
+    "bytes": 4005678,
+    "changes": 1498,
     "declined": false,
-    "sha256": "76fa92d4364915d409c8fda147f27cc14b093aaa295c3b4a9f03760dc6003dd7",
+    "sha256": "7b86d968a410e2bc143c0ef2efdda68e2397bd97045b75aed15591eace7e4d8b",
     "summary": {
-      "added": 1451,
+      "added": 1449,
       "modified": 49
     }
   },
@@ -117,21 +117,21 @@
     }
   },
   "118-hr-2882/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
-    "bytes": 3733327,
-    "changes": 1794,
+    "bytes": 3723515,
+    "changes": 1781,
     "declined": false,
-    "sha256": "36a1871fdfeba427cd21dcd24a881769c21e4a45721d2f17c5ace8353e9efdc9",
+    "sha256": "e8e32ad1be978f31ba01dfdecf9d291ee47b20a29138cc19781d4fc3711e0b34",
     "summary": {
-      "added": 1789,
+      "added": 1776,
       "modified": 2,
       "moved": 3
     }
   },
   "118-hr-4366/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 363539,
+    "bytes": 363219,
     "changes": 26,
     "declined": false,
-    "sha256": "a2268cec4866ea70a35faaa578a5453ea42be5063a787603878ffb7cd2463d87",
+    "sha256": "c24968aca2ba290a1e438d386cff42db813326a808bc954cb5086d4c7daaa31c",
     "summary": {
       "added": 8,
       "modified": 17,
@@ -139,36 +139,36 @@
     }
   },
   "118-hr-4366/2_engrossed-in-house->3_placed-on-calendar-senate": {
-    "bytes": 324704,
+    "bytes": 324304,
     "changes": 2,
     "declined": false,
-    "sha256": "b99cd3de3901da47d6ac9923263857f0d0ada79246ffde190eb11940fbc95507",
+    "sha256": "e6323ec5ce988397d97580a13d530497d5ab74abf02154d6bc34d630304d6f55",
     "summary": {
       "modified": 2
     }
   },
   "118-hr-4366/3_placed-on-calendar-senate->4_engrossed-amendment-senate": {
-    "bytes": 2037974,
-    "changes": 720,
+    "bytes": 2036041,
+    "changes": 717,
     "declined": false,
-    "sha256": "1e800a39d226173a5550d00f9435c79dfd9c8ada8614d5af6921869765a0081b",
+    "sha256": "b8c5c1d817059a382181fc014a4ea1636c1b9f94c4dc159b1f051dd4e6ed6cc3",
     "summary": {
-      "added": 558,
+      "added": 555,
       "modified": 99,
       "moved": 36,
       "removed": 27
     }
   },
   "118-hr-4366/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
-    "bytes": 4874588,
-    "changes": 1283,
+    "bytes": 4864739,
+    "changes": 1272,
     "declined": false,
-    "sha256": "63670038fc80720df7a3281088b0580c1e2a190c09ead2174083b96e43458888",
+    "sha256": "de8c4824feac5370111a6ff33efe7553e9a71dba76e967f861b390e5ee64c535",
     "summary": {
-      "added": 869,
+      "added": 861,
       "modified": 277,
-      "moved": 64,
-      "removed": 73
+      "moved": 62,
+      "removed": 72
     }
   },
   "118-hr-4366/5_engrossed-amendment-house->6_enrolled-bill": {
@@ -176,10 +176,10 @@
     "message": "This document has no printed line numbers, so DeltaTrack can't diff it accurately yet \u2014 enrolled bills and public-law prints are typeset this way. Use the XML version of the bill instead."
   },
   "118-hr-8752/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 390800,
+    "bytes": 390402,
     "changes": 37,
     "declined": false,
-    "sha256": "c00b7c107d1f5c967a94aa72b6dba4a5391cd60e5f5393a2baf34255856e1f2b",
+    "sha256": "106a30582c79efccb779e60366646d66c1c0ac1e09f27fc98da2bc46ce005b2f",
     "summary": {
       "added": 16,
       "modified": 18,
@@ -188,10 +188,10 @@
     }
   },
   "118-hr-8774/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 566404,
+    "bytes": 565576,
     "changes": 33,
     "declined": false,
-    "sha256": "50f922e02e9bd51b22f41a48a3b7b30c9a06b04b1a7d23c389adfd4f0ecf5e29",
+    "sha256": "d239c4b1a37a9ecd2bfe45a1e1f81f505fcd4d1ed47186d33d809ef6f8c819b8",
     "summary": {
       "added": 8,
       "modified": 22,

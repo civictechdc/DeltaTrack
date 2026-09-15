@@ -117,6 +117,16 @@ def _rejoin_cross_page_hyphens(lines: list[_IndexedLine]) -> list[_IndexedLine]:
     lowercase continuation) so real compounds like `Child-Rescue`, which
     continue uppercase, are preserved. Anchors never start lowercase, so a
     TITLE/SEC heading opening a page is never absorbed.
+
+    DORMANT since #650, and deliberately not the live rule. `extract_clean_pages`
+    now joins page-seam breaks itself, deciding the hyphen from evidence this
+    function does not have, so every `Page` the production path builds arrives with
+    nothing left here to do -- measured at 0 joins across the whole fixture corpus.
+    What remains is a fallback for a `Page` assembled by hand (tests, and the
+    anchor parser's single-page `parse_lines`), which cannot contain a page seam
+    anyway. Do not read the lowercase-continuation guard below as the project's
+    answer to whether a break hyphen survives: it is the pre-#650 answer, and
+    `pdf_text.BreakEvidence` is the current one.
     """
     merged: list[_IndexedLine] = []
     i = 0

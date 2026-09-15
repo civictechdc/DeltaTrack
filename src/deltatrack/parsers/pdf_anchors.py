@@ -647,8 +647,17 @@ def _split_major_run(run, column_width):
 
 
 def _join_major_run(segment) -> str:
-    """Join one segment's lines into a major name: de-hyphenate a GPO soft wrap
-    (``INTEL-`` + ``LIGENCE`` → ``INTELLIGENCE``), else space-join."""
+    """Join one segment's lines into a major name, space-joining each line onto the last.
+
+    The de-hyphenating branch (``INTEL-`` + ``LIGENCE`` → ``INTELLIGENCE``) is DORMANT
+    since #650: `extract_clean_pages` now rejoins a wrapped heading before the anchor
+    parser ever sees it, so a segment line no longer ends mid-word -- measured at 0
+    de-hyphenations across the fixture corpus. It is kept for a `Page` built by hand,
+    and it is NOT the project's rule for whether a break hyphen survives. It drops the
+    hyphen unconditionally, which is right for the all-caps headings it was written for
+    and wrong in general (it would render a wrapped ``NON-`` / ``DEDICATED`` as
+    ``NONDEDICATED``). `pdf_text.BreakEvidence` decides this now.
+    """
     text = segment[0][1].text.strip()
     for _page, ln in segment[1:]:
         seg = ln.text.strip()

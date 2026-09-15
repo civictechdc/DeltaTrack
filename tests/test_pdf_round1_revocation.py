@@ -187,8 +187,8 @@ def test_evidence_reports_the_true_overlap_for_every_aligned_pair() -> None:
 
 
 @pytest.mark.slow
-def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> None:
-    """Reconciles this module's 230 with the research record's §3.2 figure of 224.
+def test_the_revocation_population_splits_as_223_accepted_plus_6_declined() -> None:
+    """Reconciles this module's 229 with the research record's §3.2 figure of 224.
 
     §3.2 counted the split population over the pairs a user can actually reach; this module
     sweeps every adjacent committed pair, including the six ``compare.pdf`` declines. The
@@ -196,8 +196,17 @@ def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> N
     pair, rather than from ``compare.pdf._is_unnumbered_layout`` — the same choice
     ``test_pdf_canonical_baseline`` makes, and it keeps this off a private cross-module import.
 
-    Measured and pinned rather than left as a plausible explanation: 224 + 6 = 230, with the
-    224 landing exactly on §3.2's number.
+    Measured and pinned rather than left as a plausible explanation.
+
+    §3.2's 224 describes the PRE-#650 extractor. Rejoining the words GPO's printer broke
+    across a line moved the accepted side by exactly one, 224 -> 223, and left the declined
+    side untouched. Attributed rather than absorbed: the whole shift is one revocation in
+    ``115-hr-5895/3_placed-on-calendar-senate->4_engrossed-amendment-senate`` (72 -> 71),
+    with the other 34 pairs identical under both extractors. That pair's blocks carry
+    hyphenated words that used to reach the matcher split, so one borderline provisional
+    pairing now clears the similarity threshold instead of being revoked. The gap to §3.2
+    is therefore a dated-measurement gap, not a population disagreement — re-derive against
+    a current extractor before treating either number as describing today's engine.
     """
     baseline = json.loads((DATA_DIR / "pdf_canonical_baseline.json").read_text())
     accepted = declined = 0
@@ -209,9 +218,9 @@ def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> N
         else:
             accepted += revoked
 
-    assert (accepted, declined) == (224, 6), (
+    assert (accepted, declined) == (223, 6), (
         f"the split population partitions as {accepted} accepted + {declined} declined, not "
-        "224 + 6. §3.2's figure and this module's now describe different populations for a "
+        "223 + 6. §3.2's figure and this module's now describe different populations for a "
         "reason that is no longer the admissibility split."
     )
 

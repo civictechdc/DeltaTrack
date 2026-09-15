@@ -2,163 +2,163 @@
   "113-hr-3547/1_introduced-in-house->2_engrossed-in-house": {
     "new_source_sha256": "5eb6140f808c97d153ee06dd14d82528f8db2b4eada2345954c3783b80490c86",
     "old_source_sha256": "3e1b7e6e240c6e149b62307931d5628ac57108dd3ad4aee7b3a7ad41c47ac7c9",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "640b45a014ad672a1da0d6bdea22ada4b9c2beaad3ee6d8a85ead5e7745fe602"
   },
   "113-hr-3547/2_engrossed-in-house->3_received-in-senate": {
     "new_source_sha256": "b249d2bc25fa25e7f2f7165c71921a75cd072cacf460edfeb7d6f559e2673c36",
     "old_source_sha256": "5eb6140f808c97d153ee06dd14d82528f8db2b4eada2345954c3783b80490c86",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "640b45a014ad672a1da0d6bdea22ada4b9c2beaad3ee6d8a85ead5e7745fe602"
   },
   "113-hr-3547/3_received-in-senate->4_engrossed-amendment-senate": {
     "new_source_sha256": "760e4a0022cb1f59a17a2ac63d1892103ba46b944957b33c8315026502e76597",
     "old_source_sha256": "b249d2bc25fa25e7f2f7165c71921a75cd072cacf460edfeb7d6f559e2673c36",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "55c5bb17e6428af4ddcb201b65ee8d831c9268875ae4e40f953ecd6fe453928a"
   },
   "113-hr-3547/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
     "new_source_sha256": "38154238c82849192779a0d780c5365e09f6ffddb305d723c7a1221dedd708e0",
     "old_source_sha256": "760e4a0022cb1f59a17a2ac63d1892103ba46b944957b33c8315026502e76597",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "61cf9436f4daa241cc5d3c11ac376b19854441445538841e7c7f412013313e26"
   },
   "113-hr-3547/5_engrossed-amendment-house->6_enrolled-bill": {
     "new_source_sha256": "4a87c798a18f3895d4fe45ba3eafd4c25de210f92a2a0152f4be77f21c0e0bfa",
     "old_source_sha256": "38154238c82849192779a0d780c5365e09f6ffddb305d723c7a1221dedd708e0",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "99f620f1be9d48bc06e5191b010bc26f128568b7053e304c40985721c5db74ad"
   },
   "113-hr-83/6_engrossed-amendment-house->7_enrolled-bill": {
     "new_source_sha256": "cf255ffe292764b73f0986e8d0d70cb9f679123b70f1462b23e074478f04faec",
     "old_source_sha256": "8d0bb7cea0c45e565c072498a9c61a1711e76f5dcabed4fed46c4f7d5fdacb83",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "ba4a59b15f2351d19695ace0e3b9b1be12edca9d042364c7258156f83eb2cf12"
   },
   "114-hr-2029/1_reported-in-house->3_referred-in-senate": {
     "new_source_sha256": "c5ebc5bdc835b44c93e7ec758f316cbae23c1fee47e4beb72187ce89bcfe906f",
     "old_source_sha256": "e5064e773c0b4d1931348e8e84500aca14f286f017b78251ac1cb095902d1310",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "cc3cd9655ed64beb5dd4d99a8df4e6c669b72a0fe76032e3704dad8f1fa7152c"
   },
   "114-hr-2029/3_referred-in-senate->4_reported-in-senate": {
     "new_source_sha256": "68e98a6b0b204cfec7b0d79fdd8e42184fd72cc2872ce93facf6907c1bcbb1a8",
     "old_source_sha256": "c5ebc5bdc835b44c93e7ec758f316cbae23c1fee47e4beb72187ce89bcfe906f",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "5869d9693605782e4846c41b84bf139535ad25b5a0ef850492ebe6cddcb72925"
   },
   "114-hr-2029/4_reported-in-senate->5_engrossed-amendment-senate": {
     "new_source_sha256": "4a10a81918ce2a61d68c81b114e9238e087cc1811af18193bee7cc85f527bf7d",
     "old_source_sha256": "68e98a6b0b204cfec7b0d79fdd8e42184fd72cc2872ce93facf6907c1bcbb1a8",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "9c1bd850ea02ea75f0ed6de067372c68b8392d59910031fa179ac9c5a1bcb7ab"
   },
   "114-hr-2029/5_engrossed-amendment-senate->6_engrossed-amendment-house": {
     "new_source_sha256": "c7df6115e0840a1e88a8a2b368de6fd59282a22c13ad17038ce14fcf5852afb5",
     "old_source_sha256": "4a10a81918ce2a61d68c81b114e9238e087cc1811af18193bee7cc85f527bf7d",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "dcf6b1e6d188034efa7e9c2c9f51f476abaf6d823e13c917b95ba8630b7c546e"
   },
   "114-hr-2029/6_engrossed-amendment-house->7_enrolled-bill": {
     "new_source_sha256": "3828daa3066abead31805cc2a618b9be26226feea42aa44a9af0bcf0460eae06",
     "old_source_sha256": "c7df6115e0840a1e88a8a2b368de6fd59282a22c13ad17038ce14fcf5852afb5",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "94ffdef9de0c03e8c81e535987535db6fd0afa2fa3192cfe9521200291a6494b"
   },
   "115-hr-5895/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "e896e2ea0d472790613eebf708fdd032acb48ccf55719a76911225b15ac92c2f",
     "old_source_sha256": "cfef7e5da3830c7b3a8fa00e63535ddcbce1b9057e6d0678b8d9e3c0ed06f07b",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "7058646042b7d87c662866c1e09b0fbdc7d3db4822c8d9f77359e4e505415111"
   },
   "115-hr-5895/2_engrossed-in-house->4_engrossed-amendment-senate": {
     "new_source_sha256": "1ffb81c413c007f999df117c9509d976c76cbe0c55f63d43dad920d7fe5bf772",
     "old_source_sha256": "e896e2ea0d472790613eebf708fdd032acb48ccf55719a76911225b15ac92c2f",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "e23b25327464fa47f2ebfdee9c84bd852cc6715b90b628951f1b353c58bbcff6"
   },
   "115-hr-5895/4_engrossed-amendment-senate->5_enrolled-bill": {
     "new_source_sha256": "4be06372badb910c815956bdf89f900e6de77279457c0d1559605a820125d358",
     "old_source_sha256": "1ffb81c413c007f999df117c9509d976c76cbe0c55f63d43dad920d7fe5bf772",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "bb04458743fec9b59143599a03f588e6238c07bc4edd88229f49b301fc446c00"
   },
   "117-hr-2471/1_introduced-in-house->6_enrolled-bill": {
     "new_source_sha256": "cab7cbd0c02c7c90f384204c85cfbf7d6c2f2c46738536420a5b5ed4a9379288",
     "old_source_sha256": "4c8619f8e000fa9c32d1a53f0c3dd0a8d37cc88986b1d246e59dd359b50867b3",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "67d6b01315690bf5d788c9040bcf8a5629753af6ebbf3dd36cdc1252aac35ca6"
   },
   "117-hr-4502/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "70954e5373aa831c1ced2eb7f3f7bc59c84affeadf9061c151a0f0ce77bd7da6",
     "old_source_sha256": "1cc2b5cbc13691c4b052ffc50a3219ec1f78371d69c3801b9b72be63af84d385",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "8363a2b10965578f3d2a00a438855fd73d9153851d2255eb18676f27ac1c7e1d"
   },
   "118-hr-2882/1_introduced-in-house->4_engrossed-amendment-senate": {
     "new_source_sha256": "cc362514dd8b52e0c19d098efd465291999bb2d21b221c99988fc50a61c6dbdb",
     "old_source_sha256": "4efacf3f5d8ad72dc679f13ec50c80240d2353a03bba06c3e495c81d049d3016",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "94d32b465806eec4ca16535773f661c55bcde962ac1420c41a5851390df23b5f"
   },
   "118-hr-2882/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
     "new_source_sha256": "9076f2dc075915e1d7219c6f9ae7238544f035eab5633aca787de8f6906b0ac2",
     "old_source_sha256": "cc362514dd8b52e0c19d098efd465291999bb2d21b221c99988fc50a61c6dbdb",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "251f0dc774d6571e43f9b6ca50310ec342edcfc40c23c79a5b9fc27520c50735"
   },
   "118-hr-4366/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "66206ecd5984f3e89480c38ff3c7e4938b43e8df6504e9c9251257c9cb074334",
     "old_source_sha256": "37ef6e4705d6d0ff0153d793b34e2e78f0e49c272e229868265761896d419124",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "f79bfc2523ad1de7138efe30c167f3833e77842baaf7040ee7fb439ac4340376"
   },
   "118-hr-4366/2_engrossed-in-house->3_placed-on-calendar-senate": {
     "new_source_sha256": "ea66f6b12f8e8c522e349da8b3a09be987ddaf4b4eade7518d6ae867b4dee496",
     "old_source_sha256": "66206ecd5984f3e89480c38ff3c7e4938b43e8df6504e9c9251257c9cb074334",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "1dad92903695209366aba84ecd4837e0bd003ba2a63b616adfd2a13a00a7e5c1"
   },
   "118-hr-4366/3_placed-on-calendar-senate->4_engrossed-amendment-senate": {
     "new_source_sha256": "7f5136031fbdc527798988b2527c9f2125a6c5f8901b44f58fd68c2a336ac80a",
     "old_source_sha256": "ea66f6b12f8e8c522e349da8b3a09be987ddaf4b4eade7518d6ae867b4dee496",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "28249bda889cde983fa23105eb2de049a9634db1ef6567d06d0c6409ec615769"
   },
   "118-hr-4366/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
     "new_source_sha256": "9b470b0e42d91b2f580f8b9314a2fb88a062df3654665aa6401200ee49f6af24",
     "old_source_sha256": "7f5136031fbdc527798988b2527c9f2125a6c5f8901b44f58fd68c2a336ac80a",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "2829a83aa2590a759cd91b550a5be99aa0dd23b8357393dce3cc20f2c82ac471"
   },
   "118-hr-4366/5_engrossed-amendment-house->6_enrolled-bill": {
     "new_source_sha256": "63ae3f506d9e06145b3713736e8c3122e90fe1261abcc8a67b19ab726e14cdb9",
     "old_source_sha256": "9b470b0e42d91b2f580f8b9314a2fb88a062df3654665aa6401200ee49f6af24",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "a9d61973ece0b5ee006c06d1e0e83fdde7d8ef674b33ee2d6011080e54bfe259"
   },
   "118-hr-8752/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "2664f5b619cde7f6806acd1a470bfe64a451a185120b3ad712bb9e93761ae837",
     "old_source_sha256": "e4bc6b90eeff87d05eaa5ba61792c8a3b24aebcb86e5d6c98bb03de839be536d",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "fc88a42676147c3e41e434564a758003c5ba3b285ba93bcc26a7af4fe240320d"
   },
   "118-hr-8774/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "55c3181f80962f367fb9fd3c9bc2c2cd26d97d14c0d7d668c8cdea98acbdca12",
     "old_source_sha256": "aa5a70c19cc0b59441e906f6b549ae75abd849b75610a2b20e932a8a102ba2e1",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "f09e16387a498ab36cf0f0eec1cdc2945a3052ef974542a975e9ce18c258a0a6"
   },
   "118-hr-9468/1_introduced-in-house->4_enrolled-bill": {
     "new_source_sha256": "ae8e8a24fca374451976b1025ee35d578971ebb7b460b8106c1bdd9a0bdd771a",
     "old_source_sha256": "9f80b4d65bf0e82e07c4111f78d786e9be07f6dd6f027ce796427dfc37b4fbb6",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "63fe11211b0b9fa0cf3ee584cdec705faeeaf5d4bf79c05cc944c6a4f3808030"
   },
   "119-hr-1/1_reported-in-house->2_engrossed-in-house": {
     "new_source_sha256": "71822471fd717b67495ae467e82923db8d375e10f42f7299459baddde092431a",
     "old_source_sha256": "c837c7f62418fda8c22d19a11a40c12f99261e144634509b5e0c042242630858",
-    "parser_revision": "5831bfb6b12f253bd758cd6a78750cb3e48b5e5663830dfe7f313de1d44c76e2",
+    "parser_revision": "4a9b13d8941b374fc3ea4a5ee2ee21e881b7b09ccca9a582280ea068d696b630",
     "stream_sha256": "a5c3da51c69ccc671f17117aeb24d26fcfba8d7905f09eeb74cfd9e0e26763d1"
   }
 }
