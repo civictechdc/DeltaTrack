@@ -24,7 +24,7 @@ from deltatrack.diff_bill import (
     settle_correspondences,
     unmatched_population,
 )
-from deltatrack.similarity import MOVE_THRESHOLD
+from deltatrack.similarity import MOVE_THRESHOLD, text_similarity
 from tests.corpus_paths import fixture_path
 
 
@@ -132,6 +132,103 @@ class TestReconcileMoves:
         assert len(result) == 2
         assert result[0].change_type == "removed"
         assert result[1].change_type == "added"
+
+    # --- At the cutoff (#673) ---------------------------------------------------
+    # The cases above bracket MOVE_THRESHOLD from a distance. The nearest sits at 0.6667,
+    # 11.1% clear on the high side, and both low-side cases score 0.0000 -- zero word
+    # overlap, the furthest possible distance -- so each would pass for any cutoff in
+    # (0, 1]. The constant is pinned by test_the_move_cutoff_is_pinned_for_phase_1; the
+    # BEHAVIOUR the constant exists to produce was not, and #673 measured the consequence:
+    # moving MOVE_THRESHOLD from 0.6 to 0.45, a 25% shift in what counts as a move, left
+    # all ten tests in this file green.
+    #
+    # The two fixtures below are REAL corpus text, not composed to hit a number. They were
+    # found by scoring the unmatched population of all 27 committed manifest pairs through
+    # production's own round-1 -> round-2 handoff: 12 pairs land on exactly 0.6, 38 in
+    # [0.58, 0.60) and 36 in [0.60, 0.62). That matters because a fixture written to reach
+    # a similarity encodes the author's belief about the scorer, and then tests the belief.
+    #
+    # These read as deliberate, which near-boundary fixtures have to: if the rule
+    # legitimately changes, these are the first tests that should be revisited, and their
+    # texts are quoted from named bills so a reader can re-measure rather than guess.
+
+    def test_a_pair_at_exactly_the_cutoff_is_moved(self):
+        """Similarity of exactly 0.6 is a move, because the rule is `>=` and not `>`.
+
+        MOVE_THRESHOLD's own comment says "At or above this ratio", and `move_candidates`
+        spells it `sim >= threshold`. Nothing tested the difference. Every other case in
+        this file clears the cutoff by a margin, so flipping that one character reclassifies
+        real provisions while the whole file stays green.
+
+        Both texts are short-title provisions from 118-hr-4366, the Senate engrossed
+        amendment against the House engrossed amendment. Their measured word-level ratio is
+        exactly 0.6: `>= MOVE_THRESHOLD` is True and `> MOVE_THRESHOLD` is False, which is
+        what makes this the one fixture that can see the direction.
+        """
+        old_text = (
+            "This division may be cited as the Military Construction, Veterans Affairs, "
+            "and Related Agencies Appropriations Act, 2024."
+        )
+        new_text = "This title may be cited as the Department of Commerce Appropriations Act, 2024."
+
+        assert text_similarity(old_text, new_text) == MOVE_THRESHOLD, (
+            "this fixture is only meaningful while it sits exactly ON the cutoff; re-measure "
+            "it before adjusting either the text or the constant"
+        )
+
+        result = reconciled(
+            [_node("o1", ("division j", "sec. 1"), old_text)],
+            [_node("n1", ("title i", "sec. 1"), new_text)],
+        )
+
+        moved = [c for c in result if c.change_type == "moved"]
+        assert len(moved) == 1, (
+            "a pair at exactly MOVE_THRESHOLD was not reconciled as a move, so the "
+            f"comparison is excluding its own boundary: {[c.change_type for c in result]}"
+        )
+
+    def test_a_pair_just_below_the_cutoff_stays_separate(self):
+        """The tightest real miss in the corpus stays a removal plus an addition.
+
+        0.5957, which is 0.0043 below the cutoff. The existing low-side cases sit at
+        0.0000, so this is the first test in the file that would notice the cutoff being
+        loosened rather than merely deleted -- and it is the half that keeps the
+        at-the-cutoff case above honest, since a rule that classified everything as a move
+        would satisfy that one alone.
+
+        Both texts are effective-date provisions from 119-hr-1, reported-in-house against
+        engrossed-in-house.
+        """
+        old_text = (
+            "(b)Effective date The amendment made by this section shall apply to designations made "
+            "after the date of the enactment of this Act in taxable years ending after such date."
+        )
+        new_text = (
+            "(b)Effective date The amendment made by this section shall apply to taxable years "
+            "beginning after December 31, 2025."
+        )
+
+        # The measured similarity of these two texts, which is a fact about the TEXT and
+        # not about the cutoff. Asserted as a literal so an edit to either string, or a
+        # change in how the scorer tokenizes, is caught here and says so -- rather than
+        # surfacing as the classification assertion below, where it would read as a
+        # threshold regression. Deliberately NOT compared against MOVE_THRESHOLD: leaving
+        # the cutoff out of the precondition is what lets a change to the cutoff fail on
+        # the behaviour instead, naming what actually went wrong.
+        assert text_similarity(old_text, new_text) == 0.5957446808510638, (
+            "this fixture no longer measures what its docstring says; re-measure it before "
+            "reading anything into the assertion below"
+        )
+
+        result = reconciled(
+            [_node("o1", ("sec. 70101",), old_text)],
+            [_node("n1", ("sec. 70101",), new_text)],
+        )
+
+        assert [c.change_type for c in result] == ["removed", "added"], (
+            "a pair below MOVE_THRESHOLD was reconciled as a move, so the effective cutoff "
+            f"has dropped below its constant: {[c.change_type for c in result]}"
+        )
 
     def test_moved_with_text_changes(self):
         old_text = "For acquisition and construction, $1,876,875,000, to remain available until September 30, 2025."

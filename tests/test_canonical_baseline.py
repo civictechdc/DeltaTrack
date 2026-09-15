@@ -235,3 +235,56 @@ def test_canonical_output_matches_baseline(key: str, old_path: Path, new_path: P
             f"evidence in the same pull request. {REGENERATE}"
         )
     assert actual == expected, f"digest held but a recorded count moved for {key}. {REGENERATE}"
+
+
+# --- One audited pair's classification split, pinned in SOURCE (#673) -----------
+# The gate above already asserts the summary counts, and already prints the delta on
+# failure, so "assert the counts as well as the digest" is not what is missing. What is
+# missing is that every expected value it compares against lives in a REGENERABLE file,
+# and its own remedy line says to regenerate. That is correct for a change detector and
+# is the wrong last word on a decision rule: #673 shifted the effective move cutoff
+# without touching MOVE_THRESHOLD, the whole fast tier stayed green, and this gate's
+# report was "canonical output changed ... Regenerate with UPDATE_BASELINE=1".
+#
+# The numbers below are literals in the test file. `UPDATE_BASELINE=1` cannot move them;
+# only a person editing this source can, which is a deliberate act that appears in a
+# diff and can be argued with in review. That is the whole contribution -- detection is
+# shared with the gate above, attribution and remedy are not.
+#
+# The FULL split is pinned rather than `moved` alone, because a lost move is conserved
+# rather than destroyed: it becomes one removal plus one addition. #673's mutation moved
+# 163 -> 161 while removed went 136 -> 138 and added 50 -> 52. Keying on `moved` alone
+# would catch that one, but not a change that reclassified in the other direction while
+# leaving the move count level.
+AUDITED_PAIR = "119-hr-1/1_reported-in-house->2_engrossed-in-house"
+
+#: Measured on this pair, and the same figures #673 quotes. Not regenerable.
+AUDITED_SUMMARY = {"added": 50, "modified": 148, "moved": 163, "removed": 136, "unchanged": 0}
+
+
+def test_the_audited_pair_keeps_its_classification_split():
+    """How many provisions this pair recognizes as moved, said in the test's own source.
+
+    Answers a different question from the digest gate above. That one asks whether any
+    byte moved and offers regeneration as the fix; this asks whether the matcher still
+    reaches the same verdict about the same bill, and regeneration is not available.
+
+    One pair, deliberately. This is an attribution aid rather than a second corpus sweep,
+    and pinning every pair here would duplicate the digest gate's coverage at its
+    maintenance cost while making a legitimate corpus change 27 edits instead of one.
+    119-hr-1 is chosen because it is the pair #673 measured, so the numbers below can be
+    checked against the issue rather than taken on trust.
+    """
+    old_path, new_path = next((old, new) for key, old, new in _PAIRS if key == AUDITED_PAIR)
+    summary = baseline_record(old_path, new_path)["summary"]
+
+    assert summary == AUDITED_SUMMARY, (
+        f"the classification split for {AUDITED_PAIR} moved:\n"
+        f"  expected: {AUDITED_SUMMARY}\n"
+        f"  actual:   {summary}\n"
+        f"moved {AUDITED_SUMMARY['moved']} -> {summary.get('moved')} means that many provisions "
+        f"changed status between 'the same text that moved' and 'one deleted, one added'.\n"
+        f"This is NOT fixed by regenerating the baseline -- these numbers live in this file. "
+        f"If the change is intended, edit them here and bring the precision and recall evidence "
+        f"ADR 0020 asks for."
+    )
