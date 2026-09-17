@@ -78,7 +78,7 @@ dev = [
     "pyyaml>=6.0",  # tests/test_ci_workflow.py parses ci.yml; transitive today, declared so CI cannot lose it
     "reportlab>=5.0.0",
     "respx>=0.22",
-    "ruff==0.16.1",  # pinned exactly so local `ruff format` matches CI (format output varies by version)
+    "ruff==0.16.7",  # pinned exactly so local `ruff format` matches CI (format output varies by version)
     "tomlkit>=0.13",  # scripts/update_manifest_with_reports.py rewrites corpus_manifest.toml in place; a load-and-dump through a plain TOML writer deletes the file's documentation comments
     "xmldiff>=3.0",  # off-the-shelf baseline for scripts/compare_differs.py; see docs/decisions/0001
 ]
