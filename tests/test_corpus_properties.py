@@ -13,13 +13,16 @@ from pathlib import Path
 import pytest
 
 from deltatrack.bill_tree import (
+    _PARENTHETICAL_RE,
     Division,
     _extract_appropriations_text,
     _extract_section_text,
     amount_text,
     extract_text_content,
     find_bill_body,
+    get_header_text,
     normalize_bill,
+    normalize_header,
     walk_body_sections,
 )
 from tests.conftest import assert_manifest_committed, manifest_xml_files, manifest_xml_ids
@@ -505,6 +508,11 @@ _KNOWN_DUPLICATE_COUNTS: dict[str, int] = {
     # ceiling, not equality, so a later fix tightens this without a test edit.
     "118-hr-9468/1_introduced-in-house.xml": 1,
     "118-hr-9468/4_enrolled-bill.xml": 1,
+    # 118-hr-815 v5: the House's twenty divisions (three supplemental appropriations acts and
+    # seventeen of other legislation) each number their sections from 1, so SEC. 1 recurs 17
+    # times and SEC. 2 16 times. match_path excludes the division by design (#468); the
+    # division key on each node is what tells these apart, as in every omnibus above.
+    "118-hr-815/5_engrossed-amendment-house.xml": 108,
 }
 
 
@@ -1045,3 +1053,45 @@ def test_bare_division_sections_emit_their_appropriations_accounts() -> None:
     assert account.division_key == "a"
     # The accounts-only section contributes no node of its own, same as at body level.
     assert not [n for n in nodes if n.element_id == "sec-1"]
+
+
+def _heading_only_headers(root: ET.Element) -> list[str]:
+    """Every ``appropriations-*`` heading in the raw file with no text of its own.
+
+    Quoted text is another law's, so its headings are skipped; a parenthetical header
+    (``(INCLUDING TRANSFER OF FUNDS)``) annotates a heading rather than being one.
+    """
+    found: list[str] = []
+
+    def walk(parent: ET.Element) -> None:
+        for child in parent:
+            if child.tag in ("quoted-block", "quote"):
+                continue
+            if child.tag in _APPRO_TAGS:
+                header = get_header_text(child)
+                if header and not _PARENTHETICAL_RE.match(header.strip()) and not _extract_appropriations_text(child):
+                    found.append(header)
+            walk(child)
+
+    walk(root)
+    return found
+
+
+@pytest.mark.parametrize(
+    "xml_path",
+    ALL_XML_FILES,
+    ids=[_xml_id(p) for p in ALL_XML_FILES],
+)
+def test_every_heading_the_file_tags_reaches_a_breadcrumb(xml_path: Path) -> None:
+    """A heading GPO marks up with no text of its own (NATO over its program, a topic
+    heading over a general provision) is shown in the breadcrumb of what it heads (ADR 0024).
+
+    The raw file's heading tags are the reference, the reader is measured against them: the
+    ledger check grades the PDF against these breadcrumbs, so a heading the reader drops is
+    graded as the PDF's error. Checked by name, since a heading-only element becomes no node
+    of its own; it reaches ``display_path`` only.
+    """
+    _skip_if_absent(xml_path)
+    shown = {normalize_header(c) for n in normalize_bill(xml_path).nodes for c in n.display_path}
+    missing = [h for h in _heading_only_headers(ET.parse(xml_path).getroot()) if normalize_header(h) not in shown]
+    assert not missing, f"{len(missing)} tagged headings reach no breadcrumb in {_xml_id(xml_path)}: {missing[:5]}"

@@ -223,13 +223,15 @@ def _report(argv: list[str] | None = None) -> None:
     The same scorer gives a change's before and after (ADR 0022): export the parser to compare
     (``git archive origin/develop src | tar -x -C /tmp/before``), run with
     ``PYTHONPATH=/tmp/before/src`` and ``--save before.json``, then without it and with
-    ``--against before.json``. Totals are split by whether the XML carries appropriations
-    headings, since a reconciliation bill has no account level to agree on.
+    ``--against before.json``. Totals are split by the kind of bill each version belongs to (its
+    manifest `vehicle`), so one kind cannot hide behind another's volume: a reconciliation bill
+    has no account level to agree on, and a continuing resolution few amounts at all.
     """
     import argparse
     import json
 
     import deltatrack
+    from tests.conftest import manifest_vehicles
     from tests.corpus_paths import DATA_DIR
 
     parser = argparse.ArgumentParser(prog="python -m tests.ledger_location")
@@ -246,6 +248,7 @@ def _report(argv: list[str] | None = None) -> None:
         versions.update(_versions_under(root))
     versions.update(committed_versions())
     pinned = json.loads((DATA_DIR / "ledger_location_baseline.json").read_text(encoding="utf-8"))
+    vehicles = manifest_vehicles()
     groups: dict[str, list[dict[str, int]]] = {}
     ledgers: dict[str, list[Located]] = {}
     worse, better = [], []
@@ -254,8 +257,7 @@ def _report(argv: list[str] | None = None) -> None:
         tally = Counter({t: 0 for t in TIERS})
         tally.update(_graded(x, p) for _, x, p in ledgers[key])
         live = dict(tally)
-        appropriations = any(n.tag.startswith("appropriations-") for n in normalize_bill(xml).nodes)
-        groups.setdefault("appropriations" if appropriations else "other", []).append(live)
+        groups.setdefault(vehicles.get(key.split("/")[0], "not in the manifest"), []).append(live)
         was = pinned.get(key)
         if was:
             live_bad, was_bad = sum(live[t] for t in NOT_TOLERATED), sum(was[t] for t in NOT_TOLERATED)
@@ -268,9 +270,9 @@ def _report(argv: list[str] | None = None) -> None:
         totals = sum((Counter(t) for t in tallies), Counter())
         n = sum(totals.values())
         ok = totals["T0"] + totals["T1"] + totals["T2"]
-        print(f"{name}: {len(tallies)} versions, {n} amounts, OK (T0-T2) {ok / n:.1%}")
+        print(f"{name}: {len(tallies)} versions, {n} amounts, OK (T0-T2) {ok / n if n else 0:.1%}")
         for t in TIERS:
-            print(f"  {t:<4} {totals[t]:>6}  {totals[t] / n:6.1%}")
+            print(f"  {t:<4} {totals[t]:>6}  {totals[t] / n if n else 0:6.1%}")
     # Run on the base branch, "better" must be empty for "no version got worse" to hold.
     print(f"versions worse than the pinned baseline: {len(worse)} {worse}")
     print(f"versions better than the pinned baseline: {len(better)} {better}")

@@ -340,6 +340,20 @@ EXPECTED: dict[str, Expected] = {
         catchlines=934,
         false_positives=(("80315", "aa"), ("80315", "bb")),
     ),
+    "115-hr-1/5_engrossed-amendment-senate.pdf": Expected(subsections=404, catchlines=404),
+    "117-s-2938/5_engrossed-amendment-senate.pdf": Expected(subsections=47, catchlines=44),
+    "118-hr-5860/3_engrossed-in-house.pdf": Expected(subsections=86, catchlines=70),
+    "118-hr-815/4_engrossed-amendment-senate.pdf": Expected(subsections=48, catchlines=33),
+    "118-hr-815/5_engrossed-amendment-house.pdf": Expected(subsections=126, catchlines=111),
+    "118-hr-5860/4_enrolled-bill.pdf": Expected(
+        subsections=86,
+        catchlines=70,
+        anchors=False,
+        note="enrolled print — no GPO margin line numbers, so the anchor pipeline declines the whole "
+        "document rather than guessing (#141). Committed for the dollar-amount cross-check, which "
+        "reads PDF text and needs no anchors; its catchline-bearing subsections are real and "
+        "unreachable, asserted as a decline rather than counted as misses.",
+    ),
 }
 
 # An unrecorded pair is NOT skipped: it runs under this default and fails the coverage

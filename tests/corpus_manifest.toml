@@ -20,6 +20,14 @@
 # per-module completeness floor (test_manifest_fixtures_committed) fails closed if any
 # is absent — that is the CI signal that a manifested fixture was not committed.
 #
+# VEHICLE — each bill names the kind of bill it is, one of: regular (one annual appropriations
+# bill), omnibus (several annual bills in one, including minibuses and an omnibus carrying a
+# continuing resolution), supplemental, continuing-resolution, reconciliation, authorizing (an
+# authorizing law that appropriates directly), not-appropriations. It is the bill's, not the
+# version's: a bill whose introduced text was something else and became an omnibus is
+# `omnibus`. The ledger check reports its totals per vehicle (TESTING.md), and
+# tests/test_corpus_manifest.py keeps the list closed.
+#
 # ADDING A FIXTURE — see the "Adding a corpus fixture" recipe in TESTING.md. In short:
 # put the bill files under tests/corpus/<id>/ and `git add` them, add a [[bill]] entry
 # here, and run the gates so any per-bill baseline (_KNOWN_DUPLICATE_COUNTS,
@@ -75,6 +83,7 @@
 [[bill]]
 id = "118-hr-4366"
 subcommittee = "milcon-va / full-year omnibus"
+vehicle = "omnibus"
 covers = "Primary diff-validation baselines: controlled small diff (v1->v2, same structure) and no-division->omnibus structure expansion (v1->v6). Hand-curated assertions live in test_diff_validation TestControlledDiff / TestStructureExpansion."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118hrpt122", citation = "H. Rept. 118-122", chamber = "house"}]},
@@ -88,6 +97,7 @@ versions = [
 [[bill]]
 id = "115-hr-5895"
 subcommittee = "energy-water / legislative-branch / milcon-va (minibus)"
+vehicle = "omnibus"
 covers = "Dead-zone similarity baseline (v4->v5, the corpus's densest 0.4-0.6 similarity gap; test_diff_validation TestDeadZoneBaseline) and multi-division minibus coverage — supplies the Legislative Branch subcommittee the Senate set omits. The v5 PDF is the unnumbered-enrolled-layout fixture for the decline guard (#141, tests/test_pdf_compare.py): the smallest enrolled print in the corpus. NOTE it contributes no PDF *tree* coverage — enrolled prints carry no margin line numbers, so extract_anchors returns [] and test_pdf_tree_invariants_hold_corpus_wide skips it ('no anchors / no offset table'). It is manifested so the completeness floor keeps it committed for the guard test. The v3 PDF (Placed on Calendar, Senate) is the #140 unbulleted-footer fixture (tests/test_pdf_text.py TestUnbulletedFooterConsumedOutput): it carries the unbulleted `HR 5895 PCS` footer on 181 of 184 pages, which is what that end-to-end guard asserts is stripped from the consumed output. Committed PDF-only — the guard reads the print, not the markup, so the XML would add weight without adding coverage (#539)."
 versions = [
   { stage = "4_engrossed-amendment-senate", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "no senate committee report explains this stage"}]},
@@ -102,6 +112,7 @@ versions = [
 [[bill]]
 id = "113-hr-3547"
 subcommittee = "full-year omnibus (enrolled)"
+vehicle = "omnibus"
 covers = "Enrolled multi-division omnibus whose later titles spill out as orphan <title> siblings — the #146/#167 duplicate-match_path proof case (its cross-division duplicate-count and money-drop baselines are pinned in test_corpus_properties / test_corpus_tree_properties). Stages 1-5 added in #220: the node-join gates pin 4->5 and 5->6 as XML amendment-shape pairs and 1->2 / 3->4 as PDF pairs."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -118,6 +129,7 @@ versions = [
 [[bill]]
 id = "114-hr-2029"
 subcommittee = "full-year omnibus"
+vehicle = "omnibus"
 covers = "Omnibus span-geometry case (#172/#175). The 5->6 XML pair is the node-join amendment-shape gate; the 3->4 PDF pair is its anchor-agreement gate. Committed in #220 as part of retiring REQUIRE_CORPUS; also a #126 curation candidate. The enrolled text (v7) joined in #278 with the Legislative Branch validation set, extending the XML chain to a 6->7 pair."
 versions = [
   { stage = "1_reported-in-house", formats = ["pdf", "xml"], committee_report = [{pkg = "CRPT-114hrpt92", citation = "H. Rept. 114-92", chamber = "house"}]},
@@ -151,6 +163,7 @@ versions = [
 [[bill]]
 id = "117-hr-4502"
 subcommittee = "full-year omnibus (reported House)"
+vehicle = "omnibus"
 covers = "A CLEAN convergence bill: the XML and PDF subsection gates assert exact parity against it, so both formats of the one stage are committed (#220)."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-117hrpt96", citation = "H. Rept. 117-96", chamber = "house"}]},
@@ -160,6 +173,7 @@ versions = [
 [[bill]]
 id = "119-hr-1"
 subcommittee = "reconciliation (not appropriations)"
+vehicle = "reconciliation"
 covers = "Reconciliation bill carried as an overfitting smoke case: twin genuinely-distinct Sec. 10012 (real source duplicate, not a parser bug) and provision-body amounts an appropriations parser does not node-ize (its money-drop residue is pinned in test_corpus_tree_properties). The PDF was added in #220: the subsection gates pair the CLEAN exact-parity bills against this messy print, and without it committed they silently ran on two bills instead of three. The v2 XML carries the v1 -> v2 pair the headline #86 financial-callout gate diffs, proving a wholly-removed appropriation is not rendered silently; scripts/build_similarity_labels.py re-derives the committed similarity answer key from the same pair."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-119hrpt106", granule = "CRPT-119hrpt106-pt1", citation = "H. Rept. 119-106,Book 1", chamber = "house", book = "Book 1"}, {pkg = "CRPT-119hrpt106", granule = "CRPT-119hrpt106-pt2", citation = "H. Rept. 119-106,Book 2", chamber = "house", book = "Book 2"}]},
@@ -174,6 +188,7 @@ versions = [
 [[bill]]
 id = "118-hr-8752"
 subcommittee = "commerce-justice-science / homeland (reported + engrossed House)"
+vehicle = "regular"
 covers = "The clean PDF extraction oracle (bimodal size bands, full coverage) and the XML+PDF diff-recall pair (v1->v2). Committed in both formats, so the PDF tree gate and the diff-recall suite run in CI."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118hrpt553", citation = "H. Rept. 118-553", chamber = "house"}]},
@@ -183,6 +198,7 @@ versions = [
 [[bill]]
 id = "118-hr-8282"
 subcommittee = "non-appropriations House bill"
+vehicle = "not-appropriations"
 covers = "Introduced-in-House PDF used as the PDF-pipeline generalization case (a bill outside the appropriations shape must still extract and level without spurious accounts/majors)."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -196,6 +212,7 @@ versions = [
 [[bill]]
 id = "117-hr-2471"
 subcommittee = "non-appropriations House bill (catchline repro)"
+vehicle = "omnibus"
 covers = "SEC.-catchline continuation repro (#89): the wrapped catchline 'AND ASSEMBLY IN HAITI.' must not become a false account/major (test_pdf_anchor_golden)."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -205,6 +222,7 @@ versions = [
 [[bill]]
 id = "118-hr-2882"
 subcommittee = "non-appropriations House bill (catchline repro)"
+vehicle = "omnibus"
 covers = "SEC.-catchline continuation repro (#89): the wrapped catchline 'TRUST FUND.' must not become a false account/major (test_pdf_anchor_golden)."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "version predates the committee report, which is filed at the reported stage"}]},
@@ -220,78 +238,91 @@ versions = [
 [[bill]]
 id = "118-s-4690"
 subcommittee = "agriculture"
+vehicle = "regular"
 covers = "Agriculture/Rural Development/FDA Senate reported print — Agriculture subcommittee heading vocabulary."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt193", citation = "S. Rept. 118-193", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4795"
 subcommittee = "commerce-justice-science"
+vehicle = "regular"
 covers = "CJS Senate reported print (FY2025). DOJ general-provisions + NASA heading pair (a cross-section heading collision the gate pins as a benign baseline)."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt198", citation = "S. Rept. 118-198", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-2321"
 subcommittee = "commerce-justice-science (FY2024)"
+vehicle = "regular"
 covers = "CJS FY2024 reported print — the cross-year out-of-corpus guard (heading vocabulary must generalize across fiscal years)."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt62", citation = "S. Rept. 118-62", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4921"
 subcommittee = "defense"
+vehicle = "regular"
 covers = "Department of Defense Senate reported print — Defense subcommittee heading vocabulary."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt204", citation = "S. Rept. 118-204", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4927"
 subcommittee = "energy-water"
+vehicle = "regular"
 covers = "Energy-Water Senate reported print. Corps of Engineers heading repeats."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt205", citation = "S. Rept. 118-205", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4928"
 subcommittee = "financial-services"
+vehicle = "regular"
 covers = "Financial Services and General Government Senate reported print. Treasury/OPM salaries + DC funds repeats."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt206", citation = "S. Rept. 118-206", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-2625"
 subcommittee = "homeland-security"
+vehicle = "regular"
 covers = "Department of Homeland Security Senate reported print — Homeland subcommittee heading vocabulary."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt85", citation = "S. Rept. 118-85", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4802"
 subcommittee = "interior-environment"
+vehicle = "regular"
 covers = "Interior-Environment Senate reported print. Forest Service heading repeats."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt201", citation = "S. Rept. 118-201", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4942"
 subcommittee = "labor-hhs"
+vehicle = "regular"
 covers = "Labor-HHS-Education Senate reported print. VETS employment-and-training lines."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt207", citation = "S. Rept. 118-207", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4677"
 subcommittee = "milcon-va"
+vehicle = "regular"
 covers = "Military Construction / Veterans Affairs Senate reported print — MilCon-VA subcommittee heading vocabulary."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt191", citation = "S. Rept. 118-191", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4797"
 subcommittee = "state-foreign-ops"
+vehicle = "regular"
 covers = "State-Foreign Operations Senate reported print. Callable-capital limitation section."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt200", citation = "S. Rept. 118-200", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-s-4796"
 subcommittee = "transportation-hud"
+vehicle = "regular"
 covers = "Transportation-HUD Senate reported print. FAA/FHWA/NHTSA/HUD heading repeats."
 versions = [{ stage = "1_reported-in-senate", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118srpt199", citation = "S. Rept. 118-199", chamber = "senate"}]}]
 
 [[bill]]
 id = "118-hr-8774"
 subcommittee = "financial-services (reported House)"
+vehicle = "regular"
 covers = "Controlled financial-diff and pipeline-parity pair (v1->v2): the CLI --financial filter and the PDF/XML pipeline are asserted against this diff (test_financial_diff, test_pipeline_parity). Both stages committed as XML for those gates."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118hrpt557", citation = "H. Rept. 118-557", chamber = "house"}]},
@@ -301,6 +332,7 @@ versions = [
 [[bill]]
 id = "113-hr-83"
 subcommittee = "full-year omnibus (FY2015 CRomnibus)"
+vehicle = "omnibus"
 covers = "Money-conservation bounded-drop baseline: the engrossed House amendment is the structure-tree overcount guard's real-bill case (test_structure_tree test_money_conservation_no_overcount_bounded_drops). The enrolled text (v7) joined in #278 as part of the Legislative Branch validation set, which also gives the node-join gates a 6->7 amendment-shape pair on this bill."
 versions = [
   # PDF WITHHELD (#519): 1 of its 301 catchline-bearing subsections, (104)(b), reaches no
@@ -322,6 +354,7 @@ versions = [
 [[bill]]
 id = "116-hr-1865"
 subcommittee = "full-year omnibus (enrolled, FY2020)"
+vehicle = "omnibus"
 covers = "Legislative Branch validation set (#278): enrolled FY2020 further-consolidated appropriations. Its curated accounts are checked against extracted amounts in test_validate_extraction TestLegBranchValidation."
 versions = [
   { stage = "6_enrolled-bill", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -330,6 +363,7 @@ versions = [
 [[bill]]
 id = "115-hr-1625"
 subcommittee = "full-year omnibus (enrolled, FY2018)"
+vehicle = "omnibus"
 covers = "Legislative Branch validation set (#278): enrolled FY2018 consolidated appropriations. Also the #10 publication-ordering rename case (enrolled moved 7_ -> 6_ once the url-less phantom version was excluded), which is what the validation completeness floor exists to catch."
 versions = [
   { stage = "6_enrolled-bill", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -338,6 +372,7 @@ versions = [
 [[bill]]
 id = "115-hr-244"
 subcommittee = "full-year omnibus (enrolled, FY2018 first tranche)"
+vehicle = "omnibus"
 covers = "Legislative Branch validation set (#278): enrolled FY2018 consolidated security/veterans appropriations. NOTE only the enrolled text is committed. Its v5 engrossed-amendment-house doc is deliberately withheld (#11 / #322): the corpus gates' body extraction does not surface that amendment class's appropriations, so committing it would force allowlisting a known parser gap as a documented-normal skip."
 versions = [
   { stage = "6_enrolled-bill", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -358,6 +393,7 @@ versions = [
 [[bill]]
 id = "117-hr-4432"
 subcommittee = "defense"
+vehicle = "regular"
 covers = "Account-vocabulary precision/recall floor (reported-in-House, FY2022 Defense). Committed so test_pdf_anchor_golden's floor gate runs in CI instead of skipping on a bills/ reference."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-117hrpt88", citation = "H. Rept. 117-88", chamber = "house"}]},
@@ -366,6 +402,7 @@ versions = [
 [[bill]]
 id = "118-hr-4820"
 subcommittee = "transportation-hud"
+vehicle = "regular"
 covers = "Account-vocabulary precision/recall floor (reported-in-House, FY2024 THUD). The bill the gate's RECALL_FLOOR/PRECISION_FLOOR are calibrated against, so it is the one entry whose absence from CI made the floors unverifiable there."
 versions = [
   { stage = "1_reported-in-house", formats = ["xml", "pdf"], committee_report = [{pkg = "CRPT-118hrpt154", citation = "H. Rept. 118-154", chamber = "house"}]},
@@ -388,8 +425,57 @@ versions = [
 [[bill]]
 id = "118-hr-9468"
 subcommittee = "milcon-va / supplemental (no TITLE divisions)"
+vehicle = "supplemental"
 covers = "The corpus's untitled-appropriations shape: accounts as children of a bare body-level <section> with no <enum>, including a #474 split-account pair (name and money in separate sibling elements). Pins that `Compensation and Pensions` and `Readjustment Benefits` reach their own named, addressed nodes (test_bill_tree.py TestUntitledBillAppropriations) rather than collapsing into one unnamed entry (#485)."
 versions = [
   { stage = "1_introduced-in-house", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
   { stage = "4_enrolled-bill", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
+]
+
+# --- Kinds of bill beyond regular appropriations (#733) ------------------------
+# Money is appropriated outside the twelve annual bills too. One bill of each such kind is
+# committed so every corpus gate, and the ledger check that grades where the PDF files each
+# dollar amount (tests/test_pdf_ledger_location.py), measures that kind, and
+# `python -m tests.ledger_location` reports each `vehicle` separately so one kind cannot hide
+# behind another's volume. The versions are the ones that passed a chamber or became law, in
+# both formats. None of them has a committee report of its own (checked against each bill's
+# govinfo BILLSTATUS record): H.R. 5860, H.R. 815 and S. 2938 have none at all, and the House
+# report on H.R. 1 explains the House text, not the Senate amendment committed here.
+
+[[bill]]
+id = "118-hr-5860"
+subcommittee = "continuing resolution"
+vehicle = "continuing-resolution"
+covers = "Continuing Appropriations Act, 2024 (Division A) with other extensions (Division B): funds government at the prior year's rate by reference, so its ledger is the explicit amounts only (54 in the engrossed text) and it carries no appropriations-* heading at all. The corpus's only pure continuing resolution; 113-hr-83 mixes one into an omnibus. The enrolled print is unnumbered, so the ledger check reads the engrossed version and the pair gives the diff gates a nearly unchanged CR."
+versions = [
+  { stage = "3_engrossed-in-house", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (taken up on the House floor without committee action)"}]},
+  { stage = "4_enrolled-bill", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (taken up on the House floor without committee action)"}]},
+]
+
+[[bill]]
+id = "118-hr-815"
+subcommittee = "supplemental (national security)"
+vehicle = "supplemental"
+covers = "A large emergency supplemental, where 118-hr-9468 is a small untitled one. The Senate amendment is one supplemental division plus an authorizing division; the House amendment splits the money into three supplemental acts (Israel, Ukraine, Indo-Pacific; divisions A to C) and adds seventeen divisions of other legislation. The pair exercises a supplemental restructured between chambers."
+versions = [
+  { stage = "4_engrossed-amendment-senate", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "no senate committee report explains this stage"}]},
+  { stage = "5_engrossed-amendment-house", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "text was authored in response to the other chamber's amendment, so no committee report of this chamber accompanies it"}]},
+]
+
+[[bill]]
+id = "115-hr-1"
+subcommittee = "reconciliation (not appropriations)"
+vehicle = "reconciliation"
+covers = "Tax Cuts and Jobs Act as the Senate first passed it: a second reconciliation bill beside 119-hr-1, three committee titles of numbered sections and no appropriations-* heading, most of its dollar figures thresholds written into the tax code. The American Rescue Plan (117-hr-1319) and the Inflation Reduction Act (117-hr-5376) were measured first and left out: their PDFs miss 1 to 4 catchline-bearing subsections, which the subsection gates assert absolutely (#519)."
+versions = [
+  { stage = "5_engrossed-amendment-senate", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "no senate committee report explains this stage"}]},
+]
+
+[[bill]]
+id = "117-s-2938"
+subcommittee = "authorizing law with an appropriations division"
+vehicle = "authorizing"
+covers = "Bipartisan Safer Communities Act as the Senate passed it, the text enacted: Division A is mental-health and firearms law, Division B appropriates through regular appropriations headings. The corpus's authorizing law that appropriates directly. The Infrastructure Investment and Jobs Act (117-hr-3684) and the CHIPS and Science Act (117-hr-4346) were measured first and left out: their PDFs miss catchline-bearing subsections and the first also reads quoted subsections as its own, both asserted absolutely by the subsection gates (#519)."
+versions = [
+  { stage = "5_engrossed-amendment-senate", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (checked against its BILLSTATUS record)"}]},
 ]

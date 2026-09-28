@@ -649,17 +649,54 @@ _CONGRESS_WORDS = {
 _LEGIS_NUM_RE = re.compile(r"([A-Z][A-Z.\s]*?)\s*(\d+)")
 
 
+@dataclass(frozen=True)
+class _Heading:
+    """A heading the walk holds in one of its slots (department, agency, account name).
+
+    ``key`` is what the slot contributes to ``match_path``, by the rules that have always built
+    it. The breadcrumb (``display_path``) shows ``above``, then ``label``. ``above`` holds headings
+    that carry no text of their own and head this one: the XML tags them and the print shows them,
+    but ``match_path`` leaves them out, so showing them cannot re-pair a section (ADR 0024).
+    ``label`` differs from ``key`` only for a structural container nested three or more deep,
+    whose key joins the levels (``"Part 1 - Subpart A"``) while the breadcrumb shows each level.
+
+    ``tag`` and ``bare`` describe the element that gave the name: only a heading with no text of
+    its own (``bare``) can head the next element of its tag.
+    """
+
+    key: str
+    label: str
+    above: tuple[str, ...] = ()
+    tag: str = ""
+    bare: bool = False
+
+    @property
+    def shown(self) -> tuple[str, ...]:
+        """What the breadcrumb shows for this slot."""
+        return (*self.above, self.label) if self.label else self.above
+
+
+def _named(name: str, *, above: tuple[str, ...] = (), tag: str = "", bare: bool = False) -> _Heading:
+    return _Heading(key=name, label=name, above=above, tag=tag, bare=bare)
+
+
 def _build_paths(
     title_display: str,
     division_label: str,
-    major: str | None,
-    intermediate: str | None,
+    major: _Heading | None,
+    intermediate: _Heading | None,
     leaf_header: str | None,
+    leaf_above: tuple[str, ...] = (),
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Build match_path and display_path tuples.
 
     match_path: normalized, no division. Used for cross-version matching.
-    display_path: original case, includes division. Used for human display.
+    display_path: original case, includes division and every heading printed above the
+    node. Used for human display.
+
+    The two differ on purpose (ADR 0024): headings with no text of their own
+    (``_Heading.above``, ``leaf_above``) are displayed and never matched on, so the
+    breadcrumb can show every heading the bill prints while diff pairing stays where it was.
 
     ``title_display`` is the title label with its enum ("TITLE I—<header>", #50).
     Display keeps the full label; matching keys on the header alone (the enum is
@@ -677,16 +714,28 @@ def _build_paths(
             match_parts.append(normalize_header(title_match))
         display_parts.append(title_display)
 
-    if major:
-        match_parts.append(normalize_header(major))
-        display_parts.append(major)
+    major_key = major.key if major is not None else None
+    intermediate_key = intermediate.key if intermediate is not None else None
 
-    if intermediate:
-        match_parts.append(normalize_header(intermediate))
-        display_parts.append(intermediate)
+    def show_above(headings: tuple[str, ...]) -> None:
+        # A heading the XML repeats (a slot's name tagged again just below it) is shown once.
+        for heading in headings:
+            if not display_parts or normalize_header(display_parts[-1]) != normalize_header(heading):
+                display_parts.append(heading)
 
-    if leaf_header and leaf_header != major and leaf_header != intermediate:
+    if major is not None and major_key:
+        match_parts.append(normalize_header(major_key))
+        show_above(major.above)
+        display_parts.append(major.label)
+
+    if intermediate is not None and intermediate_key:
+        match_parts.append(normalize_header(intermediate_key))
+        show_above(intermediate.above)
+        display_parts.append(intermediate.label)
+
+    if leaf_header and leaf_header != major_key and leaf_header != intermediate_key:
         match_parts.append(normalize_header(leaf_header))
+        show_above(leaf_above)
         display_parts.append(leaf_header)
 
     return tuple(match_parts), tuple(display_parts)
@@ -696,17 +745,17 @@ def _process_appro_element(
     child: ET.Element,
     title_header: str,
     division: Division,
-    current_major: str | None,
-    current_intermediate: str | None,
-    prev_name: str | None,
-    pending_header: str | None,
+    current_major: _Heading | None,
+    current_intermediate: _Heading | None,
+    prev_name: _Heading | None,
+    pending: _Heading | None,
     nodes: list[BillNode],
-) -> tuple[str | None, str | None, str | None, str | None]:
+) -> tuple[_Heading | None, _Heading | None, _Heading | None, _Heading | None]:
     """Process one appropriations-* element, updating context and appending nodes.
 
-    Returns updated (current_major, current_intermediate, prev_name, pending_header).
+    Returns updated (current_major, current_intermediate, prev_name, pending).
 
-    ``pending_header`` carries the name of the immediately preceding header-only sibling,
+    ``pending`` carries the name of the immediately preceding header-only sibling,
     the half of a split account that holds the ``<header>`` and no body. GPO sometimes
     marks one account up as two siblings — name in the first, money in the second — while
     the print renders them as a single account, its heading directly above its own text,
@@ -721,6 +770,14 @@ def _process_appro_element(
     element following a sibling that has BOTH header and body is a continuation of that
     account rather than a split of it, and naming it would collide it with the account it
     continues; those keep the parent address they have today.
+
+    The same header-only sibling can instead head this element: followed by an element of its
+    own tag that has a name of its own, it is a heading over that element (``NORTH ATLANTIC
+    TREATY ORGANIZATION`` over ``Security investment program``, ``Food and drug administration``
+    over ``Salaries and expenses``). The next name of the tag takes over the slot, so the heading
+    is carried in the new name's ``above`` and shown in the breadcrumb only (ADR 0024). It heads
+    that one element and what nests under it, no further: the tags are flat siblings, and nothing
+    in them says where such a heading's reach ends.
     """
     tag = child.tag
 
@@ -729,13 +786,41 @@ def _process_appro_element(
     display_text = extract_display_text(child)
     # An element with neither name nor body is not part of a split pair; it emits no node
     # and leaves the pending name for whichever sibling does carry the body.
-    inherited = pending_header if not own_header and body_text else None
+    inherited = pending if not own_header and body_text else None
+    inherited_name = inherited.key if inherited is not None else ""
+    if inherited is not None:
+        # A split name can cross levels (#474): ``SALARIES AND EXPENSES`` printed under
+        # ``National transportation safety board`` names the untitled agency-level element
+        # after it, which takes the agency's slot. The headings it clears stay above it: a
+        # department-level element clears both slots, an agency-level one the agency's.
+        slots = {
+            "appropriations-major": (current_major, current_intermediate),
+            "appropriations-intermediate": (current_intermediate,),
+        }.get(tag, ())
+        displaced = tuple(
+            heading
+            for slot in slots
+            if slot is not None and slot.bare and slot.key != inherited_name
+            for heading in slot.shown
+        )
+        above = (*displaced, *inherited.above)
+    elif (
+        own_header
+        and not _PARENTHETICAL_RE.match(own_header)
+        and pending is not None
+        and pending.bare
+        and pending.tag == tag
+    ):
+        above = pending.shown
+    else:
+        above = ()
+    bare = bool(own_header) and not body_text
 
     if tag == "appropriations-major":
-        current_major = own_header or inherited or ""
+        current_major = _named(own_header or inherited_name, above=above, tag=tag, bare=bare)
         current_intermediate = None
         prev_name = current_major
-        effective_header = current_major
+        effective: _Heading | None = current_major
 
         if body_text:
             match_path, display_path = _build_paths(
@@ -751,7 +836,7 @@ def _process_appro_element(
                     display_path=display_path,
                     tag=tag,
                     element_id=child.attrib.get("id", ""),
-                    header_text=current_major or "",
+                    header_text=current_major.key,
                     body_text=body_text,
                     display_text=display_text,
                     section_number="",
@@ -761,22 +846,22 @@ def _process_appro_element(
             )
 
     elif tag == "appropriations-intermediate":
-        header = own_header or inherited or ""
-        current_intermediate = header
+        header = own_header or inherited_name
+        current_intermediate = _named(header, above=above, tag=tag, bare=bare)
 
         if header and _PARENTHETICAL_RE.match(header):
-            effective_header = prev_name
+            effective = prev_name
         else:
             if header:
-                prev_name = header
-            effective_header = header
+                prev_name = current_intermediate
+            effective = current_intermediate
 
         if body_text:
             match_path, display_path = _build_paths(
                 title_header,
                 division.label,
                 current_major,
-                effective_header,
+                effective,
                 None,
             )
             nodes.append(
@@ -795,14 +880,15 @@ def _process_appro_element(
             )
 
     elif tag == "appropriations-small":
-        header = own_header or inherited or ""
+        header = own_header or inherited_name
 
         if header and _PARENTHETICAL_RE.match(header):
-            effective_header = prev_name
+            effective = prev_name
         else:
+            named = _named(header, above=above, tag=tag, bare=bare)
             if header:
-                prev_name = header
-            effective_header = header
+                prev_name = named
+            effective = named
 
         if body_text:
             match_path, display_path = _build_paths(
@@ -810,7 +896,8 @@ def _process_appro_element(
                 division.label,
                 current_major,
                 current_intermediate,
-                effective_header,
+                effective.key if effective is not None else None,
+                effective.above if effective is not None else (),
             )
             nodes.append(
                 BillNode(
@@ -828,30 +915,35 @@ def _process_appro_element(
             )
 
     else:
-        effective_header = None
+        effective = None
 
     # A body ends any pending name (it either consumed one or is a named account in its
     # own right); a header-only element becomes the pending name for its next sibling.
-    # ``effective_header`` rather than the raw header, so a parenthetical header-only
+    # ``effective`` rather than the raw header, so a parenthetical header-only
     # element passes on the real account name it stands for, not the parenthetical.
     if body_text:
-        pending_header = None
+        pending = None
     elif own_header:
-        pending_header = effective_header
+        pending = effective
 
-    return current_major, current_intermediate, prev_name, pending_header
+    return current_major, current_intermediate, prev_name, pending
 
 
 def _walk_section_appro_children(
     section: ET.Element,
     title_header: str,
     division: Division,
-    current_major: str | None,
-    current_intermediate: str | None,
-    prev_name: str | None,
+    current_major: _Heading | None,
+    current_intermediate: _Heading | None,
+    prev_name: _Heading | None,
     nodes: list[BillNode],
-) -> None:
+) -> _Heading | None:
     """Walk a section's ``appropriations-*`` children, emitting a node for each.
+
+    Returns the heading the section ends on, if it ends on one: GPO marks up the heading
+    printed above a general provision as the last child of the section before it (the
+    Interior bill's ``Emergency transfer authority—department-wide`` sits inside SEC. 101
+    and heads SEC. 102). The caller shows it above the next section (ADR 0024).
 
     Shared by both section walkers. A section holding appropriations children is the
     same arrangement wherever it sits, so the account naming (#474's split-account
@@ -878,7 +970,7 @@ def _walk_section_appro_children(
     sec_prev = prev_name
     # A split pair is a pair of siblings, so the pending name never crosses into a
     # section from outside it.
-    sec_pending: str | None = None
+    sec_pending: _Heading | None = None
     for sub in section:
         if sub.tag.startswith("appropriations-"):
             sec_major, sec_intermediate, sec_prev, sec_pending = _process_appro_element(
@@ -891,23 +983,36 @@ def _walk_section_appro_children(
                 sec_pending,
                 nodes,
             )
+    # A closing parenthetical (``(RESCISSIONS)``) resolves to the name before it, which may be
+    # this section's own context; ``_build_paths`` shows a heading only once in a row.
+    ends_on_heading = len(section) > 0 and section[-1].tag.startswith("appropriations-")
+    if not ends_on_heading or sec_pending is None or not sec_pending.bare:
+        return None
+    return sec_pending
 
 
 def _process_section_element(
     section: ET.Element,
     title_header: str,
     division: Division,
-    current_major: str | None,
-    current_intermediate: str | None,
-    prev_name: str | None,
+    current_major: _Heading | None,
+    current_intermediate: _Heading | None,
+    prev_name: _Heading | None,
     nodes: list[BillNode],
-) -> None:
+    heading: tuple[str, ...] = (),
+) -> _Heading | None:
     """Process a <section> element, emitting BillNode(s).
 
     Handles two cases:
     - Sections with appropriations-* children: emit a node for the section's OWN text,
       then walk appropriations children with scoped context.
     - Plain sections: emit a single node with all section text.
+
+    ``heading`` is the nearest heading printed above this section that no slot holds (a
+    provision group's ``ADMINISTRATIVE PROVISIONS—…``, a topic such as ``PROHIBITION ON USE
+    OF FUNDS``); the breadcrumb shows it directly above the section number, and its
+    subsections inherit it (ADR 0024). Returns the heading this section ends on, for the
+    sections after it (``_walk_section_appro_children``).
 
     Both cases read the section's own text through ``_extract_section_text``, carving out
     the children that become their own nodes by element identity. That is what keeps each
@@ -940,6 +1045,7 @@ def _process_section_element(
                 current_major,
                 current_intermediate,
                 sec_label,
+                heading,
             )
             nodes.append(
                 BillNode(
@@ -956,7 +1062,7 @@ def _process_section_element(
                 )
             )
 
-        _walk_section_appro_children(
+        return _walk_section_appro_children(
             section,
             title_header,
             division,
@@ -981,6 +1087,7 @@ def _process_section_element(
                 current_major,
                 current_intermediate,
                 sec_label,
+                heading,
             )
             nodes.append(
                 BillNode(
@@ -1006,14 +1113,14 @@ def _walk_structural_children(
     parent: ET.Element,
     title_header: str,
     division: Division,
-    current_major: str | None,
-    current_intermediate: str | None,
-    prev_name: str | None,
-    pending_header: str | None,
+    current_major: _Heading | None,
+    current_intermediate: _Heading | None,
+    prev_name: _Heading | None,
+    pending: _Heading | None,
     nodes: list[BillNode],
     *,
     _in_structural_container: bool = False,
-) -> tuple[str | None, str | None, str | None, str | None]:
+) -> tuple[_Heading | None, _Heading | None, _Heading | None, _Heading | None]:
     """Walk children of a structural element, dispatching by tag.
 
     Handles appropriations-*, section, and structural containers
@@ -1021,26 +1128,45 @@ def _walk_structural_children(
     ladder below title). Structural containers
     recurse with scoped context and their header mapped into the path:
     - First container level: header -> current_major
-    - Deeper levels: header -> current_intermediate
+    - Deeper levels: header -> current_intermediate. From the third level on, match_path
+      joins the levels into that one key; the breadcrumb shows each (ADR 0024).
+
+    A section is shown under the nearest heading printed above it that no slot holds: a
+    header-only ``appropriations-small`` sibling before it, or the heading a previous
+    section ends on (``_process_section_element``). That heading covers the sections that
+    follow it until any other heading or account starts, as the page lays them out
+    (``ADMINISTRATIVE PROVISIONS—FEDERAL HIGHWAY ADMINISTRATION`` over SEC. 120-126), and
+    as the PDF reader reads it (ADR 0024).
     """
+    ended_on: _Heading | None = None
+    over_sections: _Heading | None = None
     for child in parent:
         tag = child.tag
 
         if tag.startswith("appropriations-"):
-            current_major, current_intermediate, prev_name, pending_header = _process_appro_element(
+            ended_on = None
+            over_sections = None
+            current_major, current_intermediate, prev_name, pending = _process_appro_element(
                 child,
                 title_header,
                 division,
                 current_major,
                 current_intermediate,
                 prev_name,
-                pending_header,
+                pending,
                 nodes,
             )
 
         elif tag == "section":
-            pending_header = None
-            _process_section_element(
+            # A header-only department or agency already holds a slot and is in the path;
+            # an account-level one holds none, so it is shown above the sections instead.
+            printed_above = (
+                pending if pending is not None and pending.bare and pending.tag == "appropriations-small" else ended_on
+            )
+            if printed_above is not None:
+                over_sections = printed_above
+            pending = None
+            ended_on = _process_section_element(
                 child,
                 title_header,
                 division,
@@ -1048,29 +1174,38 @@ def _walk_structural_children(
                 current_intermediate,
                 prev_name,
                 nodes,
+                over_sections.shown if over_sections is not None else (),
             )
 
         elif tag in _STRUCTURAL_TAGS:
+            ended_on = None
+            over_sections = None
             container_header = get_header_text(child)
             # Scope context: container changes don't leak to parent siblings
             saved_major = current_major
             saved_intermediate = current_intermediate
             saved_prev = prev_name
-            saved_pending = pending_header
+            saved_pending = pending
             # Container header always becomes new major for its children.
             # If we're already inside a container (major was set by parent
             # container), push the existing major to intermediate.
             if _in_structural_container and current_major is not None:
                 sub_major = current_major
                 if current_intermediate is not None:
-                    # Third+ level: concatenate into intermediate
-                    sub_intermediate: str | None = (
-                        f"{current_intermediate} - {container_header}" if container_header else current_intermediate
+                    # Third+ level: one match key for the joined levels, one breadcrumb level each
+                    sub_intermediate: _Heading | None = (
+                        _Heading(
+                            key=f"{current_intermediate.key} - {container_header}",
+                            label=container_header,
+                            above=current_intermediate.shown,
+                        )
+                        if container_header
+                        else current_intermediate
                     )
                 else:
-                    sub_intermediate = container_header
+                    sub_intermediate = _named(container_header)
             else:
-                sub_major = container_header
+                sub_major = _named(container_header)
                 sub_intermediate = None
             _walk_structural_children(
                 child,
@@ -1086,9 +1221,9 @@ def _walk_structural_children(
             current_major = saved_major
             current_intermediate = saved_intermediate
             prev_name = saved_prev
-            pending_header = saved_pending
+            pending = saved_pending
 
-    return current_major, current_intermediate, prev_name, pending_header
+    return current_major, current_intermediate, prev_name, pending
 
 
 def walk_title(
@@ -1208,10 +1343,20 @@ def walk_body_sections(parent: ET.Element, division: Division = NO_DIVISION) -> 
     matches: the key discriminates only when several nodes already share a match path.
     """
     nodes: list[BillNode] = []
+    # The nearest heading a previous section ended on, shown above the sections after it
+    # until another element starts (ADR 0024).
+    ended_on: _Heading | None = None
+    over_sections: _Heading | None = None
 
     for child in parent:
         if child.tag != "section":
+            ended_on = None
+            over_sections = None
             continue
+        if ended_on is not None:
+            over_sections = ended_on
+        above_section = over_sections.shown if over_sections is not None else ()
+        ended_on = None
 
         # A section holding appropriations children carves those out instead of its
         # subsections, mirroring the title path: each account becomes its own node
@@ -1240,7 +1385,9 @@ def walk_body_sections(parent: ET.Element, division: Division = NO_DIVISION) -> 
 
         sec_label = section_num.lower() if section_num else ""
         match_path = (sec_label,) if sec_label else ()
-        display_path = ((division.label,) if division.label else ()) + ((section_num,) if section_num else ())
+        display_path = ((division.label,) if division.label else ()) + (
+            (*above_section, section_num) if section_num else ()
+        )
 
         # An appropriations section with no text of its own emits no node, exactly as the
         # title path does: the accounts below carry the content, and an empty node here
@@ -1269,7 +1416,7 @@ def walk_body_sections(parent: ET.Element, division: Division = NO_DIVISION) -> 
             # benefits administration", "compensation and pensions") — rather than off the
             # section, which is what makes them addressable at all: this section carries no
             # <enum>, so its own match_path is empty and could anchor nothing.
-            _walk_section_appro_children(child, "", division, None, None, None, nodes)
+            ended_on = _walk_section_appro_children(child, "", division, None, None, None, nodes)
         _append_subsection_nodes(sub_specs, match_path, display_path, section_num, division, nodes)
 
     return nodes
@@ -1499,6 +1646,24 @@ def normalize_bill(xml_path: Path) -> BillTree:
     return BillTree(congress, bill_type, bill_number, version, all_nodes, official_title)
 
 
+def _walk_title_in_order(title: ET.Element, division: Division, label_only: str) -> tuple[list[BillNode], str]:
+    """Walk one title after the title before it; returns its nodes and, when the title holds
+    nothing but its label, that label for the next title.
+
+    GPO sometimes prints one title as two elements, the first holding only the label and the
+    second only the content, with no label of its own (117-hr-4502 v2's ``TITLE II—Environmental
+    protection agency``). The content's breadcrumb then shows the label it is printed under,
+    directly below the division. match_path is left as the unlabeled title gives it (ADR 0024).
+    """
+    title_header = build_title_label(title)
+    nodes = walk_title(title, title_header, division)
+    if not title_header and label_only:
+        at = 1 if division.label else 0
+        nodes = [replace(n, display_path=(*n.display_path[:at], label_only, *n.display_path[at:])) for n in nodes]
+    holds_content = any(c.tag not in ("enum", "header", "toc") for c in title)
+    return nodes, "" if holds_content else title_header
+
+
 def _walk_one_body(body: ET.Element) -> list[BillNode]:
     """Every content node under one top-level body, in document order."""
     all_nodes: list[BillNode] = []
@@ -1516,6 +1681,7 @@ def _walk_one_body(body: ET.Element) -> list[BillNode]:
         # division, so cross-version diff matching is unaffected; only the
         # display_path (breadcrumb) and document order change.
         current_division = NO_DIVISION
+        label_only = ""
         for child in body:
             if child.tag == "division":
                 div_enum = child.find("enum")
@@ -1551,21 +1717,23 @@ def _walk_one_body(body: ET.Element) -> list[BillNode]:
                 # left them in no node, no full-bill view and no money diff, silently.
                 all_nodes.extend(walk_body_sections(child, current_division))
 
+                label_only = ""
                 for title in child.findall("title"):
-                    title_header = build_title_label(title)
-                    all_nodes.extend(walk_title(title, title_header, current_division))
+                    title_nodes, label_only = _walk_title_in_order(title, current_division, label_only)
+                    all_nodes.extend(title_nodes)
             elif child.tag == "title":
-                title_header = build_title_label(child)
-                all_nodes.extend(walk_title(child, title_header, current_division))
+                title_nodes, label_only = _walk_title_in_order(child, current_division, label_only)
+                all_nodes.extend(title_nodes)
         return all_nodes
 
     # Check for titles directly under body
     titles = body.findall("title")
     if titles:
         all_nodes.extend(walk_body_sections(body))
+        label_only = ""
         for title in titles:
-            title_header = build_title_label(title)
-            all_nodes.extend(walk_title(title, title_header, NO_DIVISION))
+            title_nodes, label_only = _walk_title_in_order(title, NO_DIVISION, label_only)
+            all_nodes.extend(title_nodes)
         return all_nodes
 
     # Fallback: sections directly under body

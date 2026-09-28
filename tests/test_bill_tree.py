@@ -10,6 +10,7 @@ from deltatrack.bill_tree import (
     _extract_appropriations_text,
     _extract_metadata,
     _extract_section_text,
+    _walk_one_body,
     amount_text,
     build_division_label,
     build_title_label,
@@ -2586,3 +2587,259 @@ class TestUntitledBillAppropriations:
         tree = self._tree("4_enrolled-bill.xml")
         leaves = {n.match_path[-1] for n in tree.nodes if n.match_path}
         assert {"compensation and pensions", "readjustment benefits"} <= leaves
+
+
+class TestHeadingsWithNoTextOfTheirOwn:
+    """Every heading the XML tags reaches the breadcrumb, and none reaches match_path (ADR 0024).
+
+    GPO often marks a heading up as an element of its own with a ``<header>`` and no text, the
+    text it heads following in later elements. The reader used to keep such a heading only
+    while it sat in one of two slots (department, agency), so NATO over its security investment
+    program, FDA over its first account, the topic heading over a general provision and the
+    deeper levels of a reconciliation bill were missing from ``display_path``. They are shown
+    now. ``match_path`` is built exactly as before, so diff pairing cannot move: every test
+    below asserts the unchanged key beside the new breadcrumb.
+    """
+
+    @staticmethod
+    def _title(inner: str) -> list[BillNode]:
+        return walk_title(
+            ET.fromstring(f"<title><enum>I</enum><header>DEPT</header>{inner}</title>"), "DEPT", NO_DIVISION
+        )
+
+    def test_a_heading_over_the_next_heading_of_its_tag_is_shown_and_not_matched(self):
+        nodes = self._title(
+            "<appropriations-intermediate><header>North atlantic treaty organization</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-intermediate><header>Security investment program</header>"
+            "<text>For the United States share, $433,864,000.</text></appropriations-intermediate>"
+        )
+        assert nodes[0].display_path == ("DEPT", "North atlantic treaty organization", "Security investment program")
+        assert nodes[0].match_path == ("dept", "security investment program")
+
+    def test_it_heads_that_one_account_and_no_further(self):
+        """The tags are flat siblings and say nothing about where such a heading's reach ends,
+        so it is shown over the one heading it directly precedes (the one it must head), not
+        carried on to the accounts after it: NATO is not the parent of the base closure account."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>North atlantic treaty organization</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-intermediate><header>Security investment program</header>"
+            "<text>For the United States share, $433,864,000.</text></appropriations-intermediate>"
+            "<appropriations-intermediate><header>Department of defense base closure account</header>"
+            "<text>For deposit, $484,432,000.</text></appropriations-intermediate>"
+        )
+        assert nodes[1].display_path == ("DEPT", "Department of defense base closure account")
+
+    def test_an_account_named_in_two_elements_keeps_the_heading_over_it(self):
+        """FDA over ``Salaries and expenses``, whose money sits in the parenthetical after it: the
+        node carries the account name (#474) and FDA above it."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>Department of health and human services</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-small><header>Food and drug administration</header></appropriations-small>"
+            "<appropriations-small><header>Salaries and expenses</header></appropriations-small>"
+            "<appropriations-small><header>(including transfers of funds)</header>"
+            "<text>For necessary expenses, $3,523,000,000.</text></appropriations-small>"
+        )
+        assert nodes[0].display_path == (
+            "DEPT",
+            "Department of health and human services",
+            "Food and drug administration",
+            "Salaries and expenses",
+        )
+        assert nodes[0].match_path == ("dept", "department of health and human services", "salaries and expenses")
+
+    def test_headings_can_stack(self):
+        """``Real property activities`` over ``Federal buildings fund`` over its one account."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>General services administration</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-small><header>Real property activities</header></appropriations-small>"
+            "<appropriations-small><header>Federal buildings fund</header></appropriations-small>"
+            "<appropriations-small><header>Limitations on availability of revenue</header>"
+            "<text>Amounts in the Fund, $10,000,000.</text></appropriations-small>"
+        )
+        assert nodes[0].display_path == (
+            "DEPT",
+            "General services administration",
+            "Real property activities",
+            "Federal buildings fund",
+            "Limitations on availability of revenue",
+        )
+        assert nodes[0].match_path == (
+            "dept",
+            "general services administration",
+            "limitations on availability of revenue",
+        )
+
+    def test_an_account_with_text_heads_nothing(self):
+        """A parenthetical after an account resolves to that account's name; the account has
+        text of its own, so the account after it is not filed under it."""
+        nodes = self._title(
+            "<appropriations-small><header>Salaries and expenses</header>"
+            "<text>For expenses, $100,000.</text></appropriations-small>"
+            "<appropriations-small><header>(INCLUDING TRANSFER OF FUNDS)</header></appropriations-small>"
+            "<appropriations-small><header>Buildings and facilities</header>"
+            "<text>For plans, $50,000.</text></appropriations-small>"
+        )
+        assert nodes[1].display_path == ("DEPT", "Buildings and facilities")
+
+    def test_a_split_name_that_takes_an_agency_slot_keeps_the_agency_above_it(self):
+        """``SALARIES AND EXPENSES`` printed under ``National transportation safety board`` names
+        the untitled agency-level element after it (#474), which takes the board's slot."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>National transportation safety board</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-small><header>SALARIES AND EXPENSES</header></appropriations-small>"
+            "<appropriations-intermediate><text>For necessary expenses, $140,000,000.</text>"
+            "</appropriations-intermediate>"
+        )
+        assert nodes[0].display_path == ("DEPT", "National transportation safety board", "SALARIES AND EXPENSES")
+        assert nodes[0].match_path == ("dept", "salaries and expenses")
+
+    def test_a_split_name_that_takes_a_department_slot_keeps_both_headings_above_it(self):
+        """117-hr-3684 v5 marks the money of ``FEDERAL BUILDINGS FUND``, printed under
+        ``General services administration`` and ``REAL PROPERTY ACTIVITIES``, as an untitled
+        department-level element: it clears the department and agency slots, and both
+        headings stay above the account."""
+        nodes = self._title(
+            "<appropriations-major><header>Executive office of the president</header></appropriations-major>"
+            "<appropriations-intermediate><header>General services administration</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-small><header>REAL PROPERTY ACTIVITIES</header></appropriations-small>"
+            "<appropriations-small><header>FEDERAL BUILDINGS FUND</header></appropriations-small>"
+            "<appropriations-major><text>For an additional amount, $3,418,000,000.</text></appropriations-major>"
+        )
+        assert nodes[0].display_path == (
+            "DEPT",
+            "Executive office of the president",
+            "General services administration",
+            "REAL PROPERTY ACTIVITIES",
+            "FEDERAL BUILDINGS FUND",
+        )
+        assert nodes[0].match_path == ("dept", "federal buildings fund")
+
+    def test_sections_sit_under_the_nearest_heading_printed_above_them(self):
+        """``ADMINISTRATIVE PROVISIONS—FEDERAL HIGHWAY ADMINISTRATION`` heads SEC. 120 and the
+        sections after it, as the page lays them out, until another heading or account starts."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>Federal highway administration</header>"
+            "</appropriations-intermediate>"
+            "<appropriations-small><header>Administrative provisions—Federal highway administration</header>"
+            "</appropriations-small>"
+            '<section id="s120"><enum>120.</enum><text>For fiscal year 2024, $1,000.</text></section>'
+            '<section id="s121"><enum>121.</enum><text>Notwithstanding, $2,000.</text></section>'
+            "<appropriations-intermediate><header>Federal railroad administration</header>"
+            "</appropriations-intermediate>"
+            '<section id="s150"><enum>150.</enum><text>Not less than, $3,000.</text></section>'
+        )
+        by_id = {n.element_id: n for n in nodes}
+        heading = "Administrative provisions—Federal highway administration"
+        assert by_id["s120"].display_path == ("DEPT", "Federal highway administration", heading, "sec. 120")
+        assert by_id["s121"].display_path == ("DEPT", "Federal highway administration", heading, "sec. 121")
+        assert by_id["s121"].match_path == ("dept", "federal highway administration", "sec. 121")
+        assert by_id["s150"].display_path == ("DEPT", "Federal railroad administration", "sec. 150")
+
+    def test_a_heading_marked_up_inside_the_previous_section_heads_the_next(self):
+        """GPO puts the heading printed above SEC. 102 inside SEC. 101, as its last child."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>General provisions—department of the interior</header>"
+            "</appropriations-intermediate>"
+            '<section id="s101"><enum>101.</enum><text>Upon the determination, $1,000.</text>'
+            "<appropriations-small><header>Emergency transfer authority—department-wide</header>"
+            "</appropriations-small></section>"
+            '<section id="s102"><enum>102.</enum><text>The Secretary may, $2,000.</text></section>'
+        )
+        by_id = {n.element_id: n for n in nodes}
+        assert by_id["s101"].display_path == ("DEPT", "General provisions—department of the interior", "sec. 101")
+        assert by_id["s102"].display_path == (
+            "DEPT",
+            "General provisions—department of the interior",
+            "Emergency transfer authority—department-wide",
+            "sec. 102",
+        )
+        assert by_id["s102"].match_path == ("dept", "general provisions—department of the interior", "sec. 102")
+
+    def test_a_heading_is_never_shown_twice_in_a_row(self):
+        """A closing parenthetical resolves to the name before it, here the agency the
+        section sits under, and GPO sometimes tags a slot's heading again just below it
+        (113-hr-83's ``Administrative Provisions``). The breadcrumb shows it once."""
+        nodes = self._title(
+            "<appropriations-intermediate><header>General provisions</header></appropriations-intermediate>"
+            '<section id="s1"><enum>101.</enum><text>Of the funds, $1,000.</text>'
+            "<appropriations-small><header>(RESCISSIONS)</header></appropriations-small></section>"
+            '<section id="s2"><enum>102.</enum><text>Of the funds, $2,000.</text></section>'
+        )
+        by_id = {n.element_id: n for n in nodes}
+        assert by_id["s2"].display_path == ("DEPT", "General provisions", "sec. 102")
+
+    def test_deep_containers_are_a_level_each_and_one_key(self):
+        """A reconciliation bill nests subtitle > part > subpart. match_path joins the third
+        level on into one key, as it always has; the breadcrumb shows each level."""
+        title = ET.fromstring(
+            "<title><enum>IV</enum><header>Energy and Commerce</header>"
+            "<subtitle><enum>B</enum><header>Health</header>"
+            "<part><enum>1</enum><header>Medicaid</header>"
+            "<subpart><enum>A</enum><header>Reducing fraud and improving enrollment processes</header>"
+            '<section id="s1"><enum>44101.</enum><text>Some text.</text></section>'
+            "</subpart></part></subtitle></title>"
+        )
+        [node] = walk_title(title, "TITLE IV—Energy and Commerce", NO_DIVISION)
+        assert node.display_path == (
+            "TITLE IV—Energy and Commerce",
+            "Health",
+            "Medicaid",
+            "Reducing fraud and improving enrollment processes",
+            "sec. 44101",
+        )
+        assert node.match_path == (
+            "energy and commerce",
+            "health",
+            "medicaid - reducing fraud and improving enrollment processes",
+            "sec. 44101",
+        )
+
+    def test_a_title_printed_as_its_label_then_its_content(self):
+        """117-hr-4502 v2 prints ``TITLE II—Environmental protection agency`` as one element
+        holding only the label and a second, unlabeled one holding the accounts."""
+        body = ET.fromstring(
+            "<legis-body><division><enum>E</enum><header>Interior</header>"
+            "<title><enum>II</enum><header>Environmental protection agency</header></title>"
+            "<title><appropriations-intermediate><header>Science and technology</header>"
+            "<text>For science and technology, $750,000,000.</text></appropriations-intermediate></title>"
+            "</division></legis-body>"
+        )
+        [node] = _walk_one_body(body)
+        assert node.display_path == (
+            "Division E: Interior",
+            "TITLE II—Environmental protection agency",
+            "Science and technology",
+        )
+        assert node.match_path == ("science and technology",)
+
+    def test_a_bill_without_titles_carries_the_heading_to_the_next_section(self):
+        """118-hr-9468 has no TITLE elements: its sections sit under the body, and its
+        ``General Provisions—This Act`` heading is marked up inside the section before them."""
+        body = ET.fromstring(
+            "<legis-body>"
+            '<section id="s1"><text>That the following sums are appropriated, $1,000.</text>'
+            "<appropriations-major><header>General Provisions—This Act</header></appropriations-major></section>"
+            '<section id="s2"><enum>101.</enum><text>Each amount is designated, $2,000.</text></section>'
+            '<section id="s3"><enum>102.</enum><text>This Act may be cited.</text></section>'
+            "</legis-body>"
+        )
+        by_id = {n.element_id: n for n in walk_body_sections(body)}
+        assert by_id["s2"].display_path == ("General Provisions—This Act", "Sec. 101")
+        assert by_id["s3"].display_path == ("General Provisions—This Act", "Sec. 102")
+        assert by_id["s2"].match_path == ("sec. 101",)
+
+    def test_a_heading_does_not_head_an_element_of_a_higher_level(self):
+        """Only a heading of the same tag is headed: an account-level heading directly before
+        an agency-level element is not its parent."""
+        nodes = self._title(
+            "<appropriations-small><header>Oregon and California grant lands</header></appropriations-small>"
+            "<appropriations-intermediate><header>Management of lands and resources</header>"
+            "<text>For expenses, $1,000.</text></appropriations-intermediate>"
+        )
+        assert nodes[0].display_path == ("DEPT", "Management of lands and resources")
