@@ -133,8 +133,9 @@ def test_moving_the_threshold_moves_the_split_population() -> None:
     pairing already below production's cutoff, in which case raising the threshold changes
     nothing there and the control reports a false alarm. The first draft did exactly that.
 
-    Measured: 0.2 → 192, 0.3 → 214, 0.4 → 230, 0.6 → 257, 0.9 → 402. Under the censored
-    evidence this slice shipped with, 0.2 and 0.3 both returned 230 — the two sub-production
+    Measured: 0.2 → 195, 0.3 → 215, 0.4 → 231, 0.6 → 259, 0.9 → 404 (the heading passes of ADR
+    0022 move block boundaries; before them, 192 / 214 / 230 / 257 / 402). Under the censored
+    evidence this slice shipped with, 0.2 and 0.3 both returned the production count — the two sub-production
     points collapsing onto the cutoff is precisely the signature this control now detects.
     """
     points = (0.2, 0.3, SIMILARITY_THRESHOLD, 0.6, 0.9)
@@ -187,8 +188,8 @@ def test_evidence_reports_the_true_overlap_for_every_aligned_pair() -> None:
 
 
 @pytest.mark.slow
-def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> None:
-    """Reconciles this module's 230 with the research record's §3.2 figure of 224.
+def test_the_revocation_population_splits_as_225_accepted_plus_6_declined() -> None:
+    """Reconciles this module's 231 with the research record's §3.2 figure of 224.
 
     §3.2 counted the split population over the pairs a user can actually reach; this module
     sweeps every adjacent committed pair, including the six ``compare.pdf`` declines. The
@@ -196,8 +197,10 @@ def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> N
     pair, rather than from ``compare.pdf._is_unnumbered_layout`` — the same choice
     ``test_pdf_canonical_baseline`` makes, and it keeps this off a private cross-module import.
 
-    Measured and pinned rather than left as a plausible explanation: 224 + 6 = 230, with the
-    224 landing exactly on §3.2's number.
+    Measured and pinned rather than left as a plausible explanation: 225 + 6 = 231. §3.2's 224
+    was measured on the parser before ADR 0022; its heading passes move block boundaries on three
+    accepted pairs (115-hr-5895 v3→v4 −2, 118-hr-4366 v3→v4 +2, 118-hr-4366 v4→v5 +1), so
+    the accepted side now counts one more. The declined side is unchanged.
     """
     baseline = json.loads((DATA_DIR / "pdf_canonical_baseline.json").read_text())
     accepted = declined = 0
@@ -209,9 +212,9 @@ def test_the_revocation_population_splits_as_224_accepted_plus_6_declined() -> N
         else:
             accepted += revoked
 
-    assert (accepted, declined) == (224, 6), (
+    assert (accepted, declined) == (225, 6), (
         f"the split population partitions as {accepted} accepted + {declined} declined, not "
-        "224 + 6. §3.2's figure and this module's now describe different populations for a "
+        "225 + 6. §3.2's figure and this module's now describe different populations for a "
         "reason that is no longer the admissibility split."
     )
 

@@ -89,6 +89,17 @@ class LineGeom:
     content_left: float
     content_right: float
     first_word_right: float
+    # Per-letter typography of the line (ADR 0022), read from the same content glyphs, so
+    # still no extra PDFium calls. `initial_caps` is True when most content words print
+    # their first letter larger than the rest (a title-cased heading in small caps, the
+    # agency style), False when the letters are even (an all-small-caps account heading,
+    # or full capitals), None when the line has no word to judge or is prose (has lowercase
+    # letters). `size_min`/`size_max` bound the letter sizes, so a line set entirely at body
+    # size in capitals (the department style) is recognizable. The line MEDIAN in
+    # `Line.glyph_size` hides both signals, which is why they are carried separately.
+    initial_caps: bool | None = None
+    size_min: float | None = None
+    size_max: float | None = None
 
 
 @dataclass(frozen=True)
@@ -387,6 +398,44 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
     return first_word_right
 
 
+# Words a title-cased heading leaves in small letters ("AGENCY FOR HEALTHCARE RESEARCH AND
+# QUALITY" prints "AND" without a large initial). Typographic convention, not appropriations
+# vocabulary: they are skipped when judging whether a line's words start with a large capital.
+TITLE_CASE_SMALL_WORDS = frozenset({"AND", "OF", "THE", "FOR", "TO", "IN", "ON", "AT", "BY", "OR", "A", "AN"})
+# A first letter this much larger (points) than the smallest of the rest counts as a large
+# initial. Small caps print at about 0.8 of the capital size (11.2 vs 14.0 in working prints).
+_INITIAL_CAP_MARGIN = 0.5
+
+
+def _initial_caps(content_glyphs: list[tuple[float, float, float, int, float]]) -> bool | None:
+    """True when most content words print a first letter larger than the rest (title case in
+    small caps), False when their letters are even, None when no word of 2+ letters remains
+    after skipping `TITLE_CASE_SMALL_WORDS`. Glyphs are x-ordered (bottom, left, right, cp, size).
+
+    A line carrying a lowercase letter is prose, not a heading in small caps (small caps reach the
+    text layer as capitals), so it is not judged: None. Most lines are prose, and the check stops
+    at the first lowercase letter, which keeps this off the extraction's hot path."""
+    if any(chr(glyph[3]).islower() for glyph in content_glyphs):
+        return None
+    words: list[list[tuple[str, float]]] = []
+    current: list[tuple[str, float]] = []
+    for glyph in content_glyphs:
+        ch = chr(glyph[3])
+        if ch.isspace():
+            if current:
+                words.append(current)
+            current = []
+        elif ch.isalpha():
+            current.append((ch, glyph[4]))
+    if current:
+        words.append(current)
+    judged = [w for w in words if len(w) > 1 and "".join(c for c, _ in w).upper() not in TITLE_CASE_SMALL_WORDS]
+    if not judged:
+        return None
+    large = sum(1 for w in judged if w[0][1] > min(s for _, s in w[1:]) + _INITIAL_CAP_MARGIN)
+    return large / len(judged) >= 0.5
+
+
 def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGeom]]:
     """Map GPO margin line number → `(glyph size, horizontal extent)` for one page.
 
@@ -486,7 +535,15 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
         # finds it ⇒ never None here (it only returns None on no content glyphs at all).
         first_word_right = _first_word_right(content_glyphs)
         assert first_word_right is not None
-        geom = LineGeom(content_left, content_right, first_word_right)
+        letters = [c[4] for c in content_glyphs if chr(c[3]).isalpha()]
+        geom = LineGeom(
+            content_left,
+            content_right,
+            first_word_right,
+            initial_caps=_initial_caps(content_glyphs),
+            size_min=round(min(letters), 1) if letters else None,
+            size_max=round(max(letters), 1) if letters else None,
+        )
         if line_number in sizes or line_number in ambiguous:
             ambiguous.add(line_number)
             sizes.pop(line_number, None)

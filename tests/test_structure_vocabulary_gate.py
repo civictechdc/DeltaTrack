@@ -53,6 +53,9 @@ VOCABULARY_ALLOWED = {
     # Parses the comparative-statement TABLE in a committee report, a different
     # document used as independent ground truth (ADR 0009), not bill structure.
     "parsers/committee_report.py": "committee-report table parser (ADR 0009 carve-out)",
+    # The named exceptions to "structure from format": a short list, each tied to one edge case
+    # and kept only while a backtest shows it fixes headings without misfiling any amount (ADR 0022).
+    "parsers/pdf_heading_exceptions.py": "named structural exceptions (ADR 0022)",
 }
 
 # Appropriations-genre vocabulary. `increased/reduced by` belong to the financial

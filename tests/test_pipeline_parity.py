@@ -73,14 +73,16 @@ _PARITY: dict[str, tuple[tuple[int, int], tuple[int, int], str]] = {
     # signature as #96's PDF recalibration. PDF totals untouched.
     "118-hr-8752": (
         (39, 39),
-        (37, 37),
-        "clean; XML +2 = bare subsections of added SEC.s, which the PDF folds into the section block (#188)",
+        (38, 38),
+        "clean; XML +2 = bare subsections of added SEC.s, which the PDF folds into the section block (#188); "
+        "PDF +1 = the added SPENDING REDUCTION ACCOUNT heading, its own block since ADR 0022",
     ),
     "118-hr-8774": ((30, 33), (31, 36), "PDF over-segments a few blocks (segmentation granularity)"),
     "117-hr-4502": (
         (1390, 1445),
         (1430, 1520),
-        "PDF over-segments a large added block; XML +304 added from subsection nodes (#188) — gap narrowed +389→+85",
+        "PDF over-segments a large added block; XML +304 added from subsection nodes (#188) — gap narrowed +389→+85; "
+        "ADR 0022 joins wrapped account names into one block, +85→+41",
     ),
     "115-hr-5895": (
         (290, 315),
