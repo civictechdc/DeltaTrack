@@ -137,7 +137,7 @@ def test_csp_header_on_generated_report():
 
     fake_html = "<!DOCTYPE html><html>" + ("report " * 20_000) + "</html>"
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setitem(app_module._COMPARE, "pdf", (".pdf", lambda *a, **kw: fake_html, lambda *a, **kw: {}))
+    monkeypatch.setitem(app_module._COMPARE, "pdf", (lambda *a, **kw: fake_html, lambda *a, **kw: {}))
     try:
         resp = _client().post(
             "/api/compare",
@@ -207,7 +207,7 @@ def test_generated_report_response_is_gzipped(monkeypatch):
     import web.app as app_module
 
     fake_html = "<!DOCTYPE html><html>" + ("report " * 20_000) + "</html>"
-    monkeypatch.setitem(app_module._COMPARE, "pdf", (".pdf", lambda *a, **kw: fake_html, lambda *a, **kw: {}))
+    monkeypatch.setitem(app_module._COMPARE, "pdf", (lambda *a, **kw: fake_html, lambda *a, **kw: {}))
     resp = _client().post(
         "/api/compare",
         files={
@@ -596,13 +596,20 @@ def test_compare_pdfs_html_returns_standalone_report():
     assert "Reported in House" in html
     assert "Engrossed in House" in html
     # #671, on the PDF entry point the web app calls. The bill's own dollar figures
-    # still appear in the card bodies; what is gone is the report presenting any of
-    # them as a change. Paired with the presence assertions above so a report that
+    # still appear in the card bodies; what is gone is the Changes view presenting any
+    # of them as a change. Paired with the presence assertions above so a report that
     # failed to render at all cannot pass this as an absence.
     assert "financial-table" not in html
     assert "financial-callout" not in html
     assert "data-financial" not in html
-    assert "Financial Summary" not in html
+    # The financial views (ADR 0023) bring money back in tabs of their own, per version
+    # and typed, with the research notebook's "Financial Summary" heading on Version A /
+    # B. The #671 line holds where it was drawn: the Changes view carries none of it.
+    changes_view = html.split('<div class="view view-changes">', 1)[1].split('<div class="view view-full"', 1)[0]
+    assert "Financial Summary" not in changes_view
+    assert "fin-" not in changes_view
+    assert html.count("<h3>Financial Summary</h3>") == 2  # Version A and Version B, nowhere else
+    assert html.count("Financial Summary") == 2
 
 
 @pytest.mark.slow
@@ -633,3 +640,27 @@ def test_derive_congress_from_cover():
     # No cover match → empty (renderer then omits the "th Congress" suffix).
     assert _derive_congress([Page(1, (Line(None, "AN ACT"),))]) == ""
     assert _derive_congress([]) == ""
+
+
+def test_derived_title_is_whole():
+    # The heading wraps, so the title is kept whole, as the XML path's `bill_title` keeps
+    # it: a 140-character cut hid the fiscal year on H.R. 4366's.
+    from deltatrack.compare.pdf import _derive_bill_title
+
+    long_title = (
+        "Making appropriations for military construction, the Department of Veterans Affairs, "
+        "and related agencies for the fiscal year ending September 30, 2024, and for other purposes."
+    )
+    canonical = {"full_text": {"v1": "", "v2": f"H. R. 4366\nAN ACT\n{long_title}\nBe it enacted"}}
+    assert _derive_bill_title(canonical) == f"H.R. 4366 — {long_title}"
+
+
+def test_upload_label_is_the_filename_as_given():
+    # Nothing is inferred from a filename (people name files their own way), so the label
+    # is the whole name, extension included; only client-sent path parts are dropped.
+    from web.app import _label_from_filename
+
+    assert _label_from_filename("BILLS-118hr4366rh - BEFORE.pdf", "Start version") == "BILLS-118hr4366rh - BEFORE.pdf"
+    assert _label_from_filename(r"C:\Users\me\draft v3.XML", "Start version") == "draft v3.XML"
+    assert _label_from_filename("../../etc/after.pdf", "End version") == "after.pdf"
+    assert _label_from_filename("", "End version") == "End version"

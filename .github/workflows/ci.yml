@@ -183,6 +183,7 @@ jobs:
           tests/test_canonical_baseline.py
           tests/test_pdf_canonical_baseline.py
           tests/test_pdf_ledger_location.py
+          tests/test_financial_corpus.py
           tests/test_pdf_matching_boundary.py
           tests/test_pdf_observation_emission.py
           tests/test_pdf_observation_identity.py

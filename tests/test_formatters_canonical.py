@@ -31,10 +31,11 @@ from deltatrack.formatters.canonical import (
 )
 from deltatrack.parsers.pdf_anchors import Anchor
 
-# Local pin (guard against unintended bumps). 3.0 removed `amount_entries` (#671), so
-# a change object carries no money field at all; 2.0 had removed the deprecated
-# `amounts` before it (#274); 1.3 added the optional `tree` field (#108).
-SCHEMA_VERSION = "3.0"
+# Local pin (guard against unintended bumps). 3.1 added the optional top-level
+# `financial` ledger (ADR 0023); 3.0 removed `amount_entries` (#671), so a change object
+# carries no money field at all; 2.0 had removed the deprecated `amounts` before it
+# (#274); 1.3 added the optional `tree` field (#108).
+SCHEMA_VERSION = "3.1"
 
 
 # ---------- XML producer ------------------------------------------------------

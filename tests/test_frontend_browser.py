@@ -1339,3 +1339,182 @@ def test_csp_base_uri_none_ignores_base_tag(live_url, chromium):
         f"CSP enforcement is not working. currentSrc: {result_with_csp['currentSrc']}"
     )
     page.close()
+
+
+# --- Each view keeps its own scroll position ----------------------------------------------
+# The views share one page, so a view used to come back at wherever the last one left the
+# page. `showView` now remembers each view's position and restores it inside the switch, so
+# anything that scrolls after it (a sidebar #change-N jump, a search's first match, a
+# financial section link) still wins. Built on a real report: the committed H.R. 4366 XML
+# pair, whose financial views are long enough to scroll.
+
+
+def _scroll_report_path(tmp_path_factory):
+    from deltatrack.compare.xml import compare_xml_html
+    from tests.corpus_paths import fixture_path
+
+    old = fixture_path("118-hr-4366", "1_reported-in-house.xml").read_bytes()
+    new = fixture_path("118-hr-4366", "2_engrossed-in-house.xml").read_bytes()
+    path = tmp_path_factory.mktemp("scroll") / "report.html"
+    path.write_text(compare_xml_html(old, new, start_label="Before", end_label="After"), encoding="utf-8")
+    return path
+
+
+@pytest.fixture(scope="module")
+def scroll_report(tmp_path_factory):
+    return _scroll_report_path(tmp_path_factory)
+
+
+def _open(chromium, report):
+    page = chromium.new_page(viewport={"width": 1280, "height": 800})
+    page.goto(report.as_uri(), wait_until="domcontentloaded")
+    return page
+
+
+def _tab(page, view):
+    page.locator(f'.view-toggle__btn[data-view="{view}"]').click()
+    page.wait_for_timeout(100)
+
+
+def _in_viewport(page, locator):
+    box = locator.bounding_box()
+    return box is not None and 0 <= box["y"] <= page.viewport_size["height"] - 10
+
+
+def test_a_view_comes_back_where_the_reader_left_it(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    _tab(page, "fin-compare")
+    page.locator(".view-fin-compare tr.fin-crow").nth(8).scroll_into_view_if_needed()
+    left_at = page.evaluate("window.scrollY")
+    assert left_at > 400, "the comparison should be scrolled well down for this to mean anything"
+
+    _tab(page, "changes")
+    page.evaluate("window.scrollTo(0, 150)")
+    _tab(page, "fin-compare")
+    assert abs(page.evaluate("window.scrollY") - left_at) <= 1
+    page.close()
+
+
+def test_a_section_link_and_back_returns_to_the_comparison_row(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    _tab(page, "fin-compare")
+    row = page.locator(".view-fin-compare tr.fin-crow").nth(6)
+    row.scroll_into_view_if_needed()
+    left_at = page.evaluate("window.scrollY")
+
+    link = row.locator('.fin-jump[data-side="v1"]')
+    group = link.get_attribute("data-group")
+    link.click()
+    page.wait_for_timeout(900)  # the section link scrolls smoothly
+    target = page.locator(f'.view-fin-a tr.fin-row[data-group="{group}"]')
+    assert page.locator(".view-toggle__btn.is-active").get_attribute("data-view") == "fin-a"
+    assert target.get_attribute("aria-expanded") == "true"
+    assert _in_viewport(page, target)
+    assert row.get_attribute("aria-expanded") == "false", "the link must not open its own comparison row"
+
+    _tab(page, "fin-compare")
+    assert abs(page.evaluate("window.scrollY") - left_at) <= 1
+    assert _in_viewport(page, row)
+    page.close()
+
+
+def test_a_sidebar_change_link_still_lands_on_its_card_from_another_view(chromium, scroll_report):
+    # The browser's jump to #change-N runs after the click handler switches views; the
+    # restore happens inside the switch, so the jump must still win.
+    page = _open(chromium, scroll_report)
+    _tab(page, "changes")
+    page.evaluate("window.scrollTo(0, 0)")
+    _tab(page, "fin-b")
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    link = page.locator(".sidebar-changes a[href^='#change-']").nth(3)
+    # Sidebar groups start collapsed; open this link's, as a reader would before clicking it.
+    link.evaluate(
+        "el => { for (let d = el.closest('details'); d; d = d.parentElement.closest('details')) d.open = true; }"
+    )
+    card = page.locator(link.get_attribute("href"))
+    link.click()
+    page.wait_for_timeout(300)
+    assert page.locator(".view-toggle__btn.is-active").get_attribute("data-view") == "changes"
+    assert _in_viewport(page, card)
+    page.close()
+
+
+def test_a_first_visit_opens_at_the_top_of_the_view(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    _tab(page, "fin-b")
+    heading = page.locator(".view-fin-b h2")
+    assert _in_viewport(page, heading)
+    page.close()
+
+
+def test_an_active_search_still_goes_to_its_first_match_on_a_view_switch(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    _tab(page, "fin-a")
+    page.evaluate("window.scrollTo(0, 0)")
+    _tab(page, "changes")
+    page.locator("#find-input").fill("specially adapted housing")
+    page.wait_for_timeout(400)
+    _tab(page, "fin-a")
+    page.wait_for_timeout(1200)
+    hit = page.locator("mark.find-hit--current").first
+    assert hit.count() and _in_viewport(page, hit)
+    page.close()
+
+
+# --- Jumps land below the sticky action bar -----------------------------------------------
+# The bar is two rows tall when the financial views are present (view switcher, then find and
+# navigation), so a jump that put its target at the window's top hid it under the bar.
+# The targets' scroll-margin-top follows the bar's measured height (--sticky-bar-height), so every
+# anchor jump and scrollIntoView lands below it.
+
+
+def _below_the_bar(page, locator):
+    bar = page.locator(".action-bar").bounding_box()
+    box = locator.bounding_box()
+    return box is not None and box["y"] >= bar["y"] + bar["height"] - 1
+
+
+def test_a_full_bill_toc_link_lands_below_the_bar(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    _tab(page, "full")
+    # A target the page can actually bring to the top: one near the end stops short (there is
+    # no more page to scroll), which would pass whether or not the bar is cleared.
+    href = page.evaluate(
+        "() => { const room = document.documentElement.scrollHeight - 2 * innerHeight;"
+        " const links = [...document.querySelectorAll('.sidebar-toc a[href^=\"#\"]')];"
+        " const ok = links.find(a => { const t = document.getElementById(a.getAttribute('href').slice(1));"
+        " const y = t && t.getBoundingClientRect().top + scrollY; return y > 1500 && y < room; });"
+        " return ok && ok.getAttribute('href'); }"
+    )
+    assert href, "no table-of-contents target with room to scroll to the top"
+    link = page.locator(f".sidebar-toc a[href='{href}']").first
+    link.evaluate(
+        "el => { for (let d = el.closest('details'); d; d = d.parentElement.closest('details')) d.open = true; }"
+    )
+    target = page.locator(link.get_attribute("href"))
+    link.click()
+    page.wait_for_timeout(300)
+    assert _below_the_bar(page, target), "the section the link points at is hidden under the sticky bar"
+    page.close()
+
+
+def test_change_navigation_lands_below_the_bar(chromium, scroll_report):
+    page = _open(chromium, scroll_report)
+    _tab(page, "changes")
+    for _ in range(4):
+        page.locator("#btn-next").click()
+    page.wait_for_timeout(900)  # smooth scroll
+    # The navigator steps visible cards only (some sit in collapsed groups), so which card it
+    # reached is not "the fourth in the page". Whatever it reached is aligned to the top of the
+    # visible area; no card may start under the bar.
+    bar = page.locator(".action-bar").bounding_box()
+    bar_bottom = bar["y"] + bar["height"]
+    tops = page.evaluate(
+        "() => [...document.querySelectorAll('.view-changes .change-card')]"
+        ".filter(c => c.offsetParent !== null).map(c => c.getBoundingClientRect().top)"
+    )
+    under = [t for t in tops if -2 <= t < bar_bottom - 1]
+    assert not under, f"a card starts under the sticky bar (tops {under}, bar ends at {bar_bottom})"
+    assert any(bar_bottom - 1 <= t < bar_bottom + 40 for t in tops), "no card was brought to the top"
+    page.close()

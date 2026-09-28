@@ -210,9 +210,9 @@ def _derive_bill_title(canonical: dict) -> str:
         r"\bA BILL\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE
     )
     if m2:
+        # Whole, as the XML path's `bill_title` gives it: the heading wraps, so a cut
+        # only hid the end of the title (the fiscal year, on an appropriations bill).
         title = re.sub(r"\s+", " ", m2.group(1)).strip()
-        if len(title) > 140:
-            title = title[:137].rstrip() + "…"
 
     if designator and title:
         return f"{designator} — {title}"

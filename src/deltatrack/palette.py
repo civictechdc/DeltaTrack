@@ -44,6 +44,9 @@ PALETTE: dict[str, str] = {
     # Status
     "--destructive": "#c04040",
     "--success": "#3d9b6d",
+    # Information notices (the financial views' "About these figures" alert, ADR 0023)
+    "--info": "#e3f2f8",
+    "--info-foreground": "#0b4f63",
     # Diff states, one background/foreground pair each
     "--diff-add": "#d3f0e2",
     "--diff-add-foreground": "#1a6647",
@@ -53,8 +56,29 @@ PALETTE: dict[str, str] = {
     "--diff-modified-foreground": "#8a6320",
     "--diff-moved": "#eef0f8",
     "--diff-moved-foreground": "#2c2c5c",
+    # Money types in the financial views (ADR 0023), for the types no diff state already
+    # colours: appropriation takes --diff-add, rescission and restriction --diff-remove, cap
+    # --diff-modified, unknown --muted. Values are the research notebook's report's.
+    "--fin-transfer": "#cffafe",
+    "--fin-transfer-foreground": "#155e75",
+    "--fin-authorization": "#e0f2fe",
+    "--fin-authorization-foreground": "#0c4a6e",
+    "--fin-fee": "#ffedd5",
+    "--fin-fee-foreground": "#9a3412",
+    "--fin-directive": "#e0e7ff",
+    "--fin-directive-foreground": "#3730a3",
+    "--fin-earmark": "#ede9fe",
+    "--fin-earmark-foreground": "#5b21b6",
+    "--fin-availability": "#d1fae5",
+    "--fin-availability-foreground": "#065f46",
+    "--fin-sub-allocation": "#dbeafe",
+    "--fin-sub-allocation-foreground": "#1e40af",
     # Geometry
     "--radius": "0.625rem",
+    # How far a jump target clears the report's sticky action bar. 64px is the one-row
+    # bar; the report's script sets the bar's measured height (it is two rows with the
+    # financial views, wraps on narrow windows, and is not sticky on phones).
+    "--sticky-bar-height": "64px",
     # Typography. System stacks, never a webfont: a report fetches nothing when opened.
     "--font-sans": ("ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"),
     "--font-serif": "ui-serif, Georgia, 'Times New Roman', serif",

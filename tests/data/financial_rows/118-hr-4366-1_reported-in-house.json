@@ -1,0 +1,254 @@
+{"bill": "118-hr-4366", "version": "1_reported-in-house", "classifier": "1.0", "sections": [
+  [
+   ["primary", "appropriation", 1517455000, false],
+   ["sub", "cap", 345775000, false],
+   ["sub", "earmark", 162900000, false]
+  ],
+  [
+   ["primary", "appropriation", 4477961000, false],
+   ["sub", "cap", 602625000, false],
+   ["sub", "earmark", 52683000, false]
+  ],
+  [
+   ["primary", "appropriation", 2439614000, false],
+   ["sub", "cap", 450614000, false],
+   ["sub", "earmark", 30300000, false]
+  ],
+  [
+   ["primary", "appropriation", 2651047000, false],
+   ["sub", "cap", 304045000, false]
+  ],
+  [
+   ["primary", "appropriation", 369261000, false],
+   ["sub", "cap", 42361000, false],
+   ["sub", "earmark", 19075000, false]
+  ],
+  [
+   ["primary", "appropriation", 189322000, false],
+   ["sub", "cap", 36200000, false],
+   ["sub", "earmark", 600000, false]
+  ],
+  [
+   ["primary", "appropriation", 117076000, false],
+   ["sub", "cap", 23389000, false]
+  ],
+  [
+   ["primary", "appropriation", 61291000, false],
+   ["sub", "cap", 6495000, false]
+  ],
+  [
+   ["primary", "appropriation", 330572000, false],
+   ["sub", "cap", 12146000, false],
+   ["sub", "earmark", 29000000, false]
+  ],
+  [
+   ["primary", "appropriation", 293434000, false]
+  ],
+  [
+   ["primary", "appropriation", 539174000, false]
+  ],
+  [
+   ["primary", "appropriation", 304895000, false]
+  ],
+  [
+   ["primary", "appropriation", 395485000, false]
+  ],
+  [
+   ["primary", "appropriation", 277142000, false]
+  ],
+  [
+   ["primary", "appropriation", 373854000, false]
+  ],
+  [
+   ["primary", "appropriation", 237097000, false]
+  ],
+  [
+   ["primary", "appropriation", 324386000, false]
+  ],
+  [
+   ["primary", "appropriation", 50785000, false]
+  ],
+  [
+   ["primary", "appropriation", 6611000, false]
+  ],
+  [
+   ["primary", "appropriation", 496000, false]
+  ],
+  [
+   ["primary", "restriction", 25000, false]
+  ],
+  [
+   ["primary", "restriction", 25000, false]
+  ],
+  [
+   ["primary", "restriction", 500000, false]
+  ],
+  [
+   ["primary", "restriction", 1000000, false]
+  ],
+  [
+   ["primary", "directive", 100000, false]
+  ],
+  [
+   ["sub", "cap", 15000, false]
+  ],
+  [
+   ["primary", "appropriation", 47700000, true]
+  ],
+  [
+   ["primary", "appropriation", 30000000, true]
+  ],
+  [
+   ["primary", "appropriation", 252000000, false]
+  ],
+  [
+   ["primary", "appropriation", 25000000, true]
+  ],
+  [
+   ["primary", "appropriation", 65000000, true]
+  ],
+  [
+   ["primary", "appropriation", 15000000, true]
+  ],
+  [
+   ["primary", "appropriation", 122210000, true]
+  ],
+  [
+   ["primary", "appropriation", 50000000, false]
+  ],
+  [
+   ["primary", "appropriation", 4655879000, false],
+   ["sub", "appropriation", 181390281000, false],
+   ["sub", "cap", 22109000, false]
+  ],
+  [
+   ["primary", "appropriation", 11523134000, false]
+  ],
+  [
+   ["primary", "appropriation", 12701000, false],
+   ["sub", "appropriation", 135119422, false]
+  ],
+  [
+   ["sub", "cap", 316742419, false]
+  ],
+  [
+   ["primary", "appropriation", 78337, false],
+   ["sub", "cap", 460698, false]
+  ],
+  [
+   ["primary", "appropriation", 2718546, false]
+  ],
+  [
+   ["primary", "appropriation", 3899000000, false]
+  ],
+  [
+   ["primary", "appropriation", 71000000000, false],
+   ["sub", "availability", 2000000000, false]
+  ],
+  [
+   ["primary", "appropriation", 20382000000, false],
+   ["sub", "availability", 2000000000, false]
+  ],
+  [
+   ["primary", "appropriation", 11800000000, false],
+   ["sub", "availability", 350000000, false]
+  ],
+  [
+   ["primary", "appropriation", 9400000000, false],
+   ["sub", "availability", 500000000, false]
+  ],
+  [
+   ["primary", "appropriation", 938000000, false]
+  ],
+  [
+   ["primary", "appropriation", 480000000, false]
+  ],
+  [
+   ["primary", "appropriation", 475000000, false]
+  ],
+  [
+   ["primary", "appropriation", 287000000, false]
+  ],
+  [
+   ["primary", "appropriation", 6401000000, false],
+   ["sub", "sub_allocation", 1606977000, false],
+   ["sub", "sub_allocation", 4668373000, false],
+   ["sub", "sub_allocation", 125650000, false],
+   ["sub", "cap", 3000000, false]
+  ],
+  [
+   ["primary", "appropriation", 1863000000, false]
+  ],
+  [
+   ["primary", "appropriation", 296000000, false]
+  ],
+  [
+   ["primary", "appropriation", 881000000, false],
+   ["sub", "availability", 373096000, false],
+   ["sub", "availability", 507904000, false],
+   ["sub", "sub_allocation", 110000000, false]
+  ],
+  [
+   ["primary", "appropriation", 680000000, false],
+   ["sub", "availability", 612000000, false],
+   ["sub", "availability", 68000000, false]
+  ],
+  [
+   ["primary", "appropriation", 164000000, false]
+  ],
+  [
+   ["primary", "appropriation", 60000000, false]
+  ],
+  [
+   ["primary", "cap", 6960000, true]
+  ],
+  [
+   ["primary", "transfer", 430532000, false]
+  ],
+  [
+   ["primary", "transfer", 456547000, false]
+  ],
+  [
+   ["primary", "transfer", 15000000, false]
+  ],
+  [
+   ["primary", "directive", 5000000, false]
+  ],
+  [
+   ["primary", "directive", 1000000, false]
+  ],
+  [
+   ["primary", "directive", 7000000, false]
+  ],
+  [
+   ["primary", "unknown", 1279096000, false]
+  ],
+  [
+   ["primary", "restriction", 223166.67, false]
+  ],
+  [
+   ["primary", "rescission", 4933113000, true]
+  ],
+  [
+   ["primary", "appropriation", 158630000, false]
+  ],
+  [
+   ["primary", "appropriation", 47200000, false],
+   ["sub", "sub_allocation", 3385000, false]
+  ],
+  [
+   ["primary", "appropriation", 100267000, false],
+   ["sub", "availability", 15000000, false]
+  ],
+  [
+   ["primary", "appropriation", 88600000, false]
+  ],
+  [
+   ["primary", "appropriation", 77000000, false],
+   ["sub", "availability", 8940000, false],
+   ["sub", "unknown", 25000000, false]
+  ],
+  [
+   ["primary", "unknown", 0, false]
+  ]
+]}
