@@ -105,3 +105,4 @@ presents itself as the architecture in force.
 | [0021](0021-naming-authority-and-boundaries.md) | Accepted | Name things in the vocabulary an outside reader already speaks, scoped to the boundary being named |
 | [0022](0022-pdf-heading-convergence.md) | Proposed | Recover PDF heading structure with ordered, fail-closed passes over the reading order, measured by where each dollar amount lands against the XML twin |
 | [0023](0023-financial-ledger-views.md) | Proposed | Type each version's dollar amounts in a versioned, per-side ledger, and show it in three report views without pairing money in the diff |
+| [0024](0024-xml-breadcrumb-keeps-every-heading.md) | Proposed | Show every heading the XML tags in its breadcrumb, placed as the page lays it out, and keep it out of the key that pairs sections |

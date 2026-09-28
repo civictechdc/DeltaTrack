@@ -211,7 +211,8 @@ the PDF is graded "wrong parent" where it matches the page. Of the 1,055 wrong-p
 in the corpus, 905 have PDF ancestors that the XML path lacks and the XML file tags as headings
 (334 of 375 on the holdout). That check only asks whether each heading is tagged somewhere in
 the file, so it is an upper bound, and the reader is left as the answer key here: changing it
-is a separate decision.
+is a separate decision, taken in [0024](0024-xml-breadcrumb-keeps-every-heading.md), which shows
+every tagged heading in the reader's breadcrumb.
 
 - The same table is the yardstick for the XML side: a change to the reader counts as an
   improvement when its breadcrumbs carry the file's heading tags, which shows here as the

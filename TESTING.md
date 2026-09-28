@@ -186,11 +186,14 @@ wrong one is not. The count in each grade is frozen per bill version, so a chang
 files money under the wrong heading more often fails, and one that improves it has to
 be locked in on purpose.
 
-**Limit:** the official version's own reader is the answer key, and it leaves out some
-headings the print shows (a heading with no text of its own, such as an umbrella agency
-over its accounts). Where the PDF keeps such a heading the two disagree even though the
-PDF is right, so the "wrong parent" grade overstates PDF errors. Draft bills have no
-official version, so this check cannot cover them.
+**Limit:** the official version's own reader is the answer key. It shows every heading
+the file tags, but the file does not say how far a heading over several accounts reaches,
+so the reader shows it over the first account only; where the PDF reads a longer reach
+from the print, the "wrong parent" grade can overstate PDF errors
+([ADR 0024](docs/decisions/0024-xml-breadcrumb-keeps-every-heading.md)). The totals are
+reported per kind of bill (regular appropriations, continuing resolution, supplemental,
+reconciliation, authorizing law), so one kind cannot hide behind another's volume. Draft
+bills have no official version, so this check cannot cover them.
 
 ### 8. Checking the financial views against the research that defined them
 
@@ -414,23 +417,26 @@ uv run python -m tests.ledger_location --against /tmp/before.json               
 
 For a change to PDF headings or breadcrumbs, put both in the pull request: the before and after
 totals, and the check's count of amounts better and worse, with each group of worse amounts
-explained or fixed.
+explained or fixed. A change to the answer key (the XML reader) regrades amounts without moving
+the PDF, and the check skips the versions whose XML side changed, so compare those amount by
+amount on their position in the XML ledger.
+
+`python -m tests.ledger_location` prints the totals per kind of bill, read from each bill's
+`vehicle` in `tests/corpus_manifest.toml`.
 
 #### What the answer key gets wrong
 
-The answer key is DeltaTrack's own XML reader, which leaves heading-only elements (an agency
-heading with no text of its own) out of the breadcrumb, so where the PDF keeps such a heading
-it is graded "wrong parent" although it matches the page. Read `T3` as an upper bound on PDF
-errors. The reference for headings is the raw XML file's heading tags, not the reader
-([ADR 0022](docs/decisions/0022-pdf-heading-convergence.md)): a change to the reader that
-restores them shows up here as fewer `T3`. The same holds for two headings the XML sets on one
-level where the PDF nests one under the other, and for a file whose own tags are misplaced
-(in division G of 117-hr-4502 the `TITLE I` element is empty and its accounts sit in an unnamed
-title after it, while the print nests them correctly). `T1` is lenient by design: a label that is a
-near-variant of the XML's, or ends with the same words, counts as the same place. A fragment
-passes too: a PDF heading read as just `ADMINISTRATION` grades `T1` against `FEDERAL HIGHWAY
-ADMINISTRATION`, and reading the full printed `ADMINISTRATIVE PROVISIONS—FEDERAL HIGHWAY
-ADMINISTRATION` instead (a heading the reader drops) shows in the per-amount check as `T1 → T3`. The XML is read only by these tests, never by the product.
+The answer key is DeltaTrack's own XML reader, whose breadcrumbs carry every heading the
+file tags ([ADR 0024](docs/decisions/0024-xml-breadcrumb-keeps-every-heading.md)); the
+reference for headings is the raw XML file's heading tags, and
+`tests/test_corpus_properties.py` checks the reader against them. The one reach the file
+cannot give is a heading over several accounts, shown over the first only, so a `T3` there
+can be the PDF reading the print correctly. The same holds for a file whose own tags are
+misplaced (in division G of 117-hr-4502 the `TITLE I` element is empty and its accounts sit in
+an unnamed title after it, while the print nests them correctly). `T1` is lenient by design: a
+label that is a near-variant of the XML's, or ends with the same words, counts as the same
+place, so a PDF name glued to the heading above it can pass as `T1`. The XML is read only by
+these tests, never by the product.
 
 ### The financial rows pin, and when you may regenerate it
 

@@ -25,7 +25,10 @@ A grouping header like `ADMINISTRATIVE PROVISIONS` is a **header-only**
 it "owns" are *also* flat siblings under the title. The parent-child relationship is
 encoded by **reading order + level**, and a parser reconstructs it. `src/deltatrack/bill_tree.py`
 does exactly this, tracking `current_major` / `current_intermediate` as it scans
-siblings (`_walk_structural_children`).
+siblings (`_walk_structural_children`). Those two slots build `match_path`; the breadcrumb
+(`display_path`) also shows every header-only heading the slots overwrite, placed as the page
+lays it out: a section sits under the nearest heading printed above it, and a heading directly
+over another of its own tag heads that one ([ADR 0024](decisions/0024-xml-breadcrumb-keeps-every-heading.md)).
 
 Not every header-only element is a grouping header. GPO also splits a single account
 across **two** siblings — the first carrying the `<header>` and no body, the second the
@@ -188,10 +191,12 @@ fall short of the parent/child + money-rollup model, in different ways:
 - **XML side** (`src/deltatrack/bill_tree.py`): does *positional reconstruction*, but the output is a
   **flat `list[BillNode]`**, not a tree. Each node carries its ancestry as a
   `match_path` / `display_path` tuple (enough for breadcrumbs and cross-version
-  matching), but there is **no `parent`/`children` object, no money rollup, and
-  header-only grouping nodes are dropped** (e.g. `ADMINISTRATIVE PROVISIONS` has no
-  `<text>` body, so it produces no node and cannot parent its sections). So the XML
-  recovers per-node *paths*, not a navigable tree with aggregation.
+  matching), but there is **no `parent`/`children` object and no money rollup**. A
+  header-only grouping heading (`ADMINISTRATIVE PROVISIONS` has no `<text>` body)
+  produces no node of its own; it appears in the `display_path` of the sections it heads
+  ([ADR 0024](decisions/0024-xml-breadcrumb-keeps-every-heading.md)), so the leveled tree
+  built from those paths gives it an interior node over them. So the XML recovers
+  per-node *paths*, not a navigable tree with aggregation.
 - **PDF side** (`src/deltatrack/parsers/pdf_anchors.py`): emits a **flat anchor list** with three
   kinds (`title`, `section`, `account`) and infers breadcrumbs by walking up by
   position (`breadcrumb_for`). It has only *one* money-tree level (`account`); it
@@ -210,7 +215,9 @@ Closing the gap (DeltaTrack#54 and beyond — applies to both pipelines):
 2. Build a real **tree** by reading order + level (the XML reconstruction, applied
    to glyph sizes).
 3. **Nest sections under their header parent**, so `SPENDING REDUCTION ACCOUNT` owns
-   `SEC. 513`.
+   `SEC. 513`. Done in both breadcrumbs: the PDF passes read grouping headings
+   ([ADR 0022](decisions/0022-pdf-heading-convergence.md)), the XML reader shows them
+   ([ADR 0024](decisions/0024-xml-breadcrumb-keeps-every-heading.md)).
 4. **Roll amounts up**: account → bureau → department → title. Block-level changes
    then assign and aggregate money along the same parent/child edges.
 
@@ -267,10 +274,12 @@ across lines:
 | Umbrella heading | `ATOMIC ENERGY DEFENSE ACTIVITIES` over `NATIONAL NUCLEAR SECURITY ADMINISTRATION` | same style as the heading below it, nothing between: **not separable** (read as one) |
 | Quoted heading | `‘‘CHAPTER 16—…` inside an amendment to another law | inside an open quotation: not a heading of this bill |
 
-The XML reader leaves heading-only elements (an umbrella agency, `FOOD AND DRUG
-ADMINISTRATION` over its accounts, a topical general-provisions heading) out of
-`display_path`, so where the PDF keeps such a heading the two disagree even though the
-PDF matches the print.
+The XML side of that comparison shows heading-only elements too (an umbrella agency,
+`FOOD AND DRUG ADMINISTRATION` over its first account, a topical general-provisions heading
+over the sections below it), so where the two disagree it is the PDF reading that differs
+from the print ([ADR 0024](decisions/0024-xml-breadcrumb-keeps-every-heading.md)). The XML
+cannot say how far a heading over several accounts reaches; it is shown over the first,
+where the PDF reads its reach from the letters.
 
 ## Why not USLM?
 
