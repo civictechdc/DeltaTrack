@@ -19,7 +19,7 @@ comparison needs no key and no internet connection.
 
 ## How accuracy is checked
 
-Accuracy is checked in six ways. Each one answers a different question, and
+Accuracy is checked in seven ways. Each one answers a different question, and
 each has limits worth being honest about. There is no single accuracy
 percentage that would be truthful across all of appropriations, so we describe
 what each layer does and does not establish.
@@ -172,6 +172,26 @@ position, so it confirms a passage is present somewhere in the version, not that
 it appears in the right place. It also cannot cover draft bills at all, which have
 no official version to compare against; that is check 4's job.
 
+### 7. Cross-checking *where* the PDF files each dollar amount
+
+Check 5 confirms every dollar amount in the official version turns up somewhere in
+the PDF. This one asks whether it turns up under the right heading. For every bill we
+have in both forms, each amount in the official version is lined up with the same
+amount in the PDF reading, in document order, and the two locations (the headings the
+amount sits under) are compared. Each amount lands in one of a few grades: same place;
+same place under a slightly different label; the right place but with a parent heading
+missing; the right heading under the wrong parent; or filed under a different heading
+entirely. The first three are acceptable, since a heading left out is visible, while a
+wrong one is not. The count in each grade is frozen per bill version, so a change that
+files money under the wrong heading more often fails, and one that improves it has to
+be locked in on purpose.
+
+**Limit:** the official version's own reader is the answer key, and it leaves out some
+headings the print shows (a heading with no text of its own, such as an umbrella agency
+over its accounts). Where the PDF keeps such a heading the two disagree even though the
+PDF is right, so the "wrong parent" grade overstates PDF errors. Draft bills have no
+official version, so this check cannot cover them.
+
 ## Known soft spots
 
 We keep these in the open rather than papering over them:
@@ -323,6 +343,41 @@ precision and recall evidence in the same pull request — not with a digest tha
 Note what the sentinel cannot see. Two corpus-invisible behaviours move zero of the 27 committed
 pairs and are bound only by synthetic fixtures in `tests/test_round1_stages.py`, so "the corpus is
 still green" is not evidence about them.
+
+### The ledger-location pin, and when you may regenerate it
+
+`tests/test_pdf_ledger_location.py` measures where the PDF pipeline files each dollar amount,
+against the XML twin of the same version ([ADR 0022](docs/decisions/0022-pdf-heading-convergence.md)).
+Every amount in the XML ledger is aligned with the same amount in the PDF ledger and scored from
+`T0` (same location) to `T4` (filed under a different heading), or counted as a `MISS`. The tier
+counts for every committed dual-format version (enrolled excluded) are pinned in
+`tests/data/ledger_location_baseline.json`.
+
+The pin is exact in both directions. More not-tolerated amounts (`T3`, `T4`, `MISS`) or fewer
+true hits (`T0`) is a regression. An improvement also fails, so it gets locked in:
+
+```bash
+UPDATE_LEDGER_BASELINE=1 uv run pytest tests/test_pdf_ledger_location.py
+```
+
+The pinned counts are the baseline for any later change to PDF headings or breadcrumbs:
+regenerate only for a change you intend, and put the before/after tier totals in the pull
+request, both from this scorer. The scorer prints the totals for whichever parser is
+importable, so the "before" is the base branch's `src/` on `PYTHONPATH`:
+
+```bash
+git archive origin/develop src | tar -x -C /tmp/before
+PYTHONPATH=/tmp/before/src uv run python -m tests.ledger_location   # before
+uv run python -m tests.ledger_location                               # after
+```
+
+The answer key is DeltaTrack's own XML reader, which leaves
+heading-only elements (an agency heading with no text of its own) out of the breadcrumb, so
+where the PDF keeps such a heading it is graded "wrong parent" although it matches the page.
+Read `T3` as an upper bound on PDF errors. The reference for headings is the raw XML file's
+heading tags, not the reader ([ADR 0022](docs/decisions/0022-pdf-heading-convergence.md)): a
+change to the reader that restores them shows up here as fewer `T3`. The XML is read only by
+this test, never by the product.
 
 ### The rest of the slow suite runs in CI too
 

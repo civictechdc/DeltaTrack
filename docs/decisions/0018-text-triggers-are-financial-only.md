@@ -63,6 +63,14 @@ We will treat appropriations-specific English phrases as a **financial-semantics
 signal only**. They may interpret dollar amounts. They may not name accounts, create
 anchors, or determine hierarchy.
 
+The one exception is a short list of **named exceptions** under
+[0022](0022-pdf-heading-convergence.md): an exact heading line (`SALARIES AND
+EXPENSES`, one of the fifteen executive departments) that decides whether two stacked
+lines, both already read as headings by format, are one heading or two. An entry names
+one definable edge case and stays only while it is shown on a backtest to fix headings
+without misfiling any amount, judged against the raw XML file's heading tags. It never
+creates a heading or assigns a level.
+
 Structure comes from format alone: glyph-size bands, position, and the universal
 legislative tokens. When the format signal is absent, the structure **degrades**
 rather than substituting a guess. A shallower breadcrumb that is true beats a deeper
@@ -125,7 +133,9 @@ absence assertion that is merely present proves nothing:
 
 - **Coverage fails closed.** It scans everything under `src/deltatrack` except a
   short allowlist naming the modules permitted to read this vocabulary (the
-  financial layer, and the committee-report table parser under the 0009 carve-out).
+  financial layer, the committee-report table parser under the 0009 carve-out, and
+  `parsers/pdf_heading_exceptions.py`, which holds the named exceptions and nothing
+  else).
   A new structural helper is guarded the moment it is added, rather than needing to
   be remembered. The allowlist is itself checked to name only modules that exist, so
   a rename cannot silently widen it.
@@ -140,4 +150,5 @@ quietly stopped matching would read as permanent compliance.
 
 Reviewers get a clear question for anything touching heading or account detection:
 *is this reading format, or is it reading appropriations English?* The second needs
-this record amended, not a code review waiver.
+this record amended, or a named exception with its measurement, not a code review
+waiver.

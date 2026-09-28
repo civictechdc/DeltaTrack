@@ -48,8 +48,10 @@ discarded — so the probe added zero PDFium calls). The findings:
   (split line sums 250–315 pt, wrap sums 354–418 pt), robust to the small constants
   and to the one bill whose column measured 311 pt rather than 339.
 - **No geometric signal separates boundary 1.** A prose-leading agency is a single
-  body-size line followed by prose: there is no second heading line to test for
-  fullness, and x-centering and leading are null as above.
+  heading-band line followed by prose: there is no second heading line to test for
+  fullness, and x-centering and leading are null as above. The spike did not measure
+  the letters themselves: an agency prints in title case in small caps, an account in
+  even small caps ([0022](0022-pdf-heading-convergence.md)).
 
 ## Decision
 
@@ -57,9 +59,10 @@ We will recover the PDF heading levels from **deterministic geometry and structu
 position only**, and accept the one boundary that no such signal separates.
 
 - **Boundary 1 (prose-leading agency vs account): accept the gap.** A lone
-  body-size heading followed by prose is emitted as an account. We do not guess it is
-  an agency. The level is genuinely not present in the print as a distinguishable
-  signal, so inventing one would trade an honest gap for unauditable noise.
+  heading followed by prose is emitted as an account. We do not guess it is an
+  agency. Its case pattern ([0022](0022-pdf-heading-convergence.md)) is used to end
+  the reach of an earlier agency, never to re-label the heading itself, which has not
+  been measured.
 - **Boundary 2 (stacked vs wrapped major): split on line-fullness.** The major
   detector splits a post-`TITLE` body-size run at each line-fullness hard break:
   `w_i + space + first_word_width(line_{i+1}) ≤ column_width − slack` means line *i*
