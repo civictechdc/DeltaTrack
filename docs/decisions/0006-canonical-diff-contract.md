@@ -124,6 +124,19 @@ model in #115 and the leveled tree in #175 first, so an amount can be attached t
 account and classified as appropriation, sub-allocation, ceiling or limitation before
 it is shown as a number in a Change column.
 
+**Since 3.1: a per-side ledger, still no money on a `Change`**
+([0023](0023-financial-ledger-views.md), Proposed). The document may carry a top-level
+`financial` field: for each version separately, every dollar amount with its chain of
+headings, its clause and a type read from the wording by a versioned classifier, with
+ceilings and amounts inside amended law marked. It is an observation per side with an
+inference attached, not a pairing: nothing in it says a figure in one version became a
+figure in the other, and a `Change` still carries no money field. The report's own
+`diff.json` download strips it; the API's and CLIs' canonical JSON carry it (0023,
+Consequences, for the open question this leaves). Of #115's model, the first part is
+there (each section split into typed clauses; its location, the breadcrumb, made
+dependable on PDF by [0022](0022-pdf-heading-convergence.md)); pairing a sub-amount across
+versions, which is what money on a `Change` would claim, is not.
+
 ### Compatibility
 
 The serialized contract carries a required `schema_version` under an

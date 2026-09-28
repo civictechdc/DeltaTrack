@@ -147,15 +147,15 @@ The index is read from BILLSTATUS ZIPs in `bills/`, which are **not** part of a 
 *internal* diff dictionary, not the versioned canonical JSON that is the published
 interchange contract between the engine and its consumers. Use the canonical document
 instead: [`schema/canonical-diff.md`](schema/canonical-diff.md) specifies it, and the HTML
-report's **Export and share → Download `diff.json`** button produces one.
+report's **Export and share changes → Download `diff.json`** button produces one.
 
 ### HTML report
 
 `--format html` produces a self-contained HTML file that can be opened in any browser with no install or server required. See [examples/](examples/) for sample reports you can open immediately. The report includes:
 
-- **Header** with bill number, congress, and version numbers (e.g., "v1: reported-in-house → v2: engrossed-in-house")
+- **Header** with the bill number and title, then one line per version ("Before: …" / "After: …", with the version number where the input has one; for an upload, the file name as given) and the Congress
 - **Sidebar** listing all changed sections with color-coded change type badges. Type in the filter box to narrow the list. Click any item to jump to that section.
-- **Financial summary table** showing dollar amounts before and after, with change amounts and percentages. Click column headers to sort. Click a row to jump to that section's detail. Sections with floor amendment annotations show a warning badge.
+- **Financial views** ([ADR 0023](docs/decisions/0023-financial-ledger-views.md)): **Financials – Version A** and **Version B** list every money-bearing section of one version with each dollar amount's type (appropriation, rescission, cap, earmark, …), a category key, sorting, and the section's text highlighted clause by clause; **Inferred Financial Comparison** lists the changes whose sections hold money, Version A's amount beside Version B's, the difference in money given out, and links to each version's section. Each exports a CSV. The types are read from the bill's wording by a versioned classifier and are not authoritative; each view says so.
 - **Change cards** for each modified, added, removed, or moved section. Modified sections show word-level inline diffs: additions highlighted in green, deletions in red strikethrough. Moved sections show both the old and new location, plus body text.
 - **Prev/next buttons** in the bottom right corner to step through changes one at a time.
 

@@ -19,7 +19,7 @@ comparison needs no key and no internet connection.
 
 ## How accuracy is checked
 
-Accuracy is checked in seven ways. Each one answers a different question, and
+Accuracy is checked in eight ways. Each one answers a different question, and
 each has limits worth being honest about. There is no single accuracy
 percentage that would be truthful across all of appropriations, so we describe
 what each layer does and does not establish.
@@ -191,6 +191,25 @@ headings the print shows (a heading with no text of its own, such as an umbrella
 over its accounts). Where the PDF keeps such a heading the two disagree even though the
 PDF is right, so the "wrong parent" grade overstates PDF errors. Draft bills have no
 official version, so this check cannot cover them.
+
+### 8. Checking the financial views against the research that defined them
+
+The report's financial views type every dollar amount (appropriation, rescission, cap,
+earmark, …) with the rules the research notebook in `docs/research/financial-semantics/`
+defined and proved on the official version of a bill. The product mostly reads PDFs, so
+the check is that the same bill read from its PDF gives the notebook's rows: the same
+clauses, types, amounts and review flags, in the same order. On H.R. 4366 as reported it
+does, row for row; on the Senate's three-bill amendment the PDF gives 619 of the 622 rows,
+with the same appropriation total, and the three rows it misses are sections the PDF
+reader does not start (lettered numbers such as `SEC. 119A.`), which the report flags. The
+rows are frozen under the version of the rules that produced them, so the rules cannot
+change without their version number changing ([ADR 0023](docs/decisions/0023-financial-ledger-views.md)).
+Each view also states how many dollar figures the version's text holds and whether all
+of them are shown.
+
+**Limit:** this checks that the rules are applied the same way to a PDF as to the official
+text, not that the rules are right. A type is the rules' reading of the wording, and the
+report says so on every financial view.
 
 ## Known soft spots
 
@@ -412,6 +431,28 @@ near-variant of the XML's, or ends with the same words, counts as the same place
 passes too: a PDF heading read as just `ADMINISTRATION` grades `T1` against `FEDERAL HIGHWAY
 ADMINISTRATION`, and reading the full printed `ADMINISTRATIVE PROVISIONS—FEDERAL HIGHWAY
 ADMINISTRATION` instead (a heading the reader drops) shows in the per-amount check as `T1 → T3`. The XML is read only by these tests, never by the product.
+
+### The financial rows pin, and when you may regenerate it
+
+`tests/test_financial_corpus.py` holds the ledger rows of H.R. 4366 (as reported, and the
+Senate amendment) frozen in `tests/data/financial_rows/`, one clause per line, under the
+classifier version that produced them (`deltatrack.financial.CLASSIFIER`,
+[ADR 0023](docs/decisions/0023-financial-ledger-views.md)). The XML reading must give them
+exactly; the PDF reading must match a pinned number of them with the same appropriation
+total. A further test checks that the frozen rows are exactly what the research notebook
+computes, for as long as the version is 1.0.
+
+A rule change that moves any row fails the pin. To lock in a deliberate change, first bump
+`CLASSIFIER` and add its changelog line beside it, then regenerate:
+
+```bash
+UPDATE_FINANCIAL_ROWS=1 uv run pytest tests/test_financial_corpus.py
+```
+
+Regeneration refuses to write different rows under an unchanged version, so it cannot be
+used to bless a change silently. The fixture diff shows exactly which clauses moved; say in
+the pull request why each should have. Add a fast test for the wording that motivated the
+change to `tests/test_financial.py` first, failing before the rule change.
 
 ### The rest of the slow suite runs in CI too
 

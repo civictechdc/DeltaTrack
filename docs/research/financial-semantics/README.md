@@ -2,6 +2,21 @@
 
 Financial classifier and analysis tools for DeltaTrack bill data.
 
+## Status: the classifier is in the product
+
+The rules in `classify_bill.py` now type the dollar amounts in the report's financial views:
+they moved into `src/deltatrack/financial.py` unchanged, as classifier version 1.0
+([ADR 0023](../../decisions/0023-financial-ledger-views.md)). Changes to the rules are made
+there, not here: they bump its version and regenerate the frozen rows the product is tested
+against (`TESTING.md`, "The financial rows pin").
+
+This directory stays as the provenance of version 1.0. `tests/test_financial_corpus.py`
+imports `classify_bill.py` and checks that the product's rows on H.R. 4366 are exactly what it
+computes; that test is retired when the product moves past 1.0, and this directory can then
+be condensed under the [retention policy](../README.md). `classifier_notes.md` records known
+weak spots (the "For purposes of" opener, the intentionally unknown categories) that are
+candidates for later versions.
+
 ## Files
 
 | File | Purpose |
