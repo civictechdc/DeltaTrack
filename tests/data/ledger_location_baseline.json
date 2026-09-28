@@ -1,0 +1,338 @@
+{
+ "113-hr-3547/1_introduced-in-house": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "113-hr-3547/2_engrossed-in-house": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "113-hr-3547/3_received-in-senate": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "113-hr-3547/4_engrossed-amendment-senate": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "114-hr-2029/1_reported-in-house": {
+  "T0": 122,
+  "T1": 3,
+  "T2": 0,
+  "T3": 2,
+  "T4": 0,
+  "MISS": 0
+ },
+ "114-hr-2029/3_referred-in-senate": {
+  "T0": 122,
+  "T1": 3,
+  "T2": 0,
+  "T3": 7,
+  "T4": 0,
+  "MISS": 0
+ },
+ "114-hr-2029/4_reported-in-senate": {
+  "T0": 246,
+  "T1": 4,
+  "T2": 0,
+  "T3": 8,
+  "T4": 0,
+  "MISS": 0
+ },
+ "115-hr-5895/1_reported-in-house": {
+  "T0": 97,
+  "T1": 8,
+  "T2": 21,
+  "T3": 3,
+  "T4": 0,
+  "MISS": 0
+ },
+ "115-hr-5895/2_engrossed-in-house": {
+  "T0": 323,
+  "T1": 13,
+  "T2": 21,
+  "T3": 19,
+  "T4": 0,
+  "MISS": 0
+ },
+ "115-hr-5895/4_engrossed-amendment-senate": {
+  "T0": 354,
+  "T1": 16,
+  "T2": 38,
+  "T3": 33,
+  "T4": 3,
+  "MISS": 0
+ },
+ "117-hr-2471/1_introduced-in-house": {
+  "T0": 2,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "117-hr-4432/1_reported-in-house": {
+  "T0": 217,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "117-hr-4502/1_reported-in-house": {
+  "T0": 428,
+  "T1": 15,
+  "T2": 0,
+  "T3": 0,
+  "T4": 1,
+  "MISS": 0
+ },
+ "117-hr-4502/2_engrossed-in-house": {
+  "T0": 1673,
+  "T1": 29,
+  "T2": 82,
+  "T3": 168,
+  "T4": 8,
+  "MISS": 0
+ },
+ "118-hr-2882/1_introduced-in-house": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-2882/4_engrossed-amendment-senate": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-2882/5_engrossed-amendment-house": {
+  "T0": 1441,
+  "T1": 29,
+  "T2": 64,
+  "T3": 200,
+  "T4": 2,
+  "MISS": 0
+ },
+ "118-hr-4366/1_reported-in-house": {
+  "T0": 139,
+  "T1": 0,
+  "T2": 0,
+  "T3": 2,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-4366/2_engrossed-in-house": {
+  "T0": 139,
+  "T1": 0,
+  "T2": 0,
+  "T3": 2,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-4366/3_placed-on-calendar-senate": {
+  "T0": 139,
+  "T1": 0,
+  "T2": 0,
+  "T3": 2,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-4366/4_engrossed-amendment-senate": {
+  "T0": 746,
+  "T1": 1,
+  "T2": 6,
+  "T3": 80,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-4366/5_engrossed-amendment-house": {
+  "T0": 1481,
+  "T1": 45,
+  "T2": 74,
+  "T3": 123,
+  "T4": 11,
+  "MISS": 0
+ },
+ "118-hr-4820/1_reported-in-house": {
+  "T0": 271,
+  "T1": 1,
+  "T2": 2,
+  "T3": 14,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-8282/1_introduced-in-house": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-8752/1_reported-in-house": {
+  "T0": 151,
+  "T1": 0,
+  "T2": 1,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-8752/2_engrossed-in-house": {
+  "T0": 153,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-8774/1_reported-in-house": {
+  "T0": 229,
+  "T1": 0,
+  "T2": 0,
+  "T3": 2,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-8774/2_engrossed-in-house": {
+  "T0": 230,
+  "T1": 0,
+  "T2": 0,
+  "T3": 1,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-hr-9468/1_introduced-in-house": {
+  "T0": 2,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-2321/1_reported-in-senate": {
+  "T0": 321,
+  "T1": 34,
+  "T2": 0,
+  "T3": 2,
+  "T4": 2,
+  "MISS": 0
+ },
+ "118-s-2625/1_reported-in-senate": {
+  "T0": 174,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4677/1_reported-in-senate": {
+  "T0": 125,
+  "T1": 0,
+  "T2": 0,
+  "T3": 1,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4690/1_reported-in-senate": {
+  "T0": 264,
+  "T1": 0,
+  "T2": 4,
+  "T3": 39,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4795/1_reported-in-senate": {
+  "T0": 323,
+  "T1": 35,
+  "T2": 0,
+  "T3": 0,
+  "T4": 2,
+  "MISS": 0
+ },
+ "118-s-4796/1_reported-in-senate": {
+  "T0": 339,
+  "T1": 1,
+  "T2": 2,
+  "T3": 20,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4797/1_reported-in-senate": {
+  "T0": 139,
+  "T1": 2,
+  "T2": 27,
+  "T3": 151,
+  "T4": 2,
+  "MISS": 0
+ },
+ "118-s-4802/1_reported-in-senate": {
+  "T0": 264,
+  "T1": 0,
+  "T2": 4,
+  "T3": 14,
+  "T4": 9,
+  "MISS": 0
+ },
+ "118-s-4921/1_reported-in-senate": {
+  "T0": 269,
+  "T1": 0,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4927/1_reported-in-senate": {
+  "T0": 134,
+  "T1": 7,
+  "T2": 32,
+  "T3": 6,
+  "T4": 0,
+  "MISS": 0
+ },
+ "118-s-4928/1_reported-in-senate": {
+  "T0": 263,
+  "T1": 4,
+  "T2": 32,
+  "T3": 45,
+  "T4": 1,
+  "MISS": 0
+ },
+ "118-s-4942/1_reported-in-senate": {
+  "T0": 437,
+  "T1": 22,
+  "T2": 0,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ },
+ "119-hr-1/1_reported-in-house": {
+  "T0": 0,
+  "T1": 0,
+  "T2": 783,
+  "T3": 0,
+  "T4": 0,
+  "MISS": 0
+ }
+}
