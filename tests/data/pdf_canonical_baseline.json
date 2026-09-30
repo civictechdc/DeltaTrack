@@ -160,10 +160,10 @@
     }
   },
   "118-hr-4366/4_engrossed-amendment-senate->5_engrossed-amendment-house": {
-    "bytes": 4864739,
+    "bytes": 4864766,
     "changes": 1272,
     "declined": false,
-    "sha256": "de8c4824feac5370111a6ff33efe7553e9a71dba76e967f861b390e5ee64c535",
+    "sha256": "14339ab7a3cc0e376bda1b94986e2baadf0072dc9b7e5f12769d3d80b1713af8",
     "summary": {
       "added": 861,
       "modified": 277,

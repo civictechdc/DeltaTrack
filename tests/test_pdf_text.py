@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from deltatrack.parsers.pdf_text import (
+    BreakEvidence,
     Line,
     Page,
     _first_word_right,
@@ -57,6 +58,31 @@ class TestPdfFullTextPrint:
         # Contrast: the canonical (merged) text rejoins the word onto one line.
         text, _ = pdf_full_text([_print_page(1, self._SRC)])
         assert "    8  For acquisition and equipment of public works" in text
+
+
+@pytest.mark.parametrize(
+    ("printed", "reflowed"),
+    [
+        ("8 is a U.S.-\n9 based entity", "U.S.-based"),
+        ("8 under the U.S.-\n9 FSM Compact", "U.S.-FSM"),
+    ],
+)
+def test_abbreviation_compound_broken_at_its_hyphen_keeps_it(printed: str, reflowed: str) -> None:
+    """An abbreviation compound broken at its own hyphen reflows as the document spells it.
+
+    The break fragment ends in a period, so extracting it as anything short of `U.S.`
+    loses the only key the document's own spelling is indexed under, and the fallback
+    then decides from the bare continuation: `U.S.based`, `U.S.FSM`.
+    """
+    # The document writes each compound unbroken elsewhere, and each continuation as a
+    # word of its own, which is what makes a wrong fragment pick the closed form.
+    elsewhere = "1 a U.S.-based firm based in the U.S.-FSM Compact with the FSM"
+    lines = _parse_print_lines(f"{elsewhere}\n{printed}")
+    evidence = BreakEvidence.from_print_lines([lines])
+
+    merged, _ = _merge_print_lines(lines, evidence)
+
+    assert reflowed in merged[-1].text
 
 
 def _page(page_number: int, text: str) -> Page:

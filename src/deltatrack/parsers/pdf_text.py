@@ -34,8 +34,9 @@ _SOFT_HYPHEN_BREAK = re.compile(r"(\w)-\n([a-z])")
 # internal hyphens, apostrophes and periods (`E-Verify`, `U.S.C.`, `Nation's`).
 _WORD_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’\-\.]*")
 # The word fragment a printed line ends on when the printer broke it mid-word. The
-# final character before the hyphen is alphanumeric, matching `_is_break_tail`.
-_BREAK_TAIL = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’\-\.]*[A-Za-z0-9]-$|[A-Za-z0-9]-$")
+# final character before the hyphen is alphanumeric or a period, matching
+# `_is_break_tail`, so `U.S.-` yields `U.S.` rather than nothing.
+_BREAK_TAIL = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’\-\.]*[A-Za-z0-9.]-$|[A-Za-z0-9]-$")
 # Running furniture PDFium floats to the TOP of the next page's reading order, where it
 # lands between a word broken at the page seam and its continuation: `H. R. 3547—61` on
 # enrolled prints, `† HR 4366 EAS` on Senate engrossed amendments. It begins with an

@@ -81,14 +81,6 @@
       "version": "115-hr-1625/6_enrolled-bill"
     },
     {
-      "expected": "u.s.-israeli",
-      "left": "U.S.",
-      "produced": "U.S.Israeli",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "Israeli",
-      "version": "115-hr-244/6_enrolled-bill"
-    },
-    {
       "expected": "grant-in-aid",
       "left": "grant",
       "produced": "grantin-aid",
@@ -697,38 +689,6 @@
       "version": "118-hr-4366/5_engrossed-amendment-house"
     },
     {
-      "expected": "u.s.-fsm",
-      "left": "U.S.",
-      "produced": "U.S.FSM",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "FSM",
-      "version": "118-hr-4366/5_engrossed-amendment-house"
-    },
-    {
-      "expected": "u.s.-palau",
-      "left": "U.S.",
-      "produced": "U.S.PALAU",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "PALAU",
-      "version": "118-hr-4366/5_engrossed-amendment-house"
-    },
-    {
-      "expected": "u.s.-palau",
-      "left": "U.S.",
-      "produced": "U.S.Palau",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "Palau",
-      "version": "118-hr-4366/5_engrossed-amendment-house"
-    },
-    {
-      "expected": "u.s.-rmi",
-      "left": "U.S.",
-      "produced": "U.S.RMI",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "RMI",
-      "version": "118-hr-4366/5_engrossed-amendment-house"
-    },
-    {
       "expected": "college-based",
       "left": "college",
       "produced": "collegebased",
@@ -839,22 +799,6 @@
       "reason": "no in-document or sibling evidence for either form; decided by case shape",
       "right": "based",
       "version": "118-hr-4366/5_engrossed-amendment-house"
-    },
-    {
-      "expected": "u.s.-fsm",
-      "left": "U.S.",
-      "produced": "U.S.FSM",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "FSM",
-      "version": "118-hr-4366/6_enrolled-bill"
-    },
-    {
-      "expected": "u.s.-rmi",
-      "left": "U.S.",
-      "produced": "U.S.RMI",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "RMI",
-      "version": "118-hr-4366/6_enrolled-bill"
     },
     {
       "expected": "15-passenger",
@@ -1270,14 +1214,6 @@
       "produced": "TAO",
       "reason": "no in-document or sibling evidence for either form; decided by case shape",
       "right": "AO",
-      "version": "119-hr-1/1_reported-in-house"
-    },
-    {
-      "expected": "u.s.-cuba",
-      "left": "U.S.",
-      "produced": "U.S.Cuba",
-      "reason": "no in-document or sibling evidence for either form; decided by case shape",
-      "right": "Cuba",
       "version": "119-hr-1/1_reported-in-house"
     },
     {
