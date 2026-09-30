@@ -1,5 +1,9 @@
 # Adversarial validation of the bake-off's hybrid conclusion
 
+> **Closed.** The PDF study is closed out in [`../CLOSEOUT.md`](../CLOSEOUT.md): what was
+> demonstrated, what remains unsupported, and why the external-validity investigation was
+> retired without selecting a seam.
+
 Start here. This directory is an independent falsification pass over
 [`../RESULTS-HYBRID.md`](../RESULTS-HYBRID.md), run on the assumption that its conclusion
 might be wrong. It adds nothing to the spike and changes nothing in it.
