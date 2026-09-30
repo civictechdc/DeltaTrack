@@ -19,6 +19,13 @@ from html import escape
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.financial_views import (
+    FINANCIAL_CSS,
+    FINANCIAL_JS,
+    financial_toggle_buttons,
+    financial_views_html,
+    has_financial,
+)
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.palette import root_block
 
@@ -380,32 +387,28 @@ def _build_sidebar(
 
 
 def _versions_html(view: DiffView) -> str:
-    """Render the versions line.
+    """Render the versions lines: one per version, then the Congress.
 
-    Canonical form: "v1: {label} → v2: {label} · {congress}th Congress".
-    The "vN: " prefix is dropped when both version numbers are None — PDF
-    inputs don't carry a version index, and "v1: Reported" is misleading
-    when no such index exists.
+    Canonical form, one row each:
+        Before (v1): {label}
+        After (v2): {label}
+        {congress}th Congress
+    The label is shown as given, which for an upload is its filename: a stage name
+    ("Engrossed in House") is known only when the file keeps GPO's own name, so none
+    is inferred. The "(vN)" is dropped for a version without a number (PDF inputs
+    carry no version index, and "v1" would be misleading when none exists). The
+    Congress row is omitted when unknown, not left as "th Congress".
     """
-    if view.v1_version_number is not None or view.v2_version_number is not None:
-        v1 = (
-            f"v{view.v1_version_number}: {escape(view.v1_label)}"
-            if view.v1_version_number is not None
-            else escape(view.v1_label)
-        )
-        v2 = (
-            f"v{view.v2_version_number}: {escape(view.v2_label)}"
-            if view.v2_version_number is not None
-            else escape(view.v2_label)
-        )
-    else:
-        v1 = escape(view.v1_label)
-        v2 = escape(view.v2_label)
-    line = f"{v1} &rarr; {v2}"
+
+    def row(tag: str, number: int | None, label: str) -> str:
+        suffix = f" (v{number})" if number is not None else ""
+        return f'<span class="versions__row"><b>{tag}{suffix}:</b> {escape(label)}</span>'
+
+    rows = [row("Before", view.v1_version_number, view.v1_label), row("After", view.v2_version_number, view.v2_label)]
     congress = str(view.congress).strip()
-    if congress:  # omit the suffix entirely when unknown, not "· th Congress"
-        line += f" · {escape(congress)}th Congress"
-    return line
+    if congress:
+        rows.append(f'<span class="versions__row">{escape(congress)}th Congress</span>')
+    return "".join(rows)
 
 
 def _summary_bar_html(summary: dict[str, int]) -> str:
@@ -488,12 +491,13 @@ def _view_toggle_html(canonical: dict | None) -> str:
     """Changes/Full segmented control. Empty when there's no full text to show."""
     if not _has_full_bill(canonical):
         return ""
+    financial = financial_toggle_buttons() if has_financial(canonical) else ""
     return (
         '<div class="view-toggle" role="tablist" aria-label="View mode">'
         '<button class="view-toggle__btn is-active" data-view="changes" role="tab"'
         ' aria-selected="true">Changes</button>'
         '<button class="view-toggle__btn" data-view="full" role="tab"'
-        ' aria-selected="false">Full bill</button>'
+        f' aria-selected="false">Full bill</button>{financial}'
         "</div>"
     )
 
@@ -755,7 +759,10 @@ def _views_html(
     if not _has_full_bill(canonical):
         return changes_inner
     full_bill = _full_bill_html(display_canonical or canonical)
-    return f'<div class="view view-changes">{changes_inner}</div><div class="view view-full" hidden>{full_bill}</div>'
+    return (
+        f'<div class="view view-changes">{changes_inner}</div><div class="view view-full" hidden>{full_bill}</div>'
+        f"{financial_views_html(canonical)}"
+    )
 
 
 # Ready-made questions a staffer can paste into an LLM alongside the diff.json,
@@ -789,7 +796,7 @@ def _export_button_html(canonical: dict | None) -> str:
     pipeline that supplies it — XML and PDF alike, not PDF-only."""
     if not _has_full_bill(canonical):
         return ""
-    return '<button id="export-open" class="export-btn" type="button">Export and share</button>'
+    return '<button id="export-open" class="export-btn" type="button">Export and share changes</button>'
 
 
 def _nav_controls_html(canonical: dict | None) -> str:
@@ -818,7 +825,11 @@ def _find_bar_html(canonical: dict | None) -> str:
         return ""
     return (
         '<div class="find-bar" role="search">'
-        '<input id="find-input" type="search" placeholder="Find in view…" aria-label="Find in view">'
+        '<span class="find-field">'
+        '<svg class="find-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+        '<circle cx="10.5" cy="10.5" r="6.5"></circle><line x1="15.5" y1="15.5" x2="21" y2="21"></line></svg>'
+        '<input id="find-input" type="search" placeholder="Search this view…" aria-label="Search this view">'
+        "</span>"
         '<span id="find-counter" class="find-counter" aria-live="polite">0 / 0</span>'
         '<button id="find-prev" type="button" aria-label="Previous match" disabled>&uarr;</button>'
         '<button id="find-next" type="button" aria-label="Next match" disabled>&darr;</button>'
@@ -915,6 +926,8 @@ def format_diff_html(
     # sidebar and cards can never sort their shared groups from different trees.
     order_map = _node_order_map((canonical.get("tree") or {}).get("v2"))
     sidebar = _build_sidebar(view, sidebar_canonical, order_map)
+    # Five view buttons do not share a row with find and navigation: the switcher gets its own.
+    action_bar_class = "action-bar action-bar--stacked" if has_financial(canonical) else "action-bar"
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -935,7 +948,7 @@ def format_diff_html(
 <div class="versions">{_versions_html(view)}</div>
 <div class="summary-bar">{_summary_bar_html(view.summary)}</div>
 </div>
-<div class="action-bar">
+<div class="{action_bar_class}">
 <div class="action-bar__left">
 {_view_toggle_html(canonical)}
 {_find_bar_html(canonical)}
@@ -952,6 +965,7 @@ def format_diff_html(
 {data_script}
 <script>
 {_JS}
+{FINANCIAL_JS}
 </script>
 </body>
 </html>"""
@@ -1027,11 +1041,13 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
 .filter-empty[hidden] { display: none; }
 
 /* Main content */
-.main { margin-left: 280px; padding: 28px 36px; max-width: 940px; flex: 1; }
+.main { margin-left: 280px; padding: 28px 36px; max-width: 940px; flex: 1; min-width: 0; }
 
 /* Header */
 .report-header h1 { font-size: 24px; margin-bottom: 4px; }
-.report-header .versions { color: var(--muted-foreground); font-size: 15px; margin-bottom: 16px; }
+.report-header .versions { color: var(--muted-foreground); font-size: 15px; margin-bottom: 16px; line-height: 1.5; }
+.versions__row { display: block; overflow-wrap: anywhere; }
+.versions__row b { color: var(--foreground); font-weight: 600; }
 .summary-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
 .summary-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
   border-radius: 999px; font-size: 13px; background: var(--secondary); }
@@ -1103,16 +1119,25 @@ ins { background: var(--diff-add); text-decoration: none; color: var(--diff-add-
   border-bottom: 1px solid var(--border); padding: 10px 0; margin-bottom: 16px; }
 .action-bar__left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .action-bar__group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.find-bar { display: inline-flex; align-items: center; gap: 4px; }
-.find-bar input { padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius);
-  font: inherit; font-family: var(--font-sans); font-size: 13px; width: 180px; background: var(--card); }
-.find-bar button { padding: 5px 9px; border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 13px; }
+.action-bar__left { flex: 1 1 auto; }
+/* The page's one search: it reaches text that is collapsed, which the browser's own find
+   cannot, so it is sized and marked to be found first. */
+.find-bar { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 380px; max-width: 640px; }
+.find-field { position: relative; display: flex; flex: 1; min-width: 0; }
+.find-icon { position: absolute; left: 14px; top: 50%; width: 22px; height: 22px; transform: translateY(-50%);
+  fill: none; stroke: var(--muted-foreground); stroke-width: 2.2; stroke-linecap: round; pointer-events: none; }
+.find-bar input { width: 100%; padding: 10px 14px 10px 46px; border: 1px solid var(--border);
+  border-radius: var(--radius); font: inherit; font-family: var(--font-sans); font-size: 20px;
+  background: var(--card); color: var(--foreground); }
+.find-bar input:focus { outline: 2px solid var(--primary); outline-offset: 1px; border-color: var(--primary); }
+.find-bar button { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 15px; }
 .find-bar button:hover { background: var(--secondary); }
 .find-bar button[disabled] { opacity: 0.4; cursor: default; }
 .find-counter { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted-foreground);
   min-width: 3.5em; text-align: center; }
-mark.find-hit { background: var(--accent); color: inherit; border-radius: 2px; scroll-margin-top: 64px; }
+mark.find-hit { background: var(--accent); color: inherit; border-radius: 2px;
+  scroll-margin-top: calc(var(--sticky-bar-height) + 8px); }
 mark.find-hit--current { background: var(--gold); color: #fff; }
 .nav-controls { display: inline-flex; align-items: center; gap: 4px; }
 .nav-controls button { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius);
@@ -1183,9 +1208,13 @@ mark.find-hit--current { background: var(--gold); color: #fff; }
 .prompt-copy:hover { background: var(--accent); }
 .prompt-text { line-height: 1.5; }
 
-/* Nav targets clear the sticky action bar when scrolled to via Prev/Next */
+/* Nav targets clear the sticky action bar when scrolled to via Prev/Next or a link:
+   --sticky-bar-height is the bar's measured height (padForStickyBar), plus a small gap. A
+   fixed 64px cleared the one-row bar but not the two-row one. On the targets, not as the
+   page's scroll-padding: that would also count the bar's own controls as covered, so
+   clicking or tabbing to one would scroll the page. */
 .change-card, .full-bill [id^="attr-"], .full-bill [id^="sec-"], .full-bill [id^="fb-off-"],
-.removed-block { scroll-margin-top: 64px; }
+.removed-block { scroll-margin-top: calc(var(--sticky-bar-height) + 8px); }
 
 /* Full-bill section TOC (sidebar variant) */
 .sidebar-changes[hidden], .sidebar-toc[hidden] { display: none; }
@@ -1234,7 +1263,25 @@ body.nav-collapsed .main { margin-left: 0; padding-left: 64px; }
   .find-bar { position: fixed; left: 0; right: 0; bottom: 46px; z-index: 35;
     justify-content: center; background: var(--card); border-top: 1px solid var(--border);
     padding: 8px 16px; }
-  .find-bar input { flex: 1; max-width: 320px; }
+  .find-bar { max-width: none; }
+  body.outside-changes { padding-bottom: 62px; }
+  body.outside-changes .find-bar { bottom: 0; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+}
+/* Change navigation and the changes export serve Changes and Full bill only. */
+body.outside-changes .nav-controls, body.outside-changes #export-open { display: none; }
+
+/* Five view buttons get a row of their own when the financial views are present (ADR 0023).
+   The views' own styles live with them, in formatters/financial_views.py. */
+.action-bar--stacked { display: grid; grid-template-columns: 1fr auto; row-gap: 10px; align-items: center; }
+.action-bar--stacked .action-bar__left { display: contents; }
+.action-bar--stacked .view-toggle { grid-column: 1 / -1; justify-self: start; }
+.action-bar--stacked .find-bar { grid-column: 1; }
+.action-bar--stacked .action-bar__group { grid-column: 2; }
+.fin-scroll { overflow-x: auto; }
+@media (max-width: 820px) {
+  .action-bar--stacked { display: flex; flex-direction: column; align-items: stretch; }
+  .view-toggle { display: flex; flex-wrap: wrap; }
+  .view-toggle__btn { flex: 1 1 auto; }
 }
 
 /* Print */
@@ -1244,6 +1291,7 @@ body.nav-collapsed .main { margin-left: 0; padding-left: 64px; }
   .change-card { break-inside: avoid; }
 }
 """
+    + FINANCIAL_CSS
 )
 
 
@@ -1253,19 +1301,60 @@ document.addEventListener('DOMContentLoaded', function() {
   var toggleBtns = document.querySelectorAll('.view-toggle__btn');
   var sidebarChanges = document.querySelector('.sidebar-changes');
   var sidebarToc = document.querySelector('.sidebar-toc');
+  // Jump targets land below the sticky action bar, not under it: their scroll-margin-top is
+  // --sticky-bar-height plus a gap, and that is the bar's measured height, which varies (the
+  // view switcher takes its own row when the financial views are present, the bar wraps on
+  // narrower windows). Where the bar does not stick (phones) nothing covers the top: 0.
+  var stickyBar = document.querySelector('.action-bar');
+  function padForStickyBar() {
+    var sticky = stickyBar && getComputedStyle(stickyBar).position === 'sticky';
+    document.documentElement.style.setProperty('--sticky-bar-height', sticky ? stickyBar.offsetHeight + 'px' : '0px');
+  }
+  padForStickyBar();
+  window.addEventListener('resize', padForStickyBar);
+  if (stickyBar && window.ResizeObserver) new ResizeObserver(padForStickyBar).observe(stickyBar);
+  // Each view keeps its own scroll position. The views share one page, so without this a
+  // view comes back at wherever the last one left the page: neither where the reader was
+  // in it nor its top. Restored synchronously, inside the switch, so a caller that scrolls
+  // afterwards still wins: the browser's jump to a sidebar #change-N link, a search's first
+  // match, a financial view's section link. Tabs add no browser history (Back leaves the
+  // report): the report is often written into a tab with no address of its own, where
+  // history entries do not behave the same across browsers.
+  var viewScroll = {};
+  var shownView = 'changes';
+  document.body.dataset.activeView = shownView;
   function showView(name) {
+    if (name !== shownView) viewScroll[shownView] = window.scrollY;
+    // Which view is showing, for styles: `body[data-active-view]`, and `outside-changes` for the
+    // controls that serve only Changes and Full bill (the change navigator, the changes
+    // export). Set here, on every switch, so no path into a view can leave them stale.
+    document.body.dataset.activeView = name;
+    document.body.classList.toggle('outside-changes', name !== 'changes' && name !== 'full');
     toggleBtns.forEach(function(b) {
       var on = b.dataset.view === name;
       b.classList.toggle('is-active', on);
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
+    var target = null;
     document.querySelectorAll('.view').forEach(function(el) {
       el.hidden = !el.classList.contains('view-' + name);
+      if (!el.hidden) target = el;
     });
     // Swap the sidebar variant (only when a TOC variant was rendered).
     if (sidebarToc) {
       sidebarToc.hidden = name !== 'full';
       if (sidebarChanges) sidebarChanges.hidden = name === 'full';
+    }
+    if (name === shownView || !target) return;
+    shownView = name;
+    if (viewScroll[name] !== undefined) {
+      window.scrollTo(0, viewScroll[name]);
+    } else {
+      // First visit: the view's own top, just under the sticky bar, when the page is
+      // already past it; otherwise leave the page where it is (the header stays in sight).
+      var bar = document.querySelector('.action-bar');
+      var top = target.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 8;
+      if (window.scrollY > top) window.scrollTo(0, Math.max(0, top));
     }
   }
   toggleBtns.forEach(function(b) {
@@ -1278,6 +1367,10 @@ document.addEventListener('DOMContentLoaded', function() {
     for (var d = el && el.parentElement; d; d = d.parentElement) {
       if (d.tagName === 'DETAILS') d.open = true;
     }
+    // A collapsed row that find indexes while hidden (`data-find-reveal`) is opened by
+    // the view that owns it, which knows what opening means there.
+    var row = el && el.closest && el.closest('[data-find-reveal][hidden]');
+    if (row) row.dispatchEvent(new CustomEvent('find:reveal', {bubbles: true}));
   }
   // Change-list anchors (#change-N) live in the changes view; jump back to it
   // first. TOC links (.sidebar-toc a) just scroll within the full-bill view.
@@ -1312,7 +1405,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var dlJson = document.getElementById('dl-json');
     if (dlJson) dlJson.addEventListener('click', function() {
       var raw = document.getElementById('diff-data').textContent;
-      downloadBlob('diff.json', JSON.stringify(JSON.parse(raw), null, 2), 'application/json');
+      // The changes export stays what it was: the typed ledger feeds the financial views
+      // and their own CSV export, not the document handed to an assistant (ADR 0023).
+      var doc = JSON.parse(raw);
+      delete doc.financial;
+      downloadBlob('diff.json', JSON.stringify(doc, null, 2), 'application/json');
     });
     var dlHtml = document.getElementById('dl-html');
     if (dlHtml) dlHtml.addEventListener('click', function() {
@@ -1406,6 +1503,8 @@ document.addEventListener('DOMContentLoaded', function() {
       .filter(function(c) { return c.offsetParent !== null; });
   }
   function refreshNav() {
+    // Outside Changes and Full bill the navigator is hidden (`outside-changes`, set by
+    // showView), rather than show a disabled 0 / 0 beside the find counter.
     var n = navTargets().length;
     if (current >= n) current = n - 1;
     if (counter) counter.textContent = (current + 1) + ' / ' + n;
@@ -1502,9 +1601,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var findHits = [];
   var findIdx = -1;
   function activeView() {
-    var full = document.querySelector('.view-full');
-    if (full && !full.hidden) return full;
-    return document.querySelector('.view-changes') || document.body;
+    var shown = [].slice.call(document.querySelectorAll('.view')).filter(function(v) { return !v.hidden; });
+    return shown[0] || document.querySelector('.view-changes') || document.body;
   }
   function clearFind() {
     var parents = [];
@@ -1607,8 +1705,10 @@ document.addEventListener('DOMContentLoaded', function() {
       if (seg.gutter || !seg.block) continue;
       if (seg.block !== visBlock) {  // one layout read per block, not per node
         visBlock = seg.block;
+        // Collapsed content marked `data-find-reveal` is searched too: a hit opens it.
         visible = !seg.block.classList.contains('fb-page')
-                  && (seg.block.offsetParent !== null || seg.block.tagName === 'BODY');
+                  && (seg.block.offsetParent !== null || seg.block.tagName === 'BODY'
+                      || seg.block.closest('[data-find-reveal]') !== null);
       }
       if (!visible) continue;
       var b = seg.block;
@@ -1671,7 +1771,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ("House of Representa-"). That hyphen is gone from the searchable text,
     // so drop it rather than return nothing for a phrase the reader copied.
     if (/[A-Za-z0-9]-$/.test(q) && q.length > 3) q = q.slice(0, -1);
-    var idx = buildFindIndex(activeView());
+    // A view that renders collapsed text lazily fills it in now (synchronously), so find
+    // sees text no one has opened yet.
+    var root = activeView();
+    root.dispatchEvent(new CustomEvent('find:prepare', {bubbles: true}));
+    var idx = buildFindIndex(root);
     var ql = q.toLowerCase();
     var hits = [], ranges = [], at = 0;
     while ((at = idx.lower.indexOf(ql, at)) !== -1) {

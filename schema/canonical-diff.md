@@ -1,4 +1,4 @@
-# Canonical Diff JSON — v3.0
+# Canonical Diff JSON — v3.1
 
 This document specifies the canonical JSON shape produced when comparing two
 versions of a bill. It is the public contract between the diff engine and any
@@ -8,10 +8,19 @@ XML inputs and a diff produced from PDF inputs share this shape.
 
 ## Versioning
 
-Top-level field: `schema_version: "3.0"`.
+Top-level field: `schema_version: "3.1"`.
 
 ## Changelog
 
+- **3.1** — Added optional top-level `financial: { classifier, v1, v2 } | null`: each
+  version's **ledger**, every dollar amount in it with its chain of headings, its clause and
+  a type read from the wording ([ADR 0023](../docs/decisions/0023-financial-ledger-views.md)).
+  Per side and unpaired, like `tree`: it states what each version contains, never that a
+  figure in one became a figure in the other, and a change object still carries no money
+  (the 3.0 rule below stands). `classifier` names the version of the rules that typed it, so
+  a saved document says which rules produced its types. Requires `full_text` and `tree`
+  present (every span indexes into `full_text`). Additive, backward compatible. The HTML
+  report's own `diff.json` download strips the field.
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
   money at all. The field paired a dollar figure on one side with a figure on the
@@ -103,7 +112,7 @@ Top-level field: `schema_version: "3.0"`.
 
 ```jsonc
 {
-  "schema_version": "3.0",
+  "schema_version": "3.1",
   "generator": { "name": "deltatrack", "version": "0.x" },
   "bill":      { "type": "HR", "number": 4366, "congress": 118 },
   "versions": {
@@ -111,6 +120,7 @@ Top-level field: `schema_version: "3.0"`.
     "v2": { "label": "Public Law",         "version_number": 4,    "source": "xml" }
   },
   "summary":  { "added": 12, "removed": 8, "modified": 47, "moved": 3 },
+  "financial": { "classifier": "1.0", "v1": { … }, "v2": { … } },  // optional, v3.1+
   "full_text": {                            // optional, v1.1+
     "v1": "TITLE I—…\n\nSECTION 101. …",
     "v2": "TITLE I—…\n\nSECTION 101. …"
@@ -162,6 +172,50 @@ be both content and container (an account that holds sub-accounts has a
 derivable from this tree, and since #462 it is the renderer's only source for
 the navigation: the separate flat `sections` jump-list and the builder that read
 it were removed.
+
+### `financial` (optional, v3.1+)
+
+Top-level object: each version's ledger ([ADR 0023](../docs/decisions/0023-financial-ledger-views.md)).
+`null` (or absent) when there is no full text and tree to build it from. **Co-presence:** a
+non-null `financial` requires non-null `full_text` and `tree`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `classifier` | string | Version of the rules that typed the clauses (`deltatrack.financial.CLASSIFIER`). A rule change that moves any ledger row changes it. |
+| `v1`, `v2` | Ledger | One per side, built independently. |
+
+A **Ledger**:
+
+| Field | Type | Notes |
+|---|---|---|
+| `amounts_in_text` | int | How many `$` figures that side's `full_text` holds. A consumer can compare it with the figures under `sections` to see whether any were not placed. |
+| `sections` | LedgerSection[] | The money-bearing nodes of that side's `tree`, in document order. |
+
+A **LedgerSection** (one money-bearing tree node):
+
+| Field | Type | Notes |
+|---|---|---|
+| `path` | `[label, level][]` | The node's chain of headings with their `tree` levels, outermost first. The location of the text, not an account. |
+| `span` | `[start, end]` | Character range into `full_text[side]`. |
+| `clauses` | LedgerClause[] | The section split at `Provided, That`, `; and in addition,` and `of which`; only clauses holding a dollar figure. |
+| `pieces` | `[start, end, kind][]` | Ranges of the section's text by clause type (`kind` a type, or `"proviso"` for the `Provided, That` wording itself), for highlighting. |
+| `flags` | string[] | `"may_hold_several_sections"`: the text holds a further section heading the parser did not start a node for, so the section may carry more than one. |
+
+A **LedgerClause**:
+
+| Field | Type | Notes |
+|---|---|---|
+| `level` | `"primary"` \| `"sub"` | The section's opening clause, or a clause split off it. |
+| `type` | enum | `appropriation`, `transfer`, `rescission`, `authorization`, `fee`, `restriction`, `directive`, `cap`, `earmark`, `availability`, `sub_allocation`, `unknown` (a figure no rule recognised). An inference from wording. |
+| `amount` | number \| null | The clause's amount: its first figure that is not a "not to exceed" ceiling. |
+| `in_amended_law` | bool | The clause amount sits inside text this bill writes into another law, so it is not money this bill gives out. |
+| `needs_review` | bool | The clause holds more than one non-ceiling figure, so `amount` is ambiguous. |
+| `span` | `[start, end]` | The clause's range in `full_text[side]`. |
+| `amounts` | `{ value, cap, in_amended_law }[]` | Every figure in the clause, in order. |
+
+No text is duplicated: every range points into `full_text`. **Money given out** (what a
+comparison may add up) is an appropriation, positive, or a rescission, negative, with
+`in_amended_law` false; nothing else is summed.
 
 ### `bill`
 
@@ -320,7 +374,9 @@ ceiling, or a commitment limitation. Presenting them as bare Old/New/Change colu
 is what this break exists to stop.
 
 Re-adding a typed money field is planned: it needs the account-level model in #115
-and the leveled tree in #175 first.
+and the leveled tree in #175 first. Since v3.1 the per-side, unpaired `financial` ledger
+types each figure where it sits ([`financial`](#financial-optional-v31)); that is not this
+field, and a change object still carries none.
 
 ### `full_text_span` (optional, v1.2+)
 

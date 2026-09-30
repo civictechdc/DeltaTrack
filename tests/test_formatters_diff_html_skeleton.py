@@ -63,14 +63,12 @@ def test_canonical_h1_format():
 
 
 def test_versions_line_with_version_numbers():
-    """When version numbers are present, labels are prefixed "v1: " / "v2: ".
-    Separator is the literal · (Unicode middot)."""
+    """One row per version, "Before" then "After", each carrying its version number
+    when there is one; the Congress on a row of its own."""
     html = format_diff_html(_empty())
-    assert "v1: Reported in House" in html
-    assert "v2: Engrossed in House" in html
-    # Literal middot, not the &middot; entity.
-    assert "·" in html
-    assert "118th Congress" in html
+    assert "<b>Before (v1):</b> Reported in House" in html
+    assert "<b>After (v2):</b> Engrossed in House" in html
+    assert '<span class="versions__row">118th Congress</span>' in html
 
 
 def test_versions_line_omits_congress_when_unknown():
@@ -84,15 +82,15 @@ def test_versions_line_omits_congress_when_unknown():
 
 
 def test_versions_line_without_version_numbers():
-    """When both version numbers are None (e.g. PDF inputs), no v1:/v2: prefix."""
+    """When both version numbers are None (e.g. PDF inputs), no (v1)/(v2)."""
     html = format_diff_html(_empty(v1_version_number=None, v2_version_number=None))
     # Look at the versions div specifically — "v1:" also appears in the citation CSS.
     versions_marker = '<div class="versions">'
     start = html.index(versions_marker) + len(versions_marker)
     end = html.index("</div>", start)
     versions_block = html[start:end]
-    assert "v1:" not in versions_block
-    assert "v2:" not in versions_block
+    assert "(v1)" not in versions_block
+    assert "(v2)" not in versions_block
     assert "Reported in House" in versions_block
     assert "Engrossed in House" in versions_block
 

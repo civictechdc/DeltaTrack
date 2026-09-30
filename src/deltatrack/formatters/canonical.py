@@ -24,11 +24,12 @@ from html import escape
 
 from deltatrack.amounts import extract_amounts
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
+from deltatrack.financial import financial_for
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.parsers.pdf_anchors import Anchor, breadcrumb_for
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "3.1"
 GENERATOR_NAME = "deltatrack"
 
 
@@ -163,6 +164,7 @@ def xml_diff_to_canonical(
     """
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
     normalized_full_text = _normalize_full_text(full_text)
+    normalized_tree = _normalize_tree(tree, normalized_full_text)
     search_state: dict = {}
     return {
         "schema_version": SCHEMA_VERSION,
@@ -186,7 +188,8 @@ def xml_diff_to_canonical(
         },
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
-        "tree": _normalize_tree(tree, normalized_full_text),
+        "tree": normalized_tree,
+        "financial": financial_for(normalized_full_text, normalized_tree, "xml"),
         "changes": [
             _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state)
             for i, c in enumerate(diffed)
@@ -441,6 +444,7 @@ def pdf_diff_to_canonical(
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
         "tree": _normalize_tree(tree, normalized_full_text),
+        "financial": financial_for(normalized_full_text, tree, "pdf"),
         "changes": [
             _pdf_hunk_to_canonical(h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2)
             for i, h in enumerate(diff.hunks)

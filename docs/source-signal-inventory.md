@@ -24,7 +24,11 @@ in-file signal read from the input the user already supplied.
 - **PDF** (`src/deltatrack/parsers/pdf_text.py`, `src/deltatrack/parsers/pdf_anchors.py`): codepoints; per-glyph
   char boxes → baseline clustering (visual lines), x-gaps (word spacing), line extent
   (justified column width, line-fullness split); text-matrix scale → glyph **size**
-  (body/heading/major size bands). That is the complete set of PDFium signals we read.
+  (body/heading/major size bands), and per line the **letter size range** and the
+  **case pattern** (whether each word's first letter prints larger than the rest: title
+  case in small caps, the agency style, vs even small caps, the account style;
+  `LineGeom.initial_caps`, [ADR 0022](decisions/0022-pdf-heading-convergence.md)). That
+  is the complete set of PDFium signals we read.
 - **XML** (`src/deltatrack/bill_tree.py`, `src/deltatrack/structure_tree.py`, `src/deltatrack/diff_bill.py`): the structural tag
   hierarchy + text, the `form` metadata block, and three attributes — `@id` (stored on
   `BillNode.element_id`, **not** used for matching), `@display-inline`,

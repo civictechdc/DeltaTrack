@@ -218,12 +218,15 @@ Closing the gap (DeltaTrack#54 and beyond — applies to both pipelines):
 
 Re-checked against the corpus 2026-06-27. Glyph size yields **two** bands, not
 three: a body band (~14pt) and a single heading band (~11.2pt small-caps) that holds
-*both* `appropriations-intermediate` and `-small`. Casing does **not** rescue the
-split — an agency header that is title-case in the XML `header`
+*both* `appropriations-intermediate` and `-small`. The *text* does not rescue the
+split: an agency header that is title-case in the XML `header`
 (`Management directorate`) extracts **ALL-CAPS** in heading position
-(`MANAGEMENT DIRECTORATE`); small-caps flattens to caps in PDF text, so it is
-lexically indistinguishable from an all-caps account header. `Line` carries no
-x-position, so indentation/centering is not a usable signal either.
+(`MANAGEMENT DIRECTORATE`), because small capitals flatten to capitals in PDF text.
+The *letters* do. GPO sets an agency in title case in small caps, each word's first
+letter printed larger (11.2 pt over 14.0 pt initials), and an account in even small
+caps. The line's median glyph size hides that; `LineGeom.initial_caps` reads it per
+word ([ADR 0022](decisions/0022-pdf-heading-convergence.md)). A department heading is
+set in capitals at body size throughout (`LineGeom.size_min`/`size_max`).
 
 What that leaves recoverable from PDF-only input, keyed on *what follows* a
 heading-band line:
@@ -233,18 +236,41 @@ heading-band line:
 | Major (department), `appropriations-major` | body-size + uppercase, sits above the band | Yes, with a dedicated detector |
 | Intermediate **carry-over** (one agency over ≥2 accounts) | another heading-band line | **Yes** — today silently dropped |
 | Intermediate **grouping header** (`ADMINISTRATIVE PROVISIONS`) | a `SEC.` line | **Yes** — today mislabeled `account`; the `SEC.` is detectable |
-| Intermediate **prose-leading** (agency → "For necessary expenses…") | appropriation prose | **No** — identical to an account by size, case, and position |
+| Intermediate **prose-leading** (agency → "For necessary expenses…") | appropriation prose | **Partly**: same size and position as an account, but printed agency-style. The case pattern ends the previous agency's reach; the heading itself is still emitted as an account |
 | Account, `appropriations-small` | appropriation prose | Yes |
 
 The unrecoverable row is not an edge case: prose-leading intermediates are the
 **majority** of the agency level in many bills (H.R. 8774 Defense: 59 of 67;
 H.R. 5895 Energy-Water: 37 of 44). Only H.R. 8752 and S. 2625 in the working corpus
 have none, which is why H.R. 8752 alone can look like full agency recovery. So on
-PDF-only input the agency level is recoverable only in its carry-over and
-grouping-header forms; the prose-leading form is not separable from an account by any
-signal currently extracted. On the XML side all three levels are present in the path
-tuples (`display_path` / `match_path`), even though they are dropped as standalone
-nodes.
+PDF-only input the agency level is recovered in its carry-over and grouping-header
+forms; the prose-leading form is recognized only by its case pattern, which is used for
+scope, not to re-label the heading. On the XML side all three levels are present in
+the path tuples (`display_path` / `match_path`), even though they are dropped as
+standalone nodes.
+
+### Reading heading structure across lines (ADR 0022)
+
+The **ledger** of a bill is every dollar amount it contains, each with its location:
+the breadcrumb of headings it sits under. It is the same idea for an appropriations
+account and a reconciliation section, and it is how PDF heading quality is measured:
+for a published bill, each amount's PDF location is compared with its location in the
+XML twin ([ADR 0022](decisions/0022-pdf-heading-convergence.md)). Forms that only show
+across lines:
+
+| Form | Example | How the print shows it |
+|---|---|---|
+| Wrapped name | `SALARIES AND EXPENSES, FOREIGN CLAIMS` / `SETTLEMENT COMMISSION` | letters alike and the upper line full: one heading |
+| Stacked headings | `BUREAU OF PRISONS` / `BUILDINGS AND FACILITIES` | letters differ, or the upper line broke early: two headings |
+| Hanging-indent heading | first line at the margin, the rest at the paragraph indent | one heading, whatever the letters |
+| Department mid-title | `UNITED STATES SECRET SERVICE` after an account's prose | capitals at body size, centered |
+| Umbrella heading | `ATOMIC ENERGY DEFENSE ACTIVITIES` over `NATIONAL NUCLEAR SECURITY ADMINISTRATION` | same style as the heading below it, nothing between: **not separable** (read as one) |
+| Quoted heading | `‘‘CHAPTER 16—…` inside an amendment to another law | inside an open quotation: not a heading of this bill |
+
+The XML reader leaves heading-only elements (an umbrella agency, `FOOD AND DRUG
+ADMINISTRATION` over its accounts, a topical general-provisions heading) out of
+`display_path`, so where the PDF keeps such a heading the two disagree even though the
+PDF matches the print.
 
 ## Why not USLM?
 

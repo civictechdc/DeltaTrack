@@ -16,6 +16,7 @@ import statistics
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from deltatrack.parsers.pdf_heading_passes import converge_headings
 from deltatrack.parsers.pdf_text import Page, parse_lines, strip_page_chrome
 
 AnchorKind = Literal["title", "section", "account", "grouping", "agency", "major", "subsection", "preamble"]
@@ -39,6 +40,10 @@ class Anchor:
     # so a bill that gains/loses division wrappers across versions still aligns).
     # Empty on single-division bills, leaving all existing behavior unchanged.
     division: str = ""
+    # Case pattern of the heading's first printed line (ADR 0022): True for title case in small
+    # caps (agency style), False for even letters, None when unknown or not a heading anchor. Set
+    # by ``pdf_heading_passes.converge_headings``; read by the scope rules in ``_breadcrumb_core``.
+    caps: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -876,6 +881,8 @@ def extract_anchors(pages: list[Page]) -> list[Anchor]:
     # appropriations-specific English phrase (#114, ADR 0018).
 
     anchors.sort(key=lambda a: (a.page_number, a.line_number))
+    # Re-read the detected headings against the whole reading order (ADR 0022).
+    anchors = converge_headings(pages, anchors)
     return _assign_divisions(anchors, _flatten(pages))
 
 
@@ -893,6 +900,33 @@ def breadcrumb_for(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anchor
     """
     core = _breadcrumb_core(anchor, all_anchors)
     return (anchor.division, *core) if anchor.division else core
+
+
+def _agency_reaches(
+    account: Anchor,
+    agency: Anchor,
+    j: int,
+    idx: int,
+    all_anchors: tuple[Anchor, ...] | list[Anchor],
+    agency_styled_between: bool,
+) -> bool:
+    """Whether an agency heading at ``j`` is the parent of the account at ``idx`` (ADR 0022).
+
+    Directly above the account it always is. Carried over past other accounts, it is not when
+    the case pattern shows it is not a real container: it prints like the heading right below it
+    (the top of a wrap, or a same-level stack), the account itself prints agency-style, or an
+    agency-styled heading lies between them (an agency the detectors read as an account, such as
+    one followed by prose). Unknown case pattern (``caps is None``) never blocks: fail closed to
+    the carry-over reading.
+    """
+    if j == idx - 1:
+        return True
+    below = all_anchors[j + 1]
+    if below.caps is not None and below.caps == agency.caps:
+        return False
+    if agency.caps and (account.caps is True or agency_styled_between):
+        return False
+    return True
 
 
 def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anchor]) -> tuple[str, ...]:
@@ -921,10 +955,14 @@ def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anch
 
     For a MAJOR / department anchor (DeltaTrack#105): the body-size heading under a
     TITLE deepens the chain to `("TITLE I", "DEPARTMENTAL MANAGEMENT", "MANAGEMENT
-    DIRECTORATE", "OPERATIONS AND SUPPORT")`. One major scopes the whole title, so it
-    is captured INDEPENDENTLY of the agency `agency_blocked` gate (a title-level
-    account after a grouping boundary still carries the major) and threaded leftmost,
-    just inside the TITLE.
+    DIRECTORATE", "OPERATIONS AND SUPPORT")`. The nearest major above an anchor scopes
+    it; a title can hold several, since department headings are also read mid-title
+    (ADR 0022). It is captured INDEPENDENTLY of the agency `agency_blocked` gate (a
+    title-level account after a grouping boundary still carries the major) and threaded
+    leftmost, just inside the TITLE. A major also ends the scope of any agency above it.
+
+    An agency carried past other accounts reaches an account only when its case pattern
+    (`Anchor.caps`) allows it (`_agency_reaches`, ADR 0022).
 
     Breadcrumb DEPTH is detection-path dependent: major/agency/grouping parents exist
     only on the size path, so a low-coverage/no-band bill has no account level at all
@@ -969,6 +1007,7 @@ def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anch
         parents = ((major,) if major else ()) + ((agency,) if agency else ()) + ((grouping,) if grouping else ())
         return title + parents + (anchor.text,)
 
+    agency_styled_between = False  # an agency-styled heading lies between this account and the agency
     for j in range(idx - 1, -1, -1):
         prev = all_anchors[j]
         if prev.kind == "title":
@@ -981,10 +1020,17 @@ def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anch
             grouping = prev.text
         if anchor.kind == "account" and not agency_blocked:
             if prev.kind == "agency":
-                agency = prev.text
                 agency_blocked = True  # nearest agency only
-            elif prev.kind in ("grouping", "section"):
-                agency_blocked = True  # agency scope ended before this account
+                if not _agency_reaches(anchor, prev, j, idx, all_anchors, agency_styled_between):
+                    continue
+                agency = prev.text
+            elif prev.kind in ("grouping", "section", "major"):
+                # A grouping or section ends the agency's scope; so does a department heading,
+                # which now also appears mid-title (ADR 0022): an agency above it belongs to an
+                # earlier department.
+                agency_blocked = True
+            elif prev.kind == "account" and prev.caps is True:
+                agency_styled_between = True
     parents = chain(())
     if len(parents) > 1:
         return parents
