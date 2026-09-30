@@ -188,8 +188,8 @@ def test_evidence_reports_the_true_overlap_for_every_aligned_pair() -> None:
 
 
 @pytest.mark.slow
-def test_the_revocation_population_splits_as_225_accepted_plus_6_declined() -> None:
-    """Reconciles this module's 231 with the research record's §3.2 figure of 224.
+def test_the_revocation_population_splits_as_217_accepted_plus_6_declined() -> None:
+    """Reconciles this module's 223 with the research record's §3.2 figure of 224.
 
     §3.2 counted the split population over the pairs a user can actually reach; this module
     sweeps every adjacent committed pair, including the six ``compare.pdf`` declines. The
@@ -197,10 +197,12 @@ def test_the_revocation_population_splits_as_225_accepted_plus_6_declined() -> N
     pair, rather than from ``compare.pdf._is_unnumbered_layout`` — the same choice
     ``test_pdf_canonical_baseline`` makes, and it keeps this off a private cross-module import.
 
-    Measured and pinned rather than left as a plausible explanation: 225 + 6 = 231. §3.2's 224
+    Measured and pinned rather than left as a plausible explanation: 217 + 6 = 223. §3.2's 224
     was measured on the parser before ADR 0022; its heading passes move block boundaries on three
-    accepted pairs (115-hr-5895 v3→v4 −2, 118-hr-4366 v3→v4 +2, 118-hr-4366 v4→v5 +1), so
-    the accepted side now counts one more. The declined side is unchanged.
+    accepted pairs (115-hr-5895 v3→v4 −2, 118-hr-4366 v3→v4 +2, 118-hr-4366 v4→v5 +1), and the
+    heading breaks read from print and grammar move two of them again (115-hr-5895 v3→v4 −5,
+    118-hr-4366 v3→v4 −3): headings that now agree across versions leave fewer aligned blocks
+    to split. The declined side is unchanged.
     """
     baseline = json.loads((DATA_DIR / "pdf_canonical_baseline.json").read_text())
     accepted = declined = 0
@@ -212,9 +214,9 @@ def test_the_revocation_population_splits_as_225_accepted_plus_6_declined() -> N
         else:
             accepted += revoked
 
-    assert (accepted, declined) == (225, 6), (
+    assert (accepted, declined) == (217, 6), (
         f"the split population partitions as {accepted} accepted + {declined} declined, not "
-        "225 + 6. §3.2's figure and this module's now describe different populations for a "
+        "217 + 6. §3.2's figure and this module's now describe different populations for a "
         "reason that is no longer the admissibility split."
     )
 

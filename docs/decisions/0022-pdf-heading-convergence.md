@@ -176,36 +176,46 @@ Alternatives considered:
 
 ## Consequences
 
-Measured with the shipped parser before and after this change, by the same scorer, on every
-committed dual-format version whose XML carries appropriations headings (33 versions, 13,422
-amounts; `python -m tests.ledger_location` prints these totals for whichever parser is
-importable), on an unseen holdout of four FY2024 House bills fetched after the rules were fixed (Agriculture, Energy and
-Water, State and Foreign Operations, Interior: 10 versions, 2,272 amounts), and on four
-reconciliation bills (18 versions, 10,140 amounts):
+Measured with the shipped parser before and after this change, both graded by the same
+whole-path scorer, on every committed dual-format version whose XML carries appropriations
+headings (33 versions, 13,422 amounts; `python -m tests.ledger_location` prints these totals
+for whichever parser is importable), on an unseen holdout of four FY2024 House bills fetched
+after the rules were fixed (Agriculture, Energy and Water, State and Foreign Operations,
+Interior: 10 versions, 2,272 amounts), and on the fetched versions whose XML carries no
+appropriations headings (reconciliation, authorizing and continuing-resolution text: 32
+versions, 11,736 amounts):
 
 | | corpus before | corpus after | holdout before | holdout after |
 |---|---:|---:|---:|---:|
-| same location (T0) | 62.3% | 87.6% | 39.5% | 74.2% |
-| OK (T0–T2) | 72.1% | 92.7% | 51.2% | 82.9% |
-| wrong parent (T3) | 3,648 | 944 | 1,064 | 376 |
-| misfiled (T4) | 99 | 41 | 45 | 12 |
+| same location (T0) | 58.3% | 78.7% | 29.2% | 53.8% |
+| OK (T0–T2) | 66.7% | 91.8% | 45.1% | 83.0% |
+| wrong parent (T3) | 4,373 | 1,055 | 1,202 | 375 |
+| misfiled (T4) | 99 | 40 | 45 | 12 |
 
-Reconciliation: misfiled 84 → 4. No version got worse on either measure: none of the 42
-committed versions, the 10 holdout versions or the 17 fetched reconciliation versions.
+Without appropriations headings: misfiled 368 → 4, OK 96.1% → 99.2%. No version's totals got
+worse: none of the 42 committed versions and none of the 55 fetched ones.
+
+Amount by amount, across all 97 versions, 6,413 amounts are filed better and 105 worse. 103
+of the 105 are one case:
+the PDF now reads the printed `ADMINISTRATIVE PROVISIONS—FEDERAL HIGHWAY ADMINISTRATION` (and
+its FTA, FRA, FAA, NHTSA, GSA, SBA and NARA twins) where before it kept only the fragment
+`ADMINISTRATION`, which T1 passes as a variant of the XML's `Federal Highway Administration`.
+The XML file tags the full heading and the reader drops it, so the correct reading grades T3:
+the answer-key gap below. The other two are the sec. 614 straggler listed under open issues.
 
 **The OK rate undercounts the PDF.** The answer key is DeltaTrack's existing XML reader, which
 leaves heading-only elements out of the breadcrumb: in H.R. 4502 the XML file tags
 `Department of Health and Human Services`, `Food and Drug Administration` and `Salaries and
 expenses` in turn, the PDF reads all three, and the reader keeps only the first and last, so
-the PDF is graded "wrong parent" where it matches the page. Of the 944 wrong-parent amounts in
-the corpus, 892 have a PDF parent that the XML file tags as a heading and the reader drops (354
-of 376 on the holdout). That check only asks whether the heading is tagged somewhere in the
-file, so it is an upper bound, and the reader is left as the answer key here: changing it is a
-separate decision.
+the PDF is graded "wrong parent" where it matches the page. Of the 1,055 wrong-parent amounts
+in the corpus, 905 have PDF ancestors that the XML path lacks and the XML file tags as headings
+(334 of 375 on the holdout). That check only asks whether each heading is tagged somewhere in
+the file, so it is an upper bound, and the reader is left as the answer key here: changing it
+is a separate decision.
 
 - The same table is the yardstick for the XML side: a change to the reader counts as an
   improvement when its breadcrumbs carry the file's heading tags, which shows here as the
-  corpus OK rate rising toward the roughly 99% the upper bound above allows.
+  corpus OK rate rising toward the roughly 98.5% the upper bound above allows.
 
 - Account names, measured the older way (is each PDF account heading a heading the XML twin
   has, `scripts/heading_precision.py`): on the nine bills of
@@ -249,6 +259,7 @@ separate decision.
   major-level heading below it compete for one breadcrumb level, and the nearer wins:
   `TITLE I › LEGISLATIVE BRANCH › HOUSE OF REPRESENTATIVES` reaches its accounts as
   `TITLE I › HOUSE OF REPRESENTATIVES`. True but one level shallower, and true of develop too.
+  The follow-up is to keep the title's name as a level of its own.
 - **Reconciliation bills stay shallower.** Their prints carry no subtitle or part level the
   passes can read, so their amounts land T2 at best. Recovering those levels, and measuring
   other bill vehicles (continuing resolutions, supplementals, authorizing bills with direct
@@ -257,6 +268,24 @@ separate decision.
   case pattern ends an agency's scope at an agency-styled account, and an agency-styled heading
   that introduces accounts (no dollar amount under it, an account-style heading next) is now an
   agency, but one whose own text carries money is still emitted as an account.
+
+**Open issues** found by the measurement and left for later changes:
+
+- **A department repeated as its own parent.** `DEPARTMENT OF DEFENSE › DEPARTMENT OF DEFENSE`
+  over `FAMILY HOUSING IMPROVEMENT FUND` and `MILITARY UNACCOMPANIED HOUSING IMPROVEMENT FUND`:
+  16 amounts in 8 versions, graded T3. Not yet traced.
+- **An account carried over a general provision.** In division J of 117-hr-3684 (v5), two
+  amounts in sec. 614 are filed under `ENVIRONMENTAL PROGRAMS AND MANAGEMENT`, where the XML
+  files them under the EPA's general provisions. Before this change they sat directly under the
+  title (T2); now they are T3.
+- **T1 passes a fragment.** A label that ends with the same word as the XML's counts as the
+  same place, so `ADMINISTRATION` grades T1 against `Federal Highway Administration` (the 103
+  amounts above). Tightening it regrades the parser before this change, not after, and is a
+  scorer change to measure on its own.
+- **The answer key.** Restoring the heading-only elements the reader drops is the separate
+  decision above. A change to the answer key (#739) moves these grades too: under whole-path
+  T0 a heading the reader carries too far shows as T3 against a correct PDF path, so its
+  effect should be read amount by amount before the totals are re-pinned.
 
 <!--
 References: #524 (this change), #501, #519, #535, #648 (advanced), #551, #198, #557, #552, #706
