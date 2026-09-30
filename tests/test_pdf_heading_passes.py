@@ -26,6 +26,11 @@ def body(n: int, text: str) -> tuple[int, str, float, LineGeom]:
     return (n, text, BODY, LineGeom(LEFT, RIGHT, LEFT + 30, initial_caps=False, size_min=BODY, size_max=BODY))
 
 
+def para(n: int, text: str) -> tuple[int, str, float, LineGeom]:
+    """The first line of a paragraph: body prose indented as GPO sets it (about 28 pt)."""
+    return (n, text, BODY, LineGeom(LEFT + 28, RIGHT, LEFT + 58, initial_caps=False, size_min=BODY, size_max=BODY))
+
+
 def head(n: int, text: str, caps: bool | None, width: float | None = None, size: float = HEAD):
     """A centered heading line ``width`` points wide (default: from its length)."""
     w = width if width is not None else len(text) * CHAR
@@ -63,6 +68,39 @@ class TestLinesThatCannotBeHeadings:
         accounts = texts(anchors_of(rows), "account")
         assert "UNITED STATES MINT" not in accounts
         assert "OPERATIONS AND SUPPORT" in accounts
+
+    def test_headings_after_an_unpunctuated_paragraph_end_are_kept(self):
+        # 118-s-4928 p.117: the paragraph above ends "(Public Law 111–241)" with no period. The
+        # headings are centered and a new, indented paragraph follows them, so they are set apart
+        # from the prose; missing punctuation alone must not drop them and file the $274M below
+        # them under the previous account.
+        rows = [
+            body(1, "Semipostal Stamp Act of 2010 (Public Law 111–241)"),
+            head(2, "OFFICE OF INSPECTOR GENERAL", caps=True),
+            head(3, "SALARIES AND EXPENSES", caps=False),
+            para(4, "For necessary expenses of the Office of Inspector General, $274,000,000."),
+            *PROSE,
+        ]
+        found = {a.text for a in anchors_of(rows)}
+        assert "OFFICE OF INSPECTOR GENERAL" in found
+        assert "SALARIES AND EXPENSES" in found
+
+    def test_headings_inside_an_interrupted_enacting_clause_are_kept(self):
+        # 118-hr-4394 p.2: "Be it enacted ... assembled, That" is genuinely unfinished, and GPO
+        # prints the title and its headings inside it before the prose resumes.
+        rows = [
+            body(1, "tives of the United States of America in Congress assembled,"),
+            body(2, "That"),
+            head(3, "TITLE I", caps=None, size=BODY),
+            head(4, "CORPS OF ENGINEERS—CIVIL", caps=False, size=BODY),
+            head(5, "DEPARTMENT OF THE ARMY", caps=False, size=BODY),
+            head(6, "CORPS OF ENGINEERS—CIVIL", caps=True),
+            para(7, "The following appropriations shall be expended under the direction of the Secretary."),
+            *PROSE,
+        ]
+        found = [a.text for a in anchors_of(rows)]
+        assert "DEPARTMENT OF THE ARMY" in found
+        assert found.count("CORPS OF ENGINEERS—CIVIL") == 2
 
     def test_a_quoted_heading_is_not_a_heading(self):
         # A reconciliation bill amends other laws by quoting them; the quoted law's headings
@@ -160,18 +198,36 @@ class TestSegmentation:
         assert "BUREAU OF PRISONS" in texts(anchors, "agency")
         assert "BUILDINGS AND FACILITIES" in texts(anchors, "account")
 
-    def test_a_lower_line_repeating_the_upper_words_is_its_own_heading(self):
+    def test_a_name_that_repeats_its_own_words_stays_one_heading(self):
+        # 118-s-4928 p.35. A veto once split any lower line whose words all appear above it, but
+        # names repeat words: on 118 PDFs that veto changed 9 headings and was wrong in all 9
+        # (this council three times, the Council on Environmental Quality six), so it is gone.
+        rows = [
+            body(1, "budget for the current fiscal year for such corporation."),
+            head(2, "NATIONAL SECURITY COUNCIL AND HOMELAND", caps=True, width=300),
+            head(3, "SECURITY COUNCIL", caps=True),
+            head(4, "SALARIES AND EXPENSES", caps=False),
+            body(5, "For necessary expenses of the National Security Council, $1,000."),
+            *PROSE,
+        ]
+        assert "NATIONAL SECURITY COUNCIL AND HOMELAND SECURITY COUNCIL" in texts(anchors_of(rows), "agency")
+
+    def test_a_line_ending_in_a_small_word_continues(self):
+        # 115-hr-5895 p.159: an account name broken early for balance. The next word would have
+        # fitted on the upper line, so the fullness veto reads a deliberate break, but a heading
+        # cannot end in OF. On 118 PDFs, widening the AND/OR rule to the small words changed 7
+        # headings, all toward the XML.
         rows = [
             body(1, "budget for the current fiscal year for such corporation."),
             head(2, "LIMITATION ON ADMINISTRATIVE EXPENSES, FEDERAL", caps=False, width=300),
             head(3, "PRISON INDUSTRIES, INCORPORATED", caps=False),
             body(4, "Not to exceed $2,700,000 shall be available."),
-            head(5, "INDIAN HEALTH SERVICE AND RELATED PROGRAMS FOR", caps=False, width=300),
-            head(6, "INDIAN HEALTH SERVICE", caps=False),
-            body(7, "For expenses necessary to carry out the Act, $1,000."),
+            head(5, "GRANTS FOR CONSTRUCTION OF", caps=False),
+            head(6, "STATE EXTENDED CARE FACILITIES", caps=False),
+            body(7, "For grants to assist States to acquire or construct State nursing homes, $1,000."),
             *PROSE,
         ]
-        assert "INDIAN HEALTH SERVICE" in texts(anchors_of(rows), "account")
+        assert "GRANTS FOR CONSTRUCTION OF STATE EXTENDED CARE FACILITIES" in texts(anchors_of(rows), "account")
 
     def test_a_lower_line_standing_alone_elsewhere_is_its_own_heading(self):
         rows = [
@@ -277,6 +333,27 @@ class TestHangingIndent:
         )
 
 
+class TestTitleNameRunningOn:
+    def test_the_rest_of_a_title_line_is_not_a_heading(self):
+        # 118-hr-4665 p.296: the title's number and name share a line and the name runs on,
+        # hyphenated, over two more uncentred lines before the first centred heading. Those lines
+        # finish the title's name; read as a heading they became "ENCE OF THE PEOPLE'S REPUBLIC
+        # OF CHINA".
+        full = LineGeom(LEFT, RIGHT, LEFT + 60, initial_caps=False, size_min=BODY, size_max=BODY)
+        rows = [
+            body(1, "Emergency Deficit Control Act of 1985."),
+            (2, "TITLE VIII—COUNTERING THE MALIGN INFLU-", BODY, full),
+            (3, "ENCE OF THE PEOPLE’S REPUBLIC OF", BODY, full),
+            (4, "CHINA", BODY, LineGeom(LEFT, LEFT + 50, LEFT + 50, initial_caps=False, size_min=BODY, size_max=BODY)),
+            head(5, "BILATERAL ECONOMIC ASSISTANCE", caps=False, size=BODY),
+            head(6, "FUNDS APPROPRIATED TO THE PRESIDENT", caps=True),
+            head(7, "ECONOMIC SUPPORT FUND", caps=False),
+            para(8, "For an additional amount for the Economic Support Fund, $1,000."),
+            *PROSE,
+        ]
+        assert not any("ENCE OF" in a.text or a.text == "CHINA" for a in anchors_of(rows))
+
+
 class TestDepartmentHeadingsMidTitle:
     def test_a_body_size_capitals_line_mid_title_is_a_major(self):
         rows = [
@@ -375,6 +452,28 @@ class TestKeepsWhatDetectorsDecided:
 
 def _a(kind: str, text: str, line: int, caps: bool | None = None) -> Anchor:
     return Anchor(1, line, kind, text, caps=caps)
+
+
+class TestLevelOfASplitPiece:
+    def test_a_piece_printed_like_its_account_is_on_the_account_level(self):
+        # 118-s-4690 p.72: HEALTH AND HUMAN SERVICES (title case) / FOOD AND DRUG ADMINISTRATION
+        # (even) / SALARIES AND EXPENSES (even). GPO tags FDA at the account level, a name over its
+        # own account. Defaulted to an agency, FDA ended HHS's reach, so HHS's later accounts lost
+        # it; on 118 PDFs taking the level from the print moved 202 amounts, all toward the XML.
+        rows = [
+            body(1, "budget for the current fiscal year for such corporation."),
+            head(2, "DEPARTMENT OF HEALTH AND HUMAN SERVICES", caps=True, width=300),
+            head(3, "FOOD AND DRUG ADMINISTRATION", caps=False),
+            head(4, "SALARIES AND EXPENSES", caps=False),
+            para(5, "For necessary expenses of the Food and Drug Administration, $1,000."),
+            head(6, "BUILDINGS AND FACILITIES", caps=False),
+            para(7, "For plans, construction, repair, and improvement of facilities, $2,000."),
+            *PROSE,
+        ]
+        anchors = anchors_of(rows)
+        later = next(a for a in anchors if a.text == "BUILDINGS AND FACILITIES")
+        assert "DEPARTMENT OF HEALTH AND HUMAN SERVICES" in breadcrumb_for(later, anchors)
+        assert "FOOD AND DRUG ADMINISTRATION" not in texts(anchors, "agency")
 
 
 class TestAgencyScope:

@@ -8,6 +8,7 @@ from deltatrack.parsers.pdf_text import (
     Line,
     Page,
     _first_word_right,
+    _initial_caps,
     _merge_print_lines,
     _page_glyph_sizes,
     _parse_print_lines,
@@ -235,6 +236,18 @@ class TestFirstWordRight:
         right = [(0.0, gap_start, gap_start + 6.0, ord("OF"[i]), 11.0) for i in range(2)]
         assert _first_word_right(left + right) == left[-1][2]
 
+    def test_a_narrow_word_gap_with_no_space_glyph_still_ends_the_word(self):
+        # 114-hr-2029 (Senate) p.78: SECURITY INVESTMENT PROGRAM carries no space glyph, and its
+        # word gap is under 0.25 of the size (0.5% of heading word gaps are). Read with that
+        # threshold the first word ran on to INVESTMENT, the fullness veto thought the lower line's
+        # first word could not have fitted, and NORTH ATLANTIC TREATY ORGANIZATION over it merged.
+        left = self._glyphs("SECURITY")
+        gap_start = left[-1][2] + 0.22 * 11.0  # a real word gap: over 0.2, under 0.25 of the size
+        right = [
+            (0.0, gap_start + i * 6.5, gap_start + i * 6.5 + 6.0, ord(c), 11.0) for i, c in enumerate("INVESTMENT")
+        ]
+        assert _first_word_right(left + right) == left[-1][2]
+
     def test_skips_leading_space_glyph(self):
         glyphs = self._glyphs(" RELATED")  # stray leading space
         assert _first_word_right(glyphs) == glyphs[-1][2]  # 'RELATED' right edge
@@ -302,6 +315,80 @@ class TestPageGlyphSizes:
         by_num = {ln.line_number: ln for ln in p3.lines}
         assert by_num[12].glyph_size is not None
         assert by_num[12].glyph_size < by_num[13].glyph_size
+
+
+def _glyphs(
+    words: list[tuple[str, list[float]]], *, spaces: bool = False, letter_gap: float = 0.8, word_gap: float = 4.5
+):
+    """Synthetic x-ordered content glyphs (bottom, left, right, cp, size) for `_initial_caps`:
+    each word with a size per letter, 7 pt advance per letter. GPO's small-caps headings usually
+    carry no space glyph; `spaces=True` adds one between words, as some prints do."""
+    out, x = [], 100.0
+    for w, (text, sizes) in enumerate(words):
+        if w:
+            if spaces:
+                out.append((0.0, x, x, 32, sizes[0]))
+            x += word_gap - letter_gap
+        for ch, size in zip(text, sizes, strict=True):
+            out.append((0.0, x, x + 7.0, ord(ch), size))
+            x += 7.0 + letter_gap
+    return out
+
+
+SMALL, CAP = 11.2, 14.0
+
+
+class TestInitialCaps:
+    """The case pattern of a small-caps heading line (ADR 0022): title case, even, or unknown."""
+
+    def test_a_title_case_line_with_no_space_glyphs_that_opens_with_a_small_word(self):
+        # 118-s-4928 p.75 line 4, "and Efficiency": judged by the whole line's first letter, the
+        # small "A" of "and", it read as even and split the council's name in two.
+        line = _glyphs([("AND", [SMALL] * 3), ("EFFICIENCY", [CAP] + [SMALL] * 9)])
+        assert _initial_caps(line) is True
+
+    def test_an_even_line_with_no_space_glyphs(self):
+        line = _glyphs([("SALARIES", [SMALL] * 8), ("AND", [SMALL] * 3), ("EXPENSES", [SMALL] * 8)])
+        assert _initial_caps(line) is False
+
+    def test_the_letters_of_one_word_stay_one_word(self):
+        # Only the first letter is large; were the word cut between its letters, a fragment
+        # starting with a small letter would vote "even".
+        assert _initial_caps(_glyphs([("INTEGRITY", [CAP] + [SMALL] * 8)])) is True
+
+    def test_space_glyphs_still_split_words(self):
+        line = _glyphs(
+            [
+                ("OFFICE", [CAP] + [SMALL] * 5),
+                ("OF", [SMALL] * 2),
+                ("THE", [SMALL] * 3),
+                ("SECRETARY", [CAP] + [SMALL] * 8),
+            ],
+            spaces=True,
+            word_gap=0.8,
+        )
+        assert _initial_caps(line) is True
+
+    def test_an_all_capital_acronym_does_not_vote(self):
+        # "FDA" and "NIH" print entirely in large capitals: no case pattern of their own. Counted
+        # as even they outvote the one title-case word and the line reads even.
+        line = _glyphs([("FDA", [CAP] * 3), ("NIH", [CAP] * 3), ("INNOVATION", [CAP] + [SMALL] * 9)], spaces=True)
+        assert _initial_caps(line) is True
+
+    def test_the_corpus_line_that_split_the_council_name(self):
+        import pypdfium2 as pdfium
+
+        pdf = pdfium.PdfDocument(str(fixture_path("118-s-4928", "1_reported-in-senate.pdf")))
+        try:
+            tp = pdf[74].get_textpage()  # page 75
+            try:
+                geoms = {ln: geom for ln, (_size, geom) in _page_glyph_sizes(tp, tp.get_text_range()).items()}
+            finally:
+                tp.close()
+        finally:
+            pdf.close()
+        # 3 COUNCIL OF THE INSPECTORS GENERAL ON INTEGRITY / 4 AND EFFICIENCY / 5 SALARIES AND EXPENSES
+        assert (geoms[3].initial_caps, geoms[4].initial_caps, geoms[5].initial_caps) == (True, True, False)
 
 
 class TestPageRangeText:

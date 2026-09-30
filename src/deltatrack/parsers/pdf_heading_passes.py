@@ -13,18 +13,20 @@ Order of operations (ADR 0022). Each pass reads only what earlier passes produce
    (unnumbered running lines opening with a bullet or dagger). A page break is never a heading
    boundary.
 2. **Lines that cannot be headings**: quoted text (tracked across lines until the quote closes),
-   lines inside an unfinished sentence, and subsection-title continuations. Heading anchors on
+   lines inside an unfinished sentence (a centered run followed by a new paragraph never is, and
+   ends the sentence carried down to it), and subsection-title continuations. Heading anchors on
    such lines are dropped.
 3. **Department-level headings anywhere in a title**: a centered line set entirely at body size
    in capitals is a department-level heading, not only directly under ``TITLE n``.
 4. **Heading runs**: every run of heading lines between body text is re-segmented line break by
-   line break. First decisive signal wins: a line-break hyphen joins; a trailing ``AND``/``OR``
-   joins; an unknown case pattern keeps the detectors' reading; letters printed differently
-   split; letters printed alike join unless a veto applies (the lower line
-   repeats the upper's words, it stands alone as a heading at least twice elsewhere, or line
-   fullness says the break was deliberate). A hanging-indent block is then one heading whatever
-   those decisions were. The department line directly under a bare ``TITLE n`` is left as the
-   major detector read it.
+   line break. First decisive signal wins: a line-break hyphen joins; a line ending in a small
+   word (``AND``, ``OF``, ``FOR``, …) joins; an unknown case pattern keeps the detectors' reading;
+   letters printed differently split; letters printed alike join unless a veto applies (the lower
+   line stands alone as a heading at least twice elsewhere, or line fullness says the break was
+   deliberate). A hanging-indent block is then one heading whatever those decisions were. The
+   department line directly under a bare ``TITLE n`` is left as the major detector read it, and
+   uncentered lines running on from a numbered level's own line finish its name. A piece printed
+   like the run's last heading takes the same level; any other non-last piece is an agency.
 
 Scope (which heading an account inherits) is decided afterwards in
 ``pdf_anchors._breadcrumb_core`` from the ``Anchor.caps`` this module records.
@@ -68,11 +70,11 @@ _LEADING_TOKEN = re.compile(r"^\s*(SEC\.|TITLE\b|DIVISION\b)")
 _QUOTE_OPEN = ("‘‘", "“")
 _QUOTE_MARK = re.compile("‘‘|’’|“|”")
 _SENTENCE_END = (".", ":", ";", ".—", ".–", "—", "’’", "''", "”")
-_TRAILING_CONJUNCTION = re.compile(r"\b(AND|OR)$")
 
 # Geometry tolerances, points.
 _CENTER_TOL = 3.0  # a centered line's midpoint sits within this of the column's
 _INSET_MIN = 10.0  # a centered heading is inset at least this far on both sides
+_PARA_INDENT_MIN = 14.0  # half the ~28 pt first-line indent of a GPO paragraph; continuations start at 0
 _HANG_TOL = 3.0  # a hanging continuation starts within this of the paragraph indent
 _SPACE_WIDTH = 4.0  # one inter-word space, for the "next word would have fit" test
 _BODY_SIZE_TOL = 0.3  # a department-style line's letters all sit within this of body size
@@ -85,10 +87,6 @@ def _norm(text: str) -> str:
 
 def _canon(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip().upper().rstrip(",;"))
-
-
-def _content_words(text: str) -> set[str]:
-    return {w for w in _norm(text).split() if w.upper() not in TITLE_CASE_SMALL_WORDS}
 
 
 def _is_body(text: str) -> bool:
@@ -181,11 +179,48 @@ class _Stream:
                 is_open = mark in _QUOTE_OPEN
         return quoted
 
+    def is_centered(self, k: int) -> bool:
+        """The line is inset on both sides and its midpoint sits on the column's."""
+        page, line = self.lines[k]
+        g = line.geom
+        if g is None or page not in self.edges:
+            return False
+        left, right = self.edges[page]
+        return (
+            g.content_left - left >= _INSET_MIN
+            and right - g.content_right >= _INSET_MIN
+            and abs((g.content_left + g.content_right) / 2 - (left + right) / 2) <= _CENTER_TOL
+        )
+
+    def set_apart(self, k: int) -> bool:
+        """The line is centered, and the run of centered lines it belongs to is not followed by the
+        continuation of a sentence: what comes next is a new, indented paragraph, a line that is not
+        prose, or nothing. A continuation line starts at the column's left edge."""
+        if not self.is_centered(k):
+            return False
+        j = k + 1
+        while j < len(self.lines) and self.is_centered(j):
+            j += 1
+        if j == len(self.lines):
+            return True
+        page, line = self.lines[j]
+        if not _is_body(line.text) or line.geom is None or page not in self.edges:
+            return True
+        return line.geom.content_left - self.edges[page][0] >= _PARA_INDENT_MIN
+
     def _mid_sentence(self) -> set[int]:
         """Lines that continue an unfinished sentence: the line above is body text (or itself in a
-        sentence) and does not end one. A heading never starts mid-sentence."""
+        sentence) and does not end one. A heading never starts mid-sentence.
+
+        A line set apart from the prose (``set_apart``) is never inside a sentence and ends any
+        sentence carried down to it, so an unpunctuated paragraph end (``(Public Law 111–241)``) or
+        an enacting clause interrupted by ``TITLE I`` does not hide the headings printed after it.
+        Heading-shaped text inside prose is either full-width or followed by the sentence's own
+        continuation, so it stays inside."""
         inside: set[int] = set()
         for k in range(1, len(self.lines)):
+            if self.set_apart(k):
+                continue
             prev = self.lines[k - 1][1].text.rstrip()
             if (_is_body(prev) or (k - 1) in inside) and (prev.endswith("-") or not prev.endswith(_SENTENCE_END)):
                 inside.add(k)
@@ -247,10 +282,25 @@ def _lone_headings(stream: _Stream) -> Counter:
     return Counter({name: n for name, n in lone.items() if n >= 2 and len(name.split()) > 1})
 
 
+def _printed_alike(a: Line, b: Line) -> bool:
+    """Two heading lines set in the same case pattern and glyph size."""
+    return (
+        a.geom is not None
+        and b.geom is not None
+        and a.geom.initial_caps is not None
+        and a.geom.initial_caps == b.geom.initial_caps
+        and a.glyph_size is not None
+        and b.glyph_size is not None
+        and abs(a.glyph_size - b.glyph_size) <= _BODY_SIZE_TOL
+    )
+
+
 def _decided_by_grammar(upper: str) -> bool | None:
-    """True join, None no opinion. A trailing conjunction ("…DECONTAMINATION AND") always
-    continues onto the next line: grammar, not appropriations vocabulary (ADR 0018)."""
-    if _TRAILING_CONJUNCTION.search(_canon(upper)):
+    """True join, None no opinion. A heading line that ends in a small word ("…DECONTAMINATION
+    AND", "GRANTS FOR CONSTRUCTION OF") always continues onto the next line: grammar, not
+    appropriations vocabulary (ADR 0018)."""
+    words = _canon(upper).split()
+    if words and words[-1] in TITLE_CASE_SMALL_WORDS:
         return True
     return None
 
@@ -264,7 +314,6 @@ def _segment(
     decisions: list[bool | None] = [None] * (n - 1)
     for _ in range(_MAX_ROUNDS):
         previous = list(decisions)
-        group_text = run[0][1].text.strip()
         for b in range(n - 1):
             (p_up, up_line), (p_lo, lo_line) = run[b], run[b + 1]
             up, lo = up_line.text.strip(), lo_line.text.strip()
@@ -282,10 +331,7 @@ def _segment(
                 join = False
             else:
                 join = True
-                lower_words = _content_words(lo)
-                if lower_words and lower_words <= _content_words(group_text):
-                    join = False  # a wrapped name never repeats its own words
-                elif lone[_norm(lo)]:
+                if lone[_norm(lo)]:
                     join = False  # a heading in its own right elsewhere in this bill
                 elif up_line.geom is not None and lo_line.geom is not None and p_up in measure:
                     g1, g2 = up_line.geom, lo_line.geom
@@ -295,7 +341,6 @@ def _segment(
                     if width <= measure[p_up]:
                         join = False  # the next word would have fitted: the break was deliberate
             decisions[b] = join
-            group_text = _join([group_text, lo]) if join else lo
         if decisions == previous:
             break
     groups, current = [], [0]
@@ -357,17 +402,10 @@ def _is_department_style(stream: _Stream, k: int) -> bool:
     """A centered line whose letters are all at body size (capitals, not small caps)."""
     page, line = stream.lines[k]
     g = line.geom
-    if g is None or page not in stream.edges or page not in stream.body_size or g.size_min is None:
+    if g is None or page not in stream.body_size or g.size_min is None or not stream.is_centered(k):
         return False
-    left, right = stream.edges[page]
-    li, ri = g.content_left - left, right - g.content_right
-    centered = (
-        li >= _INSET_MIN
-        and ri >= _INSET_MIN
-        and abs((g.content_left + g.content_right) / 2 - (left + right) / 2) <= _CENTER_TOL
-    )
     body = stream.body_size[page]
-    return centered and abs(g.size_min - body) <= _BODY_SIZE_TOL and abs(g.size_max - body) <= _BODY_SIZE_TOL
+    return abs(g.size_min - body) <= _BODY_SIZE_TOL and abs(g.size_max - body) <= _BODY_SIZE_TOL
 
 
 def converge_headings(pages: list[Page], anchors: list[Anchor]) -> list[Anchor]:
@@ -440,6 +478,16 @@ def converge_headings(pages: list[Page], anchors: list[Anchor]) -> list[Anchor]:
         b = stream.boundary_before(start)
         if b is None or not stream.body_after(end):
             continue
+        above = stream.lines[b][1].text.strip()
+        if _STRUCTURAL_TOKEN.match(above) and not _TITLE_BARE.match(above):
+            # "TITLE VIII—COUNTERING THE MALIGN INFLU-" / "ENCE OF … OF" / "CHINA": lines that run on
+            # from a numbered level's own line, and are not centered, finish that line's name.
+            lead = 0
+            while lead < len(run) and not stream.is_centered(start + lead):
+                lead += 1
+            run, start = run[lead:], start + lead
+            if not run:
+                continue
         idx = sorted(by_key[(p, ln.line_number)] for p, ln in run if (p, ln.line_number) in by_key)
         if not idx or any(anchors[i].kind not in _HEADING_KINDS for i in idx) or any(i in replace_at for i in idx):
             continue
@@ -470,6 +518,12 @@ def converge_headings(pages: list[Page], anchors: list[Anchor]) -> list[Anchor]:
                 kind = last_kind
             elif original is not None and original.kind in _CONTAINER_KINDS:
                 kind = original.kind
+            elif _printed_alike(first, run[groups[-1][0]][1]):
+                # Printed like the run's last heading (same case pattern and size): the same level.
+                # GPO stacks a name over its own account (FOOD AND DRUG ADMINISTRATION / SALARIES
+                # AND EXPENSES) as two same-level headings; read as an agency, the upper one would
+                # end the reach of the real agency above it.
+                kind = last_kind
             else:
                 kind = "agency"
             rebuilt.append(_anchor_like(anchors, page, first.line_number, kind, _join([run[x][1].text for x in g])))

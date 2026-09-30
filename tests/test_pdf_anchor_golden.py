@@ -23,7 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.parsers.pdf_anchors import derive_size_bands, extract_anchors
+from deltatrack.parsers.pdf_anchors import breadcrumb_for, derive_size_bands, extract_anchors
+from deltatrack.parsers.pdf_blocks import _flatten, _group_into_blocks
 from tests.conftest import assert_manifest_committed
 from tests.corpus_paths import DATA_DIR, fixture_path
 from tests.pdf_corpus import cached_pages
@@ -103,6 +104,26 @@ class TestSizeDetectionEndToEnd:
         )
         # The intended addition includes FPS.
         assert "FEDERAL PROTECTIVE SERVICE" in (new - legacy)
+
+
+class TestHeadingsAfterUnpunctuatedProse:
+    """118-s-4928 p.117: the paragraph above ends "(Public Law 111–241)" with no period. The
+    unfinished-sentence filter (ADR 0022, pass 2) used to read the two centred headings below it
+    as part of that sentence and drop them, filing the Inspector General's $274,000,000 under the
+    previous account, PAYMENT TO THE POSTAL SERVICE FUND."""
+
+    PDF = fixture_path("118-s-4928", "1_reported-in-senate.pdf")
+
+    def test_the_headings_and_their_money_stay_together(self):
+        pages = cached_pages(self.PDF)
+        anchors = extract_anchors(pages)
+        on_page = {(a.line_number, a.text) for a in anchors if a.page_number == 117}
+        assert (3, "OFFICE OF INSPECTOR GENERAL") in on_page
+        assert (4, "SALARIES AND EXPENSES") in on_page
+        block = next(b for b in _group_into_blocks(_flatten(pages), anchors) if "$274,000,000" in b.text)
+        crumb = breadcrumb_for(block.anchor, anchors)
+        assert "OFFICE OF INSPECTOR GENERAL" in crumb
+        assert "PAYMENT TO THE POSTAL SERVICE FUND" not in crumb
 
 
 class TestNonAppropsGeneralization:

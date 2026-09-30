@@ -378,7 +378,9 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
     `(bottom, left, right, cp, size)` tuples in left-to-right x order.
 
     A word boundary is the first SPACE GLYPH (cp == 32) or, as a fallback, an x-gap
-    wider than SPACE_FACTOR × size. The space-glyph test is load-bearing: PDFium
+    wider than `_WORD_GAP` × size (the case pattern's word gap; a heading line usually has no
+    space glyph, and the text layer's wider `_SPACE_FACTOR` misses 0.5% of its word gaps, which
+    then runs the first word into the second). The space-glyph test is load-bearing: PDFium
     emits real space glyphs that sit IN the inter-word gap, so the gap between the
     last glyph of word one and the first of word two is bridged — a gap-only test
     never fires and silently returns the whole line as one word (this bit the #106
@@ -391,7 +393,7 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
             if first_word_right is None:
                 continue  # leading space before any word; skip it
             break
-        if prev_right is not None and left - prev_right > _SPACE_FACTOR * size:
+        if prev_right is not None and left - prev_right > _WORD_GAP * size:
             break  # fallback: wide x-gap with no emitted space glyph
         first_word_right = right
         prev_right = right
@@ -405,12 +407,24 @@ TITLE_CASE_SMALL_WORDS = frozenset({"AND", "OF", "THE", "FOR", "TO", "IN", "ON",
 # A first letter this much larger (points) than the smallest of the rest counts as a large
 # initial. Small caps print at about 0.8 of the capital size (11.2 vs 14.0 in working prints).
 _INITIAL_CAP_MARGIN = 0.5
+# A horizontal gap wider than this share of the glyph size separates two words. This walk reads the
+# raw character data, which has only the spaces the file draws; the simplified page text fills a
+# space in from each gap, but those generated spaces carry a size of 1.0 that does not clear
+# _SIZE_FLOOR, and heading lines mostly draw none, so a space alone cannot find the word breaks.
+# Measured on every page of the committed corpus (29,687 all-capital lines): 99.996% of the gaps
+# inside a word are under 0.2 of the size, and 99.94% of the gaps where PDFium's text puts a space
+# are over it.
+_WORD_GAP = 0.2
 
 
 def _initial_caps(content_glyphs: list[tuple[float, float, float, int, float]]) -> bool | None:
     """True when most content words print a first letter larger than the rest (title case in
     small caps), False when their letters are even, None when no word of 2+ letters remains
     after skipping `TITLE_CASE_SMALL_WORDS`. Glyphs are x-ordered (bottom, left, right, cp, size).
+
+    Words are split at a space glyph or at a gap wider than `_WORD_GAP` of the glyph size. A word
+    printed entirely in large capitals (an acronym such as ``FDA``, on a line that also carries
+    small caps) has no case pattern of its own and is left out of the vote, like a small word.
 
     A line carrying a lowercase letter is prose, not a heading in small caps (small caps reach the
     text layer as capitals), so it is not judged: None. Most lines are prose, and the check stops
@@ -419,17 +433,33 @@ def _initial_caps(content_glyphs: list[tuple[float, float, float, int, float]]) 
         return None
     words: list[list[tuple[str, float]]] = []
     current: list[tuple[str, float]] = []
+    prev = None
     for glyph in content_glyphs:
         ch = chr(glyph[3])
         if ch.isspace():
             if current:
                 words.append(current)
+            current, prev = [], None
+            continue
+        if prev is not None and current and glyph[1] - prev[2] > _WORD_GAP * max(glyph[4], prev[4]):
+            words.append(current)
             current = []
-        elif ch.isalpha():
+        if ch.isalpha():
             current.append((ch, glyph[4]))
+        prev = glyph
     if current:
         words.append(current)
-    judged = [w for w in words if len(w) > 1 and "".join(c for c, _ in w).upper() not in TITLE_CASE_SMALL_WORDS]
+    letters = [s for w in words for _, s in w]
+    if not letters:
+        return None
+    small = min(letters)
+    judged = [
+        w
+        for w in words
+        if len(w) > 1
+        and "".join(c for c, _ in w).upper() not in TITLE_CASE_SMALL_WORDS
+        and not min(s for _, s in w) > small + _INITIAL_CAP_MARGIN
+    ]
     if not judged:
         return None
     large = sum(1 for w in judged if w[0][1] > min(s for _, s in w[1:]) + _INITIAL_CAP_MARGIN)

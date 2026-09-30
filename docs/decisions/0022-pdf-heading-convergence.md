@@ -61,7 +61,15 @@ leading. Both are small capitals, but GPO sets an agency in *title case* in smal
 word's first letter printed larger) and an account in *even* small caps. The line's median
 glyph size, which is all `Line.glyph_size` kept, hides the difference. `pdf_text` now also
 records, from the same glyph walk and with no new PDFium calls, `LineGeom.initial_caps` (the
-case pattern) and `size_min`/`size_max` (a department heading is capitals at body size).
+case pattern) and `size_min`/`size_max` (a department heading is capitals at body size). The
+case pattern is judged one word at a time, from the size of each letter. Sizes exist only in the
+raw character data (each character the file draws, with its position and size), not in the
+simplified page text PDFium also returns. The two differ on word spaces: the page text fills a
+space in from the gap between words, while the raw data has only the spaces the file draws, and
+in heading lines the file mostly draws none (65–92% of heading-line spaces are filled in, in two
+sampled bills; about 11% in prose). So word breaks are found from the gaps between letters. Small
+words (`and`, `of`, `the`, …) and words printed all in large capitals, such as acronyms, have no
+case pattern of their own and are skipped.
 
 ## Decision
 
@@ -76,21 +84,34 @@ reading unchanged.
 2. **Lines that cannot be headings.** Quoted text (a quote is open from an opening mark to the
    next closing mark; an unquoted `SEC.`/`TITLE`/`DIVISION` line closes it), a line inside an
    unfinished sentence, and the wrapped tail of a section or subsection title. Heading anchors
-   on such lines are dropped.
+   on such lines are dropped. Missing punctuation alone does not put a line inside a sentence: a
+   run of centered lines followed by a new, indented paragraph (or by nothing that is prose) is
+   set apart from the text around it and ends the sentence carried down to it. Without that, a
+   paragraph that ends without a period (`(Public Law 111–241)`) or an enacting clause that
+   `TITLE I` interrupts (`… assembled, That`) hides every heading printed after it. Heading-shaped
+   text inside prose runs the full column, or is followed by its sentence's continuation at the
+   left margin, and stays excluded.
 3. **Department headings anywhere in a title.** A centered line set entirely at body size in
    capitals is a department-level heading, not only directly under `TITLE n`. A line opening
    with a structural token (`TITLE`, `SUBTITLE`, `CHAPTER`, `PART`, …), or directly under one,
    is that level or its wrapped name, not a department.
 4. **Heading runs.** Every run of heading lines between prose is re-segmented at each line
-   break. The first decisive signal wins: a line-break hyphen joins; a trailing `AND`/`OR`
-   joins; letters printed differently (title case over even) split; letters printed alike
-   join unless a veto applies. The vetoes: the lower line repeats
-   the upper's words, the lower line stands alone as a heading at least twice elsewhere in the
-   bill, or the next word would have fitted on the upper line (line fullness, [0012](0012-pdf-heading-levels.md),
-   measured against the widest centered heading rather than the body column). The vetoes are
-   re-read until no decision changes, at most five rounds. A hanging-indent block (first line
-   at the margin running full width, the rest at the paragraph indent) is one heading. The
-   department line directly under a bare `TITLE n` is left as the major detector read it.
+   break. The first decisive signal wins: a line-break hyphen joins; a line ending in a small
+   word (`AND`, `OR`, `OF`, `FOR`, `TO`, `THE`, …) joins, since a heading cannot end there;
+   letters printed differently (title case over even) split; letters printed alike join unless
+   a veto applies. The vetoes: the lower line stands alone as a heading at least twice elsewhere
+   in the bill, or the next word would have fitted on the upper line (line fullness,
+   [0012](0012-pdf-heading-levels.md), measured against the widest centered heading rather than
+   the body column, with the lower line's first word ended at a space or a letter gap as for the
+   case pattern). A hanging-indent block (first line at the margin running full width, the rest
+   at the paragraph indent) is one heading. The department line directly under a bare `TITLE n`
+   is left as the major detector read it, and lines that run on, uncentered, from a numbered
+   level's own line (`TITLE VIII—COUNTERING THE MALIGN INFLU-` / `ENCE OF THE PEOPLE'S …`)
+   finish that line's name and are not headings. Each piece of a re-segmented run takes a level:
+   the last keeps the detectors' level, a piece printed like the last one (same case pattern and
+   size) takes the same level, and any other piece is an agency. GPO stacks a name over its own
+   account at one level (`FOOD AND DRUG ADMINISTRATION` / `SALARIES AND EXPENSES`); read as an
+   agency, the upper line would end the reach of the real agency above it.
 
 Scope, which heading an account inherits, is decided in `pdf_anchors._breadcrumb_core` from
 the case pattern the passes record on each heading (`Anchor.caps`): a department ends the
@@ -107,6 +128,11 @@ wording alone would have split them.
 
 Alternatives considered:
 
+- **A repeat-words veto.** Split two lines printed alike when every word of the lower line
+  appears in the upper one, on the idea that a wrapped name continues with new words. Rejected
+  on measurement: over the same 118 PDFs it changed 9 headings and was wrong in all 9, because
+  names repeat words (`NATIONAL SECURITY COUNCIL AND HOMELAND` / `SECURITY COUNCIL`; `COUNCIL ON
+  ENVIRONMENTAL QUALITY AND OFFICE OF` / `ENVIRONMENTAL QUALITY`).
 - **Named wording exceptions.** Split a stack when its lower line is exactly `SALARIES AND
   EXPENSES`, or its upper line exactly one of the fifteen executive departments (5 U.S.C. 101).
   Rejected in review: each entry encodes the answer to a known example rather than showing that
@@ -194,7 +220,22 @@ separate decision.
   name glued by the major detector itself (`OVERSEAS CONTINGENCY OPERATIONS DEPARTMENT OF
   DEFENSE`) is left as detected. A wrapped account name that opens with the word `TITLE`
   (`TITLE 17 INNOVATIVE TECHNOLOGY LOAN GUARANTEE` / `PROGRAM`, 115-hr-5895) is read as the
-  structural token and stays split.
+  structural token and stays split. A name broken early for balance after a complete word
+  would still be split by the line-fullness veto; the one balanced break in the corpus ends in
+  `OF` and is joined.
+- **A prose-leading agency is still an account** ([0012](0012-pdf-heading-levels.md), boundary
+  1). `GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT CORPORATION`, whose name these passes now read
+  whole, is followed directly by prose, so the accounts after it lose it as a parent (11 amounts
+  in 5 bills). Its case pattern is agency style; using that to re-label a heading is a separate,
+  measured decision.
+- **A name over its own account can still be read one level too high.** A piece the passes
+  split out takes its level from the print, but where the detectors already made the upper line
+  an agency it stays one: `NORTH ATLANTIC TREATY ORGANIZATION` over `SECURITY INVESTMENT
+  PROGRAM`, which the XML sets as two headings on one level.
+- **A title's name is displaced from breadcrumbs.** The heading under a bare `TITLE n` and the
+  major-level heading below it compete for one breadcrumb level, and the nearer wins:
+  `TITLE I › LEGISLATIVE BRANCH › HOUSE OF REPRESENTATIVES` reaches its accounts as
+  `TITLE I › HOUSE OF REPRESENTATIVES`. True but one level shallower, and true of develop too.
 - **Reconciliation bills stay shallower.** Their prints carry no subtitle or part level the
   passes can read, so their amounts land T2 at best. Recovering those levels, and measuring
   other bill vehicles (continuing resolutions, supplementals, authorizing bills with direct
