@@ -46,35 +46,26 @@ def main() -> int:
     undecided: dict[str, int] = {}
     for bill, xml_path, pdf_path in dual_format_versions():
         version = f"{bill}/{pdf_path.stem}"
-        pages = cached_pages(pdf_path)
-        oracle = gate.XmlOracle(xml_path)
-        seen: set[tuple[str, str]] = set()
-        n_undecided = 0
-        for join in gate._joins(gate._merge_groups(pages)):
-            keep = gate._canon(f"{join['left']}-{join['right']}")
-            drop = gate._canon(f"{join['left']}{join['right']}")
-            verdict = oracle.verdict(keep, drop, join["prev"], join["next"])
-            if verdict == "UNDECIDED":
-                n_undecided += 1
-                continue
-            if gate._canon(join["produced"]) == (keep if verdict == "KEEP" else drop):
-                continue
-            key = (join["left"], join["right"])
-            if key in seen:
-                continue
-            seen.add(key)
+        # The gate's own accounting, so the fixture and the check cannot disagree about
+        # which sites exist or which of them count as undecided.
+        acc = gate._account(cached_pages(pdf_path), gate.XmlOracle(xml_path))
+        for (left, right), (produced, expected) in acc.wrong.items():
             rows.append(
                 {
                     "version": version,
-                    "left": join["left"],
-                    "right": join["right"],
-                    "produced": join["produced"],
-                    "expected": keep if verdict == "KEEP" else drop,
+                    "left": left,
+                    "right": right,
+                    "produced": produced,
+                    "expected": expected,
                     "reason": "no in-document or sibling evidence for either form; decided by case shape",
                 }
             )
-        undecided[version] = n_undecided
-        print(f"{version:52s} residuals={len(seen):4d} undecided={n_undecided:4d}", flush=True)
+        undecided[version] = acc.undecided
+        print(
+            f"{version:52s} judged={acc.judged:5d} residuals={len(acc.wrong):4d} "
+            f"undecided={acc.undecided:4d} unjoined={len(acc.unjoined)}",
+            flush=True,
+        )
 
     rows.sort(key=lambda r: (r["version"], r["left"], r["right"]))
     out = gate._RESIDUALS_PATH

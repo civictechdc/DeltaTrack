@@ -39,12 +39,13 @@ extractor).
   1. No word the printer split reaches ``full_text`` still split. A dangling
      ``INTEL-`` reads to a consumer as a word boundary that is not in the document.
      Asked against the XML, not against the merger's rule, so it cannot pass vacuously
-     by restating the implementation -- see `_unjoined`.
+     by restating the implementation -- see `_account`.
   2. Every word reconstructed AT a join matches the XML in that position.
 
-**What this cannot see.** Both clauses are scoped to the sites the oracle can judge. A
-break whose reconstruction is attested in neither form, or in both equally, is EXCLUDED
-and counted -- 53 across the corpus, asserted per version -- rather than passed. The
+**What this cannot see.** Both clauses are scoped to the sites the oracle can judge.
+Sites are enumerated from the printed lines, joined or not, and a site whose
+reconstruction is attested in neither form, or in both equally, is EXCLUDED and counted
+per version in the fixture rather than passed. The
 page-seam breaks that running-header chrome keeps split (#535) sit in that excluded set,
 because a chrome token is not a word and no reconstruction of it is attested. So clause
 1 reaching zero does not mean no word is left split in ``full_text``; it means none is
@@ -75,6 +76,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
@@ -91,8 +93,11 @@ _RESIDUALS_PATH = Path(__file__).parent / "data" / "pdf" / "word_break_residuals
 #: hyphens, apostrophes and periods (``E-Verify``, ``U.S.C.``, ``Nation's``).
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’\-\.]*")
 
-#: A printed line broken mid-word: an alphanumeric, then the break hyphen, at line end.
-_BREAK_TAIL = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’\-\.]*-$")
+#: A split site, the population #650 pins: a printed line ending in an alphanumeric, or
+#: the period of an abbreviation compound (``U.S.-``), followed by a hyphen. Read from
+#: the PRINTED lines, upstream of any join, so a repair that joins nothing cannot shrink
+#: the population it is judged over.
+_SITE_TAIL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9'’\-\.]*[A-Za-z0-9.])?-$")
 
 
 def _canon(token: str) -> str:
@@ -170,7 +175,7 @@ class XmlOracle:
 
 
 def _merge_groups(pages: list[Page]) -> list[tuple[int, str, list[str], list[int]]]:
-    """(page, merged text, the printed lines it consumed, seam offsets) in document order.
+    """(first printed index, merged text, the printed lines it consumed, seam offsets).
 
     Walks the document FLAT rather than per page, because a merge can cross a page
     boundary: `_rejoin_page_seam_breaks` lets a page's last line absorb the next page's
@@ -183,11 +188,12 @@ def _merge_groups(pages: list[Page]) -> list[tuple[int, str, list[str], list[int
     construction.
     """
     flat_print = [line.text for page in pages for line in page.print_lines]
-    flat_merged = [(page.page_number, line.text) for page in pages for line in page.lines]
+    flat_merged = [line.text for page in pages for line in page.lines]
     groups: list[tuple[int, str, list[str], list[int]]] = []
     cursor = 0
-    for page_no, merged in flat_merged:
+    for merged in flat_merged:
         assert cursor < len(flat_print), "merged lines outran the printed lines they came from"
+        start = cursor
         fragments = [flat_print[cursor]]
         acc = fragments[0]
         seams: list[int] = []
@@ -204,7 +210,7 @@ def _merge_groups(pages: list[Page]) -> list[tuple[int, str, list[str], list[int
             else:
                 seams.append(len(acc) - 1)
                 acc = acc[:-1] + nxt
-        groups.append((page_no, merged, fragments, seams))
+        groups.append((start, merged, fragments, seams))
     assert cursor == len(flat_print), f"{len(flat_print) - cursor} printed lines never consumed"
     return groups
 
@@ -231,54 +237,100 @@ def _neighbours(fragments: list[str], k: int) -> tuple[str, str, str, str]:
     return left, right, prev_w, next_w
 
 
-def _joins(groups: list[tuple[int, str, list[str], list[int]]]) -> list[dict]:
-    """Every join the merger made, with what it produced and the context around it."""
-    out: list[dict] = []
-    for _page_no, merged, fragments, seams in groups:
-        for k, seam in enumerate(seams):
-            left, right, prev_w, next_w = _neighbours(fragments, k)
-            out.append(
-                {
-                    "left": left,
-                    "right": right,
-                    "prev": prev_w,
-                    "next": next_w,
-                    "produced": _word_at(merged, seam),
-                }
-            )
-    return out
+@dataclass
+class Accounting:
+    """Every split site in one version, each either judged or counted undecided."""
+
+    #: (left, right) -> (produced, expected), for a judged join that disagrees with the XML.
+    wrong: dict[tuple[str, str], tuple[str, str]] = field(default_factory=dict)
+    #: (left, right) for a judged site the merger left split in ``full_text``.
+    unjoined: list[tuple[str, str]] = field(default_factory=list)
+    #: Printed indexes the merger joined that are not split sites at all.
+    stray: list[int] = field(default_factory=list)
+    judged: int = 0
+    undecided: int = 0
 
 
-def _unjoined(groups, pages: list[Page], oracle: "XmlOracle") -> list[tuple[str, str]]:
-    """(left, right) for a word the printer split that reached `full_text` still split.
+def _account(pages: list[Page], oracle: XmlOracle) -> Accounting:
+    """Judge every split site in the printed lines, joined or not.
 
-    Asked against the XML, not against the merger's rule. The mechanical question --
-    "did a line end in a hyphen with a word after it, and was it joined?" -- is one the
-    merger now always answers yes to, so a test phrased that way would restate the
-    implementation and pass vacuously. Two fragments are a split WORD when putting them
-    together makes a word the bill has in that position and leaving them apart does not.
+    The population comes first and the reconstruction is looked up for it, not the
+    reverse. Enumerating from the joins would let an undecidable site the merger declined
+    to join -- an em-dash enumeration, a running header between a page-seam break and its
+    continuation -- drop out of the count, so the undecided budget could not see coverage
+    shrink.
 
-    This also excuses, without enumerating them, the things a line-final hyphen means
-    other than a word break: an em-dash introducing an enumeration, a suspended hyphen,
-    and running-header chrome standing between a page-seam break and its continuation.
-    None of the three reconstructs into an attested word.
+    A judged site is a split WORD: putting the fragments together makes a word the bill
+    has in that position. So a judged site left unjoined is a failure, and the things a
+    line-final hyphen means other than a word break land in the undecided count instead.
     """
-    flat = [line.text for page in pages for line in page.print_lines]
-    cursor = 0
-    out: list[tuple[str, str]] = []
-    for _page_no, _merged, fragments, _seams in groups:
-        cursor += len(fragments)
-        tail_text = fragments[-1].rstrip()
-        m = _BREAK_TAIL.search(tail_text)
-        if not m or cursor >= len(flat):
+    printed = [line.text.rstrip() for page in pages for line in page.print_lines]
+    joined: dict[int, str] = {}
+    for start, merged, _fragments, seams in _merge_groups(pages):
+        for k, seam in enumerate(seams):
+            joined[start + k] = _word_at(merged, seam)
+
+    acc = Accounting()
+    for i, text in enumerate(printed):
+        if not _SITE_TAIL.search(text):
             continue
-        left, right, prev_w, next_w = _neighbours([tail_text, flat[cursor]], 0)
-        if not right:
+        continuation = printed[i + 1] if i + 1 < len(printed) else ""
+        left, right, prev_w, next_w = _neighbours([text, continuation], 0)
+        keep, drop = _canon(f"{left}-{right}"), _canon(f"{left}{right}")
+        verdict = oracle.verdict(keep, drop, prev_w, next_w) if right else "UNDECIDED"
+        produced = joined.pop(i, None)
+        if verdict == "UNDECIDED":
+            acc.undecided += 1
             continue
-        verdict = oracle.verdict(_canon(f"{left}-{right}"), _canon(f"{left}{right}"), prev_w, next_w)
-        if verdict != "UNDECIDED":
-            out.append((left, right))
-    return out
+        acc.judged += 1
+        expected = keep if verdict == "KEEP" else drop
+        if produced is None:
+            acc.unjoined.append((left, right))
+        elif _canon(produced) != expected:
+            acc.wrong.setdefault((left, right), (produced, expected))
+    acc.stray = sorted(joined)
+    return acc
+
+
+def _problems(acc: Accounting, expected: set[tuple[str, str]], budget: int | None) -> list[str]:
+    """Why one version's accounting fails the gate; empty when it passes."""
+    problems: list[str] = []
+
+    if acc.unjoined:
+        shown = "; ".join(f"{a}- / {b}" for a, b in acc.unjoined[:6])
+        problems.append(f"{len(acc.unjoined)} words the printer split reached full_text still split -- {shown}")
+
+    if acc.stray:
+        problems.append(f"{len(acc.stray)} joins at printed lines that are not split sites -- {acc.stray[:6]}")
+
+    # Set equality, not a ceiling: a ceiling is satisfied by fixing one site and
+    # breaking another, which is the swap this file exists to catch.
+    unexpected = sorted(set(acc.wrong) - expected)
+    if unexpected:
+        shown = "; ".join(f"{a}- / {b} -> {acc.wrong[(a, b)][0]!r}" for a, b in unexpected[:6])
+        problems.append(f"{len(unexpected)} joins disagree with the XML in context -- {shown}")
+    repaired = sorted(expected - set(acc.wrong))
+    if repaired:
+        shown = "; ".join(f"{a}- / {b}" for a, b in repaired[:6])
+        problems.append(
+            f"{len(repaired)} residuals now resolve correctly and must be REMOVED from "
+            f"{_RESIDUALS_PATH.name} -- {shown}"
+        )
+
+    # Required, not optional. Reading the budget with a default would let deleting a
+    # version's entry disable this control for that version, which is the weakening the
+    # count exists to prevent.
+    if budget is None:
+        problems.append(
+            f"no undecided-site budget recorded for this version in {_RESIDUALS_PATH.name}; "
+            f"regenerate rather than removing the entry"
+        )
+    elif acc.undecided != budget:
+        problems.append(
+            f"the aligned oracle now leaves {acc.undecided} sites undecided here, not "
+            f"{budget}; a growing undecided set narrows what this gate covers"
+        )
+    return problems
 
 
 def _residuals() -> dict[str, set[tuple[str, str]]]:
@@ -326,69 +378,15 @@ assert _CASES, "no dual-format corpus versions collected; the fixture tree is br
     ids=[f"{b}/{p.stem}" for b, _x, p in _CASES],
 )
 def test_printed_word_breaks_reflow_to_real_words(bill: str, xml_path: Path, pdf_path: Path) -> None:
-    pages = cached_pages(pdf_path)
     version = f"{bill}/{pdf_path.stem}"
-
-    oracle = XmlOracle(xml_path)
-    groups = _merge_groups(pages)
-    expected = _residuals().get(version, set())
-
-    wrong: dict[tuple[str, str], str] = {}
-    undecided = 0
-    for join in _joins(groups):
-        keep = _canon(f"{join['left']}-{join['right']}")
-        drop = _canon(f"{join['left']}{join['right']}")
-        verdict = oracle.verdict(keep, drop, join["prev"], join["next"])
-        if verdict == "UNDECIDED":
-            undecided += 1
-            continue
-        produced = _canon(join["produced"])
-        if produced != (keep if verdict == "KEEP" else drop):
-            wrong[(join["left"], join["right"])] = join["produced"]
-
-    problems: list[str] = []
-
-    unjoined = _unjoined(groups, pages, oracle)
-    if unjoined:
-        shown = "; ".join(f"{a}- / {b}" for a, b in unjoined[:6])
-        problems.append(f"{len(unjoined)} words the printer split reached full_text still split -- {shown}")
-
-    # Set equality, not a ceiling: a ceiling is satisfied by fixing one site and
-    # breaking another, which is the swap this file exists to catch.
-    unexpected = sorted(set(wrong) - expected)
-    if unexpected:
-        shown = "; ".join(f"{a}- / {b} -> {wrong[(a, b)]!r}" for a, b in unexpected[:6])
-        problems.append(f"{len(unexpected)} joins disagree with the XML in context -- {shown}")
-    repaired = sorted(expected - set(wrong))
-    if repaired:
-        shown = "; ".join(f"{a}- / {b}" for a, b in repaired[:6])
-        problems.append(
-            f"{len(repaired)} residuals now resolve correctly and must be REMOVED from "
-            f"{_RESIDUALS_PATH.name} -- {shown}"
-        )
-
-    # Required, not optional. Reading the budget with a default would let deleting a
-    # version's entry disable this control for that version, which is the weakening the
-    # count exists to prevent -- the check would then fail OPEN on the one edit most
-    # likely to be made to quiet it.
-    budgets = _undecided_budget()
-    if version not in budgets:
-        problems.append(
-            f"no undecided-site budget recorded for this version in {_RESIDUALS_PATH.name}; "
-            f"regenerate rather than removing the entry"
-        )
-    elif undecided != budgets[version]:
-        problems.append(
-            f"the aligned oracle now leaves {undecided} sites undecided here, not "
-            f"{budgets[version]}; a growing undecided set narrows what this gate covers"
-        )
-
+    acc = _account(cached_pages(pdf_path), XmlOracle(xml_path))
+    problems = _problems(acc, _residuals().get(version, set()), _undecided_budget().get(version))
     assert not problems, f"{version}: " + " | ".join(problems)
 
 
 # --- Negative controls -----------------------------------------------------------
-# Three ways a repair can look correct while being wrong. Each pins one, and each was
-# confirmed to go red when the corresponding mistake is reintroduced.
+# Ways a repair or the gate can look correct while being wrong. Each pins one, and each
+# was confirmed to go red when the corresponding mistake is reintroduced.
 
 
 def test_a_page_seam_break_is_never_joined_to_running_header_chrome() -> None:
@@ -468,6 +466,38 @@ def test_the_oracle_decides_by_context_not_by_vocabulary() -> None:
     assert oracle.verdict("anti-terrorism", "antiterrorism", "the", "training") == "KEEP"
     assert oracle.verdict("anti-terrorism", "antiterrorism", "the", "funds") == "DROP"
     assert oracle.verdict("anti-terrorism", "antiterrorism", "", "") == "UNDECIDED"
+
+
+def test_an_undecidable_unjoined_site_spends_the_undecided_budget() -> None:
+    """Coverage the gate cannot judge must be counted even where nothing was joined.
+
+    A page-final break whose next printed line is running-header chrome is a split site
+    the merger rightly declines to join and the oracle cannot judge. Adding one to an
+    input that passes must move the undecided count, so an unchanged budget fails.
+
+    Mutation that must fail this: counting undecided sites only among the merger's joins.
+    """
+    from deltatrack.parsers.pdf_text import BreakEvidence, PrintPages, _parse_print_lines, merge_print_pages
+
+    oracle = XmlOracle(tokens="the intelligence program is funded grants for evidence based strategies".split())
+
+    def account(*pages: str) -> Accounting:
+        printed = tuple(tuple(_parse_print_lines(p)) for p in pages)
+        read = PrintPages(printed, tuple({} for _ in printed))
+        return _account(merge_print_pages(read, BreakEvidence()), oracle)
+
+    passing = account("1 the INTEL-\n2 LIGENCE program is funded")
+    assert (passing.judged, passing.undecided) == (1, 0)
+    assert _problems(passing, set(), 0) == []
+
+    with_chrome = account(
+        "1 the INTEL-\n2 LIGENCE program is funded\n3 grants for evidence-",
+        "H. R. 3547—61\n1 based strategies",
+    )
+    assert with_chrome.judged == 1, "the chrome boundary must not be judged, nor the break joined to it"
+    assert any("undecided" in p for p in _problems(with_chrome, set(), 0)), (
+        "an undecidable, unjoined site was added and the unchanged budget still passed"
+    )
 
 
 def test_every_collected_version_has_an_undecided_budget() -> None:
