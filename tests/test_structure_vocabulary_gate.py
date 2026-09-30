@@ -50,6 +50,11 @@ VOCABULARY_ALLOWED = {
     # parser consumes result-bearingly, so it gets a narrower guard of its own below --
     # see `test_the_amount_primitive_reads_only_the_amendment_vocabulary`.
     "amounts.py": "financial layer — the (increased|reduced|decreased) by $X primitive",
+    # The typed ledger (ADR 0023): its classifier reads appropriations wording to say what
+    # an amount is. It takes its sections from the structure tree and never decides one.
+    "financial.py": "financial layer — the ledger's clause classifier (ADR 0023)",
+    # The report's financial views: they name the ledger's money types (and style them).
+    "formatters/financial_views.py": "financial layer — the ledger's views (ADR 0023)",
     # Parses the comparative-statement TABLE in a committee report, a different
     # document used as independent ground truth (ADR 0009), not bill structure.
     "parsers/committee_report.py": "committee-report table parser (ADR 0009 carve-out)",

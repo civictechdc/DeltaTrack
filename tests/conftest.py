@@ -116,6 +116,25 @@ def _manifest_bills() -> tuple[dict, ...]:
     return tuple(tomllib.loads(_MANIFEST_PATH.read_text())["bill"])
 
 
+# The kinds of bill a manifest entry's `vehicle` may name (the manifest header defines each).
+# The ledger check reports its totals per vehicle so one kind cannot hide behind another's
+# volume (#733).
+VEHICLES = (
+    "regular",
+    "omnibus",
+    "supplemental",
+    "continuing-resolution",
+    "reconciliation",
+    "authorizing",
+    "not-appropriations",
+)
+
+
+def manifest_vehicles() -> dict[str, str]:
+    """Bill id -> the kind of bill it is, from each entry's `vehicle`."""
+    return {bill["id"]: bill["vehicle"] for bill in _manifest_bills()}
+
+
 def manifest_bill_ids() -> list[str]:
     """Every bill id the manifest names (``118-hr-4366``, ...), sorted.
 
@@ -344,6 +363,17 @@ ALLOWED_CORPUS_SKIPS = {
     # to allow. Its layout reason lives in _PDF_NO_ANCHOR_LAYOUTS, beside those
     # assertions.
     # History: #262 — an allowlisted skip before the gate learned to assert.
+    # A continuing resolution funds by reference ("at a rate for operations as provided in
+    # …") and a reconciliation bill appropriates inside numbered sections, so neither
+    # carries any <appropriations-*> element (0 in each file, counted on the committed
+    # fixtures): this gate has nothing to assert. Their money lives in provision text, which
+    # the dollar gate above covers. Committed by #733 for the kinds of bill they are.
+    "tests/test_corpus_properties.py::test_every_appropriations_element_with_text_produces_node"
+    "[118-hr-5860/3_engrossed-in-house.xml]": "No appropriations elements with text",
+    "tests/test_corpus_properties.py::test_every_appropriations_element_with_text_produces_node"
+    "[118-hr-5860/4_enrolled-bill.xml]": "No appropriations elements with text",
+    "tests/test_corpus_properties.py::test_every_appropriations_element_with_text_produces_node"
+    "[115-hr-1/5_engrossed-amendment-senate.xml]": "No appropriations elements with text",
     # --- 113-hr-3547 v4 (added to the manifest by #220 Part 1 / #277) -----------
     # 113-hr-3547 v4 is the Senate's FIRST engrossed amendment to what was then a
     # shell bill: a single section extending commercial space-launch liability (2.6 KB,

@@ -266,6 +266,10 @@ class TestCliIntegration:
         so it is the case with something to lose: this is the same absence check as
         the unit test above, run through the CLI on real appropriations text rather
         than a hand-built diff dict.
+
+        Since ADR 0023 the report has financial views in tabs of their own (per version,
+        typed, Version A / B headed "Financial Summary" as in the research notebook), so
+        the absence is checked where #671 drew it: the Changes view.
         """
         import sys
 
@@ -281,7 +285,11 @@ class TestCliIntegration:
         )
         main()
         html = out.read_text()
-        assert "Financial Summary" not in html
         assert "financial-table" not in html
         assert "financial-callout" not in html
         assert "data-financial" not in html
+        changes_view = html.split('<div class="view view-changes">', 1)[1].split('<div class="view view-full"', 1)[0]
+        assert "Financial Summary" not in changes_view
+        assert "fin-" not in changes_view
+        assert html.count("<h3>Financial Summary</h3>") == 2  # Version A and Version B, nowhere else
+        assert html.count("Financial Summary") == 2

@@ -35,6 +35,19 @@ def test_manifest_parses_and_is_nonempty() -> None:
                 assert fmt in {"xml", "pdf"}, f"{b['id']}/{v['stage']}: unknown format {fmt!r}"
 
 
+def test_every_bill_names_a_known_vehicle() -> None:
+    """The ledger check reports per kind of bill (#733), so a bill with no `vehicle`, or one
+    outside the closed list, would be counted in no group or in a group nobody reads."""
+    bad = {b["id"]: b.get("vehicle") for b in conftest._manifest_bills() if b.get("vehicle") not in conftest.VEHICLES}
+    assert not bad, f"manifest bills with a missing or unknown vehicle: {bad}; allowed: {conftest.VEHICLES}"
+
+
+def test_every_vehicle_that_appropriates_is_in_the_corpus() -> None:
+    """One committed bill per kind of bill that appropriates money, so each kind is measured."""
+    present = set(conftest.manifest_vehicles().values())
+    assert set(conftest.VEHICLES) <= present, f"no committed bill of kind {sorted(set(conftest.VEHICLES) - present)}"
+
+
 def test_manifest_helpers_match_declared_counts() -> None:
     """The derived file/pair lists have exactly one entry per declared (bill, version,
     format) in the raw TOML. This is ADR 0015's "count derived from the manifest"

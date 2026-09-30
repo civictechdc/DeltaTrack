@@ -50,10 +50,10 @@ DIFF_TIMEOUT_S = 120
 # throttled.
 COMPARE_RATE_LIMIT_PER_MINUTE = 10
 
-# Format → (label-extension, html entry point, json entry point).
+# Format → (html entry point, json entry point).
 _COMPARE = {
-    "pdf": (".pdf", compare_pdfs_html, compare_pdfs),
-    "xml": (".xml", compare_xml_html, compare_xml),
+    "pdf": (compare_pdfs_html, compare_pdfs),
+    "xml": (compare_xml_html, compare_xml),
 }
 
 app = FastAPI(
@@ -245,16 +245,20 @@ async def _read_upload(upload: UploadFile, field: str, fmt: str) -> bytes:
     return data
 
 
-def _label_from_filename(name: str | None, fallback: str, ext: str) -> str:
-    """Derive a human label from the uploaded filename, defensively (strip any
-    path components a client might send, drop the format extension)."""
+def _label_from_filename(name: str | None, fallback: str) -> str:
+    """The uploaded filename as the version's label, defensively (strip any path
+    components a client might send).
+
+    Kept whole, extension included: people name files by their own conventions, so the
+    name says nothing the app can rely on (a stage, which version is newer), and only
+    the uploader knows what it means. The report header shows it exactly as they chose it.
+    The same label also reaches the financial views, the CSV exports and diff.json; how
+    it should read there was not part of that decision and is open to revisit.
+    """
     if not name:
         return fallback
-    stem = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
-    if stem.lower().endswith(ext):
-        stem = stem[: -len(ext)]
-    stem = stem.strip()
-    return stem or fallback
+    label = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].strip()
+    return label or fallback
 
 
 @app.post("/api/compare")
@@ -264,12 +268,12 @@ async def compare(
     output: str = Query("html", pattern="^(html|json)$"),
     fmt: str = Query("pdf", alias="format", pattern="^(pdf|xml)$"),
 ):
-    ext, html_fn, json_fn = _COMPARE[fmt]
+    html_fn, json_fn = _COMPARE[fmt]
     start_bytes = await _read_upload(start_file, "start_file", fmt)
     end_bytes = await _read_upload(end_file, "end_file", fmt)
 
-    start_label = _label_from_filename(start_file.filename, "Start version", ext)
-    end_label = _label_from_filename(end_file.filename, "End version", ext)
+    start_label = _label_from_filename(start_file.filename, "Start version")
+    end_label = _label_from_filename(end_file.filename, "End version")
 
     compare_fn = html_fn if output == "html" else json_fn
 

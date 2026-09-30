@@ -19,6 +19,10 @@ from deltatrack.parsers.pdf_text import Line, LineGeom, Page
 BODY = 14.0
 HEAD = 11.2
 
+# A body line that ends a paragraph before a heading ends a sentence (`.`, `:`), as GPO prints
+# it: a line that follows unfinished prose continues that sentence and is never a heading
+# (ADR 0022). History: fixtures before ADR 0022 left the period off.
+
 # Synthetic page geometry for the major detector's stacked-vs-wrapped split (#130),
 # which reads each line's horizontal extent. COLUMN is the justified body width GPO
 # prints (335-339 pt on the corpus subcommittee prints); the body-prose lines below
@@ -177,7 +181,7 @@ class TestSizePositionClassification:
         rows = [
             (1, "SEC. 5. ACTIONS TO PROMOTE FREEDOM OF THE PRESS", HEAD),
             (2, "AND ASSEMBLY IN HAITI.", HEAD),
-            (3, "body prose of the section follows here", BODY),
+            (3, "body prose of the section follows here.", BODY),
             (4, "OPERATIONS AND SUPPORT", HEAD),
             (5, "the real account body prose runs here", BODY),
         ]
@@ -195,7 +199,7 @@ class TestSizePositionClassification:
         rows = [
             (1, "SEC. 5. ACTIONS TO PROMOTE FREEDOM OF THE PRESS", HEAD),
             (2, "AND ASSEMBLY IN HAITI.", HEAD),  # catchline continuation (suppressed)
-            (3, "body prose of the section runs here now", BODY),
+            (3, "body prose of the section runs here now.", BODY),
             (4, "OPERATIONS AND SUPPORT", HEAD),  # real account, separated by body
             (5, "the account body prose follows here", BODY),
         ]
@@ -418,7 +422,7 @@ class TestCarryoverAgencies:
             (1, "TITLE I", BODY),
             (2, "MANAGEMENT DIRECTORATE", HEAD),  # agency
             (3, "OPERATIONS AND SUPPORT", HEAD),  # account A
-            (4, "the body prose for account A here", BODY),
+            (4, "the body prose for account A here.", BODY),
             (5, "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS", HEAD),  # account B
             (6, "the body prose for account B here", BODY),
         ]
@@ -439,7 +443,7 @@ class TestCarryoverAgencies:
             (1, "TITLE I", BODY),
             (2, "MANAGEMENT DIRECTORATE", HEAD),  # agency A
             (3, "OPERATIONS AND SUPPORT", HEAD),  # account under A
-            (4, "the body prose for account A here", BODY),
+            (4, "the body prose for account A here.", BODY),
             (5, "FEDERAL EMERGENCY MANAGEMENT AGENCY", HEAD),  # agency B
             (6, "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS", HEAD),  # account under B
             (7, "the body prose for account B here", BODY),
@@ -523,10 +527,10 @@ class TestCarryoverAgencies:
             (1, "TITLE I", BODY),
             (2, "MANAGEMENT DIRECTORATE", HEAD),  # agency
             (3, "OPERATIONS AND SUPPORT", HEAD),  # account under the agency
-            (4, "the body prose for the account here", BODY),
+            (4, "the body prose for the account here.", BODY),
             (5, "ADMINISTRATIVE PROVISIONS", HEAD),  # grouping header
             (6, "SEC. 101. (a) The Secretary shall act here.", BODY),
-            (7, "more body prose for the section here", BODY),
+            (7, "more body prose for the section here.", BODY),
             (8, "WORKING CAPITAL FUND", HEAD),  # title-level account after the grouping
             (9, "the body prose for the later account", BODY),
         ]
@@ -871,7 +875,7 @@ class TestMajorLevel:
             (5, "For necessary expenses of the office, $100.", BODY),
             (6, "ADMINISTRATIVE PROVISIONS", HEAD),  # grouping header
             (7, "SEC. 101. (a) The Secretary shall act here.", BODY),
-            (8, "more body prose for the section here", BODY),
+            (8, "more body prose for the section here.", BODY),
         ]
         anchors = extract_anchors([_page(1, rows)])
         sec = next(a for a in anchors if a.kind == "section" and a.text == "SEC. 101")
@@ -891,10 +895,10 @@ class TestMajorLevel:
             (2, "DEPARTMENTAL MANAGEMENT", BODY),  # major
             (3, "MANAGEMENT DIRECTORATE", HEAD),  # agency
             (4, "OPERATIONS AND SUPPORT", HEAD),  # account under the agency
-            (5, "the body prose for the account here", BODY),
+            (5, "the body prose for the account here.", BODY),
             (6, "ADMINISTRATIVE PROVISIONS", HEAD),  # grouping header
             (7, "SEC. 101. (a) The Secretary shall act here.", BODY),
-            (8, "more body prose for the section here", BODY),
+            (8, "more body prose for the section here.", BODY),
             (9, "WORKING CAPITAL FUND", HEAD),  # title-level account after grouping
             (10, "the body prose for the later account", BODY),
         ]
@@ -941,7 +945,7 @@ class TestMajorLevel:
             (2, "DEPARTMENTAL MANAGEMENT", BODY),  # major
             (3, "MANAGEMENT DIRECTORATE", HEAD),  # agency
             (4, "OPERATIONS AND SUPPORT", HEAD),  # account A
-            (5, "the body prose for account A here", BODY),
+            (5, "the body prose for account A here.", BODY),
             (6, "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS", HEAD),  # account B
             (7, "the body prose for account B here", BODY),
         ]
@@ -963,7 +967,7 @@ class TestMajorLevel:
             (1, "TITLE I", BODY),
             (2, "DEPARTMENTAL MANAGEMENT", BODY),  # major A
             (3, "OPERATIONS AND SUPPORT", HEAD),  # account under A
-            (4, "the body prose for account A here", BODY),
+            (4, "the body prose for account A here.", BODY),
             (5, "TITLE II", BODY),
             (6, "SECURITY, ENFORCEMENT, AND INVESTIGATIONS", BODY),  # major B
             (7, "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS", HEAD),  # account under B

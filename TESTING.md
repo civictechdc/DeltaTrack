@@ -19,7 +19,7 @@ comparison needs no key and no internet connection.
 
 ## How accuracy is checked
 
-Accuracy is checked in six ways. Each one answers a different question, and
+Accuracy is checked in eight ways. Each one answers a different question, and
 each has limits worth being honest about. There is no single accuracy
 percentage that would be truthful across all of appropriations, so we describe
 what each layer does and does not establish.
@@ -172,6 +172,48 @@ position, so it confirms a passage is present somewhere in the version, not that
 it appears in the right place. It also cannot cover draft bills at all, which have
 no official version to compare against; that is check 4's job.
 
+### 7. Cross-checking *where* the PDF files each dollar amount
+
+Check 5 confirms every dollar amount in the official version turns up somewhere in
+the PDF. This one asks whether it turns up under the right heading. For every bill we
+have in both forms, each amount in the official version is lined up with the same
+amount in the PDF reading, in document order, and the two locations (the headings the
+amount sits under) are compared. Each amount lands in one of a few grades: same place;
+same place under a slightly different label; the right place but with a parent heading
+missing; the right heading under the wrong parent; or filed under a different heading
+entirely. The first three are acceptable, since a heading left out is visible, while a
+wrong one is not. The count in each grade is frozen per bill version, so a change that
+files money under the wrong heading more often fails, and one that improves it has to
+be locked in on purpose.
+
+**Limit:** the official version's own reader is the answer key. It shows every heading
+the file tags, but the file does not say how far a heading over several accounts reaches,
+so the reader shows it over the first account only; where the PDF reads a longer reach
+from the print, the "wrong parent" grade can overstate PDF errors
+([ADR 0024](docs/decisions/0024-xml-breadcrumb-keeps-every-heading.md)). The totals are
+reported per kind of bill (regular appropriations, continuing resolution, supplemental,
+reconciliation, authorizing law), so one kind cannot hide behind another's volume. Draft
+bills have no official version, so this check cannot cover them.
+
+### 8. Checking the financial views against the research that defined them
+
+The report's financial views type every dollar amount (appropriation, rescission, cap,
+earmark, …) with the rules the research notebook in `docs/research/financial-semantics/`
+defined and proved on the official version of a bill. The product mostly reads PDFs, so
+the check is that the same bill read from its PDF gives the notebook's rows: the same
+clauses, types, amounts and review flags, in the same order. On H.R. 4366 as reported it
+does, row for row; on the Senate's three-bill amendment the PDF gives 619 of the 622 rows,
+with the same appropriation total, and the three rows it misses are sections the PDF
+reader does not start (lettered numbers such as `SEC. 119A.`), which the report flags. The
+rows are frozen under the version of the rules that produced them, so the rules cannot
+change without their version number changing ([ADR 0023](docs/decisions/0023-financial-ledger-views.md)).
+Each view also states how many dollar figures the version's text holds and whether all
+of them are shown.
+
+**Limit:** this checks that the rules are applied the same way to a PDF as to the official
+text, not that the rules are right. A type is the rules' reading of the wording, and the
+report says so on every financial view.
+
 ## Known soft spots
 
 We keep these in the open rather than papering over them:
@@ -323,6 +365,100 @@ precision and recall evidence in the same pull request — not with a digest tha
 Note what the sentinel cannot see. Two corpus-invisible behaviours move zero of the 27 committed
 pairs and are bound only by synthetic fixtures in `tests/test_round1_stages.py`, so "the corpus is
 still green" is not evidence about them.
+
+### The ledger-location pin, and when you may regenerate it
+
+`tests/test_pdf_ledger_location.py` measures where the PDF pipeline files each dollar amount,
+against the XML twin of the same version ([ADR 0022](docs/decisions/0022-pdf-heading-convergence.md)).
+Every amount in the XML ledger is aligned with the same amount in the PDF ledger and its two
+locations are compared level by level, the whole path, not just the account and its parent:
+
+| tier | the PDF path, against the XML's | counted as |
+|---|---|---|
+| `T0` | identical | true hit |
+| `T1` | the same levels in the same order, a label differs (a joined, tail or near-variant name) | tolerated |
+| `T2` | the XML's ancestors in order, with some left out | tolerated |
+| `T3` | an ancestor that is wrong, extra or out of order | not tolerated |
+| `T4` | a different account or section | not tolerated |
+| `MISS` | no PDF amount to pair with | not tolerated |
+
+`tests/test_ledger_location_scorer.py` pins each case on hand-built paths. The tier counts for
+every committed dual-format version (enrolled excluded) are pinned in
+`tests/data/ledger_location_baseline.json`.
+
+The pin is exact in both directions. More not-tolerated amounts (`T3`, `T4`, `MISS`) or fewer
+true hits (`T0`) is a regression. An improvement also fails, so it gets locked in:
+
+```bash
+UPDATE_LEDGER_BASELINE=1 uv run pytest tests/test_pdf_ledger_location.py
+```
+
+#### Two readings: the tier totals, and the per-amount check
+
+The **tier totals** are the formal result. They are what the pin holds, what a heading change is
+optimized toward, and what an ADR reports. The **per-amount check** is informal: it follows each
+amount from one parser to another and lists every amount whose tier got worse, with the XML
+path and the path before and after. It is not pinned and is not a gate. It exists because a
+total hides a regression whenever another amount in the same version improves: one amount
+moving `T2 → T3` and another `T3 → T2` leaves every count as it was. Use it to find and explain
+regressions; report the totals as the result.
+
+Both come from `tests/ledger_location.py`, which prints the totals for whichever parser is
+importable, so the "before" is the base branch's `src/` on `PYTHONPATH`. `--save` writes every
+amount's locations; `--against` compares a later run with them. The comparison grades both runs
+with the scorer that is checked out, so a scorer change never passes for a parser change.
+`--extra bills` adds your locally fetched versions to both readings (they are not pinned):
+
+```bash
+git archive origin/develop src | tar -x -C /tmp/before
+PYTHONPATH=/tmp/before/src uv run python -m tests.ledger_location --save /tmp/before.json   # before
+uv run python -m tests.ledger_location --against /tmp/before.json                          # after
+```
+
+For a change to PDF headings or breadcrumbs, put both in the pull request: the before and after
+totals, and the check's count of amounts better and worse, with each group of worse amounts
+explained or fixed. A change to the answer key (the XML reader) regrades amounts without moving
+the PDF, and the check skips the versions whose XML side changed, so compare those amount by
+amount on their position in the XML ledger.
+
+`python -m tests.ledger_location` prints the totals per kind of bill, read from each bill's
+`vehicle` in `tests/corpus_manifest.toml`.
+
+#### What the answer key gets wrong
+
+The answer key is DeltaTrack's own XML reader, whose breadcrumbs carry every heading the
+file tags ([ADR 0024](docs/decisions/0024-xml-breadcrumb-keeps-every-heading.md)); the
+reference for headings is the raw XML file's heading tags, and
+`tests/test_corpus_properties.py` checks the reader against them. The one reach the file
+cannot give is a heading over several accounts, shown over the first only, so a `T3` there
+can be the PDF reading the print correctly. The same holds for a file whose own tags are
+misplaced (in division G of 117-hr-4502 the `TITLE I` element is empty and its accounts sit in
+an unnamed title after it, while the print nests them correctly). `T1` is lenient by design: a
+label that is a near-variant of the XML's, or ends with the same words, counts as the same
+place, so a PDF name glued to the heading above it can pass as `T1`. The XML is read only by
+these tests, never by the product.
+
+### The financial rows pin, and when you may regenerate it
+
+`tests/test_financial_corpus.py` holds the ledger rows of H.R. 4366 (as reported, and the
+Senate amendment) frozen in `tests/data/financial_rows/`, one clause per line, under the
+classifier version that produced them (`deltatrack.financial.CLASSIFIER`,
+[ADR 0023](docs/decisions/0023-financial-ledger-views.md)). The XML reading must give them
+exactly; the PDF reading must match a pinned number of them with the same appropriation
+total. A further test checks that the frozen rows are exactly what the research notebook
+computes, for as long as the version is 1.0.
+
+A rule change that moves any row fails the pin. To lock in a deliberate change, first bump
+`CLASSIFIER` and add its changelog line beside it, then regenerate:
+
+```bash
+UPDATE_FINANCIAL_ROWS=1 uv run pytest tests/test_financial_corpus.py
+```
+
+Regeneration refuses to write different rows under an unchanged version, so it cannot be
+used to bless a change silently. The fixture diff shows exactly which clauses moved; say in
+the pull request why each should have. Add a fast test for the wording that motivated the
+change to `tests/test_financial.py` first, failing before the rule change.
 
 ### The rest of the slow suite runs in CI too
 

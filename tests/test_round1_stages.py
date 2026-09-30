@@ -817,9 +817,9 @@ def test_the_evidence_comparison_is_non_vacuous():
 #: generated artifact is only as independent as the artifact; a literal is a claim this file
 #: makes and a reviewer can see move in a diff.
 #:
-#: Fourteen pairs measure nothing at all, which is not a defect: every one of their
+#: Fifteen pairs measure nothing at all, which is not a defect: every one of their
 #: ``match_path`` groups is non-colliding or 1x1, and the 1x1 shortcut computes no ratio
-#: (#623, the +21 percent tidy-up). The gate has teeth on the other thirteen, and
+#: (#623, the +21 percent tidy-up). The gate has teeth on the other fourteen, and
 #: :data:`_TOTAL_SIMILARITY_CALLS` refuses a table that has quietly become all zeros.
 EXPECTED_SIMILARITY_CALLS = {
     "113-hr-3547/1_introduced-in-house->2_engrossed-in-house": 0,
@@ -845,6 +845,8 @@ EXPECTED_SIMILARITY_CALLS = {
     "118-hr-4366/3_placed-on-calendar-senate->4_engrossed-amendment-senate": 3,
     "118-hr-4366/4_engrossed-amendment-senate->5_engrossed-amendment-house": 21,
     "118-hr-4366/5_engrossed-amendment-house->6_enrolled-bill": 41,
+    "118-hr-5860/3_engrossed-in-house->4_enrolled-bill": 0,
+    "118-hr-815/4_engrossed-amendment-senate->5_engrossed-amendment-house": 12,
     "118-hr-8752/1_reported-in-house->2_engrossed-in-house": 0,
     "118-hr-8774/1_reported-in-house->2_engrossed-in-house": 0,
     "118-hr-9468/1_introduced-in-house->4_enrolled-bill": 4,
@@ -852,7 +854,7 @@ EXPECTED_SIMILARITY_CALLS = {
 }
 
 #: The floor that keeps the table above from passing while describing nothing.
-_TOTAL_SIMILARITY_CALLS = 1108
+_TOTAL_SIMILARITY_CALLS = 1120
 
 
 def production_similarity_calls(old_tree, new_tree) -> int:

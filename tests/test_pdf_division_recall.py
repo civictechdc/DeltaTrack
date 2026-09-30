@@ -62,6 +62,7 @@ _PDF_NO_TITLE_ANCHOR_LAYOUTS: dict[str, str] = {
     "115-hr-1625/6_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
     "115-hr-244/6_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
     "118-hr-4366/6_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
+    "118-hr-5860/4_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
     "113-hr-3547/6_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
     "114-hr-2029/7_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",
     "113-hr-83/7_enrolled-bill": "enrolled print — no GPO margin line numbers (#141)",

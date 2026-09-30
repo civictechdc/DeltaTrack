@@ -42,6 +42,22 @@
       ],
       "description": "Optional (v1.3+) per-side leveled structure tree (#108). Each side is an ordered list of root nodes. Requires full_text present (node spans index into it). A leveled TOC is derivable from the tree, and since #462 the renderer builds the navigation from it alone."
     },
+    "financial": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["classifier", "v1", "v2"],
+          "additionalProperties": false,
+          "properties": {
+            "classifier": { "type": "string" },
+            "v1": { "$ref": "#/$defs/Ledger" },
+            "v2": { "$ref": "#/$defs/Ledger" }
+          }
+        }
+      ],
+      "description": "Optional (v3.1+) per-side ledger (ADR 0023): every dollar amount in each version, typed by clause and located in the structure tree. Unpaired across sides, like tree; a change object still carries no money. Requires full_text and tree present (spans index into full_text). The report's diff.json download strips it."
+    },
     "generator": {
       "type": "object",
       "additionalProperties": false,
@@ -79,6 +95,77 @@
     }
   },
   "$defs": {
+    "Ledger": {
+      "type": "object",
+      "required": ["amounts_in_text", "sections"],
+      "additionalProperties": false,
+      "properties": {
+        "amounts_in_text": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Every dollar amount in this side's full_text; the sections' amounts account for all of them when nothing was dropped."
+        },
+        "sections": { "type": "array", "items": { "$ref": "#/$defs/LedgerSection" } }
+      }
+    },
+    "LedgerSection": {
+      "type": "object",
+      "required": ["path", "span", "clauses", "pieces", "flags"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "array",
+          "items": { "type": "array", "prefixItems": [{ "type": "string" }, { "type": "string" }], "minItems": 2, "maxItems": 2 },
+          "description": "[label, level] pairs from the tree root to the node holding this prose."
+        },
+        "span": { "$ref": "#/$defs/LedgerSpan" },
+        "clauses": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/LedgerClause" } },
+        "pieces": {
+          "type": "array",
+          "items": { "type": "array", "minItems": 3, "maxItems": 3 },
+          "description": "[start, end, kind] highlight pieces over full_text: the prose split at each `Provided, That` (kind `proviso`), every other piece typed."
+        },
+        "flags": { "type": "array", "items": { "enum": ["may_hold_several_sections"] } }
+      }
+    },
+    "LedgerClause": {
+      "type": "object",
+      "required": ["level", "type", "amount", "in_amended_law", "needs_review", "span", "amounts"],
+      "additionalProperties": false,
+      "properties": {
+        "level": { "enum": ["primary", "sub"] },
+        "type": {
+          "enum": ["appropriation", "transfer", "rescission", "authorization", "fee", "restriction", "directive", "cap", "earmark", "availability", "sub_allocation", "unknown"]
+        },
+        "amount": {
+          "anyOf": [{ "type": "null" }, { "type": "number", "minimum": 0 }],
+          "description": "The clause's first dollar figure outside a `not to exceed` ceiling, else its first."
+        },
+        "in_amended_law": { "type": "boolean", "description": "That amount sits inside text this bill writes into another law." },
+        "needs_review": { "type": "boolean", "description": "More than one non-ceiling dollar figure, so `amount` is ambiguous." },
+        "span": { "$ref": "#/$defs/LedgerSpan" },
+        "amounts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "cap", "in_amended_law"],
+            "additionalProperties": false,
+            "properties": {
+              "value": { "type": "number", "minimum": 0 },
+              "cap": { "type": "boolean" },
+              "in_amended_law": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "LedgerSpan": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "[start, end) character offsets into full_text for the same side."
+    },
     "TreeNode": {
       "type": "object",
       "required": ["label", "level", "own_amounts", "full_text_span", "children"],

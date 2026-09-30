@@ -85,9 +85,9 @@ not an equality it would have to fudge:
 
 | bill (v1→v2) | XML | PDF | gap | attributed cause |
 |--------------|----:|----:|----:|------------------|
-| 118-hr-8752  |  39 |  37 |  −2 | clean; XML sees 2 bare subsections of added SEC.s the PDF folds into the section block (#188) |
+| 118-hr-8752  |  39 |  38 |  −1 | clean; XML sees 2 bare subsections of added SEC.s the PDF folds into the section block (#188); the PDF sees the added SPENDING REDUCTION ACCOUNT heading as its own block ([0022](0022-pdf-heading-convergence.md)) |
 | 118-hr-8774  |  31 |  33 |  +2 | PDF over-segments a few blocks |
-| 117-hr-4502  | 1415 | 1500 | +85 | PDF over-segments a large added block; XML +304 from subsection nodes (#188) |
+| 117-hr-4502  | 1415 | 1456 | +41 | PDF over-segments a large added block; XML +304 from subsection nodes (#188) |
 | 115-hr-5895  | 300 | 336 | +36 | division-collapse + segmentation; XML +54 from subsection nodes (#188) |
 
 Snapshot 2026-06-29; the 117-hr-4502 and 115-hr-5895 PDF rows re-measured
@@ -100,7 +100,10 @@ the #96 PDF recalibration), and the XML↔PDF gap narrows sharply (4502 +389→+
 5895 +90→+36) — much of what was attributed to PDF over-segmentation was
 subsection granularity the XML tree previously lacked. 118-hr-8752's exact parity
 gives way to a −2 by design: XML emits bare subsections the PDF cannot detect
-(the all-subsections scope decision recorded on #188). The live numbers and the bands that gate them are in
+(the all-subsections scope decision recorded on #188). Two PDF rows re-measured
+2026-09-27 after the heading passes of [0022](0022-pdf-heading-convergence.md): 4502
+1500→1456 (wrapped account names now one block), 8752 37→38 (a heading the PDF
+now reads). The live numbers and the bands that gate them are in
 `tests/test_pipeline_parity.py` (regenerate the table:
 `.venv/bin/python scripts/parity_table.py`). The Senate #89
 residual `118-s-4795` recovers its heading hierarchy at a size-band ratio of 1.02
