@@ -58,11 +58,17 @@ discarded — so the probe added zero PDFium calls). The findings:
 We will recover the PDF heading levels from **deterministic geometry and structural
 position only**, and accept the one boundary that no such signal separates.
 
-- **Boundary 1 (prose-leading agency vs account): accept the gap.** A lone
-  heading followed by prose is emitted as an account. We do not guess it is an
-  agency. Its case pattern ([0022](0022-pdf-heading-convergence.md)) is used to end
-  the reach of an earlier agency, never to re-label the heading itself, which has not
-  been measured.
+- **Boundary 1 (prose-leading agency vs account): accept the gap, narrowed.** A lone
+  heading followed by prose is emitted as an account; we do not guess it is an agency
+  from its print alone. Its case pattern ([0022](0022-pdf-heading-convergence.md)) ends
+  the reach of an earlier agency, and re-labels the heading only with one more fact: a
+  title-case heading whose text carries no dollar amount, followed by an account-style
+  heading, introduces accounts rather than holding money, and is an agency
+  (`BUREAU OF RECLAMATION`, `GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT CORPORATION`).
+  Measured on 118 PDFs: 183 amounts toward the XML, none away. Title case alone was
+  measured and rejected (265 amounts the wrong way against 8), because account names
+  print title case too. The dollar sign is read as a fact about the text, not as
+  appropriations wording ([0018](0018-text-triggers-are-financial-only.md)).
 - **Boundary 2 (stacked vs wrapped major): split on line-fullness.** The major
   detector splits a post-`TITLE` body-size run at each line-fullness hard break:
   `w_i + space + first_word_width(line_{i+1}) ≤ column_width − slack` means line *i*
@@ -98,8 +104,8 @@ Alternatives considered:
   level fully separated (the 4/12 stacked residue from #105 is retired) and the
   carry-over agency level recovered where it is followed by another heading (#104).
 - Defense-class bills keep a known, documented agency gap: prose-leading agencies
-  surface as accounts. This is recorded as an accepted limitation, not a bug to chase
-  with a heuristic. Where the agency level matters for those bills, it comes from the
+  whose own text carries money surface as accounts. This is recorded as an accepted
+  limitation, not a bug to chase with a heuristic. Where the agency level matters for those bills, it comes from the
   XML pipeline (which the user already supplies for a published bill,
   [0010](0010-pdf-pipeline-pre-publication.md)).
 - The line-fullness rule carries one residual edge, absent from the FY2025 corpus:

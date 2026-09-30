@@ -282,6 +282,21 @@ def _lone_headings(stream: _Stream) -> Counter:
     return Counter({name: n for name, n in lone.items() if n >= 2 and len(name.split()) > 1})
 
 
+def _introduces_accounts(stream: _Stream, end: int) -> bool:
+    """The text under the heading run ending at ``end`` carries no dollar amount, and the next
+    heading prints even (account style): the heading introduces the accounts below it, as an
+    agency's authority paragraph does, instead of holding money itself as an account does."""
+    j = end + 1
+    while j < len(stream.lines) and not stream.can_be_heading(j):
+        if "$" in stream.lines[j][1].text:
+            return False
+        j += 1
+    if j == len(stream.lines):
+        return False
+    g = stream.lines[j][1].geom
+    return g is not None and g.initial_caps is False
+
+
 def _printed_alike(a: Line, b: Line) -> bool:
     """Two heading lines set in the same case pattern and glyph size."""
     return (
@@ -527,6 +542,12 @@ def converge_headings(pages: list[Page], anchors: list[Anchor]) -> list[Anchor]:
             else:
                 kind = "agency"
             rebuilt.append(_anchor_like(anchors, page, first.line_number, kind, _join([run[x][1].text for x in g])))
+        # The run's last heading is judged whole, after joining: printed agency style (title case)
+        # and introducing accounts rather than holding money, it is an agency (ADR 0012, boundary 1).
+        last, lead = rebuilt[-1], run[groups[-1][0]][1]
+        if last.kind == "account" and lead.geom is not None and lead.geom.initial_caps is True:
+            if _introduces_accounts(stream, end):
+                rebuilt[-1] = replace(last, kind="agency")
         replace_at[idx[0]] = rebuilt
         for i in idx[1:]:
             replace_at[i] = []

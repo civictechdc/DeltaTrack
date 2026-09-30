@@ -111,7 +111,10 @@ reading unchanged.
    the last keeps the detectors' level, a piece printed like the last one (same case pattern and
    size) takes the same level, and any other piece is an agency. GPO stacks a name over its own
    account at one level (`FOOD AND DRUG ADMINISTRATION` / `SALARIES AND EXPENSES`); read as an
-   agency, the upper line would end the reach of the real agency above it.
+   agency, the upper line would end the reach of the real agency above it. The run's last heading
+   is then judged whole, after joining: printed title case, with no dollar amount in the text
+   under it and an account-style heading next, it introduces accounts and is an agency
+   ([0012](0012-pdf-heading-levels.md), boundary 1).
 
 Scope, which heading an account inherits, is decided in `pdf_anchors._breadcrumb_core` from
 the case pattern the passes record on each heading (`Anchor.caps`): a department ends the
@@ -128,6 +131,13 @@ wording alone would have split them.
 
 Alternatives considered:
 
+- **Promote a joined title-case heading to agency on its print alone.** The detectors read
+  `GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT` as an agency over its wrapped tail `CORPORATION`;
+  keeping that first line's level for any title-case join was measured on 118 PDFs and moved 265
+  amounts the wrong way against 8, because account names print title case too (`FAMILY HOUSING
+  OPERATION AND MAINTENANCE, ARMY`) and as agencies they took the accounts after them. The case
+  pattern ends an agency's reach reliably; making one also needs the text under the heading to
+  carry no money.
 - **A repeat-words veto.** Split two lines printed alike when every word of the lower line
   appears in the upper one, on the idea that a wrapped name continues with new words. Rejected
   on measurement: over the same 118 PDFs it changed 9 headings and was wrong in all 9, because
@@ -223,11 +233,6 @@ separate decision.
   structural token and stays split. A name broken early for balance after a complete word
   would still be split by the line-fullness veto; the one balanced break in the corpus ends in
   `OF` and is joined.
-- **A prose-leading agency is still an account** ([0012](0012-pdf-heading-levels.md), boundary
-  1). `GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT CORPORATION`, whose name these passes now read
-  whole, is followed directly by prose, so the accounts after it lose it as a parent (11 amounts
-  in 5 bills). Its case pattern is agency style; using that to re-label a heading is a separate,
-  measured decision.
 - **A name over its own account can still be read one level too high.** A piece the passes
   split out takes its level from the print, but where the detectors already made the upper line
   an agency it stays one: `NORTH ATLANTIC TREATY ORGANIZATION` over `SECURITY INVESTMENT
@@ -241,8 +246,9 @@ separate decision.
   other bill vehicles (continuing resolutions, supplementals, authorizing bills with direct
   appropriations), is follow-up work.
 - The prose-leading agency gap in [0012](0012-pdf-heading-levels.md) narrows but stays: the
-  case pattern now ends an agency's scope at an agency-styled account, but a lone agency-styled
-  heading followed by prose is still emitted as an account.
+  case pattern ends an agency's scope at an agency-styled account, and an agency-styled heading
+  that introduces accounts (no dollar amount under it, an account-style heading next) is now an
+  agency, but one whose own text carries money is still emitted as an account.
 
 <!--
 References: #524 (this change), #501, #519, #535, #648 (advanced), #551, #198, #557, #552, #706

@@ -476,6 +476,48 @@ class TestLevelOfASplitPiece:
         assert "FOOD AND DRUG ADMINISTRATION" not in texts(anchors, "agency")
 
 
+class TestAHeadingThatIntroducesAccounts:
+    """ADR 0012, boundary 1: a title-case heading followed by prose. The level is decided on the
+    joined heading as a whole, from what follows it. With no dollar amount in its text and an
+    account-style heading next, it introduces accounts: an agency. On 118 PDFs this moved 183
+    amounts toward the XML and none away."""
+
+    def test_an_authority_paragraph_with_no_money_makes_the_heading_an_agency(self):
+        # 118-hr-4820 p.62: the name wraps, its paragraph authorizes spending but appropriates
+        # nothing, and OPERATIONS AND MAINTENANCE below it carries the money.
+        rows = [
+            body(1, "1986 (26 U.S.C. 9503(e)(4))."),
+            head(2, "GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT", caps=True, width=300),
+            head(3, "CORPORATION", caps=True),
+            para(4, "The Corporation is hereby authorized to make such expenditures, within the limits"),
+            body(5, "of funds available to it, as may be necessary."),
+            head(6, "OPERATIONS AND MAINTENANCE", caps=False),
+            para(7, "For necessary expenses to conduct the operations, $38,000,000."),
+            *PROSE,
+        ]
+        anchors = anchors_of(rows)
+        account = next(a for a in anchors if a.text == "OPERATIONS AND MAINTENANCE")
+        assert "GREAT LAKES ST. LAWRENCE SEAWAY DEVELOPMENT CORPORATION" in breadcrumb_for(account, anchors)
+
+    def test_a_heading_that_holds_money_stays_an_account(self):
+        # A title-case account name with its own appropriation (FAMILY HOUSING OPERATION AND
+        # MAINTENANCE, ARMY) must not become the parent of the account after it. Promoting on
+        # title case alone did exactly that: 265 amounts the wrong way against 8.
+        rows = [
+            body(1, "budget for the current fiscal year for such corporation."),
+            head(2, "FAMILY HOUSING OPERATION AND MAINTENANCE,", caps=True, width=300),
+            head(3, "ARMY", caps=True),
+            para(4, "For expenses of family housing for the Army, $436,000,000."),
+            head(5, "OPERATIONS AND MAINTENANCE", caps=False),
+            para(6, "For necessary expenses to conduct the operations, $1,000."),
+            *PROSE,
+        ]
+        anchors = anchors_of(rows)
+        assert "FAMILY HOUSING OPERATION AND MAINTENANCE, ARMY" not in texts(anchors, "agency")
+        account = next(a for a in anchors if a.text == "OPERATIONS AND MAINTENANCE")
+        assert "FAMILY HOUSING OPERATION AND MAINTENANCE, ARMY" not in breadcrumb_for(account, anchors)
+
+
 class TestAgencyScope:
     def test_a_department_ends_the_agency_above_it(self):
         anchors = [
