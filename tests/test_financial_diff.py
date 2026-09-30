@@ -420,22 +420,41 @@ class TestCliFinancial:
         return json.loads(result.stdout)
 
     def test_financial_flag_filters_output(self):
+        """The flag narrows the change set to sections whose dollar figures moved.
+
+        Both runs are here rather than in two tests: "with the flag, fewer changes, all of
+        them drawn from the unfiltered set" is the same claim as "without the flag, no
+        filtering", and stating it once means one red test when the plumbing breaks.
+        Cutting `financial_only=` out of `cmd_compare` is that mutation.
+        """
+        unfiltered = self._compare()["changes"]
+        financial = self._compare("--financial")["changes"]
+
+        assert financial, "the committed pair has sections whose amounts changed"
+        assert len(financial) < len(unfiltered), "a filter that removes nothing is not filtering"
+        # Not by `id`, which is positional (`c-0001` by index) and so renumbers when the
+        # change set shrinks. The section path is what identifies the same change in both.
+        paths = [change["path"] for change in unfiltered]
+        assert all(change["path"] in paths for change in financial)
+
+    def test_the_flag_adds_no_money_to_the_document(self):
+        """It filters, and since #693 that is the whole of what it does.
+
+        `--format json` used to pass `financial=args.financial` into `bill_diff_to_dict`,
+        so the flag both filtered and attached a `financial_summary` plus a per-change
+        `financial` block, while `--format html` filtered on the flag with enrichment
+        hardcoded on: one flag, two meanings, chosen by a sibling flag (#694). Routing
+        both formats through `compare/xml.py` leaves one meaning, and the canonical
+        document has carried no money on a change since #671, so there is nothing left
+        to add. These absence assertions were confirmed to fire against the pre-#693
+        command, which emitted both keys on this pair.
+        """
         data = self._compare("--financial")
-
-        for change in data["changes"]:
-            assert "financial" in change
-            assert change["financial"]["amounts_changed"] is True
-
-        assert "financial_summary" in data
-        assert data["financial_summary"]["sections_with_financial_changes"] > 0
-        assert data["financial_summary"]["sections_with_financial_changes"] == len(data["changes"])
-
-    def test_no_financial_flag_no_filtering(self):
-        data = self._compare()
 
         assert "financial_summary" not in data
         for change in data["changes"]:
             assert "financial" not in change
+            assert "amount_entries" not in change, "removed from the contract by #671"
 
 
 @pytest.mark.slow

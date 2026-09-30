@@ -16,8 +16,8 @@ its full_text is gutterless paragraph flow — the renderer keys off
 ``versions.v2.source == "xml"`` to drop the PDF line-number gutter.
 
 **This module is the only place a bill-XML report is assembled** (#42). The web app,
-the ``diff_bill.py compare --format html`` CLI, and ``render_examples.py`` all enter
-here, so one bill pair renders one way no matter which surface asked for it. Each of
+the ``diff_bill.py compare`` CLI (both of its formats, #693), and ``render_examples.py``
+all enter here, so one bill pair renders one way no matter which surface asked for it. Each of
 those three used to assemble the canonical → view → HTML chain itself, and the copies
 had already drifted apart in which version metadata they set. ``diff_pdf.py`` delegates
 to ``compare/pdf.py`` for the same reason; this is the XML half of that pattern.
@@ -44,7 +44,6 @@ def _build_from_trees(
     end_label: str | None,
     old_version_number: int | None = None,
     new_version_number: int | None = None,
-    include_unchanged: bool = False,
     filter_text: str | None = None,
     financial_only: bool = False,
 ) -> tuple[dict, str]:
@@ -57,11 +56,15 @@ def _build_from_trees(
     None to keep the embedded names. The version *numbers* are the bill's legislative
     ordinals, which are known when the input is a numbered corpus filename and unknown
     for a web upload — the renderer prefixes the header with ``v1:``/``v2:`` only when
-    they are supplied. Financial enrichment is unconditional on the HTML path.
+    they are supplied. Financial enrichment is unconditional here, on every caller's
+    behalf, so ``financial_only`` filters and nothing else.
+
+    Unchanged nodes are never carried: ``xml_diff_to_canonical`` drops them, so a
+    ``filter_diff(include_unchanged=True)`` here would only inflate
+    ``summary.unchanged`` to a count of entries the document does not contain (#693).
     """
     result = filter_diff(
         diff_bills(old_tree, new_tree),
-        include_unchanged=include_unchanged,
         filter_text=filter_text,
         financial_only=financial_only,
     )
@@ -137,6 +140,40 @@ def _render(canonical: dict, title: str) -> str:
     return format_diff_html(canonical, title)
 
 
+def compare_xml_trees(
+    old_tree: BillTree,
+    new_tree: BillTree,
+    *,
+    start_label: str | None = None,
+    end_label: str | None = None,
+    old_version_number: int | None = None,
+    new_version_number: int | None = None,
+    filter_text: str | None = None,
+    financial_only: bool = False,
+) -> dict:
+    """Canonical diff JSON for two already-parsed versions (see schema/canonical-diff.md).
+
+    The JSON sibling of :func:`compare_xml_trees_html`, and what
+    ``diff_bill.py compare --format json`` returns. The two formats are the same
+    document rendered two ways, which is the point of routing both through here (#693):
+    the command line used to serialize the engine's internal diff dictionary instead,
+    so a consumer could reach the published contract only by downloading it from a
+    rendered report in a browser.
+
+    See :func:`_build_from_trees` for what the version metadata does.
+    """
+    return _build_from_trees(
+        old_tree,
+        new_tree,
+        start_label=start_label,
+        end_label=end_label,
+        old_version_number=old_version_number,
+        new_version_number=new_version_number,
+        filter_text=filter_text,
+        financial_only=financial_only,
+    )[0]
+
+
 def compare_xml_trees_html(
     old_tree: BillTree,
     new_tree: BillTree,
@@ -145,7 +182,6 @@ def compare_xml_trees_html(
     end_label: str | None = None,
     old_version_number: int | None = None,
     new_version_number: int | None = None,
-    include_unchanged: bool = False,
     filter_text: str | None = None,
     financial_only: bool = False,
 ) -> str:
@@ -162,7 +198,6 @@ def compare_xml_trees_html(
         end_label=end_label,
         old_version_number=old_version_number,
         new_version_number=new_version_number,
-        include_unchanged=include_unchanged,
         filter_text=filter_text,
         financial_only=financial_only,
     )

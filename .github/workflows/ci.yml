@@ -263,6 +263,7 @@ jobs:
           tests/test_pdf_watermark_recall.py
           tests/test_formatters_text_serializer.py
           tests/test_pdf_xml_withheld_recall.py
+          tests/test_cli_api_parity.py
 
   # The required status check on `develop` and `main` is a context named exactly
   # `test`. The matrix jobs above report per-leg contexts (e.g., `fast-tests (3.12)`),
