@@ -23,7 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.parsers.pdf_anchors import derive_size_bands, extract_anchors
+from deltatrack.parsers.pdf_anchors import breadcrumb_for, derive_size_bands, extract_anchors
+from deltatrack.parsers.pdf_blocks import _flatten, _group_into_blocks
 from tests.conftest import assert_manifest_committed
 from tests.corpus_paths import DATA_DIR, fixture_path
 from tests.pdf_corpus import cached_pages
@@ -103,6 +104,26 @@ class TestSizeDetectionEndToEnd:
         )
         # The intended addition includes FPS.
         assert "FEDERAL PROTECTIVE SERVICE" in (new - legacy)
+
+
+class TestHeadingsAfterUnpunctuatedProse:
+    """118-s-4928 p.117: the paragraph above ends "(Public Law 111–241)" with no period. The
+    unfinished-sentence filter (ADR 0022, pass 2) used to read the two centred headings below it
+    as part of that sentence and drop them, filing the Inspector General's $274,000,000 under the
+    previous account, PAYMENT TO THE POSTAL SERVICE FUND."""
+
+    PDF = fixture_path("118-s-4928", "1_reported-in-senate.pdf")
+
+    def test_the_headings_and_their_money_stay_together(self):
+        pages = cached_pages(self.PDF)
+        anchors = extract_anchors(pages)
+        on_page = {(a.line_number, a.text) for a in anchors if a.page_number == 117}
+        assert (3, "OFFICE OF INSPECTOR GENERAL") in on_page
+        assert (4, "SALARIES AND EXPENSES") in on_page
+        block = next(b for b in _group_into_blocks(_flatten(pages), anchors) if "$274,000,000" in b.text)
+        crumb = breadcrumb_for(block.anchor, anchors)
+        assert "OFFICE OF INSPECTOR GENERAL" in crumb
+        assert "PAYMENT TO THE POSTAL SERVICE FUND" not in crumb
 
 
 class TestNonAppropsGeneralization:
@@ -554,13 +575,12 @@ class TestCorpusAccountPrecision:
 
     Complements the exact golden snapshots (which pin three bills) with a tolerant net
     over the appropriations corpus. The floors ARE enforced minima — the assertions below
-    fail under them — but they are corpus-wide smoke floors rather than tight per-bill
-    regression expectations. They catch a large degradation and leave substantial unused
-    margin on the easier bills: 118-hr-8752 scores 1.000/1.000 and would still pass having
-    lost 40% of its accounts.
+    fail under them — and one floor serves all nine bills, so a bill scoring 1.000 keeps
+    some margin (it would still pass having lost 5% of its accounts). The ledger-location
+    pin (`tests/test_pdf_ledger_location.py`) is the exact per-version check.
 
-    That looseness is deliberate for now. #489 carries the full nine-bill measurement and
-    the per-heading breakdown; the load-bearing conclusions are:
+    #489 carries the nine-bill measurement from before ADR 0022 and the per-heading
+    breakdown; the load-bearing conclusions are:
 
     - The oracle is LEVEL-CORRECT, and since #499 it reads the tree's EFFECTIVE heading
       (the `display_path` leaf) rather than the raw `header_text`. It previously asked for
@@ -585,25 +605,21 @@ class TestCorpusAccountPrecision:
     manifest, not only the cases this module collects. The per-case skip below is a
     defensive fallback, not the mechanism that keeps these fixtures available.
 
-    Why precision is well under 1.0 even when correct — the residual misses are
-    KNOWN and accepted, deferred to #54, NOT bugs to chase here:
-      - Provision-group headers (ADMINISTRATIVE PROVISIONS, GENERAL PROVISIONS,
-        SPENDING REDUCTION ACCOUNT) — real block headers mislabeled `account`.
-      - Wrapped agency-name fragments (e.g. "FAMILY HOUSING CONSTRUCTION, AIR
-        FORCE" wrapping onto a line read as "FORCE") — correct labeling needs the
-        leveled tree.
-      - Real account names whose GPO casing/wording normalizes differently than the
-        XML header (counted as a vocab miss though the anchor is right).
-    The SEC.-catchline-continuation class is NOT among the accepted residue — it is
-    fixed (see TestSectionCatchlineContinuation); a regression there would lower
-    these numbers, but the targeted test catches it first.
+    What the remaining gap to 1.0 is made of, after ADR 0022's heading passes:
+      - 115-hr-5895: `TITLE 17 INNOVATIVE TECHNOLOGY LOAN GUARANTEE` / `PROGRAM` stays
+        split. The name opens with the word TITLE, which the passes read as the structural
+        token and so never join into a heading run.
+      - 118-s-4795: `FISHERMEN’S CONTINGENCY FUND` is right but scores as a miss (the oracle
+        does not fold the curly apostrophe), and NASA's `SCIENCE` account is read under a
+        `SCIENCE` major.
+    The SEC.-catchline-continuation class is NOT among the residue — it is fixed (see
+    TestSectionCatchlineContinuation); a regression there would lower these numbers, but the
+    targeted test catches it first.
 
-    That list predates the per-heading breakdown on #489, and the third bullet is where it
-    needed qualifying: on the one bill measured heading by heading (118-hr-4820), the
-    dominant cause was not normalization disagreement but the oracle reading the wrong
-    field, which #499 fixed. The first two bullets held up — the wrapped-fragment class is
-    the 17 misses recorded on #489. The other eight bills were measured in aggregate only,
-    so how the causes divide on them is unknown rather than assumed to match.
+    History: before ADR 0022 the gap was provision-group headers (ADMINISTRATIVE PROVISIONS,
+    SPENDING REDUCTION ACCOUNT) read as accounts and wrapped-name fragments ("FAMILY HOUSING
+    CONSTRUCTION, AIR" / "FORCE"), the 17 misses recorded on #489 and #524's 14 on
+    118-hr-4820; #499 had already fixed the oracle reading the wrong field.
     """
 
     # Appropriations bills with a paired XML; (bill id, pdf rel path, xml rel path).
@@ -633,19 +649,17 @@ class TestCorpusAccountPrecision:
         ("118-hr-8774", "tests/corpus/118-hr-8774", None),
         ("118-s-4795", "tests/data/BILLS-118s4795rs.pdf", "tests/corpus/118-s-4795/1_reported-in-senate.xml"),
     ]
-    # Set below the lowest measured values across the nine bills. Since #499 corrected the
-    # oracle to read the tree's effective heading, the floor-setting bill is 117-hr-4502
-    # (vrec 0.744 / vprec 0.750) rather than 118-hr-4820, whose precision moved 0.538 ->
-    # 0.782. Recall and precision rose on every bill, so no floor here is a relaxation.
-    # The class docstring carries what the remaining gap to 1.0 is made of.
+    # Set below the lowest measured values across the nine bills, re-derived from the parser
+    # revision of ADR 0022 as #524's verification asks. The floor-setting bill is 118-s-4795
+    # (vrec 0.967 / vprec 0.967); seven of the nine score 1.000 / 1.000. The class docstring
+    # carries what the remaining gap to 1.0 is made of.
     #
-    # Both floor-setting bills were named as `bills/<id>` until they were committed, so CI
-    # collected no case for either and the floors were calibrated on a bill CI could not
-    # measure. The precision figure recorded here had drifted to 0.46 in the meantime and
-    # nothing could catch it, because the only run that could check it was a developer's.
-    # Now that the pair is committed, these two numbers are re-derivable from the suite.
-    RECALL_FLOOR = 0.70
-    PRECISION_FLOOR = 0.70
+    # History: 0.70 / 0.70 under 117-hr-4502 (0.744 / 0.750) before ADR 0022's heading passes
+    # joined wrapped account names; 118-hr-4820's unmatched account headings went 17 -> 0.
+    # Before that, both floor-setting bills were named as `bills/<id>`, so CI collected no case
+    # for either and a recorded precision drifted to 0.46 unnoticed (#489).
+    RECALL_FLOOR = 0.95
+    PRECISION_FLOOR = 0.95
 
     @staticmethod
     def _pair(spec) -> tuple[Path, Path] | None:

@@ -88,7 +88,13 @@ def measure(pdf_path: Path, xml_path: Path) -> dict:
     # Vocabulary recall/precision: are the distinct account names recovered, and are
     # PDF account names real XML headings (catches spurious/false accounts)?
     vocab_hit = pdf_account_names & xml_leaf_vocab
-    vocab_recall = len(vocab_hit) / len(xml_leaf_vocab) if xml_leaf_vocab else None
+    # The XML side stands in intermediate (agency-level) headings for accounts until #54, so a
+    # PDF agency with an intermediate heading's name is recovered too: recall credits it, since
+    # reading BUREAU OF RECLAMATION as the agency over its accounts is not a missed account.
+    # Precision stays over account anchors only.
+    pdf_agency_names = {normalize_header(a.text) for a in anchors if a.kind == "agency"}
+    recovered = vocab_hit | (pdf_agency_names & unique["appropriations-intermediate"])
+    vocab_recall = len(recovered) / len(xml_leaf_vocab) if xml_leaf_vocab else None
     vocab_precision = len(vocab_hit) / len(pdf_account_names) if pdf_account_names else None
 
     numbered = [ln for pg in pages for ln in pg.lines if ln.line_number is not None]

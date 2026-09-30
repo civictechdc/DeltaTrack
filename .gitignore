@@ -144,3 +144,6 @@ docs/research/pdf-backend-bakeoff/validation/external-validity/results/x*.json
 dist/
 build/
 *.egg-info/
+
+# Jupyter autosave copies, written next to any notebook that is opened (docs/research/).
+.ipynb_checkpoints/
