@@ -213,8 +213,12 @@ class TestSegmentation:
         assert "DEFENSE ENVIRONMENTAL CLEANUP AND DECONTAMINATION" in texts(anchors_of(rows), "account")
 
 
-class TestNamedExceptions:
-    def test_salaries_and_expenses_is_its_own_subaccount(self):
+class TestNoWordingDecidesALineBreak:
+    """ADR 0018: two stacked lines printed alike, with no veto, stay one heading whatever they
+    say. Recognising a familiar sub-account or department name would split them; that is a
+    known residual (ADR 0022), not a case for a word list."""
+
+    def test_a_familiar_subaccount_name_does_not_split_a_stack(self):
         rows = [
             body(1, "budget for the current fiscal year for such corporation."),
             head(2, "TREASURY INSPECTOR GENERAL FOR TAX ADMINISTRATION", caps=False, width=320),
@@ -222,11 +226,11 @@ class TestNamedExceptions:
             body(4, "For necessary expenses, $1,000."),
             *PROSE,
         ]
-        anchors = anchors_of(rows)
-        assert "SALARIES AND EXPENSES" in texts(anchors, "account")
-        assert "TREASURY INSPECTOR GENERAL FOR TAX ADMINISTRATION" in texts(anchors, "agency")
+        assert texts(anchors_of(rows), "account") == [
+            "TREASURY INSPECTOR GENERAL FOR TAX ADMINISTRATION SALARIES AND EXPENSES"
+        ]
 
-    def test_an_executive_department_line_is_its_own_heading(self):
+    def test_a_department_name_does_not_split_a_stack(self):
         rows = [
             body(1, "budget for the current fiscal year for such corporation."),
             head(2, "DEPARTMENT OF DEFENSE", caps=False, width=320),
@@ -234,9 +238,9 @@ class TestNamedExceptions:
             body(4, "For necessary expenses, $1,000."),
             *PROSE,
         ]
-        anchors = anchors_of(rows)
-        assert "MILITARY UNACCOMPANIED HOUSING IMPROVEMENT FUND" in texts(anchors, "account")
-        assert "DEPARTMENT OF DEFENSE" in texts(anchors, "agency")
+        assert texts(anchors_of(rows), "account") == [
+            "DEPARTMENT OF DEFENSE MILITARY UNACCOMPANIED HOUSING IMPROVEMENT FUND"
+        ]
 
 
 class TestHangingIndent:

@@ -18,9 +18,9 @@ Order of operations (ADR 0022). Each pass reads only what earlier passes produce
 3. **Department-level headings anywhere in a title**: a centered line set entirely at body size
    in capitals is a department-level heading, not only directly under ``TITLE n``.
 4. **Heading runs**: every run of heading lines between body text is re-segmented line break by
-   line break. First decisive signal wins: a line-break hyphen joins; a named exception decides;
-   a trailing ``AND``/``OR`` joins; an unknown case pattern keeps the detectors' reading; letters
-   printed differently split; letters printed alike join unless a veto applies (the lower line
+   line break. First decisive signal wins: a line-break hyphen joins; a trailing ``AND``/``OR``
+   joins; an unknown case pattern keeps the detectors' reading; letters printed differently
+   split; letters printed alike join unless a veto applies (the lower line
    repeats the upper's words, it stands alone as a heading at least twice elsewhere, or line
    fullness says the break was deliberate). A hanging-indent block is then one heading whatever
    those decisions were. The department line directly under a bare ``TITLE n`` is left as the
@@ -29,9 +29,10 @@ Order of operations (ADR 0022). Each pass reads only what earlier passes produce
 Scope (which heading an account inherits) is decided afterwards in
 ``pdf_anchors._breadcrumb_core`` from the ``Anchor.caps`` this module records.
 
-Structure is read from format: glyph size and case pattern, position, punctuation, and the
-universal legislative tokens (ADR 0012, ADR 0018). The one exception is the short named list in
-``pdf_heading_exceptions`` (ADR 0022, "Named exceptions").
+Structure is read from format alone: glyph size and case pattern, position, punctuation, and the
+universal legislative tokens (ADR 0012, ADR 0018). No heading wording decides a line break; where
+format cannot tell two stacked headings from one wrapped name, the run stays joined (ADR 0022,
+"Known residuals").
 """
 
 from __future__ import annotations
@@ -41,7 +42,6 @@ from collections import Counter
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from deltatrack.parsers.pdf_heading_exceptions import named_split
 from deltatrack.parsers.pdf_text import TITLE_CASE_SMALL_WORDS
 
 if TYPE_CHECKING:
@@ -247,11 +247,9 @@ def _lone_headings(stream: _Stream) -> Counter:
     return Counter({name: n for name, n in lone.items() if n >= 2 and len(name.split()) > 1})
 
 
-def _decided_by_wording(upper: str, lower: str) -> bool | None:
-    """True join, False split, None no opinion. A trailing conjunction ("…DECONTAMINATION AND")
-    always continues onto the next line (grammar); the named exceptions may split."""
-    if named_split(upper, lower):
-        return False
+def _decided_by_grammar(upper: str) -> bool | None:
+    """True join, None no opinion. A trailing conjunction ("…DECONTAMINATION AND") always
+    continues onto the next line: grammar, not appropriations vocabulary (ADR 0018)."""
     if _TRAILING_CONJUNCTION.search(_canon(upper)):
         return True
     return None
@@ -270,11 +268,11 @@ def _segment(
         for b in range(n - 1):
             (p_up, up_line), (p_lo, lo_line) = run[b], run[b + 1]
             up, lo = up_line.text.strip(), lo_line.text.strip()
-            exception = _decided_by_wording(up, lo)
+            grammar = _decided_by_grammar(up)
             if up.endswith("-") and not up.endswith("—"):
                 join = True
-            elif exception is not None:
-                join = exception
+            elif grammar is not None:
+                join = grammar
             elif caps[b] is None or caps[b + 1] is None:
                 # Fail closed: without the case pattern, keep the detectors' split. Why not defer
                 # to the detectors' joins everywhere: their joins are where most glued stacks come

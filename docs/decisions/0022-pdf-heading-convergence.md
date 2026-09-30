@@ -82,9 +82,9 @@ reading unchanged.
    with a structural token (`TITLE`, `SUBTITLE`, `CHAPTER`, `PART`, …), or directly under one,
    is that level or its wrapped name, not a department.
 4. **Heading runs.** Every run of heading lines between prose is re-segmented at each line
-   break. The first decisive signal wins: a line-break hyphen joins; a named exception decides
-   (below); a trailing `AND`/`OR` joins; letters printed differently (title case over even)
-   split; letters printed alike join unless a veto applies. The vetoes: the lower line repeats
+   break. The first decisive signal wins: a line-break hyphen joins; a trailing `AND`/`OR`
+   joins; letters printed differently (title case over even) split; letters printed alike
+   join unless a veto applies. The vetoes: the lower line repeats
    the upper's words, the lower line stands alone as a heading at least twice elsewhere in the
    bill, or the next word would have fitted on the upper line (line fullness, [0012](0012-pdf-heading-levels.md),
    measured against the widest centered heading rather than the body column). The vetoes are
@@ -98,23 +98,28 @@ agency above it; an agency carried past other accounts does not reach an account
 like the heading right below it, when the account itself prints agency-style, or when an
 agency-styled heading lies between them. An unknown case pattern never blocks.
 
-**Named exceptions.** Format cannot decide every line break. A short list of named wordings may
-decide one ([0018](0018-text-triggers-are-financial-only.md) admits them here and nowhere else).
-Each entry must name one definable edge case, must be shown on a backtest to fix headings, and
-must move no amount into a not-tolerated tier except where the heading it separates is one the
-XML reader drops (checked against the raw XML file's heading tags, above). They live in
-`parsers/pdf_heading_exceptions.py`, the one heading module on the vocabulary gate's allowlist:
-
-- `SALARIES AND EXPENSES` on its own line is a sub-account, never the tail of the line above.
-- A line that is exactly one of the fifteen executive departments (5 U.S.C. 101) is its own
-  heading, never the first line of a longer name.
-
-An exception only vetoes or forces a join between two lines the passes already read as
-headings. It never creates a heading or assigns a level, which is what
-[0012](0012-pdf-heading-levels.md) rejects in a lexical agency rule.
+**No wording decides a line break.** Every signal above is format or grammar, as
+[0018](0018-text-triggers-are-financial-only.md) requires. Where format cannot tell two stacked
+headings from one wrapped name, the run stays joined: a missed split is accepted rather than
+hierarchy inferred from what a line says (Known residuals, below).
+`tests/test_pdf_heading_passes.py::TestNoWordingDecidesALineBreak` pins this on stacks whose
+wording alone would have split them.
 
 Alternatives considered:
 
+- **Named wording exceptions.** Split a stack when its lower line is exactly `SALARIES AND
+  EXPENSES`, or its upper line exactly one of the fifteen executive departments (5 U.S.C. 101).
+  Rejected in review: each entry encodes the answer to a known example rather than showing that
+  the print distinguishes the structures, and admitting them would amend 0018. Measured before
+  removal on 118 PDFs (the committed corpus plus 65 fetched versions of reconciliation,
+  continuing-resolution, supplemental, authorizing and holdout bills), comparing the heading
+  output with and without them: the departments rule changed nothing (54 firing sites, no
+  difference). The `SALARIES AND EXPENSES` rule changed 8 versions, which are 4 headings in 4
+  bills, each an office name stacked over its own `SALARIES AND EXPENSES` (Office of Terrorism and
+  Financial Intelligence in 117-hr-4502 and 118-s-4928; Office of Congressional Accessibility
+  Services in 115-hr-5895 and 117-hr-4346): 8 of 9,129 organizing headings and 19 of 60,508
+  amounts. Without the rule each reads as one heading; its amounts stay with their account, and
+  every version of a bill reads it the same way, so version diffs are unaffected.
 - **Defer to the detectors' joins and only add splits.** Rejected: measured worse (56 more
   not-tolerated headings, leaks 20 → 48 on the development corpus), because the detectors'
   joins are where most glued stacks come from.
@@ -154,12 +159,6 @@ of 376 on the holdout). That check only asks whether the heading is tagged somew
 file, so it is an upper bound, and the reader is left as the answer key here: changing it is a
 separate decision.
 
-The named exceptions, measured the same way against the rest of this change: the
-`SALARIES AND EXPENSES` rule moves 15 amounts. 9 become "wrong parent" because the heading it
-separates (`Office of Terrorism and Financial Intelligence`, `Office of Congressional
-Accessibility Services`) is tagged in the file and dropped by the reader, and 6 lose a parent
-(shallower, tolerated). The departments rule moves no amount; it corrects heading names only.
-
 - The same table is the yardstick for the XML side: a change to the reader counts as an
   improvement when its breadcrumbs carry the file's heading tags, which shows here as the
   corpus OK rate rising toward the roughly 99% the upper bound above allows.
@@ -188,7 +187,10 @@ Accessibility Services`) is tagged in the file and dropped by the reader, and 6 
   into one (`ATOMIC ENERGY DEFENSE ACTIVITIES` over `NATIONAL NUCLEAR SECURITY ADMINISTRATION`,
   [#501](https://github.com/civictechdc/DeltaTrack/issues/501); `STATE AND LOCAL LAW
   ENFORCEMENT ACTIVITIES` over `OFFICE ON VIOLENCE AGAINST WOMEN`). The XML marks the upper one
-  as a heading with no text of its own; the print gives no format signal for it. A department
+  as a heading with no text of its own; the print gives no format signal for it. An office name
+  over its own `SALARIES AND EXPENSES`, printed alike, is glued the same way (`OFFICE OF
+  TERRORISM AND FINANCIAL INTELLIGENCE SALARIES AND EXPENSES`; see the rejected named
+  exceptions above). A department
   name glued by the major detector itself (`OVERSEAS CONTINGENCY OPERATIONS DEPARTMENT OF
   DEFENSE`) is left as detected. A wrapped account name that opens with the word `TITLE`
   (`TITLE 17 INNOVATIVE TECHNOLOGY LOAN GUARANTEE` / `PROGRAM`, 115-hr-5895) is read as the
