@@ -12,6 +12,15 @@ Top-level field: `schema_version: "3.0"`.
 
 ## Changelog
 
+- **3.1** — `summary` producers now omit zero-count keys and the non-canonical
+  `unchanged` key (#706). Neither is a schema change: the contract's "Keys with
+  zero count MAY be omitted" sentence already permitted the former, and
+  `unchanged` was never one of the four canonical keys — it counted entries the
+  document does not carry. Both changes restore the pipeline-neutrality promise
+  this contract exists to make: the XML producer seeded five keys including
+  zeros, the PDF producer (a Counter over present change types) omitted zeros
+  and never emitted `unchanged`, so identical legislative content reported
+  different summary shapes depending on the input format.
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
   money at all. The field paired a dollar figure on one side with a figure on the

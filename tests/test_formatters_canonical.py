@@ -34,7 +34,7 @@ from deltatrack.parsers.pdf_anchors import Anchor
 # Local pin (guard against unintended bumps). 3.0 removed `amount_entries` (#671), so
 # a change object carries no money field at all; 2.0 had removed the deprecated
 # `amounts` before it (#274); 1.3 added the optional `tree` field (#108).
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "3.1"
 
 
 # ---------- XML producer ------------------------------------------------------
@@ -70,7 +70,9 @@ def test_xml_envelope_has_versioned_metadata():
         "version_number": 2,
         "source": "xml",
     }
-    assert canonical["summary"] == {"added": 1, "removed": 0, "modified": 2, "moved": 0}
+    # Zero-count keys do not ship (#706): the producer's seeds are filtered to the
+    # non-zero canonical keys, at parity with the PDF producer's Counter summary.
+    assert canonical["summary"] == {"added": 1, "modified": 2}
     assert canonical["changes"] == []
 
 
