@@ -28,16 +28,24 @@ That misses anything only visible across lines ([#524](https://github.com/civict
 **Measuring against the XML twin.** A published bill has both a PDF and an XML version of the
 same text. The XML carries the heading levels as tags, so for every amount in the XML ledger we
 can ask where the PDF ledger files the same amount. The two amount sequences are aligned in
-document order and each matched amount is scored at account/section grain:
+document order and each matched amount is scored at account/section grain, comparing every level
+of the two paths:
 
-| tier | meaning | counted as |
+| tier | the PDF path, against the XML's | counted as |
 |---|---|---|
-| T0 | same location | true hit |
-| T1 | same place, label differs (a joined, tail or near-variant name) | tolerated |
-| T2 | true but shallower (a parent missing, never a wrong one) | tolerated |
-| T3 | right heading, wrong parent | not tolerated |
+| T0 | identical | true hit |
+| T1 | the same levels in the same order, a label differs (a joined, tail or near-variant name) | tolerated |
+| T2 | true but shallower: the XML's ancestors in order, with some left out | tolerated |
+| T3 | right heading, wrong parent: an ancestor that is wrong, extra or out of order | not tolerated |
 | T4 | filed under a different heading | not tolerated |
 | MISS | XML amount with no PDF counterpart | not tolerated |
+
+The tier totals are the result this record reports and later changes are held to. Totals can
+hide a regression when another amount in the same version improves, so a change is also
+checked amount by amount: each amount is followed from the parser before to the parser after,
+both graded by the same scorer, and every amount whose tier got worse is listed and explained.
+That check is a working tool, not a gate
+([TESTING.md](../../TESTING.md#two-readings-the-tier-totals-and-the-per-amount-check)).
 
 T2 is tolerated for the reason [0018](0018-text-triggers-are-financial-only.md) gives: a
 shallower breadcrumb that is true beats a deeper one that is invented. The XML is used only

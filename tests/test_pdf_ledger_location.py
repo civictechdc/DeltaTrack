@@ -1,8 +1,8 @@
 """Where the PDF files each dollar amount, pinned per version against the XML twin (ADR 0022).
 
 ``tests/ledger_location.py`` scores one bill version: every amount in the XML ledger, aligned
-with the same amount in the PDF ledger, lands in a tier from ``T0`` (same location) to ``T4``
-(filed under a different heading), or is a ``MISS``. This module pins those tier counts for
+with the same amount in the PDF ledger, lands in a tier from ``T0`` (the same path, every level)
+to ``T4`` (filed under a different heading), or is a ``MISS``. This module pins those tier counts for
 every committed version that has both a PDF and its XML twin, in
 ``tests/data/ledger_location_baseline.json``.
 
