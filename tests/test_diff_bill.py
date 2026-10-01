@@ -23,6 +23,7 @@ from deltatrack.diff_bill import (
     main,
     match_nodes,
 )
+from tests.corpus_paths import PROJECT_ROOT
 from tests.division_labels import cross_division_mismatches
 
 
@@ -1393,8 +1394,18 @@ class TestCli:
 
     def test_subprocess_entrypoint(self):
         """Smoke test that the CLI script actually runs as a subprocess."""
+        # Absolute script path with `cwd` left alone: the entrypoint is meant to work from
+        # any directory, and passing cwd=PROJECT_ROOT would assert less (#404).
         result = subprocess.run(
-            [sys.executable, "diff_bill.py", "compare", str(HR4366_V1_PATH), str(HR4366_V6_PATH), "--format", "json"],
+            [
+                sys.executable,
+                str(PROJECT_ROOT / "diff_bill.py"),
+                "compare",
+                str(HR4366_V1_PATH),
+                str(HR4366_V6_PATH),
+                "--format",
+                "json",
+            ],
             capture_output=True,
             text=True,
         )
