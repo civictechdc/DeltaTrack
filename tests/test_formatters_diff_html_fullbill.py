@@ -1,8 +1,8 @@
-"""Tests for the full-bill tracked-changes view + Changes/Full toggle.
+"""Tests for the full-text tracked-changes view + Changes/Full toggle.
 
 The renderer takes one canonical document and builds its own view from it
 (DeltaTrack#653), so these tests hand it a document and nothing else. A document
-carrying full text gets the toggle, the full-bill pane and the embed; a document
+carrying full text gets the toggle, the full-text pane and the embed; a document
 without it (metadata only) renders the change cards alone, which the
 no-full-text tests pin.
 """
@@ -52,7 +52,7 @@ def _change(change_id: str, change_type: str, **fields) -> dict:
 
 def _no_full_text() -> dict:
     """A document carrying no full text — the report the renderer produces without
-    a full-bill pane, an embed, find, navigation or export."""
+    a full-text pane, an embed, find, navigation or export."""
     return {
         "schema_version": "3.0",
         "bill": _BILL,
@@ -102,10 +102,10 @@ def _canonical() -> dict:
 
 
 def test_no_full_bill_ui_without_full_text_but_document_still_embedded():
-    """No full-bill UI without full text — but the document is embedded regardless.
+    """No full-text UI without full text — but the document is embedded regardless.
 
     Two separate rules, and conflating them is a live regression risk. The
-    *controls* (toggle, full-bill pane, find, navigation, export) are gated on
+    *controls* (toggle, full-text pane, find, navigation, export) are gated on
     full text because none of them has anything to act on without it. The
     *payload* is not gated on anything: the report carries the diff document it
     was rendered from, which is what makes a standalone report self-describing
@@ -123,7 +123,7 @@ def test_no_full_bill_ui_without_full_text_but_document_still_embedded():
     document = _no_full_text()
     html = format_diff_html(document)
 
-    # No full-bill UI: nothing to drive it.
+    # No full-text UI: nothing to drive it.
     assert "data-view=" not in html
     assert 'class="view view-full"' not in html
 
@@ -188,7 +188,7 @@ def test_treeless_canonical_renders_the_toc_empty_state():
     same string for an empty list.
     """
     html = format_diff_html(_canonical())
-    assert 'class="sidebar-toc"' in html
+    assert 'class="sidebar-tree"' in html
     assert "No sections detected." in html
 
 
@@ -206,18 +206,18 @@ def test_full_bill_rows_carry_no_orphan_section_ids():
 
 def test_no_toc_without_full_text():
     html = format_diff_html(_no_full_text())
-    assert 'class="sidebar-toc"' not in html
+    assert 'class="sidebar-tree"' not in html
 
 
 def test_added_and_modified_marks_projected():
     html = format_diff_html(_canonical())
     # Added: just an <ins> around the v2 slice.
-    assert '<ins class="diff-add" id="attr-c-1">ADD0</ins>' in html
+    assert '<ins class="diff-added" id="attr-c-1">ADD0</ins>' in html
     # Modified: new text highlighted in place; old text is not shown inline (it
-    # lives in the Changes cards), so "old1" never reaches the full-bill view.
-    assert '<span class="diff-mod" id="attr-c-2"' in html
+    # lives in the Changes cards), so "old1" never reaches the full-text view.
+    assert '<span class="diff-modified" id="attr-c-2"' in html
     assert ">MOD1</span>" in html
-    assert '<del class="diff-del">old1</del>' not in html  # old text not rendered inline
+    assert '<del class="diff-removed">old1</del>' not in html  # old text not rendered inline
     assert "fb-del-row" not in html
     # Untouched tail text remains.
     assert "KEEP" in html
@@ -265,35 +265,35 @@ def test_xml_full_bill_gutterless_no_truncation():
     assert '">ENT OF DEFENSE' not in html
     assert '">y construction' not in html
     # Gutterless mode: no synthesized line numbers, no PDF page markers.
-    assert 'class="fb-page"' not in html
-    assert '<span class="fb-gutter">' not in html
+    assert 'class="full-text-page"' not in html
+    assert '<span class="full-text-line__number">' not in html
     # The modified span is still highlighted in place with the new text.
-    assert '<span class="diff-mod" id="attr-x-1"' in html
+    assert '<span class="diff-modified" id="attr-x-1"' in html
 
 
 def test_full_bill_rows_carry_line_number_gutter():
     """Each source line renders as a row with its line number in the gutter."""
     html = format_diff_html(_canonical())
     # Page marker precedes the rows; line numbers sit in the gutter column.
-    assert '<div class="fb-page">p. 1</div>' in html
-    assert '<span class="fb-gutter">1</span>' in html
-    assert '<span class="fb-gutter">3</span>' in html
+    assert '<div class="full-text-page">p. 1</div>' in html
+    assert '<span class="full-text-line__number">1</span>' in html
+    assert '<span class="full-text-line__number">3</span>' in html
     # The readable text column carries the content without the gutter prefix.
-    assert '<span class="fb-text"><ins class="diff-add" id="attr-c-1">ADD0</ins></span>' in html
+    assert '<span class="full-text-line__text"><ins class="diff-added" id="attr-c-1">ADD0</ins></span>' in html
 
 
 def test_modified_highlighted_in_place_without_old_text():
     """A modified change highlights its new text in place; the old text stays in
-    the Changes cards (not echoed into the full-bill view)."""
+    the Changes cards (not echoed into the full-text view)."""
     html = format_diff_html(_canonical())
     assert 'title="modified — see Changes for the old text"' in html
     assert "fb-del-row" not in html
-    assert '<del class="diff-del">old1</del>' not in html
+    assert '<del class="diff-removed">old1</del>' not in html
 
 
 def test_removed_appendix_lists_removals():
     html = format_diff_html(_canonical())
-    assert 'class="removed-appendix"' in html
+    assert 'class="removed-changes"' in html
     assert "TITLE I &gt; SEC 2" in html
     # The removed v1 slice is shown struck through.
     assert "GONE" in html
@@ -301,7 +301,7 @@ def test_removed_appendix_lists_removals():
 
 def test_meta_accounts_for_placed_and_removed():
     html = format_diff_html(_canonical())
-    meta = re.search(r'<div class="full-bill-meta">(.*?)</div>', html).group(1)
+    meta = re.search(r'<div class="full-text-meta">(.*?)</div>', html).group(1)
     assert "2 of 3 changes shown inline" in meta
     assert "1 removed below" in meta
 

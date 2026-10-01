@@ -46,7 +46,7 @@ def test_nav_item_basic():
     item = _build_nav_item(_change(), 0)
     assert item.startswith('<li class="nav-item" data-type="modified">')
     assert 'href="#change-0"' in item
-    assert '<span class="badge badge-modified">modified</span>' in item
+    assert '<span class="change-type" data-type="modified">modified</span>' in item
     assert "TITLE I &gt; Customs" in item
 
 

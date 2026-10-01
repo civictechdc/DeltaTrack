@@ -727,7 +727,7 @@ class TestSectionsWhoseOnlyChangeIsMoney:
     def change_cards():
         """The report's change cards, as (breadcrumb heading, card markup) pairs.
 
-        Scoped to the changes view deliberately. The report also carries a full-bill
+        Scoped to the changes view deliberately. The report also carries a full-text
         view, which renders every section whether or not it changed, so asserting a
         section name or an amount against the whole document passes with the defect
         present -- verified: the first draft of these tests did exactly that and was
@@ -747,8 +747,17 @@ class TestSectionsWhoseOnlyChangeIsMoney:
         later = [pos for pos, _ in views if pos > start]
         changes_view = html[start : later[0] if later else len(html)]
 
+        # Split on the card's id, not its class. `change` is a prefix of `change-type`,
+        # `change-group`, `change__header` and `change__body`, so matching the class
+        # alone shatters one card into fragments and an amount lands in a different
+        # chunk from the heading that scopes it -- which reads as the amount being
+        # absent from the report, exactly the defect these tests exist to catch.
+        # Only a card carries `id="change-<n>"`.
+        starts = [m.start() for m in re.finditer(r'<div class="change[^"]*" id="change-\d+"', changes_view)]
+        bounds = starts + [len(changes_view)]
         cards = []
-        for chunk in changes_view.split('class="change-card')[1:]:
+        for i, pos in enumerate(starts):
+            chunk = changes_view[pos : bounds[i + 1]]
             heading = re.search(r"<h3>(.*?)</h3>", chunk, re.S)
             cards.append((heading.group(1) if heading else "", chunk))
         return cards
