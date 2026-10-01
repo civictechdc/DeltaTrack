@@ -179,7 +179,6 @@ jobs:
           tests/test_node_join_corpus.py
           tests/test_xml_subsection_nodes.py
           tests/test_pdf_subsection_recall.py
-          tests/test_manifest_report_fixtures.py
           tests/test_canonical_baseline.py
           tests/test_pdf_canonical_baseline.py
           tests/test_pdf_matching_boundary.py
