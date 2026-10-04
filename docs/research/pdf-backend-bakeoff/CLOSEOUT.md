@@ -11,7 +11,7 @@
 
 | Capability | Evidence | Reproduce |
 |---|---|---|
-| The XML comparison pipeline runs under Pyodide with byte-identical canonical JSON and HTML output | [`staffer-delivery/README.md`](../staffer-delivery/README.md), re-verified 2026-08-11 with a negative control | `uv run python docs/research/staffer-delivery/probes/verify_parity.py`, then `--mutate` (must exit 1). Needs Node with the `pyodide` package |
+| The XML comparison pipeline runs under Pyodide with byte-identical canonical JSON and HTML output | [`staffer-delivery/README.md`](../staffer-delivery/README.md), re-verified 2026-08-11 with a negative control | `uv run python docs/research/staffer-delivery/probes/verify_parity.py`. Then run with `--mutate`: must report `MISMATCH` and exit 0, indicating the negative control was detected. Needs Node with the `pyodide` package |
 | A self-contained, double-clickable HTML file booting the real Python engine was built and measured once | same, finding 4 | [`build_single_file.py`](../staffer-delivery/probes/build_single_file.py) with the [`single-file/`](../staffer-delivery/probes/single-file/) template. The built artifact is not committed and has not been rebuilt; it relies on a loader shim Pyodide does not support |
 | PDFium in WebAssembly (`@embedpdf/pdfium`) extracts text and exposes the per-glyph API the extractor needs: char boxes, origins, font size and weight, matrices, hyphen and generated-char flags | [`RESULTS.md`](RESULTS.md) audit claim 2, [`validation/phase2/`](validation/phase2/) | [`probes/js/probe_wasm_textapi.mjs`](probes/js/probe_wasm_textapi.mjs), [`dump_pdfium_wasm.mjs`](probes/js/dump_pdfium_wasm.mjs), [`validation/phase2/g02_wasm_advance.mjs`](validation/phase2/g02_wasm_advance.mjs) |
 
