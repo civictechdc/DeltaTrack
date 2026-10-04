@@ -366,6 +366,22 @@ def test_security_runs_on_pushes_to_main() -> None:
     )
 
 
+def test_production_deploys_only_from_main() -> None:
+    """The hosted app deploys on pushes to `main` and on nothing else.
+
+    docs/release.md makes promotion the one step that updates both public surfaces at
+    once, and the runbook and web-compare.md both say deploys come from `main`. A
+    trigger on `develop` ships every integration merge, Dependabot bumps included, and
+    leaves the hosted app running different code from the example reports on Pages.
+    Any other event (a pull request, a schedule, a manual dispatch with a free choice
+    of ref) is a second path to production, so the trigger set is pinned exactly.
+    """
+    triggers = _triggers(WORKFLOWS / "deploy.yml")
+    assert set(triggers) == {"push"}, f"deploy.yml can be started by more than a push: {sorted(triggers)}"
+    branches = triggers["push"]["branches"]
+    assert branches == ["main"], f"deploy.yml deploys pushes to {branches}; production must deploy from main only"
+
+
 def test_security_push_guard_detects_a_mainless_trigger(tmp_path: Path) -> None:
     """A security workflow that dropped `main` must go red, not pass via a vacuous read.
 
