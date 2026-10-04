@@ -411,9 +411,10 @@ def _pdf_round1_signals(v1_block: _Block, v2_block: _Block) -> dict[str, bool | 
     cutoff inside the *evidence*: a pair whose real overlap is 0.30 recorded as ``0.0`` lets a
     threshold of 0.20 revoke a pairing it should keep, so the threshold parameter would not be
     the sole authority ADR 0020 requires. Evidence describes; it must not censor at the number
-    the next stage owns. Exact similarity for every non-identical aligned pair is inside the
-    run-to-run spread on a full-corpus ``diff_pdfs`` sweep and produces byte-identical output —
-    the identical-text short-circuit above already removes most pairs before the cost lands.
+    the next stage owns.
+
+    History: #639 measured exact similarity for every non-identical aligned pair on a
+    full-corpus ``diff_pdfs`` sweep as within run-to-run spread, with byte-identical output.
 
     **``word_overlap`` is present even when the texts are identical**, which is where this
     diverges from ``diff_bill``'s equivalent, and the divergence is forced rather than chosen:

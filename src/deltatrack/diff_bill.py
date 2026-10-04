@@ -746,14 +746,14 @@ def _match_unique_path_group(
 
     **Retaining the fast path's cost profile is deliberate and is not the same as retaining the
     fast path.** The alternative -- sending every unique group through
-    :func:`_match_collision_group` -- costs several times this traversal, because that path
-    partitions by division, forms one population per division, and runs a second retrieval round
-    over the leftovers. None of that is reachable for a group holding at most one observation per
-    side. So this stays a separate orchestration over the SAME stages rather than a second
-    implementation of them: no stage is duplicated here, and the two paths cannot diverge in what
-    they admit, describe or select.
+    :func:`_match_collision_group` -- would partition by division, form one population per
+    division, and run a second retrieval round over the leftovers. None of that is reachable for a
+    group holding at most one observation per side. So this stays a separate orchestration over the
+    SAME stages rather than a second implementation of them: no stage is duplicated here, and the
+    two paths cannot diverge in what they admit, describe or select.
 
-    History: #632 carries the measurement, and the ratios move a few percent between runs.
+    History: #632 measured isolated traversal cost; the all-collision alternative was about 25%
+    slower than this path (2.96x against 2.37x, both relative to the earlier direct-append path).
 
     **Zero ``text_similarity`` calls, reached through the stages rather than around them.** A
     1x1 population takes :func:`group_correspondence_evidence`'s shortcut -- one record, no

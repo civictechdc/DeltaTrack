@@ -26,20 +26,21 @@ observation production.
 
 ``tests/pdf_corpus._extractor_fingerprint``
     The **page-extraction cache identity**. It answers "may this pickled ``Page`` list be
-    served?", so its closure is exactly what produces a ``Page``: ``parsers/pdf_text.py``
-    plus the pypdfium2 build. Editing ``pdf_anchors``, ``pdf_blocks`` or ``amounts`` cannot
-    make a cached ``Page`` stale, so widening it to cover them would only force needless
-    re-extraction.
+    served?", so it covers what produces a ``Page``: ``parsers/pdf_text.py``, the pypdfium2
+    build, and the Python runtime executing the extraction. Editing ``pdf_anchors``,
+    ``pdf_blocks`` or ``amounts`` cannot make a cached ``Page`` stale, so widening it to cover
+    them would only force needless re-extraction.
 
 :func:`pdf_parser_revision`
     The **observation parser revision**. It answers ADR 0019's question, "which parse was
-    this stored judgment about?", so its closure is everything capable of changing the
+    this stored judgment about?", so its closure is the source capable of changing the
     emitted observation sequence: ``pdf_text`` + ``pdf_anchors`` + ``pdf_blocks`` +
-    ``amounts`` + pypdfium2.
+    ``amounts``, plus the pypdfium2 version. It does not include the Python runtime.
 
-The second contains the first. They are still separate identities with separate jobs, and
-one function serving both would either invalidate the extraction cache on an irrelevant edit
-or under-report the parse an artifact was derived from.
+Neither contains the other: the revision covers modules the cache identity does not, and
+only the cache identity covers the runtime. They are separate identities with separate jobs,
+and one function serving both would either invalidate the extraction cache on an irrelevant
+edit or under-report the parse an artifact was derived from.
 
 ## What identity is, here
 
