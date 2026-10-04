@@ -54,7 +54,7 @@ from pathlib import Path
 import pytest
 
 from deltatrack import diff_bill
-from deltatrack.bill_tree import BillNode, normalize_bill
+from deltatrack.bill_tree import BillNode
 from deltatrack.diff_bill import (
     BODY_UNCHANGED,
     MOVE_ROUND,
@@ -89,6 +89,7 @@ from deltatrack.similarity import (
     SIMILARITY_THRESHOLD,
 )
 from tests.corpus_paths import fixture_path
+from tests.parsed_bills import parsed_bill
 
 _DIFF_BILL_SOURCE = Path(diff_bill.__file__)
 
@@ -404,7 +405,7 @@ def test_every_surviving_round_1_link_carries_the_evidence_that_selected_it():
 
     checked = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         stages = migrated_stages(old_tree, new_tree)
         by_link = {item.link: item for item in stages["round1_evidence"]}
 
@@ -456,8 +457,8 @@ def test_classification_preserves_the_shape_it_receives():
 
     checked = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree = normalize_bill(old_path)
-        new_tree = normalize_bill(new_path)
+        old_tree = parsed_bill(old_path)
+        new_tree = parsed_bill(new_path)
         stages = migrated_stages(old_tree, new_tree)
         decided = settled_sides(stages["settled"], stages["registry"])
         problems = shape_violations(decided, diff_bills(old_tree, new_tree).changes)
@@ -649,8 +650,8 @@ def test_the_live_stages_read_the_thresholds_they_are_given():
     requires both the candidate population and the selected links to move. A stage that had the
     cutoff baked in would return the same thing twice.
     """
-    old_tree = normalize_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
-    new_tree = normalize_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
+    old_tree = parsed_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
+    new_tree = parsed_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
     registry = observation_registry(old_tree, new_tree)
     population = unmatched_population(decided_pairings(old_tree, new_tree), registry)
 
@@ -711,7 +712,7 @@ def test_reordering_the_population_changes_the_selected_correspondence():
     """
     changed = 0
     for _key, old_path, new_path in _baseline_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         stages = migrated_stages(old_tree, new_tree)
         if not stages["moves"]:
             continue
@@ -739,8 +740,8 @@ def test_settlement_refuses_an_observation_that_already_corresponds():
     observation would be settled twice. The guard is the production `CorrespondenceSet.add`, not a
     check written for this test.
     """
-    old_tree = normalize_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
-    new_tree = normalize_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
+    old_tree = parsed_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
+    new_tree = parsed_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
     registry = observation_registry(old_tree, new_tree)
     pairings = match_nodes(old_tree, new_tree)
     round1_evidence = similarity_correspondence_evidence(pairings, registry)
@@ -770,8 +771,8 @@ def test_classification_owns_the_append_and_not_assignment():
     reddens, which is what makes the sort testable at all: on production's own input the rounds
     already arrive in order, so removing it would otherwise change nothing.
     """
-    old_tree = normalize_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
-    new_tree = normalize_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
+    old_tree = parsed_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
+    new_tree = parsed_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
     stages = migrated_stages(old_tree, new_tree)
     settled, registry = stages["settled"], stages["registry"]
 
@@ -792,8 +793,8 @@ def test_moved_records_land_last_and_moving_them_is_visible():
 
     from deltatrack.diff_bill import bill_diff_to_dict
 
-    old_tree = normalize_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
-    new_tree = normalize_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
+    old_tree = parsed_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml"))
+    new_tree = parsed_bill(fixture_path("118-hr-4366", "5_engrossed-amendment-house.xml"))
     stages = migrated_stages(old_tree, new_tree)
     settled, registry = stages["settled"], stages["registry"]
 

@@ -42,7 +42,7 @@ from pathlib import Path
 import pytest
 
 from deltatrack.amounts import strip_amendment_annotations
-from deltatrack.bill_tree import extract_text_content, find_bill_bodies, find_bill_body, normalize_bill
+from deltatrack.bill_tree import extract_text_content, find_bill_bodies, find_bill_body
 from deltatrack.diff_bill import extract_amounts
 from deltatrack.formatters.canonical import _pdf_tree_payload
 from deltatrack.formatters.diff_html import _build_tree_nav
@@ -51,6 +51,7 @@ from deltatrack.parsers.pdf_anchors import extract_anchors
 from deltatrack.parsers.pdf_text import pdf_full_text
 from tests.conftest import CORPUS_SWEEP, assert_manifest_committed, manifest_pdf_files, manifest_xml_files
 from tests.corpus_paths import fixture_path
+from tests.parsed_bills import parsed_bill
 from tests.pdf_corpus import cached_pages
 
 pytestmark = pytest.mark.slow
@@ -185,7 +186,7 @@ _PDF_NO_ANCHOR_LAYOUTS: dict[str, str] = {
 def _xml_tree_payload_for(path: Path) -> tuple[list[dict], str]:
     """The contract-shaped XML tree for one version, plus its full_text — built the
     way ``build_xml_full_text`` does, without the diff (the tree is per-side)."""
-    bill = normalize_bill(path)
+    bill = parsed_bill(path)
     text, _sections, spans, heading_offsets = serialize_tree_for_tree(bill)
     return _xml_tree_payload(bill, spans, heading_offsets), text
 
@@ -576,7 +577,7 @@ def test_split_accounts_keep_their_name_corpus_wide() -> None:
         if not pairs:
             continue
         bills.add(xml_path.parent.name)
-        by_id = {n.element_id: n for n in normalize_bill(xml_path).nodes}
+        by_id = {n.element_id: n for n in parsed_bill(xml_path).nodes}
         for element_id, name in pairs.items():
             total += 1
             node = by_id.get(element_id)

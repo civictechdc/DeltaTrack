@@ -45,10 +45,10 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.bill_tree import normalize_bill
 from deltatrack.parsers.pdf_anchors import _valid_subsection_enum
 from tests.conftest import assert_manifest_committed
 from tests.corpus_paths import FIXTURES_DIR
+from tests.parsed_bills import parsed_bill
 from tests.test_pdf_subsection_recall import (
     EXPECTED,
     PAIRS,
@@ -87,7 +87,7 @@ _CATCHLINE_LABEL = re.compile(r"^\(([A-Za-z]{1,2})\)\s+\S")
 
 
 def _subsection_nodes(xml_rel: str):
-    bill = normalize_bill(BILLS / xml_rel)
+    bill = parsed_bill(BILLS / xml_rel)
     return [n for n in bill.nodes if n.tag == "subsection"]
 
 
