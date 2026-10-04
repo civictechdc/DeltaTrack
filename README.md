@@ -4,7 +4,7 @@ Downloads U.S. bill text from official government data (GPO govinfo) and compare
 
 Works on any bill type (HR, S, HJRES, etc.), not just appropriations.
 
-**See it in action:** [browse the example reports](https://agoradmv.github.io/DeltaTrack/) — real output for HR 8752 and HR 4366 (118th Congress), including [a Senate rewrite at full scale](https://agoradmv.github.io/DeltaTrack/hr4366_house_vs_senate_xml_diff.html). Every one is rendered by the same pipeline the tool runs for you.
+**See it in action:** [browse the example reports](https://civictechdc.github.io/DeltaTrack/) — real output for HR 8752 and HR 4366 (118th Congress), including [a Senate rewrite at full scale](https://civictechdc.github.io/DeltaTrack/hr4366_house_vs_senate_xml_diff.html). Every one is rendered by the same pipeline the tool runs for you.
 
 ## Why not a generic differ?
 
@@ -57,7 +57,7 @@ CONGRESS_API_KEY=your_key_here
 
 ## Command reference
 
-The product commands are the executable `.py` scripts in the project root — `diff_bill.py` and `diff_pdf.py`. Each is a thin wrapper over the diff engine, which lives in `src/deltatrack/` and is installed into the virtualenv rather than read from the working tree ([#398](https://github.com/AgoraDMV/DeltaTrack/issues/398)); `python -m deltatrack.diff_bill` also works. The bill-downloading commands live in `tools/`, which holds the acquisition tooling rather than the product ([#367](https://github.com/AgoraDMV/DeltaTrack/issues/367)). Run either after `source ./init`. `versions`, `download`, and `download-all` default to the keyless **govinfo** source — pass `--source api` for the Congress.gov API. `download` and `download-all` default to **XML** — pass `--format pdf` or `--format both` for PDFs.
+The product commands are the executable `.py` scripts in the project root — `diff_bill.py` and `diff_pdf.py`. Each is a thin wrapper over the diff engine, which lives in `src/deltatrack/` and is installed into the virtualenv rather than read from the working tree ([#398](https://github.com/civictechdc/DeltaTrack/issues/398)); `python -m deltatrack.diff_bill` also works. The bill-downloading commands live in `tools/`, which holds the acquisition tooling rather than the product ([#367](https://github.com/civictechdc/DeltaTrack/issues/367)). Run either after `source ./init`. `versions`, `download`, and `download-all` default to the keyless **govinfo** source — pass `--source api` for the Congress.gov API. `download` and `download-all` default to **XML** — pass `--format pdf` or `--format both` for PDFs.
 
 | Command | What it does |
 |---------|--------------|
@@ -74,7 +74,7 @@ The product commands are the executable `.py` scripts in the project root — `d
 
 Environment setup is `source ./init` (installs dependencies and activates the virtualenv). Use `source` so the environment change sticks; it is not a runnable command. Keep the leading `./`: a bare `source init` searches `PATH` before the current directory, so wherever `/usr/sbin` is on `PATH` (most Linux distributions) it finds the system `init` and fails.
 
-> **`tools/fetch_bill_archives.py` is an advanced bulk tool.** Run with no arguments it immediately downloads every GovInfo BILLSTATUS archive for congresses 112–119 (hundreds of MB) with no prompt, extracts them, and writes a `bills/bills.csv` metadata index. It exits nonzero when a saved archive is refused or cannot be opened during extraction because the index it wrote is then missing every bill that archive held. The congress range is hardcoded and there are no CLI flags yet (tracked in [#10](https://github.com/AgoraDMV/DeltaTrack/issues/10)). Reach for it only when you specifically need a bulk bill index.
+> **`tools/fetch_bill_archives.py` is an advanced bulk tool.** Run with no arguments it immediately downloads every GovInfo BILLSTATUS archive for congresses 112–119 (hundreds of MB) with no prompt, extracts them, and writes a `bills/bills.csv` metadata index. It exits nonzero when a saved archive is refused or cannot be opened during extraction because the index it wrote is then missing every bill that archive held. The congress range is hardcoded and there are no CLI flags yet (tracked in [#10](https://github.com/civictechdc/DeltaTrack/issues/10)). Reach for it only when you specifically need a bulk bill index.
 
 To run the web comparison app locally: `uvicorn web.app:app --reload --port 8077` (see [docs/web-compare.md](docs/web-compare.md)).
 
