@@ -24,6 +24,6 @@
 #   uv pip install --python .venv/bin/python -r docs/research/pdf-backend-bakeoff/probes/requirements.txt
 
 pdfminer.six==20260107
-pypdf==6.15.0
+pypdf==6.16.1
 pymupdf==1.28.0          # AGPL-3.0 -- ceiling reference only, never shippable
 playwright==1.60.0       # egress harness; also needs: python -m playwright install chromium
