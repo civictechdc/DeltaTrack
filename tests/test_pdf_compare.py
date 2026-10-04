@@ -37,31 +37,31 @@ def _client():
 def test_http_redirects_to_https_for_get():
     resp = _client().get(
         "/index.html",
-        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.agoradmv.org"},
+        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.example"},
         follow_redirects=False,
     )
     assert resp.status_code == 301
-    assert resp.headers["location"] == "https://deltatrack.agoradmv.org/index.html"
+    assert resp.headers["location"] == "https://deltatrack.example/index.html"
 
 
 def test_http_redirects_to_https_when_forwarded_port_80():
     resp = _client().get(
         "/",
-        headers={"X-Forwarded-Port": "80", "Host": "deltatrack.agoradmv.org"},
+        headers={"X-Forwarded-Port": "80", "Host": "deltatrack.example"},
         follow_redirects=False,
     )
     assert resp.status_code == 301
-    assert resp.headers["location"] == "https://deltatrack.agoradmv.org/"
+    assert resp.headers["location"] == "https://deltatrack.example/"
 
 
 def test_http_redirects_to_https_for_post():
     resp = _client().post(
         "/api/compare",
-        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.agoradmv.org"},
+        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.example"},
         follow_redirects=False,
     )
     assert resp.status_code == 308
-    assert resp.headers["location"] == "https://deltatrack.agoradmv.org/api/compare"
+    assert resp.headers["location"] == "https://deltatrack.example/api/compare"
 
 
 def test_no_redirect_without_forwarded_proto():
@@ -170,7 +170,7 @@ def test_security_headers_survive_the_https_redirect():
     """
     resp = _client().get(
         "/",
-        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.agoradmv.org"},
+        headers={"X-Forwarded-Proto": "http", "Host": "deltatrack.example"},
         follow_redirects=False,
     )
     assert resp.status_code == 301

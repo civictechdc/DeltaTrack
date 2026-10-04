@@ -35,6 +35,7 @@ from pathlib import Path
 import httpx
 
 import fetch_govinfo as gi
+from shared.bill_types import BILL_TYPES, resolve_bill_types
 
 # The REPOSITORY root, not this script's directory — see the same constant in
 # fetch_bill_archives.py: the working directories are gitignored at the root, so
@@ -45,9 +46,6 @@ DEFAULT_BILLS_DIR = PROJECT_DIR / "bills"
 # govinfo BILLS member filename, e.g. BILLS-119hr1eh.xml, BILLS-119hconres14enr.xml.
 # Groups: congress, bill_type, number, version_code.
 _MEMBER_RE = re.compile(r"^BILLS-(\d+)([a-z]+)(\d+)([a-z0-9]+)\.xml$", re.IGNORECASE)
-
-DEFAULT_BILL_TYPES = ("hr", "s", "hjres", "sjres", "hconres")
-
 
 # ---- STEP 1: download the per-(congress, session, type) BILLS ZIPs -----------
 
@@ -114,8 +112,9 @@ def download_zip(client: httpx.Client, url: str, dest: Path) -> bool:
         raise
 
 
-def download_archives(congresses: list[int], bill_types: list[str], zip_dir: Path) -> list[Path]:
+def download_archives(congresses: list[int], bill_types: list[str] | None, zip_dir: Path) -> list[Path]:
     """Download BILLS ZIPs for each (congress, session, type); skip existing."""
+    bill_types = resolve_bill_types(bill_types)
     zip_dir.mkdir(parents=True, exist_ok=True)
     saved: list[Path] = []
     tasks = [(c, s, t) for c in congresses for s in gi.sessions_for_congress(c) for t in bill_types]
@@ -293,7 +292,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--from-congress", type=int, default=118)
     p.add_argument("--to-congress", type=int, default=119)
-    p.add_argument("--types", nargs="+", default=list(DEFAULT_BILL_TYPES))
+    p.add_argument("--types", nargs="+", type=str.lower, choices=["all", *BILL_TYPES.keys()], default=["all"])
     p.add_argument("--zip-dir", type=Path, default=PROJECT_DIR / "bills_bulk_text")
     p.add_argument("--out-dir", type=Path, default=DEFAULT_BILLS_DIR)
     p.add_argument(
@@ -318,8 +317,8 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def main() -> None:
-    args = build_parser().parse_args()
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
     congresses = list(range(args.from_congress, args.to_congress + 1))
     if not args.convert_only:
         download_archives(congresses, args.types, args.zip_dir)

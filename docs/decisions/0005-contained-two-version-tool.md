@@ -30,6 +30,11 @@ The test for whether a feature belongs in DeltaTrack is:
 3. Does the feature require **comparing more than 2 versions of a bill**? If so, it
    should be considered out of scope.
 
+Test 2 is about **bill data**, not about state in general. Program state and user
+preferences hold no bill data and are in scope: which version of DeltaTrack is
+installed, or that a user prefers a money-only view, is not what this rule protects. A
+cache of extracted bill text is, and stays out of scope.
+
 These are not permanent decisions and they may change over time. They also do not indicate
 disapproval or hostility towards projects that do the above. We want to support those use
 cases, but we will not do it inside of DeltaTrack.

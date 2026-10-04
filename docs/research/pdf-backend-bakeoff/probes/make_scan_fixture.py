@@ -1,6 +1,6 @@
 """Build image-only (scanned) PDF fixtures from a committed corpus bill.
 
-Regenerates the reproduction for AgoraDMV/DeltaTrack#550 -- "Two different scanned PDFs
+Regenerates the reproduction for civictechdc/DeltaTrack#550 -- "Two different scanned PDFs
 compare as 'no changes' instead of being declined" -- so the issue's evidence does not
 depend on a scratch directory that no longer exists.
 

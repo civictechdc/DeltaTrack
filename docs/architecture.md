@@ -8,12 +8,12 @@ lives in [decisions/](decisions/). This file links to both rather than restating
 ## The one-sentence version
 
 Two versions of the same bill go in as bytes; a structured description of what changed
-between them comes out, as canonical JSON and as a standalone HTML report. Nothing is
-stored, nothing is fetched at compare time, and the same input always produces the same
+between them comes out, as canonical JSON and as a standalone HTML report. No bill
+content is stored, nothing is fetched at compare time, and the same input always produces the same
 output ([ADR 0008](decisions/0008-deterministic-engine.md),
 [0011](decisions/0011-local-only-processing.md)).
 
-That boundary is deliberate. Acquisition, persistence and cross-version analysis are
+That boundary is deliberate. Acquisition, persisted bill content and cross-version analysis are
 outside DeltaTrack's scope; [ADR 0005](decisions/0005-contained-two-version-tool.md)
 draws the line and gives the test a new feature is measured against.
 

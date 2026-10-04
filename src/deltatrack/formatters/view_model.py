@@ -66,8 +66,11 @@ class ChangeView:
     # and both are gone: the report presents no dollar figure as a change until an
     # amount can be typed to an account (#115, #175). This is a view model, so a
     # field here is presentation by definition — the observations themselves are
-    # untouched, in `amounts.py`, `tree[].own_amounts`, `FinancialChange` and
-    # `PdfHunk.amount_pairs`, which is where a future typing layer reads them.
+    # untouched, in `amounts.py`, `tree[].own_amounts` and `FinancialChange`, which
+    # is where a future typing layer reads them. The paired form is not among them:
+    # #687 removed the unread `paired_amounts` / `amount_pairs` fields that survived
+    # #671, since a populated field nothing reads presents as available. `match_amounts`
+    # stays, tested and uncalled, for #115 to use once it can type an account.
 
 
 @dataclass(frozen=True)

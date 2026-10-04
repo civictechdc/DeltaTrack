@@ -870,3 +870,323 @@ green, so neither existing rejection was absorbed into the new one. On the real 
 oracle, adjudicate, score, or produce an architecture decision. It does not touch the
 preserved execution branch. It does not alter any section 4.7 NON-CONFIRMATORY status, or
 any value established by A47, A48, A49, A50 or A51.
+
+## A53 — POST-BOUNDARY AUTHORIZATION-FIELD DEVIATION
+
+```json
+{"id": "A53", "kind": "DEVIATION",
+ "commits": ["c223c6b1"],
+ "classification": "POST-BOUNDARY AUTHORIZATION-FIELD DEVIATION (APPARATUS)",
+ "made_after_boundary": "de60dddf906bc4b01e5ffbe9af4d3e833a9a2be7 (continuation boundary)",
+ "results_already_visible": {
+  "members": 17,
+  "pages": 4190,
+  "d_frame_census": 13992,
+  "s1_documents_firing": "17/17",
+  "p_head_documents": 12,
+  "p_head_pages": 2864,
+  "cross_engine": "17/17 measured, n_qualified 0"
+ },
+ "affects_membership": false,
+ "affects_scoring_rule": false,
+ "affects_metric_values": false,
+ "affects_architecture_decision": false,
+ "affects_execution_authorization": true,
+ "affects_reproducibility_surface": false,
+ "narrowing": "A53 changes ONE field of the continuation authorization -- `results_already_visible` -- its generation, and its validation. It reads no holdout byte, produces no metric, and changes no threshold, route, selection rule, scoring rule or architecture rule. It does not modify CONTINUATION.json, the canonical cross-engine artifact, the original marker, the population, the manifest, the deviations blob, provenance, merge attribution, or any write-once rule. It adds one derived read of the committed canonical cross-engine control, used ONLY to report exposure and never to re-decide anything that artifact measured. affects_execution_authorization is TRUE: the contract an authorization must satisfy to be VALID is narrower after this change, so an artifact that would have passed can now be refused. No authorization artifact exists at the time of this record, so nothing already issued is invalidated by it.",
+ "files_touched": ["probes/x04_freeze_check.py"]}
+```
+
+**The defect.** `results_already_visible` was generated from `CONTINUATION.json`
+alone and validated only for being non-empty. That record is the truthful history of
+Run 1, and Run 1 stopped BEFORE the canonical cross-engine control -- it says so, under
+`prior_execution.stopped_before`. The control was measured afterwards over the same frozen
+population and committed as `results/cross_engine_control.json` (17 documents, n_qualified
+0). The generated summary therefore named Run 1's results and omitted a committed
+confirmatory-population measurement, and a non-empty check cannot tell an incomplete
+sentence from a complete one.
+
+**Why it matters in one direction only.** Overstating exposure is self-penalising and
+visible. Understating it is neither: a shorter list of already-visible results makes
+whatever the study has left to do look more independent than it is, and a reader holding
+only the authorization has nothing to compare it against. `continuation_auth_errors`
+already described the field as recording what was visible "when it was written", so the
+contract was right and only the check was weak.
+
+**Why it stayed invisible.** The register itself had disclosed the cross-engine result in
+prose since A52, so a human reading DEVIATIONS.md saw it; only the authorization did not
+carry it. The generator and the validator also agreed with each other -- both were built
+around the Run 1 record -- so the two halves of the contract were never in tension, which
+is the same shape as the A52 defect one field over.
+
+**The design.** Two phases, kept apart. `CONTINUATION.json` is preserved unchanged as the
+historical Run 1 record; `historical_exposure_summary` (renamed from
+`exposure_summary_for_authorization`, because it is no longer the whole answer) owns that
+half. `authorization_exposure_summary` is the union of Run 1 and everything committed
+since. The cross-engine phase is derived from the committed artifact and re-derived from
+its own document rows, so a summary disagreeing with its evidence, or an unreadable,
+incomplete or uncommitted artifact, is REFUSED at generation rather than silently omitted.
+The snapshot has a fixed lifetime: generation records the pre-authorization HEAD,
+validation independently derives the authorizing commit's parent, requires
+`head_at_authorization` to equal it, and reconstructs exposure from that tree -- so a later
+authorized result cannot retroactively falsify a summary that was truthful when written,
+and the record cannot nominate the tree it will be judged against.
+
+**Evidence.** The self-test goes from 104 to 118 gates. With the validator withheld and the
+controls in place, exactly two fail -- `A53-2 deleting the cross-engine fact from
+results_already_visible is REFUSED` and `A53-3 a head_at_authorization that is not the
+derived pre-authorization parent is REFUSED` -- and the generation-side controls stay
+green, so the refusal is attributable to the validator. With the generator withheld
+instead, 17 controls fail, because the repaired validator refuses a Run-1-only summary
+outright. After the repair the suite returns 118/118. The non-empty check is REPLACED
+rather than supplemented: the exact comparison subsumes it, and keeping both would be two
+mechanisms for one fact.
+
+**What A53 does not do.** It does not create the continuation authorization, regenerate the
+oracle, adjudicate, score, or produce an architecture decision. It does not touch the
+preserved execution branch. It does not modify `CONTINUATION.json`, the cross-engine
+result, `pyproject.toml`, or any production parser. It does not alter any section 4.7
+NON-CONFIRMATORY status, or any value established by A47, A48, A49, A50, A51 or A52.
+
+## A54 — POST-BOUNDARY APPARATUS DEVIATION
+
+```json
+{"id": "A54", "kind": "DEVIATION",
+ "commits": ["4b5c2f6a", "f4cd4fdc", "0a10f2f9"],
+ "classification": "POST-BOUNDARY APPARATUS DEVIATION (ROUTE DERIVATION)",
+ "made_after_boundary": "de60dddf906bc4b01e5ffbe9af4d3e833a9a2be7 (continuation boundary)",
+ "results_already_visible": {
+  "members": 17,
+  "pages": 4190,
+  "d_frame_census": 13992,
+  "s1_documents_firing": "17/17",
+  "p_head_documents": 12,
+  "p_head_pages": 2864,
+  "cross_engine": "17/17 measured, n_qualified 0"
+ },
+ "affects_membership": false,
+ "affects_scoring_rule": false,
+ "affects_metric_values": true,
+ "affects_architecture_decision": true,
+ "affects_execution_authorization": false,
+ "affects_reproducibility_surface": true,
+ "narrowing": "A54 changes WHICH ROUTES A CONSUMER ASKS FOR, and only for the single frozen pre-A48 artifact identified by its complete content digest. Reinterpretation is OFF by default: for every other key the stored `adjudication_routes` remain the requirement exactly as before A54, so ordinary post-A48 validation is untouched and a key whose stored routes disagree with its purposes is still judged on what it stored. It reads no holdout byte and changes no threshold, selection rule, metric definition or architecture rule. It does not modify the key, the blind artifact, the images, the membership, the frames, the original marker, the continuation authorization or any write-once rule, and it never rewrites or reinterprets the frozen key's historical bytes as a current claim. affects_scoring_rule is FALSE: A54 implements the ALREADY-FROZEN A27.3 rule as A48 installed it, and introduces no rule of its own. affects_metric_values is TRUE, corrected from an earlier reading of this record: for the real key the R1 and evaluability path moves from REFUSAL to the effective population, so the metric block that gets produced is not the one the pre-A54 apparatus would have produced, and \"no metric could be produced before\" describes an unsatisfiable gate rather than an absence of effect. affects_architecture_decision is TRUE for the same reason at one remove: the repair makes the decision artifact REACHABLE at all, and can affect A48-dependent `decided_by` attribution, even though the outcome enum at a census above the budget remains constrained to INSUFFICIENT_COMPARATIVE_EVIDENCE and Rule 1 still cannot select corrected extended glyph. affects_reproducibility_surface is TRUE: `probes/build_oracle.py` and `probes/score_metrics.py` are both members of the 31-entry authorization manifest, so integrating this into the study branch moves two manifest blobs and the continuation authorization at 74ccf247 would no longer speak for the current apparatus.",
+ "files_touched": ["probes/build_oracle.py", "probes/score_metrics.py", "probes/x31_dframe_budget_routes.py", "probes/x32_effective_routes.py"]}
+```
+
+**The defect.** A48 closed a real hole: a key must not self-certify its A27.3 state,
+so `d_frame_census` and `d_decision_route_required` are re-derived in
+`score_metrics.validate_inputs` from the committed frames and the frozen predicate.
+For keys that carry those fields that is complete. For a key that predates them, A48
+chose `key.get("d_decision_route_required", True)` at the consumers, reasoning that an
+older artifact should keep meaning exactly what it meant when it was built rather than
+being silently reinterpreted as having fewer required routes.
+
+That reasoning holds for every key but one. The frozen confirmatory key has a realized
+D-frame census of 13,992. A27.3, as implemented by A48, has already ruled that route
+non-decision-bearing: Rule 1 cannot select corrected extended glyph, and the outcome is
+INSUFFICIENT_COMPARATIVE_EVIDENCE. Defaulting that key to `True` therefore demands a
+human answer on all 15,417 stored human routes as a hard prerequisite for producing any
+metric at all, on a route that cannot decide anything. The effective human workload is
+45: 25 seeded C-audit items and 20 controls. A default that cannot be satisfied is not
+conservative.
+
+**Measured, not argued.** Against the real committed key, before this change,
+`build_oracle.validate_adjudicated` refused a complete 45-item human review with
+`ADJUDICATION_ROUTE_MISSING {'route': 'human'}`. After it, the same call accepts, with
+the effective human population at exactly 45 and the AI population unmoved at 122.
+
+**Why derivation is from purposes.** The stored `adjudication_routes` on a pre-A48 key
+were derived from raw frame membership, which is precisely the quantity A27.3 governs,
+so they cannot be the thing consumers ask. `human_answer_purposes` already records why
+each human answer exists, and `PURPOSE_ROUTE` already maps purpose to route. Dropping
+only `d_decision`, only where the predicate denies it, leaves `c_audit` and
+`control_human` untouched. That is what keeps all 25 seeded C-audit items human-required
+even where they are also D-frame members; 19 of them are. A rule that excluded anything
+carrying `d_decision` would have silently reduced the frozen 25-item C audit to six.
+
+**Scoped to one artifact, cryptographically.** `PRE_A48_FROZEN_KEY_SHA256` is the SHA-256 of
+the frozen key's complete canonical content, `66972235...`, the same digest as the committed
+file. It is computed by streaming `iterencode`, so the 307 MB serialization is never
+materialized, and memoized per object so each consumer does not recompute it.
+
+An earlier spelling of this record pinned a SUMMARY fingerprint instead: schema, stimulus
+count, prompt digest and aggregate frame counts. That is not an identity. The entire `stimuli`
+mapping can change while every one of those fields holds, and because routes are derived from
+`human_answer_purposes`, a key could drop `c_audit` from one selected record, keep
+`frame_counts.c_audit_selected == 25`, receive the exception, and validate 24 audit answers
+while looking complete. x32 asserts that exact mutation is denied with every summary field
+unchanged, and the same for a single altered stored route.
+
+**Reinterpretation is off by default.** Only the frozen artifact has its routes derived from
+purposes. Every other key keeps the pre-A54 meaning of its stored routes, so the exception
+cannot make a malformed post-A48 key easier to validate; x32 asserts that direction too.
+
+**What A54 does not do.** It does not create or modify any authorization, regenerate any
+oracle input, prepare a human-review packet, adjudicate, score, or decide the
+architecture. It does not perform the optional 60-region descriptive D sample, which
+cannot change the architecture result.
+
+**What it obliges next.** Because two authorization-manifest files move, integrating this
+into `pdf-study-continuation-execution` requires a NEW continuation authorization; the one
+at 74ccf247 speaks for the apparatus as it stood before this repair. That is deliberately
+not done in this round.
+## A55 — POST-BOUNDARY APPARATUS DEVIATION
+
+```json
+{"id": "A55", "kind": "DEVIATION",
+ "commits": ["e785f4cb", "87d4d2f2"],
+ "classification": "POST-BOUNDARY APPARATUS DEVIATION (AUTHORIZATION MECHANISM)",
+ "made_after_boundary": "de60dddf906bc4b01e5ffbe9af4d3e833a9a2be7 (continuation boundary)",
+ "results_already_visible": {
+  "members": 17,
+  "pages": 4190,
+  "d_frame_census": 13992,
+  "s1_documents_firing": "17/17",
+  "p_head_documents": 12,
+  "p_head_pages": 2864,
+  "cross_engine": "17/17 measured, n_qualified 0"
+ },
+ "affects_membership": false,
+ "affects_scoring_rule": false,
+ "affects_metric_values": false,
+ "affects_architecture_decision": false,
+ "affects_execution_authorization": true,
+ "affects_reproducibility_surface": false,
+ "narrowing": "A55 changes only HOW A CONTINUATION AUTHORIZATION IS SUCCEEDED. It reads no holdout byte and changes no threshold, selection rule, metric definition, route derivation or architecture rule. It does not modify the population, the frames, the frozen key, the original execution marker or any existing authorization, and it never renames, edits, deletes, recommits or reinterprets the sequence-1 artifact. A55 also validates every chain entry against its OWN pre-authorization snapshot: an entry must have been TRUE when committed, not merely immutable afterwards, so a successor cannot launder a predecessor whose payload was false when written. affects_execution_authorization is TRUE by construction: this record is about the authorization mechanism itself. affects_reproducibility_surface is FALSE, and that is AUDITED rather than assumed: `probes/x04_freeze_check.py` is a member of none of METHODOLOGY_SURFACE, RESULT_BEARING_DATA or AUTHORIZATION_EXTRAS, so no blob in the 31-entry authorization manifest moves. It is the gate that polices the surface, not a member of it. Verified against the real tree at 74ccf247: the repaired gate reports EXECUTION PERMITTED AS CONTINUATION with 31 current result-bearing blobs unchanged, the identical verdict the pre-A55 gate gives on the same commit.",
+ "files_touched": ["probes/x04_freeze_check.py"]}
+```
+
+**The defect.** A50 made the continuation authorization write-once, which is correct, and
+implemented that as a TERMINAL state. `--authorize-apparatus-continuation` refuses unless
+the authorization is ABSENT, so once a valid one exists the generator will not produce
+another under any circumstances. A50's own closing clause, "a further deviation requires a
+NEW explicit review and ruling; this does not chain", states the review requirement
+correctly. The code enforced it by making the required artifact unbuildable. Those are not
+the same thing, and the difference is invisible until a second reviewed deviation arrives.
+
+**Why it surfaces now.** A54 moves `probes/build_oracle.py` and `probes/score_metrics.py`,
+both members of the 31-entry authorization manifest. Projected onto
+`pdf-study-continuation-execution`, the authorization at 74ccf247 correctly goes stale: it
+still validates as an artifact, and it no longer speaks for the apparatus in force. Before
+this repair there was no lawful way forward. The only ways to resume were to edit a
+write-once file or to suppress the check, and both destroy the evidence the artifact exists
+to preserve.
+
+**The repair.** An append-only chain. Sequence 1 keeps its filename and is never renamed,
+edited, deleted or recommitted. Each successor is a NEW file,
+`EXECUTION-CONTINUATION-AUTHORIZATION-<n>.json`, committed exactly once, carrying an
+explicit integer sequence and binding its immediate predecessor by path, authorizing commit
+and blob. The chain is derived from repository history and exact filenames, never from what
+the newest artifact claims its own ancestry to be, so a successor cannot certify the one
+fact the chain exists to establish.
+
+**What it does not weaken.** Write-once is preserved exactly, because nothing is ever
+edited: a successor is an addition, not a revision. Authority does not roll forward. Every
+changed apparatus still requires its own separate reviewed, committed artifact, and the gate
+stays FORBIDDEN until that artifact is committed. An invalid, missing, mutated or deleted
+predecessor invalidates the whole chain, and a later entry cannot cure an earlier one, so
+appending is not a repair mechanism. "Is there something new to authorize" is asked against
+the LATEST authorization rather than the original marker, so an unchanged apparatus cannot
+receive a second licence. A55 supersedes A50 in exactly one respect: A50 provided no
+successor mechanism. Nothing else A50 established is changed.
+
+**Read-only verification against the real tree.** Established without modifying the
+preserved worktree, which remains clean at 74ccf247. At 74ccf247 the one-entry chain is
+valid and the gate reports PERMITTED AS CONTINUATION, with zero drift against the
+authorization itself. Projecting integration of d5330a54 onto a scratch branch: freeze
+integrity COMPLETE, execution readiness OPEN, sequence 1 still VALID but stale on exactly
+two manifest blobs, execution FORBIDDEN, and sequence 2 named as required. The relied-on
+deviation set derives from history to exactly `["A48", "A54"]`. Generating sequence 2 there
+succeeded with its entire working-tree footprint being one new untracked file, so no frozen
+scientific artifact is touched. That generated artifact was discarded and the scratch
+worktrees removed; no successor authorization was committed anywhere.
+
+**Historical truthfulness.** Chain validation deliberately does not judge a predecessor
+by today's tree, because going stale is what made its successor necessary. An earlier
+spelling of this repair implemented that as not judging it by ANYTHING: the manifest, the
+pinned register blob, the relied-on deviation set and surface provenance were checked only
+for the latest entry and only against the live tree, so the moment an entry acquired a
+successor those claims stopped being checked. A sequence 2 whose payload was false when
+written therefore became permanent as soon as a correctly bound sequence 3 sat on top of
+it. Write-once fixes the bytes without making them true, and the binding checks only prove
+that entries point at each other.
+
+Every entry is now re-validated against its own immutable pre-authorization commit, derived
+from history as the authorizing commit's parent and never read from the artifact. Coverage,
+the register and history are all read AT that snapshot, so a truthful entry cannot be failed
+by later commits and a false one cannot be excused once the register catches up. The latest
+entry must satisfy both historical truthfulness and agreement with the current tree.
+
+**What A55 does not do.** It does not integrate `pdf-study-continuation-execution`, create
+any successor authorization, prepare a human-review packet, adjudicate, score, or decide the
+architecture. It creates no authorization of any kind. It makes one buildable, once, subject
+to the same review every authorization has always required.
+
+## A56 — POST-BOUNDARY TEST-ISOLATION DEVIATION
+
+```json
+{"id": "A56", "kind": "DEVIATION",
+ "commits": ["e75111d9"],
+ "classification": "POST-BOUNDARY TEST-ISOLATION DEVIATION (TOOLING)",
+ "made_after_boundary": "de60dddf906bc4b01e5ffbe9af4d3e833a9a2be7 (continuation boundary)",
+ "results_already_visible": {
+  "members": 17,
+  "pages": 4190,
+  "d_frame_census": 13992,
+  "s1_documents_firing": "17/17",
+  "p_head_documents": 12,
+  "p_head_pages": 2864,
+  "cross_engine": "17/17 measured, n_qualified 0"
+ },
+ "affects_membership": false,
+ "affects_scoring_rule": false,
+ "affects_metric_values": false,
+ "affects_architecture_decision": false,
+ "affects_execution_authorization": false,
+ "affects_reproducibility_surface": false,
+ "narrowing": "A56 changes WHERE THE F7 AND F8 NEGATIVE CONTROLS PUT THEIR BAD BYTES, and nothing else. The gate is untouched: `check_freeze`'s F7 and F8 clauses, their wording and their verdicts are exactly as before, and only the self-test's own fixture moved. It reads no holdout byte for any research purpose, produces no metric, and changes no threshold, route, selection rule, scoring rule or architecture rule. It adds four arms, three isolation checks plus a pre-mutation cleanliness check, removing no control and rewording no existing arm. affects_execution_authorization is FALSE: the authorization state machine, its states, its refusals and every authorization artifact are untouched. affects_reproducibility_surface is FALSE on the same audited basis as A55: `probes/x04_freeze_check.py` is a member of none of METHODOLOGY_SURFACE, RESULT_BEARING_DATA or AUTHORIZATION_EXTRAS, so no blob in the 31-entry authorization manifest moves.",
+ "files_touched": ["probes/x04_freeze_check.py"]}
+```
+
+**The defect.** The F7 and F8 negative controls mutated the CANONICAL POPULATION. F8
+truncated the first manifested holdout file in place, to `<!DOCTYPE html>` followed by that
+file's own first 100 bytes; F7 created an intruder inside `holdout/`. Each was undone in a
+`finally`. Both controls are correct about what they assert and were wrong about where they
+assert it.
+
+**Why it stayed invisible.** A `finally` runs on exceptions and on ordinary interpreter
+exit, which covers every failure the controls were written against. It does not run on
+SIGKILL. Nothing in the self-test could report the difference either, because F2 (every
+holdout file matches its recorded SHA-256) and F10 (frozen artifacts have no uncommitted
+change) live in the GATE and not in `--self-test`. A self-test can therefore pass every one
+of its arms and still leave the frozen population corrupted, which is precisely the state a
+green run is read as excluding.
+
+**Measured, not argued.** A self-test run driven by a mutation harness was killed with
+SIGKILL mid-arm. It left `holdout/116-hr-7611/rh.pdf` at 116 bytes, down from 286,181, and
+a later `git add -A` committed the corrupted frozen artifact. The file was restored to blob
+`8a5d46f1`, verified identical to the blob at the population freeze commit `4e2b520d`, and
+that branch was abandoned rather than rewritten, since a mergeable history containing a
+post-freeze mutation of a frozen artifact is not repaired by a later restoring commit.
+
+**The repair.** `DOCS_DIR` is rebound to a temporary fixture for the duration of both
+controls, which isolates them together because F7 and F8 read nothing else. No canonical
+`holdout/**` path is opened for writing at any point. The `finally` now restores a global,
+not a file, so a hard kill at the worst possible moment destroys nothing that matters.
+Cleanup is deliberately no longer the thing that protects the population: `finally`, signal
+handlers and post-run repair are one bet, that the process survives to clean up, and a hard
+kill wins that bet every time.
+
+**Red before green.** Three arms assert the property that matters, where the bad bytes go,
+rather than whether cleanup happened to run. Measured against a faithful reconstruction of
+the direct-write implementation on a disposable worktree, all three fail: the mutation
+target is not outside the canonical tree; the canonical file is not byte-identical while
+the corrupt bytes exist, asserted before cleanup because afterwards the old code would
+satisfy it too; and the canonical tree gained a file. The F7 and F8 detection arms stay
+green under that same mutant, so the reds are attributable to isolation rather than to
+detection breaking.
+
+**What A56 does not do.** It changes no gate, no authorization, no scientific value, and no
+research artifact. It does not integrate any branch, create an authorization, prepare a
+packet, adjudicate, score, or decide the architecture.

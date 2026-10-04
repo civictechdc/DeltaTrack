@@ -40,7 +40,7 @@ from deltatrack.similarity import (
 from tests.corpus_paths import DATA_DIR
 
 _FIXTURE = DATA_DIR / "similarity_labels.json"
-_PAIRS = json.loads(_FIXTURE.read_text())["pairs"]
+_PAIRS = json.loads(_FIXTURE.read_text(encoding="utf-8"))["pairs"]
 
 
 def _threshold(decision: str) -> float:

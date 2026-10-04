@@ -174,7 +174,7 @@ def _https_redirect_target(request: Request) -> str:
 async def force_https_behind_proxy(request: Request, call_next):
     """Redirect http→https when the proxy signals cleartext.
 
-    Primary redirect is Apache ``RewriteRule`` (see docs/https-redirect.md). This
+    Primary redirect is Dokku's nginx (see docs/deployment.md). This
     middleware is a backstop when ``X-Forwarded-Proto: http`` (or port 80) is set.
     Local dev (no forwarded headers) is unaffected."""
     if _forwarded_proto(request) == "http":

@@ -25,10 +25,9 @@ block text. The classifier produces:
 - `moved` — block bodies similar but anchors differ (renumbered SEC.)
 - `modified` — paired blocks with different bodies
 
-Reuses amount matching (`match_amounts`) from diff_bill.py and text similarity from
-similarity.py: `text_similarity` for the round-1 similarity rule and `move_candidates` for
-round-2 retrieval, plus both cutoffs. Round 1 deliberately no longer uses the gated
-`text_similarity_at_least` — that call returns 0.0 below its bound, which put a correspondence
+Reuses text similarity from similarity.py: `text_similarity` for the round-1 similarity
+rule and `move_candidates` for round-2 retrieval, plus both cutoffs. Round 1 deliberately
+no longer uses the gated `text_similarity_at_least` — that call returns 0.0 below its bound, which put a correspondence
 cutoff inside the evidence stage; see `_pdf_similarity_signals`.
 """
 
@@ -44,7 +43,6 @@ from pathlib import Path
 from typing import Literal
 
 from deltatrack.amounts import has_amendment_annotation
-from deltatrack.diff_bill import match_amounts
 from deltatrack.matching import (
     NEW,
     OLD,
@@ -100,7 +98,6 @@ class PdfHunk:
     v2_range: PageLineRange | None
     v1_text: str
     v2_text: str
-    amount_pairs: tuple[tuple[int | None, int | None], ...] = ()
     has_amendment_annotations: bool = False  # mirrors FinancialChange field for XML parity
 
 
@@ -294,18 +291,6 @@ def _block_key(block: _Block) -> str:
     return f"{anchor_text}::{body_preview}"
 
 
-def _extract_amount_pairs(v1_text: str, v2_text: str) -> tuple[tuple[int | None, int | None], ...]:
-    """All amount pairs from match_amounts as a tuple, including unchanged pairs.
-
-    The full pair list (changed / added / removed / unchanged) is carried on the hunk
-    and goes no further: schema v3.0 removed `amount_entries`, the export field this
-    used to feed, because pairing a figure on one side with a figure on the other is a
-    claim about an account the pipeline cannot yet type (#671). The pairs stay here as
-    an observation, unpublished, for the financial-semantics layer in #115 to read.
-    """
-    return tuple(match_amounts(v1_text, v2_text))
-
-
 def _has_amendment_annotations(v1_text: str, v2_text: str) -> bool:
     """True if either side carries a floor amendment annotation.
 
@@ -340,15 +325,14 @@ def _hunk_for_paired_blocks(v1_block: _Block, v2_block: _Block) -> PdfHunk:
         v2_range=v2_block.page_range,
         v1_text=v1_text,
         v2_text=v2_text,
-        amount_pairs=_extract_amount_pairs(v1_text, v2_text),
         has_amendment_annotations=_has_amendment_annotations(v1_text, v2_text),
     )
 
 
 def _hunk_for_added(v2_block: _Block) -> PdfHunk:
-    # A whole account added on the PDF side carries real dollars; match against the
-    # empty other side so they surface as `added` amount entries (#86). Previously
-    # hardcoded to (), leaving PDF added/removed hunks silent on the money axis.
+    # #86 paired this side's dollars against the empty other side so an added account
+    # was not silent on money. #671 unpublished the pairs and #687 removed the field, so
+    # the hunk carries no money observation; the amounts themselves stay in `amounts.py`.
     return PdfHunk(
         change_type="added",
         v1_anchor=None,
@@ -357,14 +341,12 @@ def _hunk_for_added(v2_block: _Block) -> PdfHunk:
         v2_range=v2_block.page_range,
         v1_text="",
         v2_text=v2_block.text,
-        amount_pairs=tuple(match_amounts("", v2_block.text)),
         has_amendment_annotations=_has_amendment_annotations("", v2_block.text),
     )
 
 
 def _hunk_for_removed(v1_block: _Block) -> PdfHunk:
-    # Mirror of _hunk_for_added: a whole account removed surfaces its dollars as
-    # `removed` entries (#86).
+    # Mirror of _hunk_for_added; see there for why no money observation is carried.
     return PdfHunk(
         change_type="removed",
         v1_anchor=v1_block.anchor,
@@ -373,7 +355,6 @@ def _hunk_for_removed(v1_block: _Block) -> PdfHunk:
         v2_range=None,
         v1_text=v1_block.text,
         v2_text="",
-        amount_pairs=tuple(match_amounts(v1_block.text, "")),
         has_amendment_annotations=_has_amendment_annotations(v1_block.text, ""),
     )
 
@@ -402,7 +383,6 @@ def _hunk_for_move(v1_block: _Block, v2_block: _Block) -> PdfHunk:
         v2_range=v2_block.page_range,
         v1_text=v1_block.text,
         v2_text=v2_block.text,
-        amount_pairs=_extract_amount_pairs(v1_block.text, v2_block.text),
         has_amendment_annotations=_has_amendment_annotations(v1_block.text, v2_block.text),
     )
 
@@ -1378,7 +1358,7 @@ def main(argv: list[str] | None = None) -> None:
         v2_label=args.v2_label,
     )
     if args.output:
-        args.output.write_text(html)
+        args.output.write_text(html, encoding="utf-8")
         print(f"Wrote {args.output}", file=sys.stderr)
     else:
         print(html)

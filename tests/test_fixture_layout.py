@@ -44,7 +44,7 @@ from pathlib import Path
 import pytest
 
 from tests.conftest import _git_tracked_paths
-from tests.corpus_paths import DOWNLOADS_DIR, FIXTURES_DIR, PROJECT_ROOT, sweep_bill_dirs
+from tests.corpus_paths import DATA_DIR, FIXTURES_DIR, PROJECT_ROOT, sweep_bill_dirs
 from tests.engine_guard import engine_is_foreign
 
 # Modules that legitimately name ``bills/``: they are about the DOWNLOAD tier itself
@@ -236,8 +236,7 @@ def _python_sources(root: Path = PROJECT_ROOT) -> list[Path]:
     machine: ``.claude/`` held 3348 ``.py`` in nested worktrees, each a full copy of this
     repository, and ``.venv/`` 1886 — and a conventionally named ``venv/`` or ``build/``
     carries no leading dot to catch it). It is also the source of truth the fixture
-    floors in this suite already use. No claim is made here about pre-commit, which runs
-    ruff and ruff-format and no pytest.
+    floors in this suite already use.
 
     Both failure modes are loud, because a scan that cannot enumerate its own inputs
     cannot police anything and a shrunken one passes every rule vacuously:
@@ -740,6 +739,49 @@ def test_every_exemption_names_a_file_the_scan_reaches() -> None:
     )
 
 
+def test_the_exemption_sets_name_only_their_justified_members() -> None:
+    """Keep bill-rule exemptions limited to reviewed acquisition files.
+
+    The sibling above checks that an exemption key still RESOLVES; this checks that it is
+    DESERVED. Membership is enumerated rather than bounded by prefix because ``tools/`` and
+    ``tests/`` both hold ordinary code that must stay policed.
+
+    The allowlists are literals here, not constants beside the sets they bound: a second
+    configuration value would let the policy certify itself by widening both together.
+    """
+    # `bills/` is the output directory of the fetchers and their tests; this module holds
+    # the patterns under test.
+    allowed_tier_files = {
+        "tools/fetch_bills.py",
+        "tools/fetch_bill_archives.py",
+        "tools/fetch_bill_text_archives.py",
+        "tests/test_fetch_bills.py",
+        "tests/test_fetch_bill_archives.py",
+        "tests/test_fetch_bill_archives_extract.py",
+        "tests/test_fetch_bill_text_archives.py",
+        "tests/test_fetch_govinfo.py",
+        "tests/test_govinfo_corpus_parity.py",
+        "tests/test_fixture_layout.py",
+    }
+    unexpected = sorted(_DOWNLOAD_TIER_FILES - allowed_tier_files)
+    assert not unexpected, (
+        f"{len(unexpected)} exemption(s) in _DOWNLOAD_TIER_FILES are not acquisition code: "
+        f"{unexpected}. That set switches off EVERY bill rule for a file. Ordinary product "
+        "or test code should use corpus_paths.fixture_path(), or _DOWNLOAD_ROOT_NAMERS if it "
+        "names the tree and no bill beneath it."
+    )
+
+    # These waive the name-the-tree rule ALONE and stay subject to every other bill rule.
+    # corpus_paths defines DOWNLOADS_DIR; diff_bill carries compare's --bills-dir default
+    # (ADR 0013 / #152).
+    allowed_root_namers = {
+        "tests/corpus_paths.py",
+        "src/deltatrack/diff_bill.py",
+    }
+    unexpected = sorted(_DOWNLOAD_ROOT_NAMERS - allowed_root_namers)
+    assert not unexpected, f"{len(unexpected)} unrecognised exemption(s) in _DOWNLOAD_ROOT_NAMERS: {unexpected}."
+
+
 def test_no_source_reaches_into_bills_for_a_committed_fixture() -> None:
     """Failure mode 1: a committed fixture addressed through the download tree.
 
@@ -880,24 +922,32 @@ def test_download_tree_name_rule_can_fire() -> None:
     }
 
 
-def test_download_only_versions_are_genuinely_uncommitted() -> None:
-    """The rule's own input, checked: every ``bills/`` reference the guard tolerates must
-    name a version that really is absent from ``tests/corpus/``.
+def test_the_committed_fixture_set_is_not_vacuous() -> None:
+    """Cross-check the filesystem-derived fixture oracle against git's index.
 
-    Without this, the guard could be satisfied by a committed set that quietly shrank.
+    ``committed_fixture_refs()`` decides what counts as an offence, and the gate consulting
+    it cannot distinguish an empty answer from "no offences". Git's index is an independent
+    oracle: ``committed_fixture_refs()`` walks the working tree, ``git ls-files`` reports the
+    index, so the two can disagree.
+
+    Only tracked fixtures missing from the oracle are checked; the reverse direction belongs
+    to ``test_every_fixture_file_is_tracked_by_git``.
     """
-    sources = {str(f.relative_to(PROJECT_ROOT)): f.read_text() for f in _python_sources()}
-    committed = committed_fixture_refs()
-    tolerated: set[str] = set()
-    for rel, text in sources.items():
-        if rel in _DOWNLOAD_TIER_FILES:
-            continue
-        for rx in _BILLS_PATH_RES:
-            for bill, filename in rx.findall(text):
-                if filename:
-                    tolerated.add(f"{bill}/{filename}")
-    still_committed = sorted(ref for ref in tolerated if ref in committed)
-    assert not still_committed, f"tolerated bills/ refs that ARE committed: {still_committed}"
+    refs = committed_fixture_refs()
+    assert refs, (
+        "committed_fixture_refs() is empty, so every rule consulting it passes vacuously: "
+        "nothing under bills/ can be an offence when nothing is committed."
+    )
+
+    tracked = _git_tracked_paths(PROJECT_ROOT, "tests/corpus")
+    assert tracked is not None, "git could not enumerate tests/corpus"
+    from_git = {f"{Path(rel).parent.name}/{Path(rel).name}" for rel in tracked}
+    lost = sorted(from_git - refs)
+    assert not lost, (
+        f"{len(lost)} fixture(s) are committed according to git but absent from "
+        f"committed_fixture_refs(): {lost}. A shrunken oracle widens what the bill gates "
+        "tolerate: a committed fixture addressed through bills/ stops being an offence."
+    )
 
 
 def test_sweep_spans_both_trees() -> None:
@@ -945,34 +995,56 @@ def test_every_fixture_file_is_tracked_by_git() -> None:
     )
 
 
-def test_fixture_tree_is_not_gitignored() -> None:
-    """The split is only real while git actually stores the fixture tree.
+def test_no_tracked_fixture_is_gitignored() -> None:
+    """Ensure no tracked fixture matches an ignore rule.
 
-    A future ignore rule (a broad ``*.pdf``, a stray ``corpus`` entry) would put the
-    project straight back into the silent-``git add`` failure #308 removed. Ask git
-    rather than parsing .gitignore, and confirm the probe can fire by checking a path
-    that IS ignored.
+    An ignore rule covering committed fixtures restores the silent ``git add`` no-op of #308:
+    the file is never staged, the suite passes locally, and CI receives nothing.
+
+    ``--no-index`` is required because ``git check-ignore`` otherwise reports what git would
+    DO with a path, and it does nothing to a tracked one whatever ``.gitignore`` says. The
+    set comes from ``git ls-files`` so every format is covered, including any added later.
     """
-    probe = FIXTURES_DIR / "118-hr-4366" / "1_reported-in-house.xml"
-    assert probe.exists(), "precondition: the probed fixture exists"
+    tracked = _git_tracked_paths(PROJECT_ROOT, "tests/corpus")
+    if tracked is None:
+        pytest.skip("not a git work tree — git cannot answer whether a path is ignored")
+    assert tracked, "git reports no tracked files under tests/corpus/, so this would pass vacuously"
 
-    # git check-ignore answers 0 (ignored) / 1 (not ignored), but 128 for "not a git
-    # work tree" — which tests run from an unpacked sdist would hit. That is git
-    # declining to answer, not a verdict, so skip as the tracking gate above does
-    # rather than reporting a layout failure the checkout cannot possibly have.
-    ignored = subprocess.run(
-        ["git", "-C", str(PROJECT_ROOT), "check-ignore", "-q", str(DOWNLOADS_DIR / "118-hr-4366" / "x.xml")],
+    # Prove check-ignore can detect an ignored path, without crossing the optional bills/
+    # symlink: git refuses a pathspec "beyond a symbolic link" with 128.
+    control = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(PROJECT_ROOT),
+            "check-ignore",
+            "-q",
+            "--no-index",
+            str(DATA_DIR / "extract_cache" / "probe.json"),
+        ],
         capture_output=True,
     )
-    if ignored.returncode not in (0, 1):
-        pytest.skip("not a git work tree — git cannot answer whether a path is ignored")
-    assert ignored.returncode == 0, "probe is broken: bills/ should be ignored, so a real result is meaningful"
+    assert control.returncode == 0, (
+        "probe is broken: tests/data/extract_cache/ is gitignored, so check-ignore must "
+        f"report it as ignored (got rc={control.returncode})."
+    )
 
     result = subprocess.run(
-        ["git", "-C", str(PROJECT_ROOT), "check-ignore", "-q", str(probe)],
+        ["git", "-C", str(PROJECT_ROOT), "check-ignore", "--no-index", "--stdin"],
+        input="\n".join(sorted(tracked)),
         capture_output=True,
+        text=True,
     )
-    assert result.returncode == 1, f"{probe} is gitignored — committed fixtures must be storable"
+    # git check-ignore: 0 = match (paths printed), 1 = no match; any other code is an error
+    # and must not read as "not ignored".
+    assert result.returncode in (0, 1), (
+        f"git check-ignore exited {result.returncode}, which is neither verdict:\n{result.stderr.strip()}"
+    )
+    ignored = sorted(line for line in result.stdout.splitlines() if line.strip())
+    assert result.returncode == 1 and not ignored, (
+        f"{len(ignored)} tracked fixture(s) are matched by an ignore rule: {ignored[:10]}"
+        f"{' ...' if len(ignored) > 10 else ''}. Committed fixtures must stay addable to git (#308)."
+    )
 
 
 # Trees whose ignore rule must survive the directory being a SYMLINK. A trailing slash

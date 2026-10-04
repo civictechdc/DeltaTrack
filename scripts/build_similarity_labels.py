@@ -425,7 +425,7 @@ def main() -> None:
         ),
         "pairs": records,
     }
-    _OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    _OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     print(f"wrote {_OUT.relative_to(_ROOT)} ({len(records)} pairs)")
     for r in records:

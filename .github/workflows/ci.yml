@@ -243,6 +243,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: >
           uv run pytest -v -m slow
+          tests/test_classify_bill.py
           tests/test_pdf_corpus_smoke.py
           tests/test_bill_tree.py
           tests/test_structure_tree.py
@@ -252,6 +253,7 @@ jobs:
           tests/test_pipeline_parity.py
           tests/test_pdf_xml_amount_recall.py
           tests/test_pdf_xml_prose_recall.py
+          tests/test_pdf_word_break_recall.py
           tests/test_front_matter_parity.py
           tests/test_xml_compare.py
           tests/test_toc_tree.py

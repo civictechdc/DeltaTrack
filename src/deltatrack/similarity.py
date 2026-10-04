@@ -54,12 +54,6 @@ showing why it sits in an empty gap between two populations. Centralising those 
 separate each number from the reasoning that makes it defensible. The defect being fixed
 is one value written in many places, not values living near their use. If a second
 consumer appears for one of them, that is the moment to promote it.
-
-Two copies are knowingly left in place: ``scripts/p2_catalog_survey.py`` and
-``scripts/p3_prototypes.py`` declare their own ``FALSE_MATCH_THRESHOLD``/
-``MOVE_THRESHOLD``. Those are frozen replicas of the behaviour a past study measured,
-self-contained by design (they reimplement the ratio function too, and say so). Wiring
-them to the live constants would silently change what a recorded result means.
 """
 
 from __future__ import annotations

@@ -172,12 +172,12 @@ class TestFormatHtml:
     def test_renders_no_financial_presentation(self):
         """#671 — the report makes no paired-amount claim, even when the diff carries one.
 
-        The sample diff still carries `financial.paired_amounts` on purpose. That is
-        now more input than the producer emits (the `--financial` JSON dropped the
-        field in #671 too), which is deliberate: it means the whole chain from a
-        hostile input to rendered HTML is covered, so re-adding EITHER the canonical
-        field or the renderer that read it turns this red. It cannot pass vacuously
-        for want of data.
+        The sample diff still carries `financial.paired_amounts` on purpose. No producer
+        emits it any more -- #671 dropped it from the `--financial` JSON and #687 removed
+        the dataclass field that computed it -- and that is exactly why it stays here as a
+        hand-written hostile input: it covers the whole chain from a diff dict carrying a
+        paired claim to rendered HTML, so re-adding EITHER the canonical field or the
+        renderer that read it turns this red. It cannot pass vacuously for want of data.
 
         Until amounts can be typed to accounts (#115, #175), the report presents no
         dollar figure as a change.

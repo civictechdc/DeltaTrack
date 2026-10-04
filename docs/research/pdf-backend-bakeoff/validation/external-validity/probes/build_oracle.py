@@ -157,6 +157,105 @@ ESTIMAND_PURPOSES = (PURPOSE_C_METRICS, PURPOSE_D_DECISION, PURPOSE_C_AUDIT)
 # the SAME blind id. The schema requirement is frozen now; the artifact is not built here.
 ADJUDICATION_NAMESPACES = (ROUTE_AI, ROUTE_HUMAN)
 
+# ---------------------------------------------------------------- A54 / A27.3 / A48
+#: The `frame_counts` member holding the realized D census.
+D_FRAME_CENSUS_KEY = "d_frame"
+
+#: THE ONE FROZEN PRE-A48 KEY, identified CRYPTOGRAPHICALLY over its complete content.
+#:
+#: An earlier spelling pinned a summary fingerprint (schema, stimulus count, prompt digest,
+#: aggregate frame counts). That is not an identity: the entire `stimuli` mapping can change
+#: while every summary field holds. Because `effective_record_routes` trusts
+#: `human_answer_purposes`, a key could drop `c_audit` from one selected record, keep
+#: `frame_counts.c_audit_selected == 25`, receive the exception, and validate 24 audit answers
+#: while looking complete. The digest below covers every field, so any such edit denies it.
+PRE_A48_FROZEN_KEY_SHA256 = "669722351f95977d35b06006afec37c9ae1c4754773735e9d061840e8ca49048"
+
+def canonical_sha256(obj) -> str:
+    """SHA-256 of the artifact's canonical serialization, computed by STREAMING.
+
+    `write_artifacts` writes `json.dumps(..., indent=1, sort_keys=True)`, so encoding the parsed
+    object with the same settings and hashing the chunks reproduces the committed FILE's digest
+    exactly. `iterencode` yields fragments, so the 307 MB serialization is never materialized.
+    """
+    digest = hashlib.sha256()
+    for chunk in json.JSONEncoder(indent=1, sort_keys=True).iterencode(obj):
+        digest.update(chunk.encode("utf-8"))
+    return digest.hexdigest()
+
+
+def is_pre_a48_frozen_key(key: dict) -> bool:
+    """Is this EXACTLY the frozen pre-A48 confirmatory artifact, byte for byte?
+
+    A key carrying either A48 field is post-A48 and answers for itself; `score_metrics` already
+    cross-checks that answer against the frozen predicate, so it never reaches the digest. Any
+    other key is compared against the committed artifact's content hash in full. The compatibility
+    path is a statement about ONE artifact that already exists, never a licence for a shape.
+
+    DELIBERATELY UNCACHED. An earlier spelling memoized the verdict by `id(key)` while holding a
+    strong reference, and claimed the identity re-check made a stale hit impossible. It does not:
+    holding the reference prevents the id being RECYCLED onto a different object, and prevents
+    nothing at all about the SAME object being mutated afterwards. A caller could pass the frozen
+    key, be recognised, then drop `c_audit` from one selected record and have the next check hand
+    back the cached True without re-reading a byte, after which route reinterpretation trusts the
+    altered purposes and a 24-of-25 audit validates. The digest is therefore recomputed whenever
+    identity is asked for. It costs about 18 s on the real artifact, which is acceptable for a
+    one-time research execution and is the price of the answer being about the key as it IS.
+    """
+    if "d_decision_route_required" in key or "d_frame_census" in key:
+        return False
+    return canonical_sha256(key) == PRE_A48_FROZEN_KEY_SHA256
+
+
+def effective_d_decision_required(key: dict) -> bool:
+    """Is the D DECISION route result-bearing for this key? THE ONE OWNER.
+
+    A48 gave the A27.3 predicate an executable owner but left `key.get(..., True)` at the
+    consumers, so a pre-A48 key kept meaning what it meant when it was built. For every key but
+    one that is correct. For the frozen confirmatory key it is not: its census is 13,992, A27.3
+    has already made that route non-decision-bearing, and defaulting to True demands 15,417 human
+    answers as a hard prerequisite for producing ANY metric on a route that cannot decide
+    anything. That is not a conservative default, it is an unsatisfiable one.
+
+    Post-A48 keys are unchanged: the stored field is returned, which is exactly what
+    `.get(..., True)` returned. An unrecognised pre-A48-shaped key is also unchanged: True.
+    """
+    if "d_decision_route_required" in key:
+        return bool(key["d_decision_route_required"])
+    if is_pre_a48_frozen_key(key):
+        return MC.d_decision_route_required(int(key["frame_counts"][D_FRAME_CENSUS_KEY]))
+    return True
+
+
+def effective_record_routes(record: dict, d_decision_required: bool, *, reinterpret: bool = False) -> tuple:
+    """The routes this stimulus ACTUALLY requires an answer on. THE ONE OWNER.
+
+    REINTERPRETATION IS OFF BY DEFAULT, and that is the whole safety property. For every key but
+    the frozen artifact the stored `adjudication_routes` ARE the requirement, exactly as before
+    A54, so ordinary post-A48 validation is untouched and a key whose stored routes disagree with
+    its purposes is still judged on what it stored rather than being quietly re-derived into
+    something validatable.
+
+    Only for the frozen pre-A48 artifact are routes derived from `human_answer_purposes` through
+    `PURPOSE_ROUTE`, dropping `d_decision` where A27.3 denies the route. A `c_audit` or
+    `control_human` purpose keeps its human requirement regardless, which is what keeps all 25
+    seeded C-audit items required even where they are also D-frame members. AI requirements never
+    move: a route stored as `ai` stays required whatever the D budget does.
+    """
+    if not reinterpret:
+        return tuple(record.get("adjudication_routes") or ())
+    routes = set()
+    for purpose in record.get("human_answer_purposes") or ():
+        if purpose == PURPOSE_D_DECISION and not d_decision_required:
+            continue
+        route = PURPOSE_ROUTE.get(purpose)
+        if route is not None:
+            routes.add(route)
+    if ROUTE_AI in (record.get("adjudication_routes") or ()):
+        routes.add(ROUTE_AI)
+    return tuple(r for r in ROUTE_ORDER if r in routes)
+
+
 
 class OracleBuildError(Exception):
     """Construction cannot proceed as frozen. Deterministic, and never a value.
@@ -1346,8 +1445,14 @@ def validate_adjudicated(adjudicated: dict, key: dict) -> None:
                 missing = [f for f in ADJUDICATED_HEADING_FIELDS if f not in heading]
                 if missing:
                     raise OracleBuildError(ADJUDICATION_ROUTE_MISSING, {"blind_id": bid, "missing_fields": missing})
+    # A54 -- EFFECTIVE routes, not the bytes the builder happened to store. For a pre-A48 key
+    # the stored `adjudication_routes` were derived from raw frame membership, so honouring them
+    # literally would require a human answer on a route A27.3 has already made non-decision-
+    # bearing. `effective_record_routes` is the single owner both this and `score_metrics` ask.
+    reinterpret = is_pre_a48_frozen_key(key)
+    d_required = effective_d_decision_required(key)
     for bid, record in key["stimuli"].items():
-        for route in record["adjudication_routes"]:
+        for route in effective_record_routes(record, d_required, reinterpret=reinterpret):
             if bid not in adjudicated.get(route, {}):
                 raise OracleBuildError(ADJUDICATION_ROUTE_MISSING, {"blind_id": bid, "route": route})
 

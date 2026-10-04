@@ -1,0 +1,159 @@
+# Manual review of 12 auth-hint-flagged nodes from the 7-bill stress test.
+# These nodes were labelled appropriation/rescission/transfer AND contain language
+# such as "as authorized by", "is authorized", or "authorized to be appropriated".
+# Purpose: confirm each is a true spending node, not a mislabelled authorization.
+#
+# ADR 0019 identity fields recorded per node:
+#   source_sha256    — SHA256 of the bill XML at time of run
+#   parser_revision  — git commit of deltatrack engine used
+#   node_ordinal     — zero-based index in tree.nodes for this bill version
+#   text_sha256      — SHA256 of node.body_text (UTF-8) for exact node identity
+#   classifier_label — label assigned by classify_text()
+#   verdict          — "true_positive" | "false_positive" | "needs_review"
+#   reviewer         — initials of human reviewer
+#   note             — explanation of verdict (required if needs_review or false_positive)
+
+[meta]
+run_date = "2026-08-26"
+parser_revision = "ea9192b13e4f9a63b08e8719c42cab59ff9052cf"
+total_fp_risk_nodes = 12
+
+# ── 118-hr-4366 (MILCON/VA FY2024) ──────────────────────────────────────────
+
+[[nodes]]
+bill = "118-hr-4366"
+version = "1_reported-in-house.xml"
+source_sha256 = "37ef6e4705d6d0ff0153d793b34e2e78f0e49c272e229868265761896d419124"
+node_ordinal = 64
+text_sha256 = "43f39aae070e3d75ffebfe494d90442081986f33b2b3524b9fa77b83145dfe91"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'as authorized by chapters 21, 30...' is a statutory reference within a genuine veterans benefits appropriation; auth hint is incidental boilerplate"
+
+[[nodes]]
+bill = "118-hr-4366"
+version = "1_reported-in-house.xml"
+source_sha256 = "37ef6e4705d6d0ff0153d793b34e2e78f0e49c272e229868265761896d419124"
+node_ordinal = 66
+text_sha256 = "ece91995daed2a3414ee161bb0856111cf9097aed3c0c8a461c92a354345f556"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'as authorized by subchapters I–III of chapter 37' is statutory boilerplate in a genuine VA loan cost appropriation"
+
+# ── 119-hr-1 (Big Beautiful Bill) ───────────────────────────────────────────
+
+[[nodes]]
+bill = "119-hr-1"
+version = "1_reported-in-house.xml"
+source_sha256 = "c837c7f62418fda8c22d19a11a40c12f99261e144634509b5e0c042242630858"
+node_ordinal = 796
+text_sha256 = "3f77eb8bf98690525c9aa436ff8e097788376578b60f68e9ac93c910d794b41c"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'There is appropriated $5,000,000 to the FMCSA' is a direct IRA-style lump-sum appropriation embedded in reconciliation; auth hint fires on 'authorized motor carriers' (noun, not verb)"
+
+# ── 117-hr-5376 (IRA) ───────────────────────────────────────────────────────
+
+[[nodes]]
+bill = "117-hr-5376"
+version = "1_reported-in-house.xml"
+source_sha256 = "71dff916e7ff88cde74c450f882217db4212215577c1ae0f40ef5369822cca98"
+node_ordinal = 1014
+text_sha256 = "c2b83be4e2f669bb969ca6e3fcabf9789aada188ff6bc0cf1279b4217960b1c3"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "Uplift Accelerator Program: 'there is appropriated to the SBA for FY2022, out of any monies in the Treasury not otherwise appropriated' — genuine IRA appropriation"
+
+[[nodes]]
+bill = "117-hr-5376"
+version = "1_reported-in-house.xml"
+source_sha256 = "71dff916e7ff88cde74c450f882217db4212215577c1ae0f40ef5369822cca98"
+node_ordinal = 1015
+text_sha256 = "09d49f757375b2044ff34ab9927764d02978db67da3b9474ed4b823abaa491ed"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "Business Development Academy: same IRA pattern — 'there is appropriated to the SBA for FY2022' — genuine appropriation"
+
+[[nodes]]
+bill = "117-hr-5376"
+version = "1_reported-in-house.xml"
+source_sha256 = "71dff916e7ff88cde74c450f882217db4212215577c1ae0f40ef5369822cca98"
+node_ordinal = 1221
+text_sha256 = "a4f705b9d4f52fffc6ba3fdfe8816ad05d3a3956d233939361536c6ff333c357"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "Node is IRA sec. 130001: entire Title XXII (PFML) added to the SSA, 74KB. Sections 2207–2211 within the node body explicitly fund the PFML trust (e.g. 'there is appropriated'). Auth hint fires on 'is authorized' within entitlement eligibility language; appropriation label is correct."
+
+[[nodes]]
+bill = "117-hr-5376"
+version = "1_reported-in-house.xml"
+source_sha256 = "71dff916e7ff88cde74c450f882217db4212215577c1ae0f40ef5369822cca98"
+node_ordinal = 2108
+text_sha256 = "c6781cdf201f91fceca7371e95e5ea8ee373c67f2444958a73e773e690786a76"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'There is authorized to be appropriated, and there is hereby appropriated ... $3,000,000,000' — hybrid phrasing; APPROP_ALT pattern correctly fires on 'there is hereby appropriated'"
+
+# ── 118-hr-4368 (CJS FY2024) ────────────────────────────────────────────────
+
+[[nodes]]
+bill = "118-hr-4368"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+node_ordinal = 4
+text_sha256 = "511c8c4eacf5ca8f8615565a32d384772979544fdab02e8367b56e5bd96b3e4e"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "Standard 'For necessary expenses of the Office of the Secretary, $41,072,000' — classic appropriations-bill format; auth hint likely from downstream 'is authorized' cross-reference"
+
+[[nodes]]
+bill = "118-hr-4368"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+node_ordinal = 26
+text_sha256 = "a8bcc79205819fff64668f4f63892e942058903f27f40a34cb58ff1de7a484e3"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'For necessary expenses of APHIS' — standard appropriations-bill language; auth hint from 'Foreign Service Act' cross-reference"
+
+[[nodes]]
+bill = "118-hr-4368"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+node_ordinal = 36
+text_sha256 = "a802ee563c62edac40653c2df253ceb84b5f67bdf55fcaaf5d167615886e695c"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'For necessary expenses of the Farm Service Agency, $1,215,307,000' — genuine appropriation; auth hint from statutory cross-reference"
+
+[[nodes]]
+bill = "118-hr-4368"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+node_ordinal = 67
+text_sha256 = "dfe0daa5039905b6adfc0713073958b3768c5cae65650654413bd2d492321ab9"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'For necessary expenses to carry out the Food and Nutrition Act of 2008, $121,996,757,000' — genuine appropriation; auth hint from statutory reference"
+
+[[nodes]]
+bill = "118-hr-4368"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+node_ordinal = 73
+text_sha256 = "077728d87042de98962ec1f1e978ef698a41b7de3323771b687a2bf1fe5d323a"
+classifier_label = "appropriation"
+verdict = "true_positive"
+reviewer = "BR"
+note = "'For necessary expenses to carry out section 3107 of the Farm Security and Rural Investment Act of 2002, $240,000,000' — genuine appropriation; auth hint from statutory act reference"

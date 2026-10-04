@@ -17,6 +17,7 @@ THE MUTATIONS THAT MUST BREAK IT
 --------------------------------
   * restore unconditional `D_FRAME -> human`  -> the D=61 arm goes RED
   * make D-human globally optional            -> the D<=60 arm goes RED
+                                                (injected at A54's effective-route owner)
 Both are injected below, into the real functions, not into copies of their output.
 """
 
@@ -381,7 +382,14 @@ def main() -> int:
               "proves arm A is caused by the budget predicate and nothing else", obs)
 
         # ---- MUTATION 2: D-human globally optional ------------------------------------
+        # A54 moved "is this route actually required" to `effective_d_decision_required` plus
+        # `effective_record_routes`, which read the record's PURPOSES rather than the route
+        # bytes the builder stored. Narrowing `frame_required_routes` alone therefore no longer
+        # hides a requirement, and this mutation would assert a lever that no longer governs.
+        # The global opt-out is injected at the owner that does.
+        real_effective = BO.effective_d_decision_required
         BO.frame_required_routes = lambda frames, d_required: real(frames, False)
+        BO.effective_d_decision_required = lambda key: False
         try:
             under_mut = build(60, 30, tmp)
             full_mut = X27.synthesize_adjudication(under_mut)
@@ -393,6 +401,7 @@ def main() -> int:
             ok2, obs2 = refuses(lambda: validation_and_r1(under_mut, trimmed))
         finally:
             BO.frame_required_routes = real
+            BO.effective_d_decision_required = real_effective
         check("MUTATION D-human globally optional makes the D<=60 arm RED", not ok2,
               "within budget a missing D human answer must still refuse; a global opt-out hides it",
               obs2)
