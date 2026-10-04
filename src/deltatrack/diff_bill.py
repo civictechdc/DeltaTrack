@@ -39,10 +39,9 @@ from deltatrack.similarity import (
     text_similarity,
 )
 from deltatrack.version_stems import (
-    label_from_stem,
     local_versions,
     resolve_version_file,
-    version_number_from_stem,
+    version_identity_from_filename,
 )
 
 # --- Financial amount extraction ---
@@ -2079,15 +2078,16 @@ def cmd_compare(args: argparse.Namespace) -> None:
     # its appearance on a command-line surface that documents the other one.
     from deltatrack.compare.xml import compare_xml_trees, compare_xml_trees_html
 
-    old_stem, new_stem = old_path.stem, new_path.stem
+    old = version_identity_from_filename(old_path.name, fallback="Start version")
+    new = version_identity_from_filename(new_path.name, fallback="End version")
     build = compare_xml_trees_html if fmt == "html" else compare_xml_trees
     result = build(
         old_tree,
         new_tree,
-        start_label=label_from_stem(old_stem),
-        end_label=label_from_stem(new_stem),
-        old_version_number=version_number_from_stem(old_stem),
-        new_version_number=version_number_from_stem(new_stem),
+        start_label=old.label,
+        end_label=new.label,
+        old_version_number=old.ordinal,
+        new_version_number=new.ordinal,
         filter_text=args.filter,
         financial_only=args.financial,
     )

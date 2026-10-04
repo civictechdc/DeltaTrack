@@ -45,7 +45,7 @@ from deltatrack.amounts import strip_amendment_annotations
 from deltatrack.bill_tree import extract_text_content, find_bill_bodies, find_bill_body, normalize_bill
 from deltatrack.diff_bill import extract_amounts
 from deltatrack.formatters.canonical import _pdf_tree_payload
-from deltatrack.formatters.diff_html import _build_toc_from_tree
+from deltatrack.formatters.diff_html import _build_tree_nav
 from deltatrack.formatters.text_serializer import _xml_tree_payload, serialize_tree_for_tree
 from deltatrack.parsers.pdf_anchors import extract_anchors
 from deltatrack.parsers.pdf_text import pdf_full_text
@@ -256,8 +256,8 @@ def _assert_schema_and_levels(roots: list[dict]) -> None:
 def _assert_no_blank_toc_rows(roots: list[dict], full_text: str) -> None:
     """Invariant 4: the leveled TOC the tree renders has no blank clickable rows
     and no empty collapsible groups (the consumed-output blank-row check)."""
-    html = _build_toc_from_tree(roots, full_text)
-    leaves = re.findall(r'<li class="toc-child">(.*?)</li>', html, re.S)
+    html = _build_tree_nav(roots, full_text)
+    leaves = re.findall(r'<li class="tree-node"[^>]*>(.*?)</li>', html, re.S)
     blank_leaves = [leaf for leaf in leaves if not re.sub(r"<[^>]+>", "", leaf).strip()]
     assert not blank_leaves, f"{len(blank_leaves)} blank TOC leaf row(s)"
     summaries = re.findall(r"<summary[^>]*>(.*?)</summary>", html, re.S)
@@ -268,7 +268,7 @@ def _assert_no_blank_toc_rows(roots: list[dict], full_text: str) -> None:
     # blank rows — passing the checks above while rendering nothing. If the tree
     # carries any labeled node, the TOC must render at least one entry.
     if any((n["label"] or "").strip() for n in _walk(roots)):
-        assert "toc-child" in html or "toc-group" in html, "labeled tree rendered an empty TOC"
+        assert "tree-node" in html or "tree-group" in html, "labeled tree rendered an empty TOC"
 
 
 def _assert_zero_anchor_layout(path: Path, test_id: str, full_text: str, anchors: tuple, offsets: dict) -> None:

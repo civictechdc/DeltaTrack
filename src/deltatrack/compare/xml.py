@@ -33,7 +33,7 @@ from deltatrack.diff_bill import bill_diff_to_dict, diff_bills, filter_diff
 from deltatrack.formatters.canonical import xml_diff_to_canonical
 from deltatrack.formatters.diff_html import format_diff_html
 from deltatrack.formatters.text_serializer import build_xml_full_text
-from deltatrack.version_stems import label_from_stem, version_number_from_stem
+from deltatrack.version_stems import version_identity_from_filename
 
 
 def _build_from_trees(
@@ -51,9 +51,9 @@ def _build_from_trees(
 
     ``start_label``/``end_label`` override the XML's embedded version names so the
     report reflects the file the caller actually supplied (matching the PDF path); pass
-    None to keep the embedded names. The version *numbers* are the bill's legislative
-    ordinals, which are known when the input is a numbered corpus filename and unknown
-    for a web upload — the renderer prefixes the header with ``v1:``/``v2:`` only when
+    None to keep the embedded names. The version *numbers* are per-bill ordinals, known
+    when the input filename is numbered (``version_stems.version_identity_from_filename``)
+    and None otherwise; the renderer prefixes the header with ``v1:``/``v2:`` only when
     they are supplied. Financial enrichment is unconditional here, on every caller's
     behalf, so ``financial_only`` filters and nothing else.
 
@@ -88,6 +88,8 @@ def _build(
     end_bytes: bytes,
     start_label: str,
     end_label: str,
+    start_version_number: int | None = None,
+    end_version_number: int | None = None,
 ) -> dict:
     """Parse two uploaded blobs, then diff them.
 
@@ -102,7 +104,14 @@ def _build(
         old_tree = normalize_bill(start_path)
         new_tree = normalize_bill(end_path)
 
-    return _build_from_trees(old_tree, new_tree, start_label=start_label, end_label=end_label)
+    return _build_from_trees(
+        old_tree,
+        new_tree,
+        start_label=start_label,
+        end_label=end_label,
+        old_version_number=start_version_number,
+        new_version_number=end_version_number,
+    )
 
 
 def compare_xml(
@@ -111,9 +120,11 @@ def compare_xml(
     *,
     start_label: str = "Start version",
     end_label: str = "End version",
+    start_version_number: int | None = None,
+    end_version_number: int | None = None,
 ) -> dict:
     """Diff two bill XML documents and return canonical diff JSON (see schema/canonical-diff.md)."""
-    return _build(start_bytes, end_bytes, start_label, end_label)
+    return _build(start_bytes, end_bytes, start_label, end_label, start_version_number, end_version_number)
 
 
 def compare_xml_html(
@@ -122,6 +133,8 @@ def compare_xml_html(
     *,
     start_label: str = "Start version",
     end_label: str = "End version",
+    start_version_number: int | None = None,
+    end_version_number: int | None = None,
 ) -> str:
     """Diff two bill XML documents and return a standalone HTML report.
 
@@ -130,7 +143,9 @@ def compare_xml_html(
     The XML full-bill view renders gutterless (no PDF line-number column), with a
     section TOC and bill-title heading matching the PDF report.
     """
-    return format_diff_html(_build(start_bytes, end_bytes, start_label, end_label))
+    return format_diff_html(
+        _build(start_bytes, end_bytes, start_label, end_label, start_version_number, end_version_number)
+    )
 
 
 def compare_xml_trees(
@@ -198,17 +213,19 @@ def compare_xml_trees_html(
 
 
 def compare_xml_files_html(old_path: Path, new_path: Path) -> str:
-    """Standalone HTML report for two numbered corpus files (``<n>_<label>.xml``).
+    """Standalone HTML report for two bill XML files, named as their filenames name them.
 
-    Derives both the readable labels and the legislative ordinals from the filename
-    stems, which is what makes a rendered example identical to the report a reader
-    would get by uploading the same two files.
+    Labels and ordinals come from :func:`version_identity_from_filename`, the rule the
+    upload endpoint applies too, so a rendered example is the report a reader gets by
+    uploading the same two files.
     """
+    old = version_identity_from_filename(old_path.name, fallback="Start version")
+    new = version_identity_from_filename(new_path.name, fallback="End version")
     return compare_xml_trees_html(
         normalize_bill(old_path),
         normalize_bill(new_path),
-        start_label=label_from_stem(old_path.stem),
-        end_label=label_from_stem(new_path.stem),
-        old_version_number=version_number_from_stem(old_path.stem),
-        new_version_number=version_number_from_stem(new_path.stem),
+        start_label=old.label,
+        end_label=new.label,
+        old_version_number=old.ordinal,
+        new_version_number=new.ordinal,
     )

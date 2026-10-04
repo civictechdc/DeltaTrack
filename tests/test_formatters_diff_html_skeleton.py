@@ -108,17 +108,32 @@ def test_versions_line_without_version_numbers():
     assert "Engrossed in House" in versions_block
 
 
+def test_a_version_label_is_rendered_as_text_never_as_markup():
+    """An upload's filename becomes its version label (#692), so a label is attacker text.
+
+    The resolver strips path components but leaves markup alone; escaping is the
+    renderer's job, and this is the one place a label reaches the page as markup.
+    Outside the inert ``diff-data`` JSON block, the tag must not survive raw.
+    """
+    hostile = "<img src=x onerror=alert(1)>"
+    html = format_diff_html(_empty(v1_label=hostile))
+    before_data, after_data = html.split('<script type="application/json" id="diff-data">', 1)
+    page = before_data + after_data.split("</script>", 1)[1]
+    assert hostile not in page
+    assert "&lt;img src=x onerror=alert(1)&gt;" in page
+
+
 def test_summary_bar_canonical_order():
     """Summary bar order: modified, added, removed, moved.
 
     Asserts ordering by checking byte position.
     """
     html = format_diff_html(_empty(summary={"modified": 5, "added": 3, "removed": 2, "moved": 1}))
-    # Find each badge marker and confirm ascending positions.
-    pos_modified = html.find('class="badge badge-modified"')
-    pos_added = html.find('class="badge badge-added"')
-    pos_removed = html.find('class="badge badge-removed"')
-    pos_moved = html.find('class="badge badge-moved"')
+    # Find each change-type marker and confirm ascending positions.
+    pos_modified = html.find('class="change-type" data-type="modified"')
+    pos_added = html.find('class="change-type" data-type="added"')
+    pos_removed = html.find('class="change-type" data-type="removed"')
+    pos_moved = html.find('class="change-type" data-type="moved"')
     assert -1 < pos_modified < pos_added < pos_removed < pos_moved
 
 

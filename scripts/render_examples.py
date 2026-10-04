@@ -38,10 +38,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 # resolve. Same bootstrap as its siblings here (#401 moved this module in beside them).
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from deltatrack.compare.pdf import compare_pdfs_html  # noqa: E402
+from deltatrack.compare.pdf import compare_pdf_files_html  # noqa: E402
 from deltatrack.compare.xml import compare_xml_files_html  # noqa: E402
 from deltatrack.palette import LANDING_SUBSET, declarations  # noqa: E402
-from deltatrack.version_stems import label_from_stem, version_number_from_stem  # noqa: E402
 from tests.corpus_paths import FIXTURES_DIR  # noqa: E402
 
 BILLS = FIXTURES_DIR
@@ -82,8 +81,8 @@ EXAMPLES_TO_RENDER: list[ExampleSpec] = [
         formats=("xml", "pdf"),
         title="HR 8752 — Committee vs. Floor",
         blurb=(
-            "Reported in House vs. engrossed in House: floor-amendment changes with "
-            "account-level dollar amounts. Rendered from both source formats — compare "
+            "Reported in House vs. engrossed in House: floor-amendment changes, including "
+            "changed dollar figures in the text. Rendered from both source formats — compare "
             "the two to see the pipelines agree."
         ),
     ),
@@ -137,15 +136,9 @@ def render_pdf_diff(spec: ExampleSpec) -> Path:
     # example carries the full-bill text view, section TOC, and embedded export
     # rather than the thin per-change-only report.
     bill_dir = BILLS / spec.bill_dir
-    html_out = compare_pdfs_html(
-        (bill_dir / f"{spec.v1_filename_stem}.pdf").read_bytes(),
-        (bill_dir / f"{spec.v2_filename_stem}.pdf").read_bytes(),
-        start_label=label_from_stem(spec.v1_filename_stem),
-        end_label=label_from_stem(spec.v2_filename_stem),
-        # Known here because the corpus filenames are numbered; an upload has no
-        # equivalent, which is why the parameter exists rather than being derived.
-        start_version_number=version_number_from_stem(spec.v1_filename_stem),
-        end_version_number=version_number_from_stem(spec.v2_filename_stem),
+    html_out = compare_pdf_files_html(
+        bill_dir / f"{spec.v1_filename_stem}.pdf",
+        bill_dir / f"{spec.v2_filename_stem}.pdf",
     )
     out = EXAMPLES / spec.output_name("pdf")
     out.write_text(html_out)

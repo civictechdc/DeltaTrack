@@ -261,7 +261,7 @@ it were removed.
 | Field            | Type                | Notes                                                                                       |
 |------------------|---------------------|---------------------------------------------------------------------------------------------|
 | `label`          | string              | Human-readable label, e.g., `"Engrossed in House"`, `"Public Law"`, `"draft"`.              |
-| `version_number` | integer \| null     | Ordinal index when known (XML pipeline). `null` for PDFs.                                   |
+| `version_number` | integer \| null     | The version's per-bill ordinal, the `n` of an `n_label` input filename (ADR 0013), on either pipeline; `null` when the filename carries none. Not a GPO bill-version code (`ih`, `enr`). |
 | `source`         | `"xml"` \| `"pdf"`  | Provenance. Lets consumers reason about structural confidence.                              |
 
 ### `summary`
