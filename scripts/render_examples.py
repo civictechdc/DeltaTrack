@@ -82,8 +82,8 @@ EXAMPLES_TO_RENDER: list[ExampleSpec] = [
         formats=("xml", "pdf"),
         title="HR 8752 — Committee vs. Floor",
         blurb=(
-            "Reported in House vs. engrossed in House: floor-amendment changes with "
-            "account-level dollar amounts. Rendered from both source formats — compare "
+            "Reported in House vs. engrossed in House: floor-amendment changes, including "
+            "changed dollar figures in the text. Rendered from both source formats — compare "
             "the two to see the pipelines agree."
         ),
     ),
