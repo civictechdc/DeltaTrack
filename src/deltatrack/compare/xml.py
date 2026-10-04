@@ -28,7 +28,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-from deltatrack.bill_tree import BillTree, bill_title, normalize_bill
+from deltatrack.bill_tree import BillTree, normalize_bill
 from deltatrack.diff_bill import bill_diff_to_dict, diff_bills, filter_diff
 from deltatrack.formatters.canonical import xml_diff_to_canonical
 from deltatrack.formatters.diff_html import format_diff_html
@@ -47,10 +47,8 @@ def _build_from_trees(
     include_unchanged: bool = False,
     filter_text: str | None = None,
     financial_only: bool = False,
-) -> tuple[dict, str]:
-    """Diff and serialize two parsed versions.
-
-    Returns ``(canonical, title)``: the canonical diff JSON and the report heading.
+) -> dict:
+    """Diff and serialize two parsed versions into canonical diff JSON.
 
     ``start_label``/``end_label`` override the XML's embedded version names so the
     report reflects the file the caller actually supplied (matching the PDF path); pass
@@ -77,8 +75,9 @@ def _build_from_trees(
 
     # Readable full text + per-side element_id spans + the leveled structure tree.
     full_text, full_text_spans, tree = build_xml_full_text(old_tree, new_tree)
-    canonical = xml_diff_to_canonical(diff_dict, full_text=full_text, full_text_spans=full_text_spans, tree=tree)
-    return canonical, bill_title(new_tree)
+    return xml_diff_to_canonical(
+        diff_dict, full_text=full_text, full_text_spans=full_text_spans, tree=tree, title=new_tree.official_title
+    )
 
 
 def _build(
@@ -86,7 +85,7 @@ def _build(
     end_bytes: bytes,
     start_label: str,
     end_label: str,
-) -> tuple[dict, str]:
+) -> dict:
     """Parse two uploaded blobs, then diff them.
 
     Temp files exist only long enough for ``normalize_bill`` to read them.
@@ -111,7 +110,7 @@ def compare_xml(
     end_label: str = "End version",
 ) -> dict:
     """Diff two bill XML documents and return canonical diff JSON (see schema/canonical-diff.md)."""
-    return _build(start_bytes, end_bytes, start_label, end_label)[0]
+    return _build(start_bytes, end_bytes, start_label, end_label)
 
 
 def compare_xml_html(
@@ -128,13 +127,7 @@ def compare_xml_html(
     The XML full-bill view renders gutterless (no PDF line-number column), with a
     section TOC and bill-title heading matching the PDF report.
     """
-    canonical, title = _build(start_bytes, end_bytes, start_label, end_label)
-    return _render(canonical, title)
-
-
-def _render(canonical: dict, title: str) -> str:
-    """Canonical diff JSON → standalone HTML report."""
-    return format_diff_html(canonical, title)
+    return format_diff_html(_build(start_bytes, end_bytes, start_label, end_label))
 
 
 def compare_xml_trees_html(
@@ -155,7 +148,7 @@ def compare_xml_trees_html(
     the assembly chain — the CLI and ``render_examples.py``. See
     :func:`_build_from_trees` for what the version metadata does.
     """
-    canonical, title = _build_from_trees(
+    canonical = _build_from_trees(
         old_tree,
         new_tree,
         start_label=start_label,
@@ -166,7 +159,7 @@ def compare_xml_trees_html(
         filter_text=filter_text,
         financial_only=financial_only,
     )
-    return _render(canonical, title)
+    return format_diff_html(canonical)
 
 
 def compare_xml_files_html(old_path: Path, new_path: Path) -> str:

@@ -193,11 +193,13 @@ def _build_canonical(
     # Only the print-faithful text needs them: the merged text is already reflowed, so
     # there is nothing left in it for a consumer to join (#650, #653).
     join_points = {"v1": pdf_print_join_points(old_pages), "v2": pdf_print_join_points(new_pages)} if printed else None
+    bill_type, bill_number, title = _bill_identity(new_pages)
     return pdf_diff_to_canonical(
         pdf_diff,
-        bill_type="",
-        bill_number="",
+        bill_type=bill_type,
+        bill_number=bill_number,
         congress=congress,
+        title=title,
         v1_label=start_label,
         v2_label=end_label,
         v1_version_number=start_version_number,
@@ -214,36 +216,34 @@ _BILL_DESIGNATOR = re.compile(
 )
 
 
-def _derive_bill_title(canonical: dict) -> str:
-    """Best-effort report heading from the document's opening text.
+def _bill_identity(pages: list[Page]) -> tuple[str, int | str, str | None]:
+    """(bill type, bill number, long title) read from the document's opening lines.
 
-    Pulls the chamber designator (e.g. "H.R. 4366") and the long title that
-    follows "AN ACT" / "A BILL". Returns "" when neither is found (the renderer
-    then falls back to a generic heading). This parses GPO front matter
-    heuristically and is not yet validated across bill types — see the
-    deep-data-testing follow-up.
+    The type is the designator's letters lowercased (`H.R.` -> `hr`, `S.J.RES.` ->
+    `sjres`), the same codes the XML path carries; type and number are "" when no
+    designator is found. The title is the long title that follows "AN ACT" / "A BILL",
+    or None. This parses GPO front matter heuristically and is not yet validated across
+    bill types — see the deep-data-testing follow-up.
     """
-    full_text = canonical.get("full_text") or {}
-    text = full_text.get("v2") or full_text.get("v1") or ""
-    head = " ".join(line.strip() for line in text[:1500].splitlines() if line.strip())
+    head = ""
+    for line in (ln for page in pages for ln in page.lines):
+        if len(head) > 1500:
+            break
+        if line.text.strip():
+            head = f"{head} {line.text.strip()}" if head else line.text.strip()
 
-    designator = ""
+    bill_type: str = ""
+    bill_number: int | str = ""
     m = _BILL_DESIGNATOR.search(head)
     if m:
-        designator = f"{m.group(1).replace(' ', '')} {m.group(2)}"
+        bill_type = re.sub(r"[^a-z]", "", m.group(1).lower())
+        bill_number = int(m.group(2))
 
-    title = ""
     m2 = re.search(r"\bAN ACT\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE) or re.search(
         r"\bA BILL\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE
     )
-    if m2:
-        title = re.sub(r"\s+", " ", m2.group(1)).strip()
-        if len(title) > 140:
-            title = title[:137].rstrip() + "…"
-
-    if designator and title:
-        return f"{designator} — {title}"
-    return designator or title
+    title = re.sub(r"\s+", " ", m2.group(1)).strip() if m2 else None
+    return bill_type, bill_number, title
 
 
 def compare_pdfs(
@@ -293,5 +293,4 @@ def compare_pdfs_html(
     display_canonical = _build_canonical(
         pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, printed=True, **numbers
     )
-    title = _derive_bill_title(canonical)
-    return format_diff_html(canonical, title, display_canonical=display_canonical)
+    return format_diff_html(canonical, display_canonical=display_canonical)

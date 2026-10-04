@@ -76,7 +76,11 @@
       "properties": {
         "type": { "type": "string" },
         "number": { "type": ["integer", "string"] },
-        "congress": { "type": ["integer", "string"] }
+        "congress": { "type": ["integer", "string"] },
+        "title": {
+          "type": ["string", "null"],
+          "description": "Optional (v3.1+) the bill's long title (\"Making appropriations for...\"), or null when the producer found none."
+        }
       }
     },
     "versions": {

@@ -143,7 +143,7 @@ class TestFormatHtml:
 
     def test_header_shows_bill_info(self):
         html = format_html(_sample_diff_dict())
-        assert "HR 4366" in html or "hr 4366" in html.lower()
+        assert "<h1>H.R. 4366</h1>" in html
         assert "118" in html
         assert "reported-in-house" in html
         assert "engrossed-in-house" in html

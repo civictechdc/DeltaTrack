@@ -31,9 +31,8 @@ class TestFullDocument:
     def test_format_pdf_html_assembles_full_document(self):
         html = format_pdf_html(_empty_diff(), bill_type="hr", bill_number=8752, congress=118)
         assert "<!DOCTYPE html>" in html
-        assert "HR 8752" in html
-        # Canonical h1 suffix (#3) — no "PDF" qualifier.
-        assert "Comparison" in html
+        # The heading names the bill, with no "PDF" qualifier (#3).
+        assert "<h1>H.R. 8752</h1>" in html
         # Canonical "no changes" message (#8).
         assert "No changes found between these versions." in html
 

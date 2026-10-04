@@ -33,6 +33,11 @@ Top-level field: `schema_version: "3.1"`.
   this contract. A renderer used to infer it from `versions.v2.source` and slice a
   line-number column whose width only the producer defined.
 
+  Also added optional `bill.title`, the bill's long title. The report heading used to
+  travel to the renderer beside the document, so a report could not be rebuilt from a
+  saved document alone. The PDF pipeline now also fills `bill.type` and `bill.number`
+  from the printed designator, which it previously read and discarded.
+
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
   money at all. The field paired a dollar figure on one side with a figure on the
@@ -126,7 +131,7 @@ Top-level field: `schema_version: "3.1"`.
 {
   "schema_version": "3.0",
   "generator": { "name": "deltatrack", "version": "0.x" },
-  "bill":      { "type": "HR", "number": 4366, "congress": 118 },
+  "bill":      { "type": "hr", "number": 4366, "congress": 118, "title": "Making appropriations…" },
   "versions": {
     "v1": { "label": "Engrossed in House", "version_number": 1,    "source": "xml" },
     "v2": { "label": "Public Law",         "version_number": 4,    "source": "xml" }
@@ -239,9 +244,10 @@ it were removed.
 
 | Field      | Type              | Notes                                                       |
 |------------|-------------------|-------------------------------------------------------------|
-| `type`     | string            | Bill type code, e.g., `"HR"`, `"S"`, `"HJRES"`. May be empty. |
+| `type`     | string            | Lowercase bill type code, e.g., `"hr"`, `"s"`, `"hjres"`. May be empty. The PDF pipeline reads it from the printed designator (`H.R.` → `"hr"`). |
 | `number`   | integer \| string | Integer for canonical bills (e.g., `4366`); string for drafts or non-numeric identifiers. |
 | `congress` | integer \| string | Congress number, e.g., `118`. May be empty string when unknown. |
+| `title`    | string \| null    | Optional (v3.1+). The bill's long title, e.g. `"Making appropriations for…"`; `null` when none was found. XML takes it from the bill's official title; PDF reads it, best-effort, from the text after "AN ACT" / "A BILL". |
 
 ### `versions.v1` and `versions.v2`
 

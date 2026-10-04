@@ -423,9 +423,31 @@ def _summary_bar_html(summary: dict[str, int]) -> str:
     return "".join(items)
 
 
-def _bill_label(view: DiffView) -> str:
-    """Pre-escaped "{BILL_TYPE} {N}" string."""
-    return f"{escape(str(view.bill_type).upper())} {escape(str(view.bill_number))}"
+# Chamber designators for the report heading (e.g. "hr" → "H.R.").
+_DESIGNATORS = {
+    "hr": "H.R.",
+    "s": "S.",
+    "hjres": "H.J.Res.",
+    "sjres": "S.J.Res.",
+    "hconres": "H.Con.Res.",
+    "sconres": "S.Con.Res.",
+    "hres": "H.Res.",
+    "sres": "S.Res.",
+}
+
+
+def _heading(bill: dict) -> str:
+    """Report heading from the document's bill fields: "H.R. 4366 — {title}".
+
+    Just the designator when the bill has no title, just the title when its type is
+    unknown, and "" when neither is known.
+    """
+    title = (bill.get("title") or "").strip()
+    bill_type = str(bill.get("type") or "")
+    if not bill_type:
+        return title
+    label = f"{_DESIGNATORS.get(bill_type.lower(), bill_type.upper())} {bill.get('number')}"
+    return f"{label} — {title}" if title else label
 
 
 def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = None) -> str:
@@ -895,7 +917,6 @@ def _export_modal_html(canonical: dict | None) -> str:
 
 def format_diff_html(
     canonical: dict,
-    title: str | None = None,
     *,
     display_canonical: dict | None = None,
 ) -> str:
@@ -919,21 +940,12 @@ def format_diff_html(
     DeltaTrack#653 removes; it stays until the document itself carries the
     printed text and the join points needed to reflow it.
 
-    ``title``, when given, sets the report heading (the PDF path passes a bill
-    title derived from the document); otherwise it falls back to the bill
-    label, or a generic heading when no label is available.
+    The heading comes from the document's ``bill`` fields (``_heading``), or a
+    generic one when they name nothing.
     """
     view = view_from_canonical(canonical)
-    bill_label = _bill_label(view)
-    if title and title.strip():
-        heading = escape(title.strip())
-        doc_title = f"{escape(title.strip())} — Diff"
-    elif bill_label.strip():
-        heading = f"{bill_label} &mdash; Comparison"
-        doc_title = f"{bill_label} — Diff"
-    else:
-        heading = "Bill Comparison"
-        doc_title = "Bill Comparison — Diff"
+    heading = escape(_heading(canonical.get("bill") or {}) or "Bill Comparison")
+    doc_title = f"{heading} — Diff"
     # Unconditional, and deliberately not gated on `_has_full_bill` like the controls
     # below: the report carries the diff document it was rendered from, whatever that
     # document happens to contain. Gating it on full text reads as a tidy-up (the

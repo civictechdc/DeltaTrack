@@ -112,11 +112,11 @@ import sys
 
 from deltatrack.formatters.diff_html import format_diff_html
 
-doc_path, title, out_path = sys.argv[1:4]
+doc_path, out_path = sys.argv[1:3]
 with open(doc_path, encoding="utf-8") as fh:
     document = json.load(fh)
 with open(out_path, "w", encoding="utf-8") as fh:
-    fh.write(format_diff_html(document, title))
+    fh.write(format_diff_html(document))
 """
 
 
@@ -131,10 +131,6 @@ def test_xml_report_renders_from_the_saved_document_alone(tmp_path):
     satisfy it, and a caller-assembled view carrying facts the document omits would
     show up here as a diff.
 
-    The heading travels alongside as the second argument, which is the acceptance
-    shape (``format_diff_html(canonical, title)``); the XML path derives it from the
-    parsed bill rather than from the document.
-
     Scoped to the XML path deliberately. The PDF path also hands the renderer a
     second, print-faithful document (``display_canonical``), so its report is not yet
     a function of one document and cannot satisfy this. Extending this gate to PDF
@@ -148,7 +144,6 @@ def test_xml_report_renders_from_the_saved_document_alone(tmp_path):
     import subprocess
     import sys
 
-    from deltatrack.bill_tree import bill_title, normalize_bill
     from deltatrack.compare.xml import compare_xml, compare_xml_html
 
     labels = {"start_label": "Reported in House", "end_label": "Engrossed in House"}
@@ -158,10 +153,9 @@ def test_xml_report_renders_from_the_saved_document_alone(tmp_path):
     doc_path = tmp_path / "diff.json"
     doc_path.write_text(json.dumps(document), encoding="utf-8")
     out_path = tmp_path / "report.html"
-    title = bill_title(normalize_bill(end))
 
     subprocess.run(
-        [sys.executable, "-c", _RENDER_FROM_DISK, str(doc_path), title, str(out_path)],
+        [sys.executable, "-c", _RENDER_FROM_DISK, str(doc_path), str(out_path)],
         check=True,
         cwd=ROOT,
     )

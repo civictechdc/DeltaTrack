@@ -146,6 +146,7 @@ def xml_diff_to_canonical(
     full_text: dict | None = None,
     full_text_spans: dict | None = None,
     tree: dict | None = None,
+    title: str | None = None,
 ) -> dict:
     """Convert a bill-diff dict (from bill_diff_to_dict) into canonical JSON.
 
@@ -171,6 +172,7 @@ def xml_diff_to_canonical(
             "type": diff_dict.get("bill_type", "") or "",
             "number": diff_dict.get("bill_number", "") or "",
             "congress": diff_dict.get("congress", "") or "",
+            "title": title or None,
         },
         "versions": {
             "v1": {
@@ -401,6 +403,7 @@ def pdf_diff_to_canonical(
     bill_type: str,
     bill_number: int | str,
     congress: int | str,
+    title: str | None = None,
     v1_label: str = "v1",
     v2_label: str = "v2",
     v1_version_number: int | None = None,
@@ -441,7 +444,7 @@ def pdf_diff_to_canonical(
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": {"name": GENERATOR_NAME, "version": "0"},
-        "bill": {"type": bill_type, "number": bill_number, "congress": congress},
+        "bill": {"type": bill_type, "number": bill_number, "congress": congress, "title": title or None},
         "versions": {
             "v1": {"label": v1_label, "version_number": v1_version_number, "source": "pdf"},
             "v2": {"label": v2_label, "version_number": v2_version_number, "source": "pdf"},

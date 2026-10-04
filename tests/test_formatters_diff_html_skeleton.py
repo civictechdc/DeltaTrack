@@ -30,11 +30,17 @@ def _empty(**overrides) -> dict:
         v2_version_number=2,
         summary={"added": 0, "removed": 0, "modified": 0, "moved": 0},
         changes=(),
+        title=None,
     )
     base.update(overrides)
     return {
         "schema_version": "3.0",
-        "bill": {"type": base["bill_type"], "number": base["bill_number"], "congress": base["congress"]},
+        "bill": {
+            "type": base["bill_type"],
+            "number": base["bill_number"],
+            "congress": base["congress"],
+            "title": base["title"],
+        },
         "versions": {
             "v1": {"label": base["v1_label"], "version_number": base["v1_version_number"], "source": "xml"},
             "v2": {"label": base["v2_label"], "version_number": base["v2_version_number"], "source": "xml"},
@@ -50,16 +56,21 @@ def test_returns_html_document():
     assert html.rstrip().endswith("</html>")
 
 
-def test_canonical_title_format():
-    """Title is "{BILL_TYPE} {N} — Diff" — no "Bill Comparison:" or "PDF Diff:" prefix."""
-    html = format_diff_html(_empty())
-    assert "<title>HR 1234 — Diff</title>" in html
+def test_heading_is_the_designator_and_long_title():
+    """The heading comes from the document's bill fields, with no XML/PDF qualifier."""
+    html = format_diff_html(_empty(title="Making appropriations."))
+    assert "<h1>H.R. 1234 — Making appropriations.</h1>" in html
+    assert "<title>H.R. 1234 — Making appropriations. — Diff</title>" in html
 
 
-def test_canonical_h1_format():
-    """h1 suffix is "Comparison" — no XML/PDF qualifier."""
-    html = format_diff_html(_empty())
-    assert "HR 1234 &mdash; Comparison" in html
+def test_heading_without_a_title_is_just_the_designator():
+    html = format_diff_html(_empty(bill_type="s", bill_number=12))
+    assert "<h1>S. 12</h1>" in html
+
+
+def test_heading_without_a_type_is_the_title_or_a_generic_one():
+    assert "<h1>Making appropriations.</h1>" in format_diff_html(_empty(bill_type="", title="Making appropriations."))
+    assert "<h1>Bill Comparison</h1>" in format_diff_html(_empty(bill_type=""))
 
 
 def test_versions_line_with_version_numbers():

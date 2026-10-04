@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from deltatrack.bill_tree import BillNode, BillTree, bill_title, normalize_bill
+from deltatrack.bill_tree import BillNode, BillTree, normalize_bill
 from deltatrack.formatters.text_serializer import (
     serialize_tree,
     serialize_tree_for_diff,
@@ -250,26 +250,6 @@ def test_sections_are_in_document_order():
     _, sections = serialize_tree_with_offsets(_toc_tree())
     starts = [s["start"] for s in sections]
     assert starts == sorted(starts)
-
-
-# --- bill_title heading -----------------------------------------------------
-
-
-def test_bill_title_formats_designator_and_official_title():
-    tree = BillTree(
-        congress=118,
-        bill_type="hr",
-        bill_number=4366,
-        version="reported",
-        nodes=[],
-        official_title="Making appropriations.",
-    )
-    assert bill_title(tree) == "H.R. 4366 — Making appropriations."
-
-
-def test_bill_title_without_official_title_is_just_the_designator():
-    tree = BillTree(congress=118, bill_type="s", bill_number=12, version="reported", nodes=[])
-    assert bill_title(tree) == "S. 12"
 
 
 _HR4366_V1 = fixture_path("118-hr-4366", "1_reported-in-house.xml")
