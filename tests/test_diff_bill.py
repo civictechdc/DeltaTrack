@@ -1064,7 +1064,7 @@ class TestCompareCanonicalJson:
 
     Cross-surface agreement is the gate that matters and it lives in
     `tests/test_cli_api_parity.py`, which runs one bill pair through this command and
-    through `POST /api/compare` and requires byte-identical JSON. What is pinned here is
+    through `POST /api/compare` and requires equal parsed documents. What is pinned here is
     this command's own surface, which that test cannot see.
     """
 
