@@ -156,7 +156,7 @@ download all read one shape. `./diff_pdf.py --format json` does the same for a P
 `--format html` produces a self-contained HTML file that can be opened in any browser with no install or server required. See [examples/](examples/) for sample reports you can open immediately. The report includes:
 
 - **Header** with bill number, congress, and version numbers (e.g., "v1: reported-in-house → v2: engrossed-in-house")
-- **Sidebar** listing all changed sections with color-coded change type badges. Type in the filter box to narrow the list. Click any item to jump to that section.
+- **Sidebar** listing all changed sections, grouped under their headings with counts, with color-coded change type badges. **All** / **Structural** narrows the list and the cards (Structural hides modified sections, leaving additions, removals and moves). Click any item to jump to that section. In the full-bill view the sidebar shows the bill's section tree instead; to search the text, use **Find in view** above the report.
 - **Change cards** for each modified, added, removed, or moved section. Modified sections show word-level inline diffs: additions highlighted in green, deletions in red strikethrough. Moved sections show both the old and new location, plus body text.
 - **Prev/next buttons** in the bottom right corner to step through changes one at a time.
 
