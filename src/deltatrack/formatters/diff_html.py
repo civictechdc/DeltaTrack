@@ -19,6 +19,7 @@ from html import escape
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.print_layout import printed_document
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.palette import root_block
 
@@ -32,7 +33,7 @@ def _embed_canonical(canonical: dict) -> str:
     """Inline the canonical diff JSON so the report is self-contained.
 
     The standalone report opens in a new tab with no server round-trip
-    available (the service is stateless), so the full-bill view and the
+    available (the service is stateless), so the full-text view and the
     export download both read this embedded payload client-side. ``</`` is
     neutralized so the JSON can't terminate the surrounding <script> tag.
     """
@@ -42,7 +43,7 @@ def _embed_canonical(canonical: dict) -> str:
 
 
 def _build_card(change: ChangeView, index: int) -> str:
-    """Render one ChangeView as a complete <div class="change-card">.
+    """Render one ChangeView as a complete <div class="change">.
 
     Renders pipeline-specific features when their corresponding view-model
     fields are populated:
@@ -58,9 +59,9 @@ def _build_card(change: ChangeView, index: int) -> str:
     # output. Escape so a stray value can't break attribute quoting.
     ct = escape(change.change_type)
 
-    parts = [f'<div class="change-card {ct}{extra_card_class}" id="change-{index}" data-type="{ct}">']
-    parts.append('<div class="change-header">')
-    parts.append(f'<span class="badge badge-{ct}">{ct}</span>')
+    parts = [f'<div class="change{extra_card_class}" id="change-{index}" data-type="{ct}">']
+    parts.append('<div class="change__header">')
+    parts.append(f'<span class="change-type" data-type="{ct}">{ct}</span>')
     parts.append(f"<h3{h3_class}>{change.heading_html}</h3>")
     if change.section_number:
         parts.append(f'<span class="section-number">{escape(change.section_number)}</span>')
@@ -85,9 +86,9 @@ def _card_body_html(change: ChangeView) -> str:
     shape.
     """
     if change.change_type == "added":
-        return f'<div class="change-body added-text">{escape(change.new_text)}</div>'
+        return f'<div class="change__body added-text">{escape(change.new_text)}</div>'
     if change.change_type == "removed":
-        return f'<div class="change-body removed-text">{escape(change.old_text)}</div>'
+        return f'<div class="change__body removed-text">{escape(change.old_text)}</div>'
     if change.change_type == "moved":
         return _moved_body_html(change)
     if change.change_type == "modified":
@@ -104,9 +105,9 @@ def _prose_body_html(old_text: str, new_text: str) -> str:
     """
     inline = word_diff(old_text, new_text) if (old_text and new_text) else None
     if inline is not None:
-        return f'<div class="change-body diff-inline">{inline}</div>'
+        return f'<div class="change__body diff-inline">{inline}</div>'
     return (
-        '<div class="change-body">\n'
+        '<div class="change__body">\n'
         f'<div class="old-text">{escape(old_text)}</div>\n'
         f'<div class="new-text">{escape(new_text)}</div>\n'
         "</div>"
@@ -122,7 +123,7 @@ def _moved_body_html(change: ChangeView) -> str:
         # Identical text — single body div with the (one) text. Prefer new_text;
         # fall back to old_text when new_text is empty (only possible if both are "").
         body = change.new_text or change.old_text
-        parts.append(f'<div class="change-body">{escape(body)}</div>')
+        parts.append(f'<div class="change__body">{escape(body)}</div>')
     else:
         parts.append(_prose_body_html(change.old_text, change.new_text))
     return "\n".join(parts)
@@ -138,7 +139,7 @@ def _build_nav_item(change: ChangeView, index: int) -> str:
     return (
         f'<li class="{nav_class}" data-type="{ct}">'
         f'<a href="#change-{index}">'
-        f'<span class="badge badge-{ct}">{ct}</span> '
+        f'<span class="change-type" data-type="{ct}">{ct}</span> '
         f"{label}"
         f"</a></li>"
     )
@@ -294,24 +295,39 @@ def _node_anchor_offset(full_text: str, node: dict) -> int | None:
     return pos + 1 if pos != -1 else line_start
 
 
-def _build_toc_from_tree(tree_nodes: list[dict], full_text: str) -> str:
-    """Leveled full-bill navigation built from the canonical structure tree (#108).
+def _build_tree_nav(tree_nodes: list[dict], full_text: str) -> str:
+    """Leveled full-text navigation built from the canonical structure tree (#108).
 
     Renders the tree as arbitrary-depth nested ``<details>``, so the hierarchy
     mirrors the bill (division > title > agency > account > section). Unlike the
     former flat 2-level TOC, this is where the #155 fix becomes visible: an account
     named "Title 17 …" nests under its agency instead of being promoted to a title
     group, because the node's level is tag-derived, not inferred from its label
-    text. Each node links to its heading row in the full-bill view; groups are
+    text. Each node links to its heading row in the full-text view; groups are
     collapsed by default.
     """
     if not tree_nodes:
-        return '<p class="toc-empty">No sections detected.</p>'
+        return '<p class="tree-empty">No sections detected.</p>'
 
     def link(node: dict) -> str:
         off = _node_anchor_offset(full_text, node)
         label = escape(node["label"])
         return f'<a href="#fb-off-{off}">{label}</a>' if off is not None else f"<span>{label}</span>"
+
+    def level_attr(node: dict) -> str:
+        """The node's `tree.level` from the canonical contract, verbatim, as `data-level`.
+
+        An attribute rather than a class, like `data-type` on a change: a contract value
+        is carried under the contract's field name, with the contract's value. Styling it
+        after GPO means the inline stylesheet distilled in `docs/gpo-render-conventions.md`;
+        `bills.css` is a drifted copy that GPO's render chain never links.
+
+        Escaped although today's levels are this repository's own literals:
+        `format_diff_html` accepts any canonical document, and a level carrying a quote
+        would otherwise close the attribute.
+        """
+        level = escape((node.get("level") or "").strip(), quote=True)
+        return f' data-level="{level}"' if level else ""
 
     def render(node: dict) -> str:
         kids = node.get("children") or []
@@ -327,14 +343,15 @@ def _build_toc_from_tree(tree_nodes: list[dict], full_text: str) -> str:
             # nothing, so render a clickable leaf that jumps to the node's span. When
             # the group DOES have labeled children (leading short-title/definitions
             # sections) it falls through to the <details> toggle below (#161).
-            return f'<li class="toc-child">{link(node)}</li>'
+            return f'<li class="tree-node"{level_attr(node)}>{link(node)}</li>'
         return (
-            f'<li><details class="toc-group"><summary class="disclosure">{link(node)}</summary>'
-            f'<ul class="toc">{inner}</ul></details></li>'
+            f'<li><details class="tree-group"{level_attr(node)}>'
+            f'<summary class="disclosure">{link(node)}</summary>'
+            f'<ul class="tree">{inner}</ul></details></li>'
         )
 
     blocks = "".join(render(n) for n in tree_nodes)
-    return f'<div class="toc__title">Sections</div><ul class="toc toc--root">{blocks}</ul>'
+    return f'<div class="tree__title">Sections</div><ul class="tree tree--root">{blocks}</ul>'
 
 
 def _build_sidebar(
@@ -345,10 +362,10 @@ def _build_sidebar(
     """Render the sidebar with both view variants inside one ``<nav>``.
 
     ``.sidebar-changes`` (filters + changes grouped by section) is shown in the
-    Changes view; ``.sidebar-toc`` (full-bill section jump list) in the Full bill
+    Changes view; ``.sidebar-tree`` (full-text section jump list) in the Full bill
     view — the JS view toggle swaps them. The TOC is built from ``canonical``'s
     leveled structure tree (#108 — the renderer that surfaces the tree in the
-    contract; its anchors and nesting come from the same canonical the full-bill
+    contract; its anchors and nesting come from the same canonical the full-text
     view renders from, so they line up), and is omitted entirely (the swap no-ops)
     when there is no full text to index into.
 
@@ -360,8 +377,14 @@ def _build_sidebar(
     tree_v2 = (canonical.get("tree") or {}).get("v2") if (canonical and canonical.get("tree")) else None
     if order_map is None:
         order_map = _node_order_map(tree_v2)
+    full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
+    # A pane is paired with a view only when there is a second view to switch to.
+    has_full_text = _has_full_bill(canonical)
+    changes_pane_open = (
+        '<div class="sidebar-changes" data-view="changes">\n' if has_full_text else '<div class="sidebar-changes">\n'
+    )
     changes_pane = (
-        '<div class="sidebar-changes">\n'
+        f"{changes_pane_open}"
         '<div class="filters">\n'
         '<div class="filters__title">Filter changes</div>\n'
         '<label class="filter-row"><input type="radio" name="change-filter" value="all" checked> All</label>\n'
@@ -370,21 +393,21 @@ def _build_sidebar(
         f"{_build_change_groups(view, order_map)}\n"
         "</div>"
     )
-    full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
     # The tree builder owns the navigation outright (#462). It also renders the
     # "no sections" empty state, so a canonical carrying full text but no usable tree
-    # still gets a pane saying so rather than silently losing the navigation.
-    toc_html = _build_toc_from_tree(tree_v2 or [], full_text_v2) if full_text_v2 else None
-    toc_pane = "" if toc_html is None else f'<div class="sidebar-toc" hidden>{toc_html}</div>'
-    return f'<nav class="sidebar">\n{changes_pane}\n{toc_pane}\n</nav>'
+    # still gets a pane saying so rather than silently losing the navigation. Gated on
+    # `_has_full_bill`, the one gate every full-bill control shares.
+    tree_html = _build_tree_nav(tree_v2 or [], full_text_v2) if has_full_text else None
+    tree_pane = "" if tree_html is None else f'<div class="sidebar-tree" data-view="full" hidden>{tree_html}</div>'
+    return f'<nav class="sidebar">\n{changes_pane}\n{tree_pane}\n</nav>'
 
 
 def _versions_html(view: DiffView) -> str:
     """Render the versions line.
 
     Canonical form: "v1: {label} → v2: {label} · {congress}th Congress".
-    The "vN: " prefix is dropped when both version numbers are None — PDF
-    inputs don't carry a version index, and "v1: Reported" is misleading
+    The "vN: " prefix is dropped when both version numbers are None, which is
+    when neither input filename carries an ordinal: "v1: Reported" is misleading
     when no such index exists.
     """
     if view.v1_version_number is not None or view.v2_version_number is not None:
@@ -416,22 +439,44 @@ def _summary_bar_html(summary: dict[str, int]) -> str:
         if count > 0:
             items.append(
                 f'<span class="summary-item">'
-                f'<span class="badge badge-{key}">{key}</span> '
+                f'<span class="change-type" data-type="{key}">{key}</span> '
                 f"<strong>{count}</strong>"
                 f"</span>"
             )
     return "".join(items)
 
 
-def _bill_label(view: DiffView) -> str:
-    """Pre-escaped "{BILL_TYPE} {N}" string."""
-    return f"{escape(str(view.bill_type).upper())} {escape(str(view.bill_number))}"
+# Chamber designators for the report heading (e.g. "hr" → "H.R.").
+_DESIGNATORS = {
+    "hr": "H.R.",
+    "s": "S.",
+    "hjres": "H.J.Res.",
+    "sjres": "S.J.Res.",
+    "hconres": "H.Con.Res.",
+    "sconres": "S.Con.Res.",
+    "hres": "H.Res.",
+    "sres": "S.Res.",
+}
+
+
+def _heading(bill: dict) -> str:
+    """Report heading from the document's bill fields: "H.R. 4366 — {title}".
+
+    Just the designator when the bill has no title, just the title when its type is
+    unknown, and "" when neither is known.
+    """
+    title = (bill.get("title") or "").strip()
+    bill_type = str(bill.get("type") or "")
+    if not bill_type:
+        return title
+    label = f"{_DESIGNATORS.get(bill_type.lower(), bill_type.upper())} {bill.get('number')}"
+    return f"{label} — {title}" if title else label
 
 
 def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = None) -> str:
     """Cards section: cards grouped under their tree-node headings (#172).
 
-    One ``<details class="card-group" open>`` per node_path segment, nested to
+    One ``<details class="change-group" open>`` per node_path segment, nested to
     arbitrary depth. ``open`` is load-bearing, not cosmetic: ``navTargets()``
     filters cards by ``offsetParent``, so a closed-by-default group's cards
     would silently vanish from prev/next stepping and the counter. Each card
@@ -449,8 +494,8 @@ def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = Non
 
     def group_html(label: str, inner: str) -> str:
         return (
-            '<details class="card-group" open>'
-            f'<summary class="card-group__label disclosure">{escape(label)}</summary>\n{inner}\n</details>'
+            '<details class="change-group" open>'
+            f'<summary class="change-group__label disclosure">{escape(label)}</summary>\n{inner}\n</details>'
         )
 
     def render(seg: tuple[str, str], node: dict, path: tuple) -> str:
@@ -473,13 +518,14 @@ def _has_full_bill(canonical: dict | None) -> bool:
 
 
 def _full_text_is_guttered(canonical: dict) -> bool:
-    """Whether full_text lines carry the PDF line-number gutter.
+    """Whether full_text is ``numbered_lines`` (see schema/canonical-diff.md).
 
-    ``pdf_full_text`` emits each line as a fixed 7-char gutter (``{num:>5}  ``)
-    plus content; the XML pipeline serialises plain paragraph text with no gutter.
-    Default to guttered (the PDF path that built this view); only an explicit
-    ``xml`` v2 source switches the parser to gutterless paragraph flow.
+    Read from the document's ``full_text_layout``. A 3.0 document predates the field,
+    and only for it is the layout taken from the v2 source.
     """
+    layout = canonical.get("full_text_layout")
+    if layout is not None:
+        return layout == "numbered_lines"
     src = ((canonical.get("versions") or {}).get("v2") or {}).get("source")
     return src != "xml"
 
@@ -528,16 +574,17 @@ def _wrap_mark(change: dict, slice_text: str, emitted_ids: set[str]) -> str:
         emitted_ids.add(cid)
     esc = escape(slice_text)
     if ct == "added":
-        return f'<ins class="diff-add"{id_attr}>{esc}</ins>'
+        return f'<ins class="diff-added"{id_attr}>{esc}</ins>'
     if ct == "modified":
-        return f'<span class="diff-mod"{id_attr} title="modified — see Changes for the old text">{esc}</span>'
+        return f'<span class="diff-modified"{id_attr} title="modified — see Changes for the old text">{esc}</span>'
     if ct == "moved":
         return f'<span class="moved-mark"{id_attr} title="{_move_note(change)}">{esc}</span>'
-    return f'<del class="diff-del">{esc}</del>'
+    return f'<del class="diff-removed">{esc}</del>'
 
 
 def _parse_full_bill_lines(text: str, *, guttered: bool = True) -> list[dict]:
-    """Split full_text into per-source-line display rows.
+    """Split full_text into per-source-line display rows, by the layout rule
+    schema/canonical-diff.md states for ``full_text_layout``.
 
     PDF path (``guttered=True``): each rendered line is ``{number:>5}  {content}``
     (five spaces of padding when the source line was unnumbered) and pages are
@@ -626,7 +673,7 @@ def _full_bill_meta_html(*, total: int, placed: int, removed: int, unplaced: int
         bits.append(f"{removed} removed below")
     if unplaced:
         bits.append(f"{unplaced} not placed (see Changes)")
-    return f'<div class="full-bill-meta">{" &middot; ".join(bits)}</div>'
+    return f'<div class="full-text-meta">{" &middot; ".join(bits)}</div>'
 
 
 def _removed_appendix_html(removed: list[dict], v1_text: str) -> str:
@@ -639,20 +686,20 @@ def _removed_appendix_html(removed: list[dict], v1_text: str) -> str:
         heading = path or "<em>(unknown location)</em>"
         cid = escape(str(change.get("id", "")))
         blocks.append(
-            f'<article class="removed-block" id="attr-{cid}">'
-            f'<div class="removed-block__head">{heading}</div>'
-            f'<del class="diff-del">{escape(text)}</del></article>'
+            f'<article class="removed-changes__item" id="attr-{cid}">'
+            f'<div class="removed-changes__item-head">{heading}</div>'
+            f'<del class="diff-removed">{escape(text)}</del></article>'
         )
     return (
-        '<section class="removed-appendix">'
+        '<section class="removed-changes">'
         "<h3>Removed in end version</h3>"
-        '<p class="removed-appendix__note">These sections existed in the start version and have '
+        '<p class="removed-changes__note">These sections existed in the start version and have '
         "no corresponding location in the end version.</p>"
         f"{''.join(blocks)}</section>"
     )
 
 
-def _full_bill_html(canonical: dict) -> str:
+def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> str:
     """Project the change set inline onto the end-version full text.
 
     Mirrors the canonical full-text view: end-version text with each change's
@@ -704,25 +751,34 @@ def _full_bill_html(canonical: dict) -> str:
             row_ids.setdefault(off, f"fb-off-{off}")
 
     guttered = _full_text_is_guttered(canonical)
+    # Where a printed word break falls, and whether rejoining drops its hyphen, as the
+    # PRODUCER decided it (#650), stamped onto the row that ends there so in-browser
+    # search applies the decision instead of re-deriving it.
+    joins = joins or {}
     emitted_ids: set[str] = set()
     parts: list[str] = []
     seen_page = 0
     for row in _parse_full_bill_lines(v2_text, guttered=guttered):
         if guttered and row["page"] != seen_page:
             seen_page = row["page"]
-            parts.append(f'<div class="fb-page">p. {seen_page}</div>')
+            parts.append(f'<div class="full-text-page">p. {seen_page}</div>')
         body = _render_fb_row_body(v2_text, row, marks, emitted_ids)
         anchor = row_ids.get(row["raw_start"])
         row_id = f' id="{anchor}"' if anchor else ""
+        # `end` is exclusive, so the row's final character sits at end - 1.
+        disposition = joins.get(row["end"] - 1)
+        join_attr = f' data-join="{"drop" if disposition else "keep"}"' if disposition is not None else ""
         if guttered:
             gutter = str(row["line"]) if row["line"] is not None else ""
             parts.append(
-                f'<div class="fb-row"{row_id}><span class="fb-gutter">{gutter}</span>'
-                f'<span class="fb-text">{body}</span></div>'
+                f'<div class="full-text-line"{row_id}{join_attr}><span class="full-text-line__number">{gutter}</span>'
+                f'<span class="full-text-line__text">{body}</span></div>'
             )
         else:
-            row_cls = "fb-row fb-row--para" if row.get("para") else "fb-row"
-            parts.append(f'<div class="{row_cls}"{row_id}><span class="fb-text">{body}</span></div>')
+            row_cls = "full-text-line full-text-line--paragraph" if row.get("para") else "full-text-line"
+            parts.append(
+                f'<div class="{row_cls}"{row_id}{join_attr}><span class="full-text-line__text">{body}</span></div>'
+            )
 
     meta = _full_bill_meta_html(
         total=len(canonical.get("changes", [])),
@@ -731,20 +787,18 @@ def _full_bill_html(canonical: dict) -> str:
         unplaced=unplaced,
     )
     appendix = _removed_appendix_html(removed, v1_text) if removed else ""
-    fb_cls = "full-bill" if guttered else "full-bill full-bill--no-gutter"
+    fb_cls = "full-text" if guttered else "full-text full-text--no-line-numbers"
     return f'{meta}<div class="{fb_cls}">{"".join(parts)}</div>{appendix}'
 
 
 def _views_html(
     view: DiffView,
     canonical: dict | None,
-    display_canonical: dict | None = None,
     order_map: dict[tuple, int] | None = None,
 ) -> str:
-    """Main content: classic cards, or the toggled changes/full-bill pair.
+    """Main content: classic cards, or the toggled changes/full-text pair.
 
-    The full-bill view renders from ``display_canonical`` when given (the
-    print-faithful text + spans) and falls back to ``canonical`` otherwise.
+    The full-text view renders the document laid out as printed (`printed_document`).
     """
     if order_map is None:
         order_map = _node_order_map((canonical.get("tree") or {}).get("v2") if canonical else None)
@@ -754,8 +808,11 @@ def _views_html(
     )
     if not _has_full_bill(canonical):
         return changes_inner
-    full_bill = _full_bill_html(display_canonical or canonical)
-    return f'<div class="view view-changes">{changes_inner}</div><div class="view view-full" hidden>{full_bill}</div>'
+    full_bill = _full_bill_html(*printed_document(canonical))
+    return (
+        f'<div class="view view-changes" data-view="changes">{changes_inner}</div>'
+        f'<div class="view view-full" data-view="full" hidden>{full_bill}</div>'
+    )
 
 
 # Ready-made questions a staffer can paste into an LLM alongside the diff.json,
@@ -785,7 +842,7 @@ _LLM_PROMPTS = (
 
 def _export_button_html(canonical: dict | None) -> str:
     """The Export button that opens the download/prompts modal. Rendered whenever
-    the canonical carries full-bill text (`_has_full_bill`), so it appears for any
+    the canonical carries full text (`_has_full_bill`), so it appears for any
     pipeline that supplies it — XML and PDF alike, not PDF-only."""
     if not _has_full_bill(canonical):
         return ""
@@ -793,7 +850,7 @@ def _export_button_html(canonical: dict | None) -> str:
 
 
 def _nav_controls_html(canonical: dict | None) -> str:
-    """Prev / counter / Next change navigation. Gated on full-bill text
+    """Prev / counter / Next change navigation. Gated on full text
     (`_has_full_bill`), the same gate as the view toggle and export, so it appears
     for any pipeline that supplies full text — XML and PDF alike. JS wires the
     buttons, the counter, and the active target set per view; see the navigation
@@ -811,7 +868,7 @@ def _nav_controls_html(canonical: dict | None) -> str:
 
 def _find_bar_html(canonical: dict | None) -> str:
     """In-page find: highlights matches in the active view and steps through them
-    (Ctrl+F style). Gated on full-bill text (`_has_full_bill`), so it appears for
+    (Ctrl+F style). Gated on full text (`_has_full_bill`), so it appears for
     any pipeline that supplies full text — XML and PDF alike. JS wires the input,
     counter, and stepping; see the find block in `_JS`."""
     if not _has_full_bill(canonical):
@@ -863,9 +920,6 @@ def _export_modal_html(canonical: dict | None) -> str:
 
 def format_diff_html(
     canonical: dict,
-    title: str | None = None,
-    *,
-    display_canonical: dict | None = None,
 ) -> str:
     """Assemble a complete standalone HTML report from a canonical diff document.
 
@@ -874,47 +928,34 @@ def format_diff_html(
     themselves (DeltaTrack#653).
 
     The document is always embedded, so the standalone report carries the diff it
-    was rendered from. The full-bill view and the client-side export download are
+    was rendered from. The full-text view and the client-side export download are
     separate: they appear only when the document carries full text
     (``_has_full_bill``), because without it they have nothing to act on. Both
     pipelines carry full text today; a document without it renders the change
     cards alone, still carrying its payload.
 
-    ``display_canonical``, when given, supplies the print-faithful text + spans
-    the on-screen full-bill view renders from (the PDF path passes one built
-    from the original printed lines); the embedded/exported ``canonical`` keeps
-    the merged whole-word text regardless. This is the second upstream artifact
-    DeltaTrack#653 removes; it stays until the document itself carries the
-    printed text and the join points needed to reflow it.
+    The full-text view and its navigation show the printed page, laid out from the
+    document's `print_breaks` (`print_layout.printed_document`); the cards, and the
+    embedded document, keep its whole-word text.
 
-    ``title``, when given, sets the report heading (the PDF path passes a bill
-    title derived from the document); otherwise it falls back to the bill
-    label, or a generic heading when no label is available.
+    The heading comes from the document's ``bill`` fields (``_heading``), or a
+    generic one when they name nothing.
     """
     view = view_from_canonical(canonical)
-    bill_label = _bill_label(view)
-    if title and title.strip():
-        heading = escape(title.strip())
-        doc_title = f"{escape(title.strip())} — Diff"
-    elif bill_label.strip():
-        heading = f"{bill_label} &mdash; Comparison"
-        doc_title = f"{bill_label} — Diff"
-    else:
-        heading = "Bill Comparison"
-        doc_title = "Bill Comparison — Diff"
+    heading = escape(_heading(canonical.get("bill") or {}) or "Bill Comparison")
+    doc_title = f"{heading} — Diff"
     # Unconditional, and deliberately not gated on `_has_full_bill` like the controls
     # below: the report carries the diff document it was rendered from, whatever that
     # document happens to contain. Gating it on full text reads as a tidy-up (the
     # in-report features would not touch the payload without it) and silently strips
     # the document from every report built from a canonical that carries no full text.
     data_script = _embed_canonical(canonical)
-    # The TOC/full-bill anchors must come from the same canonical the full-bill view
-    # renders from (display_canonical when given), so their offsets line up.
-    sidebar_canonical = (display_canonical or canonical) if _has_full_bill(canonical) else None
     # One order map for both panes, from the join's canonical — guarantees the
     # sidebar and cards can never sort their shared groups from different trees.
     order_map = _node_order_map((canonical.get("tree") or {}).get("v2"))
-    sidebar = _build_sidebar(view, sidebar_canonical, order_map)
+    # The TOC's anchors index the text the full-bill view renders, so it reads the
+    # same printed layout.
+    sidebar = _build_sidebar(view, printed_document(canonical)[0], order_map)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -945,7 +986,7 @@ def format_diff_html(
 {_export_button_html(canonical)}
 </div>
 </div>
-{_views_html(view, canonical, display_canonical, order_map)}
+{_views_html(view, canonical, order_map)}
 </div>
 </div>
 {_export_modal_html(canonical)}
@@ -959,7 +1000,7 @@ def format_diff_html(
 
 # ---------------------------------------------------------------------------
 # CSS for the unified report. Includes selectors that only fire for one
-# pipeline (.citation, .change-card.unanchored, .section-number) — they are
+# pipeline (.citation, .change.unanchored, .section-number) — they are
 # inert when their classes aren't applied, so both pipelines share one stylesheet.
 # ---------------------------------------------------------------------------
 
@@ -1038,36 +1079,36 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
 .summary-item strong { font-size: 14px; }
 
 /* Badges */
-.badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
+.change-type { display: inline-block; padding: 2px 8px; border-radius: 999px;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.badge-modified { background: var(--diff-modified); color: var(--diff-modified-foreground); }
-.badge-added { background: var(--diff-add); color: var(--diff-add-foreground); }
-.badge-removed { background: var(--diff-remove); color: var(--diff-remove-foreground); }
-.badge-moved { background: var(--diff-moved); color: var(--diff-moved-foreground); }
+.change-type[data-type="modified"] { background: var(--diff-modified); color: var(--diff-modified-foreground); }
+.change-type[data-type="added"] { background: var(--diff-add); color: var(--diff-add-foreground); }
+.change-type[data-type="removed"] { background: var(--diff-remove); color: var(--diff-remove-foreground); }
+.change-type[data-type="moved"] { background: var(--diff-moved); color: var(--diff-moved-foreground); }
 
 /* Card groups: cards nested under their tree-node headings (#172) */
-.card-group { margin: 6px 0 14px; }
-.card-group > summary { cursor: pointer; font-weight: 600; padding: 6px 8px;
+.change-group { margin: 6px 0 14px; }
+.change-group > summary { cursor: pointer; font-weight: 600; padding: 6px 8px;
   border-radius: var(--radius); list-style: none; display: flex; align-items: center; gap: 6px; }
-.card-group > summary::-webkit-details-marker { display: none; }
-.card-group > summary:hover { background: var(--secondary); }
-.card-group .card-group { margin-left: 16px; }
-.card-group > .change-card { margin-left: 16px; }
+.change-group > summary::-webkit-details-marker { display: none; }
+.change-group > summary:hover { background: var(--secondary); }
+.change-group .change-group { margin-left: 16px; }
+.change-group > .change { margin-left: 16px; }
 
 /* Change cards */
-.change-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px;
+.change { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px;
   padding: 16px 18px; background: var(--card); box-shadow: var(--shadow-soft); }
-.change-card.added { border-left: 3px solid var(--success); }
-.change-card.removed { border-left: 3px solid var(--destructive); }
-.change-card.modified { border-left: 3px solid var(--gold); }
-.change-card.moved { border-left: 3px solid var(--primary); }
-.change-card.unanchored { border-left: 3px solid var(--muted-foreground); background: var(--muted); }
-.change-card.unanchored .change-header h3 {
+.change[data-type="added"] { border-left: 3px solid var(--success); }
+.change[data-type="removed"] { border-left: 3px solid var(--destructive); }
+.change[data-type="modified"] { border-left: 3px solid var(--gold); }
+.change[data-type="moved"] { border-left: 3px solid var(--primary); }
+.change.unanchored { border-left: 3px solid var(--muted-foreground); background: var(--muted); }
+.change.unanchored .change__header h3 {
   color: var(--muted-foreground); font-style: italic; font-weight: 400; }
-.change-card.unanchored .change-header h3::before { content: "⚠ "; }
+.change.unanchored .change__header h3::before { content: "⚠ "; }
 
-.change-header { margin-bottom: 6px; }
-.change-header h3 { font-size: 16px; display: inline; margin-left: 8px; font-weight: 600; }
+.change__header { margin-bottom: 6px; }
+.change__header h3 { font-size: 16px; display: inline; margin-left: 8px; font-weight: 600; }
 .section-number { display: block; font-size: 13px; color: var(--muted-foreground); margin-top: 2px; }
 
 /* Citation block (page/line) */
@@ -1079,7 +1120,7 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
 .citation .v2::before { content: "v2: "; color: var(--muted-foreground); }
 
 /* Bodies */
-.change-body { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+.change__body { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
 .added-text { background: var(--diff-add); color: var(--diff-add-foreground);
   padding: 10px; border-radius: var(--radius); }
 .removed-text { background: var(--diff-remove); color: var(--diff-remove-foreground);
@@ -1132,25 +1173,25 @@ mark.find-hit--current { background: var(--gold); color: #fff; }
 .view[hidden] { display: none; }
 
 /* Full-bill tracked-changes view */
-.full-bill-meta { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
-.full-bill { font-size: 14px; line-height: 1.7; }
-.fb-row { display: grid; grid-template-columns: 3em 1fr; gap: 14px; align-items: baseline; }
-.fb-gutter { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); text-align: right;
-  user-select: none; -webkit-user-select: none; }
-.fb-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.full-text-meta { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
+.full-text { font-size: 14px; line-height: 1.7; }
+.full-text-line { display: grid; grid-template-columns: 3em 1fr; gap: 14px; align-items: baseline; }
+.full-text-line__number { font-family: var(--font-mono); font-size: 11px; text-align: right;
+  color: var(--muted-foreground); user-select: none; -webkit-user-select: none; }
+.full-text-line__text { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* XML full_text has no line-number gutter: plain paragraph flow. */
-.full-bill--no-gutter .fb-row { display: block; }
-.full-bill--no-gutter .fb-row--para { margin-top: 0.9em; }
-.full-bill .diff-mod { background: var(--diff-modified); border-bottom: 2px solid var(--gold); }
-.fb-page { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--muted-foreground);
+.full-text--no-line-numbers .full-text-line { display: block; }
+.full-text--no-line-numbers .full-text-line--paragraph { margin-top: 0.9em; }
+.full-text .diff-modified { background: var(--diff-modified); border-bottom: 2px solid var(--gold); }
+.full-text-page { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--muted-foreground);
   margin: 18px 0 6px; border-top: 1px dashed var(--border); padding-top: 6px; user-select: none; }
-.full-bill > .fb-page:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
-.full-bill .moved-mark { background: var(--diff-moved); color: var(--diff-moved-foreground); padding: 0 1px; }
-.removed-appendix { margin-top: 28px; border-top: 1px solid var(--border); padding-top: 16px; }
-.removed-appendix__note { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
-.removed-block { margin-bottom: 12px; }
-.removed-block__head { font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px; font-weight: 600; }
-.removed-block .diff-del { white-space: pre-wrap; }
+.full-text > .full-text-page:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+.full-text .moved-mark { background: var(--diff-moved); color: var(--diff-moved-foreground); padding: 0 1px; }
+.removed-changes { margin-top: 28px; border-top: 1px solid var(--border); padding-top: 16px; }
+.removed-changes__note { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
+.removed-changes__item { margin-bottom: 12px; }
+.removed-changes__item-head { font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px; font-weight: 600; }
+.removed-changes__item .diff-removed { white-space: pre-wrap; }
 
 /* Export button + modal */
 .export-btn { padding: 6px 16px; border: 1px solid var(--primary);
@@ -1184,28 +1225,28 @@ mark.find-hit--current { background: var(--gold); color: #fff; }
 .prompt-text { line-height: 1.5; }
 
 /* Nav targets clear the sticky action bar when scrolled to via Prev/Next */
-.change-card, .full-bill [id^="attr-"], .full-bill [id^="sec-"], .full-bill [id^="fb-off-"],
-.removed-block { scroll-margin-top: 64px; }
+.change, .full-text [id^="attr-"], .full-text [id^="sec-"], .full-text [id^="fb-off-"],
+.removed-changes__item { scroll-margin-top: 64px; }
 
 /* Full-bill section TOC (sidebar variant) */
-.sidebar-changes[hidden], .sidebar-toc[hidden] { display: none; }
-.toc__title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+.sidebar-changes[hidden], .sidebar-tree[hidden] { display: none; }
+.tree__title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--muted-foreground); margin-bottom: 8px; font-weight: 600; }
-.toc { list-style: none; }
-.toc--root { margin: 0; padding: 0; }
-.toc li { list-style: none; }
-.toc-group { margin-bottom: 2px; }
-.toc-group > summary { cursor: pointer; padding: 6px 8px; border-radius: var(--radius);
+.tree { list-style: none; }
+.tree--root { margin: 0; padding: 0; }
+.tree li { list-style: none; }
+.tree-group { margin-bottom: 2px; }
+.tree-group > summary { cursor: pointer; padding: 6px 8px; border-radius: var(--radius);
   font-size: 13px; font-weight: 600; color: var(--foreground); list-style: none;
   display: flex; align-items: baseline; gap: 4px; }
-.toc-group > summary::-webkit-details-marker { display: none; }
-.toc-group > summary:hover { background: var(--secondary); }
-.toc-group > summary a { color: inherit; text-decoration: none; }
-.toc-group ul { margin: 2px 0 6px 14px; }
-.toc-child a { display: block; padding: 4px 8px; text-decoration: none; color: var(--muted-foreground);
+.tree-group > summary::-webkit-details-marker { display: none; }
+.tree-group > summary:hover { background: var(--secondary); }
+.tree-group > summary a { color: inherit; text-decoration: none; }
+.tree-group ul { margin: 2px 0 6px 14px; }
+.tree-node a { display: block; padding: 4px 8px; text-decoration: none; color: var(--muted-foreground);
   font-size: 13px; border-radius: var(--radius); }
-.toc-child a:hover { background: var(--secondary); color: var(--foreground); }
-.toc-empty { color: var(--muted-foreground); font-size: 13px; padding: 8px; }
+.tree-node a:hover { background: var(--secondary); color: var(--foreground); }
+.tree-empty { color: var(--muted-foreground); font-size: 13px; padding: 8px; }
 
 /* Collapsible sidebar + responsive layout */
 .sidebar { transition: transform 0.2s ease; z-index: 40; padding-top: 56px; }
@@ -1241,7 +1282,7 @@ body.nav-collapsed .main { margin-left: 0; padding-left: 64px; }
 @media print {
   .sidebar, .action-bar, .sidebar-toggle { display: none; }
   .main { margin-left: 0; }
-  .change-card { break-inside: avoid; }
+  .change { break-inside: avoid; }
 }
 """
 )
@@ -1252,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // View toggle (Changes / Full bill)
   var toggleBtns = document.querySelectorAll('.view-toggle__btn');
   var sidebarChanges = document.querySelector('.sidebar-changes');
-  var sidebarToc = document.querySelector('.sidebar-toc');
+  var sidebarToc = document.querySelector('.sidebar-tree');
   function showView(name) {
     toggleBtns.forEach(function(b) {
       var on = b.dataset.view === name;
@@ -1260,12 +1301,12 @@ document.addEventListener('DOMContentLoaded', function() {
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     document.querySelectorAll('.view').forEach(function(el) {
-      el.hidden = !el.classList.contains('view-' + name);
+      el.hidden = el.dataset.view !== name;
     });
     // Swap the sidebar variant (only when a TOC variant was rendered).
     if (sidebarToc) {
-      sidebarToc.hidden = name !== 'full';
-      if (sidebarChanges) sidebarChanges.hidden = name === 'full';
+      sidebarToc.hidden = sidebarToc.dataset.view !== name;
+      if (sidebarChanges) sidebarChanges.hidden = sidebarChanges.dataset.view !== name;
     }
   }
   toggleBtns.forEach(function(b) {
@@ -1280,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   // Change-list anchors (#change-N) live in the changes view; jump back to it
-  // first. TOC links (.sidebar-toc a) just scroll within the full-bill view.
+  // first. TOC links (.sidebar-tree a) just scroll within the full-text view.
   document.querySelectorAll('.sidebar-changes a').forEach(function(a) {
     a.addEventListener('click', function() {
       showView('changes');
@@ -1340,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return true;
     };
     var visible = 0;
-    document.querySelectorAll('.change-card').forEach(function(c) {
+    document.querySelectorAll('.change').forEach(function(c) {
       var show = typeOk(c);
       c.style.display = show ? '' : 'none';
       if (show) visible++;
@@ -1363,8 +1404,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cnt) cnt.textContent = '(' + vis + ')';
     });
     // Same for card groups: a heading over only filter-hidden cards is noise.
-    document.querySelectorAll('.card-group').forEach(function(g) {
-      var vis = [].slice.call(g.querySelectorAll('.change-card')).filter(function(c) {
+    document.querySelectorAll('.change-group').forEach(function(g) {
+      var vis = [].slice.call(g.querySelectorAll('.change')).filter(function(c) {
         return c.style.display !== 'none';
       }).length;
       g.style.display = vis === 0 ? 'none' : '';
@@ -1392,17 +1433,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var nextBtn = document.getElementById('btn-next');
   var counter = document.getElementById('nav-counter');
   var current = -1;
-  // The full-bill view's targets are the inline marks themselves plus the
+  // The full-text view's targets are the inline marks themselves plus the
   // removed-text appendix blocks. Named once: the click handler resolves a
   // clicked highlight against the same set navTargets() steps through.
-  var FULL_TARGET_SEL = '[id^="attr-"], .removed-block';
+  var FULL_TARGET_SEL = '[id^="attr-"], .removed-changes__item';
   function navTargets() {
     var full = document.querySelector('.view-full');
     if (full && !full.hidden) {
       return [].slice.call(full.querySelectorAll(FULL_TARGET_SEL));
     }
     // Changes view: only cards the active filter leaves visible.
-    return [].slice.call(document.querySelectorAll('.view-changes .change-card'))
+    return [].slice.call(document.querySelectorAll('.view-changes .change'))
       .filter(function(c) { return c.offsetParent !== null; });
   }
   function refreshNav() {
@@ -1468,9 +1509,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!e.target || !e.target.closest) return;
     var full = document.querySelector('.view-full');
     if (full && !full.hidden) {
-      var toc = e.target.closest('.sidebar-toc a[href^="#"]');
-      if (toc) {
-        syncCurrentFrom(document.getElementById(toc.getAttribute('href').slice(1)));
+      var tree = e.target.closest('.sidebar-tree a[href^="#"]');
+      if (tree) {
+        syncCurrentFrom(document.getElementById(tree.getAttribute('href').slice(1)));
         return;
       }
       // Full-bill content is not inside <details>, so nothing to reveal here.
@@ -1484,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', function() {
       syncCurrentTo(card);
       return;
     }
-    syncCurrentTo(e.target.closest('.change-card'));
+    syncCurrentTo(e.target.closest('.change'));
   });
   // Recompute targets (and reset position) when the view or filter changes.
   function resetNav() { current = -1; refreshNav(); }
@@ -1539,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFindCounter();
   }
   // Elements that don't interrupt the flow of a printed line. Anything else
-  // (a new .fb-row, a card, a paragraph) starts a new display line.
+  // (a new .full-text-line, a card, a paragraph) starts a new display line.
   var FIND_INLINE = {SPAN: 1, MARK: 1, INS: 1, DEL: 1, EM: 1, STRONG: 1, A: 1, B: 1,
                      I: 1, U: 1, S: 1, CODE: 1, SUP: 1, SUB: 1, SMALL: 1, ABBR: 1};
   // Separates text that is adjacent on screen but not continuous prose: a card's
@@ -1554,25 +1595,26 @@ document.addEventListener('DOMContentLoaded', function() {
     var el = node.parentElement, del = null, gutter = false;
     while (el && FIND_INLINE[el.tagName]) {
       if (el.tagName === 'DEL') del = el;
-      if (el.classList.contains('fb-gutter')) gutter = true;
+      if (el.classList.contains('full-text-line__number')) gutter = true;
       el = el.parentElement;
     }
     return {block: el, del: del, gutter: gutter};
   }
   // Flatten the active view into one searchable string, with a map back to the
   // text nodes it came from. Searching this instead of each text node is what
-  // lets a phrase match across a printed line break (#162): the PDF full-bill
+  // lets a phrase match across a printed line break (#162): the PDF full-text
   // view is print-faithful, so GPO's line breaks and its soft-hyphenated word
   // splits are real DOM boundaries, and every row is its own text node.
   //
-  // Normalizations, following the parser's own handling of the printed page
-  // (parsers/pdf_text.py `_merge_print_lines`):
-  //   - a word split at a syllable break (`Serv-` + lowercase continuation) is
-  //     rejoined into one word, hyphen dropped
-  //   - a real compound broken at its own hyphen (`Child-` + uppercase `Rescue`)
-  //     keeps the hyphen and closes up. The parser leaves these two lines
-  //     separate, so this is deliberately MORE than it does: on screen the
-  //     compound reads as one word, so search should treat it as one.
+  // Where a printed word break falls, and what reflowing does to its hyphen, is
+  // APPLIED from the `data-join` attribute the producer stamps on the row, not
+  // re-derived here. Whether `INTEL-` / `LIGENCE` closes up into one word and whether
+  // `McKinney-` / `Vento` keeps its hyphen is not decidable from the printed line --
+  // GPO prints a syllable break and a compound broken at its own hyphen identically --
+  // so the only correct answer is the one the extractor reached with evidence this
+  // code does not have (#650, and the rule in #653: a consumer may apply facts the
+  // document carries, and may not re-infer facts it omits). A row with no attribute
+  // is not a word break, and its line boundary becomes a space as before.
   //   - display lines joined with a single space
   //   - whitespace runs collapsed (GPO pads columns with runs of spaces)
   // The line-number gutter and page markers are print furniture, not bill text,
@@ -1607,7 +1649,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (seg.gutter || !seg.block) continue;
       if (seg.block !== visBlock) {  // one layout read per block, not per node
         visBlock = seg.block;
-        visible = !seg.block.classList.contains('fb-page')
+        visible = !seg.block.classList.contains('full-text-page')
                   && (seg.block.offsetParent !== null || seg.block.tagName === 'BODY');
       }
       if (!visible) continue;
@@ -1618,13 +1660,16 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (block !== null && b !== block) {
         // Consecutive rows of the bill are one flowing text; anything else
         // (card to card, the meta line, the removed-text appendix) is not.
-        if (!b.classList.contains('fb-row') || !block.classList.contains('fb-row')) {
+        if (!b.classList.contains('full-text-line') || !block.classList.contains('full-text-line')) {
           pushBreak();
         } else {
-          var cont = node.nodeValue.replace(/^\\s+/, '').charAt(0);
-          var hyphenated = /[A-Za-z0-9]-$/.test(parts[parts.length - 1] || '');
-          if (hyphenated && cont && cont !== cont.toUpperCase()) {
-            // Soft hyphen (lowercase continuation): drop it, `Serv-`+`ices` is one word.
+          // The producer decided this at extraction and the row carries the answer
+          // (#650): `data-join` is present exactly where a printed word break falls,
+          // and says whether reflowing drops the hyphen. Re-deriving it from letter
+          // case is what made this copy of the rule disagree with the parser's.
+          var join = block.getAttribute && block.getAttribute('data-join');
+          if (join === 'drop') {
+            // A syllable break the printer introduced: `Serv-` + `ices` is one word.
             var tail = parts[parts.length - 1];
             parts[parts.length - 1] = tail.slice(0, -1);
             flatLen -= 1;
@@ -1632,9 +1677,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (--lastPiece.len === 0) pieces.pop();
             if (!parts[parts.length - 1]) parts.pop();
             lastCh = tail.charAt(tail.length - 2);
-          } else if (hyphenated && cont) {
-            // A real compound broken at its own hyphen (`Child-` / `Rescue`): keep
-            // the hyphen and close the gap, so the reader's `Child-Rescue` matches.
+          } else if (join === 'keep') {
+            // The word's own hyphen (`McKinney-` / `Vento`): keep it and close the gap.
           } else {
             pushSpace(null, 0);
           }

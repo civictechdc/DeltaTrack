@@ -13,10 +13,14 @@ That output is mostly formatting noise (renumbered lines, page headers, reflow)
 and has no sense of a bill's structure. DeltaTrack parses each version into the
 bill's own sections and diffs those, so on any bill type you see what actually
 changed (added, removed, modified, and moved sections) without the noise, even
-when no dollar amounts move. For appropriations bills it adds a structured money
-model on top, producing an account-level table of paired old → new amounts. See
+when no dollar amounts move. For appropriations bills, `--financial` narrows the
+comparison to sections whose dollar figures differ, and the canonical JSON records the
+figures in each structural node's own text (`tree[].own_amounts`). It does not pair
+amounts across versions or total them by account: that needs each figure classified
+first (appropriation, sub-allocation, ceiling or limitation), which the engine does not
+do yet. See
 [docs/decisions/0001-structured-money-diff.md](docs/decisions/0001-structured-money-diff.md)
-for the rationale and a reproducible comparison.
+for why DeltaTrack diffs a structured model rather than text.
 
 ## Prerequisites
 
@@ -153,15 +157,14 @@ download all read one shape. `./diff_pdf.py --format json` does the same for a P
 
 - **Header** with bill number, congress, and version numbers (e.g., "v1: reported-in-house → v2: engrossed-in-house")
 - **Sidebar** listing all changed sections with color-coded change type badges. Type in the filter box to narrow the list. Click any item to jump to that section.
-- **Financial summary table** showing dollar amounts before and after, with change amounts and percentages. Click column headers to sort. Click a row to jump to that section's detail. Sections with floor amendment annotations show a warning badge.
 - **Change cards** for each modified, added, removed, or moved section. Modified sections show word-level inline diffs: additions highlighted in green, deletions in red strikethrough. Moved sections show both the old and new location, plus body text.
 - **Prev/next buttons** in the bottom right corner to step through changes one at a time.
 
 When no changes are detected between versions, the report displays "No changes found" rather than a blank page.
 
-Financial data is automatically included in the HTML report without needing the `--financial` flag.
-
 ### Change types
+
+These are the four `change_type` values in the canonical JSON. Sections identical in both versions are not reported.
 
 | Type | Meaning |
 |------|---------|
@@ -169,11 +172,10 @@ Financial data is automatically included in the HTML report without needing the 
 | `added` | Section only in new version |
 | `removed` | Section only in old version |
 | `moved` | Section relocated (renumbered or moved under a different title) |
-| `unchanged` | Identical text in both versions (hidden by default) |
 
 ### Financial filtering
 
-`--financial` filters to sections where dollar amounts changed and adds amount details to the JSON output. Sections where text changed but amounts stayed the same are excluded.
+`--financial` (XML only) keeps the changes whose section's dollar figures differ between versions and drops the rest, including sections whose text changed while their figures did not. The figures are compared as a multiset, so a figure added, dropped, changed in value, or repeated a different number of times all count, and an added or removed section passes whenever it contains any figure. It is a filter only: the output has the same shape with or without it, `summary` counts the changes that remain, and it narrows the HTML report and the JSON alike.
 
 ### Text normalization
 
@@ -182,7 +184,7 @@ The tool focuses on substantive changes and ignores formatting differences betwe
 - Spacing and line break differences between versions
 - Differences in spacing around numbered list markers like (1), (A), or (iv), which vary between House and Senate formatting conventions
 
-Floor amendment annotations like "(increased by $2,000,000)" appear in engrossed versions after floor votes. These annotations reference the budget request baseline, not the previous bill version, so the base amount in the text is the authoritative appropriation. The tool strips the annotations before comparing amounts across versions, then flags their presence with an informational badge in the HTML report so readers can see where the floor acted.
+Floor amendment annotations like "(increased by $2,000,000)" appear in engrossed versions after floor votes. These annotations reference the budget request baseline, not the previous bill version, so the base amount in the text is the authoritative appropriation. The tool strips the annotations before comparing dollar figures, so an annotation on its own does not make a section pass `--financial`.
 
 ## Comparing PDF versions
 

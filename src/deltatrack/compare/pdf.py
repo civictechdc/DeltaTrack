@@ -7,6 +7,7 @@ from uploaded bytes instead of files on disk:
     merge_print_pages()    (parsers.pdf_text)   — own evidence first, sibling as fallback
     diff_pdfs()            (diff_pdf)
     pdf_full_text()        (parsers.pdf_text)   — both paths (full text + offsets)
+    pdf_print_breaks()     (parsers.pdf_text)   — both paths (where the printer broke it)
     pdf_diff_to_canonical()(formatters.canonical) — both paths (JSON out / embedded)
     format_diff_html()     (formatters.diff_html) — HTML path (canonical → report)
 
@@ -28,8 +29,9 @@ from deltatrack.parsers.pdf_text import (
     extract_print_pages,
     merge_print_pages,
     pdf_full_text,
-    pdf_full_text_print,
+    pdf_print_breaks,
 )
+from deltatrack.version_stems import version_identity_from_filename
 
 
 class UnsupportedLayoutError(ValueError):
@@ -174,32 +176,32 @@ def _build_canonical(
     end_label: str,
     *,
     congress: str = "",
-    printed: bool = False,
     start_version_number: int | None = None,
     end_version_number: int | None = None,
 ) -> dict:
     """Canonical diff JSON (see schema/canonical-diff.md) with full text + per-change spans.
 
-    Shared by both entry points: it is the JSON response on the JSON path and
-    the embedded ``diff.json`` (driving export) on the HTML path. With
-    ``printed=True`` the full text and spans use the print-faithful rendering
-    (`pdf_full_text_print`) instead of the merged whole-word text — that variant
-    drives only the on-screen full-bill view, not the embed/export.
+    Shared by both entry points: it is the JSON response on the JSON path and the
+    document the report renders from, and embeds, on the HTML path. The full text is
+    whole-word; `print_breaks` carries where the printer broke it, so the report lays
+    out the printed page from this document alone (#653).
     """
-    render = pdf_full_text_print if printed else pdf_full_text
-    v1_text, v1_offsets = render(old_pages)
-    v2_text, v2_offsets = render(new_pages)
+    v1_text, v1_offsets = pdf_full_text(old_pages)
+    v2_text, v2_offsets = pdf_full_text(new_pages)
+    bill_type, bill_number, title = _bill_identity(new_pages)
     return pdf_diff_to_canonical(
         pdf_diff,
-        bill_type="",
-        bill_number="",
+        bill_type=bill_type,
+        bill_number=bill_number,
         congress=congress,
+        title=title,
         v1_label=start_label,
         v2_label=end_label,
         v1_version_number=start_version_number,
         v2_version_number=end_version_number,
         full_text={"v1": v1_text, "v2": v2_text},
         line_offsets={"v1": v1_offsets, "v2": v2_offsets},
+        print_breaks={"v1": pdf_print_breaks(old_pages), "v2": pdf_print_breaks(new_pages)},
     )
 
 
@@ -209,36 +211,34 @@ _BILL_DESIGNATOR = re.compile(
 )
 
 
-def _derive_bill_title(canonical: dict) -> str:
-    """Best-effort report heading from the document's opening text.
+def _bill_identity(pages: list[Page]) -> tuple[str, int | str, str | None]:
+    """(bill type, bill number, long title) read from the document's opening lines.
 
-    Pulls the chamber designator (e.g. "H.R. 4366") and the long title that
-    follows "AN ACT" / "A BILL". Returns "" when neither is found (the renderer
-    then falls back to a generic heading). This parses GPO front matter
-    heuristically and is not yet validated across bill types — see the
-    deep-data-testing follow-up.
+    The type is the designator's letters lowercased (`H.R.` -> `hr`, `S.J.RES.` ->
+    `sjres`), the same codes the XML path carries; type and number are "" when no
+    designator is found. The title is the long title that follows "AN ACT" / "A BILL",
+    or None. This parses GPO front matter heuristically and is not yet validated across
+    bill types — see the deep-data-testing follow-up.
     """
-    full_text = canonical.get("full_text") or {}
-    text = full_text.get("v2") or full_text.get("v1") or ""
-    head = " ".join(line.strip() for line in text[:1500].splitlines() if line.strip())
+    head = ""
+    for line in (ln for page in pages for ln in page.lines):
+        if len(head) > 1500:
+            break
+        if line.text.strip():
+            head = f"{head} {line.text.strip()}" if head else line.text.strip()
 
-    designator = ""
+    bill_type: str = ""
+    bill_number: int | str = ""
     m = _BILL_DESIGNATOR.search(head)
     if m:
-        designator = f"{m.group(1).replace(' ', '')} {m.group(2)}"
+        bill_type = re.sub(r"[^a-z]", "", m.group(1).lower())
+        bill_number = int(m.group(2))
 
-    title = ""
     m2 = re.search(r"\bAN ACT\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE) or re.search(
         r"\bA BILL\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE
     )
-    if m2:
-        title = re.sub(r"\s+", " ", m2.group(1)).strip()
-        if len(title) > 140:
-            title = title[:137].rstrip() + "…"
-
-    if designator and title:
-        return f"{designator} — {title}"
-    return designator or title
+    title = re.sub(r"\s+", " ", m2.group(1)).strip() if m2 else None
+    return bill_type, bill_number, title
 
 
 def compare_pdfs(
@@ -247,11 +247,22 @@ def compare_pdfs(
     *,
     start_label: str = "Start version",
     end_label: str = "End version",
+    start_version_number: int | None = None,
+    end_version_number: int | None = None,
 ) -> dict:
     """Diff two PDF documents and return canonical diff JSON (see schema/canonical-diff.md)."""
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
     congress = _derive_congress(new_pages)
-    return _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress)
+    return _build_canonical(
+        pdf_diff,
+        old_pages,
+        new_pages,
+        start_label,
+        end_label,
+        congress=congress,
+        start_version_number=start_version_number,
+        end_version_number=end_version_number,
+    )
 
 
 def compare_pdfs_html(
@@ -265,28 +276,40 @@ def compare_pdfs_html(
 ) -> str:
     """Diff two PDF documents and return a standalone HTML report.
 
-    The canonical dict is computed and handed to the renderer so the report can
-    carry the full-bill view and an embedded ``diff.json`` for export. The
-    renderer builds its own view from that document, so the cards and the
-    embedded ``diff.json`` cannot come from different sources.
+    One document is built and handed to the renderer, which renders every view from
+    it and embeds it, so the report and the ``diff.json`` it exports cannot disagree.
+    The printed-page view is laid out from the document's `print_breaks` (#653).
 
-    A second document is also built from the same diff with the printer's line
-    breaks and handed over as ``display_canonical``, because the on-screen
-    full-bill view renders from it while the embedded ``diff.json`` keeps the
-    merged whole-word text. That is the upstream fork DeltaTrack#653 removes, and
-    it stays until the document itself carries the printed text plus the join
-    points needed to reflow it.
-
-    Pass the version numbers when the caller knows the bill's legislative ordinals
-    (rendering a numbered corpus file, not an upload) so the report heads itself
-    identically to the XML report for the same pair.
+    Callers holding files or filenames take the labels and ordinals from
+    :func:`version_identity_from_filename`, so one file is one version on every surface.
     """
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
     congress = _derive_congress(new_pages)
     numbers = {"start_version_number": start_version_number, "end_version_number": end_version_number}
-    canonical = _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, **numbers)
-    display_canonical = _build_canonical(
-        pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, printed=True, **numbers
+    return format_diff_html(
+        _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, **numbers)
     )
-    title = _derive_bill_title(canonical)
-    return format_diff_html(canonical, title, display_canonical=display_canonical)
+
+
+def compare_pdf_files_html(
+    old_path: Path,
+    new_path: Path,
+    *,
+    start_label: str | None = None,
+    end_label: str | None = None,
+) -> str:
+    """Standalone HTML report for two bill PDF files, named as their filenames name them.
+
+    The PDF counterpart of ``compare.xml.compare_xml_files_html``. A label passed here
+    replaces the filename's label only; the ordinal still comes from the filename.
+    """
+    old = version_identity_from_filename(old_path.name, fallback="Start version")
+    new = version_identity_from_filename(new_path.name, fallback="End version")
+    return compare_pdfs_html(
+        old_path.read_bytes(),
+        new_path.read_bytes(),
+        start_label=old.label if start_label is None else start_label,
+        end_label=new.label if end_label is None else end_label,
+        start_version_number=old.ordinal,
+        end_version_number=new.ordinal,
+    )

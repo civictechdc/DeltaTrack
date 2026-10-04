@@ -86,21 +86,37 @@ def _endpoint_json(old: Path, new: Path) -> dict:
     return response.json()
 
 
+def _embedded_versions(html: str) -> dict:
+    """``versions`` from the diff document a rendered report embeds."""
+    embedded = html.split('<script type="application/json" id="diff-data">', 1)[1].split("</script>", 1)[0]
+    return json.loads(embedded.replace("<\\/", "</"))["versions"]
+
+
+def _endpoint_html_versions(old: Path, new: Path) -> dict:
+    """``versions`` from ``POST /api/compare?output=html``, the report an upload opens."""
+    from fastapi.testclient import TestClient
+
+    from web.app import app
+
+    fmt = old.suffix.lstrip(".")
+    with open(old, "rb") as start, open(new, "rb") as end:
+        response = TestClient(app).post(
+            f"/api/compare?format={fmt}&output=html",
+            files={
+                "start_file": (old.name, start, "application/octet-stream"),
+                "end_file": (new.name, end, "application/octet-stream"),
+            },
+        )
+    assert response.status_code == 200, response.text
+    return _embedded_versions(response.text)
+
+
 @pytest.fixture(scope="module", params=["xml", "pdf"])
 def unprefixed_pair(request, tmp_path_factory) -> tuple[Path, Path]:
-    """The fixture pair copied under stems carrying no ``<n>_`` legislative ordinal.
+    """The fixture pair copied under stems carrying no ``<n>_`` ordinal.
 
-    The two surfaces derive a version's identity from the filename by different
-    algorithms: ``version_stems.label_from_stem`` strips a numeric prefix and
-    ``version_number_from_stem`` reads the ordinal off it, while
-    ``web/app.py::_label_from_filename`` strips only the path and the extension and has
-    no ordinal to read at all. On ``1_reported-in-house.xml`` they therefore disagree,
-    and that disagreement is #692 (one bill pair, three different version headings), a
-    property of the two label algorithms rather than of the diff.
-
-    Removing the prefix removes that variable, so the parity gate below measures the
-    document rather than re-measuring #692. What the corpus filenames *do* change is
-    asserted separately, so the exclusion stays one named key wide.
+    The un-numbered case: a draft or a renamed upload, whose label must survive intact
+    and whose ordinal is unknown on every surface. The numbered case is the corpus pair.
     """
     ext = request.param
     tmp = tmp_path_factory.mktemp(f"unprefixed-{ext}")
@@ -133,24 +149,79 @@ def test_the_command_and_the_endpoint_return_the_same_document(tmp_path, unprefi
     assert json.loads(_cli_json(tmp_path, old, new)) == _endpoint_json(old, new)
 
 
+def _example_versions(monkeypatch, tmp_path: Path, fmt: str) -> dict:
+    """``versions`` from the published-example renderer, run for this pair into a temp dir."""
+    from scripts import render_examples
+
+    spec = next(
+        s
+        for s in render_examples.EXAMPLES_TO_RENDER
+        if s.bill_dir == BILL_DIR.name
+        and fmt in s.formats
+        and (s.v1_filename_stem, s.v2_filename_stem) == (V1_STEM, V2_STEM)
+    )
+    monkeypatch.setattr(render_examples, "EXAMPLES", tmp_path)
+    return _embedded_versions(render_examples.RENDERERS[fmt](spec).read_text(encoding="utf-8"))
+
+
 @pytest.mark.slow
-def test_only_the_version_identity_depends_on_the_filename(tmp_path, corpus_pair):
-    """On the committed corpus stems, ``versions`` is the only key that may differ.
+def test_numbered_corpus_names_give_one_version_identity_on_every_surface(tmp_path, monkeypatch, corpus_pair):
+    """The real ``<n>_<label>`` names: command, endpoint, uploaded report and published example agree.
 
-    The mutation this catches and the test above cannot: making any *other* canonical
-    field depend on the filename stem. That gate matters here specifically, because
-    version identity is re-derived from a filename in six places (#692) and the pair
-    above is chosen to make two of them agree.
-
-    Deliberately not an inequality assertion on ``versions``: when #692 lands and the
-    two algorithms converge, this test should stay green rather than pin the defect.
+    #692: the same pair headed itself three ways (the upload kept the ``1_`` prefix and
+    every PDF surface but the examples dropped the ordinal), because six call sites each
+    read the filename their own way. Whole-document equality between command and
+    endpoint, ``versions`` included, is what the shared resolver buys; the expected
+    identity is spelled out so the surfaces cannot agree on a wrong answer.
     """
     old, new = corpus_pair
+    fmt = old.suffix.lstrip(".")
     cli = json.loads(_cli_json(tmp_path, old, new))
     endpoint = _endpoint_json(old, new)
 
-    assert set(cli) == set(endpoint)
-    assert {k: v for k, v in cli.items() if k != "versions"} == {k: v for k, v in endpoint.items() if k != "versions"}
+    expected = {
+        "v1": {"label": "reported-in-house", "version_number": 1, "source": fmt},
+        "v2": {"label": "engrossed-in-house", "version_number": 2, "source": fmt},
+    }
+    assert cli["versions"] == expected
+    assert cli == endpoint
+    assert _endpoint_html_versions(old, new) == expected
+    assert _example_versions(monkeypatch, tmp_path, fmt) == expected
+
+
+@pytest.mark.slow
+def test_an_all_digit_upload_name_is_a_label_with_no_ordinal(tmp_path):
+    """Uploads named ``2026.xml`` and ``2027.xml`` keep their labels and gain no ordinal.
+
+    #756 review: the shared resolver read a stem with no ``_`` as all prefix, so the
+    endpoint published ``version_number`` 2026 and headed the report
+    "v2026: 2026 → v2027: 2027". Develop answered null here. The identity is spelled
+    out, and the rendered line is checked, because both surfaces agreeing proves
+    nothing when they share the rule that was wrong.
+    """
+    from fastapi.testclient import TestClient
+
+    from web.app import app
+
+    old, new = tmp_path / "2026.xml", tmp_path / "2027.xml"
+    shutil.copyfile(BILL_DIR / f"{V1_STEM}.xml", old)
+    shutil.copyfile(BILL_DIR / f"{V2_STEM}.xml", new)
+
+    expected = {
+        "v1": {"label": "2026", "version_number": None, "source": "xml"},
+        "v2": {"label": "2027", "version_number": None, "source": "xml"},
+    }
+    assert _endpoint_json(old, new)["versions"] == expected
+    assert json.loads(_cli_json(tmp_path, old, new))["versions"] == expected
+
+    with open(old, "rb") as start, open(new, "rb") as end:
+        response = TestClient(app).post(
+            "/api/compare?format=xml&output=html",
+            files={"start_file": (old.name, start, "text/xml"), "end_file": (new.name, end, "text/xml")},
+        )
+    assert response.status_code == 200, response.text
+    versions_line = response.text.split('<div class="versions">', 1)[1].split("</div>", 1)[0]
+    assert versions_line.startswith("2026 &rarr; 2027"), versions_line
 
 
 @pytest.mark.slow

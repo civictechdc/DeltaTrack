@@ -93,32 +93,6 @@ class BillTree:
     official_title: str = ""
 
 
-# Chamber designators for report headings (e.g. "hr" → "H.R.").
-_DESIGNATORS = {
-    "hr": "H.R.",
-    "s": "S.",
-    "hjres": "H.J.Res.",
-    "sjres": "S.J.Res.",
-    "hconres": "H.Con.Res.",
-    "sconres": "S.Con.Res.",
-    "hres": "H.Res.",
-    "sres": "S.Res.",
-}
-
-
-def bill_title(tree: BillTree) -> str:
-    """Report heading for an XML bill: "H.R. 4366 — {official title}".
-
-    Mirrors the PDF path's ``_derive_bill_title`` format. Falls back to just the
-    designator when there's no official title, or "" when even the type is unknown.
-    """
-    if not tree.bill_type:
-        return tree.official_title
-    designator = _DESIGNATORS.get(tree.bill_type, tree.bill_type.upper())
-    label = f"{designator} {tree.bill_number}"
-    return f"{label} — {tree.official_title}" if tree.official_title else label
-
-
 def normalize_header(text: str) -> str:
     """Normalize a header for matching: lowercase, collapse whitespace."""
     return " ".join(text.lower().split())

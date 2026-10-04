@@ -39,10 +39,9 @@ from deltatrack.similarity import (
     text_similarity,
 )
 from deltatrack.version_stems import (
-    label_from_stem,
     local_versions,
     resolve_version_file,
-    version_number_from_stem,
+    version_identity_from_filename,
 )
 
 # --- Financial amount extraction ---
@@ -2079,15 +2078,16 @@ def cmd_compare(args: argparse.Namespace) -> None:
     # its appearance on a command-line surface that documents the other one.
     from deltatrack.compare.xml import compare_xml_trees, compare_xml_trees_html
 
-    old_stem, new_stem = old_path.stem, new_path.stem
+    old = version_identity_from_filename(old_path.name, fallback="Start version")
+    new = version_identity_from_filename(new_path.name, fallback="End version")
     build = compare_xml_trees_html if fmt == "html" else compare_xml_trees
     result = build(
         old_tree,
         new_tree,
-        start_label=label_from_stem(old_stem),
-        end_label=label_from_stem(new_stem),
-        old_version_number=version_number_from_stem(old_stem),
-        new_version_number=version_number_from_stem(new_stem),
+        start_label=old.label,
+        end_label=new.label,
+        old_version_number=old.ordinal,
+        new_version_number=new.ordinal,
         filter_text=args.filter,
         financial_only=args.financial,
     )
@@ -2126,8 +2126,9 @@ class _IntermixedSubParser(argparse.ArgumentParser):
     3.13.14 (call `_parse_known_args2`). `requires-python` is ">=3.12" and Ubuntu
     24.04 ships 3.12.3, so the re-entering band is supported and the guard stays.
     tests/test_diff_bill.py::TestIntermixedSubParserGuard simulates the re-entering
-    shape by monkeypatching, so the guard is pinned on every interpreter -- not only
-    on the CI floor leg that happens to run an interpreter from that band.
+    shape by monkeypatching, so the guard is pinned on whatever interpreter runs the
+    suite. CI runs the latest 3.12 patch, which is outside that band, so the simulation
+    is the guard's only coverage there.
 
     `add_subparsers(parser_class=...)` binds EVERY subparser of this parser, not only
     `compare`: a future subcommand with a `nargs=REMAINDER` positional raises

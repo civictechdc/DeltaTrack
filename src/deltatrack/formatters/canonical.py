@@ -28,7 +28,7 @@ from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.parsers.pdf_anchors import Anchor, breadcrumb_for
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "3.1"
 GENERATOR_NAME = "deltatrack"
 
 
@@ -146,6 +146,7 @@ def xml_diff_to_canonical(
     full_text: dict | None = None,
     full_text_spans: dict | None = None,
     tree: dict | None = None,
+    title: str | None = None,
 ) -> dict:
     """Convert a bill-diff dict (from bill_diff_to_dict) into canonical JSON.
 
@@ -171,6 +172,7 @@ def xml_diff_to_canonical(
             "type": diff_dict.get("bill_type", "") or "",
             "number": diff_dict.get("bill_number", "") or "",
             "congress": diff_dict.get("congress", "") or "",
+            "title": title or None,
         },
         "versions": {
             "v1": {
@@ -186,6 +188,8 @@ def xml_diff_to_canonical(
         },
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
+        "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
+        "print_breaks": None,  # XML text has no printed line breaks
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state)
@@ -399,14 +403,20 @@ def pdf_diff_to_canonical(
     bill_type: str,
     bill_number: int | str,
     congress: int | str,
+    title: str | None = None,
     v1_label: str = "v1",
     v2_label: str = "v2",
     v1_version_number: int | None = None,
     v2_version_number: int | None = None,
     full_text: dict | None = None,
     line_offsets: dict | None = None,
+    print_breaks: dict | None = None,
 ) -> dict:
     """Produce canonical JSON from a PdfDiff.
+
+    `print_breaks`, when provided, carries per side where the printer broke a line of
+    the whole-word `full_text`, so a consumer can lay it out as printed. See
+    `parsers.pdf_text.pdf_print_breaks` and schema/canonical-diff.md.
 
     `line_offsets`, when provided, is a dict with keys "v1" and "v2" each
     mapping (page_number, line_number) -> (start_char, end_char) into the
@@ -433,13 +443,15 @@ def pdf_diff_to_canonical(
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": {"name": GENERATOR_NAME, "version": "0"},
-        "bill": {"type": bill_type, "number": bill_number, "congress": congress},
+        "bill": {"type": bill_type, "number": bill_number, "congress": congress, "title": title or None},
         "versions": {
             "v1": {"label": v1_label, "version_number": v1_version_number, "source": "pdf"},
             "v2": {"label": v2_label, "version_number": v2_version_number, "source": "pdf"},
         },
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
+        "full_text_layout": "numbered_lines" if normalized_full_text is not None else None,
+        "print_breaks": print_breaks if normalized_full_text is not None else None,
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _pdf_hunk_to_canonical(h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2)
@@ -771,9 +783,9 @@ def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
     source = canonical["versions"]["v1"]["source"]
     full_text = canonical.get("full_text")
-    # The join reads only THIS canonical's tree — on PDF the caller also builds a
-    # print-faithful display_canonical whose full_text offsets differ; joining
-    # change spans (from here) against that tree would misfile silently (#172).
+    # The join reads only THIS canonical's tree, in the whole-word text's offsets. The
+    # full-bill view moves spans onto the printed layout (`print_layout`); joining
+    # change spans against a tree in the other offsets would misfile silently (#172).
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
     join_index = {side: _span_join_index(tree.get(side) or []) for side in ("v1", "v2")}
     v2_lookup = _v2_label_lookup(tree.get("v2") or [])

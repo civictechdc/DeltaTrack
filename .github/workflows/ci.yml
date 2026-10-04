@@ -18,7 +18,7 @@ name: CI
 # included. KEEP IT ANYWAY. The queue is a branch-protection setting that does not appear
 # in the REST protection payload, is absent from rulesets, and is pinned by no test, so if
 # it is ever switched off nothing else would notice and this run becomes the only verdict
-# on `develop` again. Roughly seven runner-minutes per merge, on free hosted runners, buys
+# on `develop` again. One extra run per merge, on free hosted runners, buys
 # insurance against a silent config change. `main` has NO queue, so its push run is not
 # redundant at all -- it is the only test of the promotion merge commit, whose
 # pull-request run tested a preview rather than what landed.
@@ -50,7 +50,21 @@ on:
     types: [checks_requested]
 
 jobs:
-  # Interpreter-independent checks: lint and format. Run once, not per Python version.
+  # Every job runs the one interpreter `.python-version` pins, the same one contributors
+  # and the deployment use. The project supports that version only and moves to a newer
+  # one deliberately, by editing the pin. History: a four-interpreter matrix (3.12.0, 3.12,
+  # 3.13, 3.14) ran every job per leg until the move to one interpreter.
+  #
+  # Every test job except the browser one runs from a directory that is NOT the checkout,
+  # with absolute paths into it. A fixture path resolved against the current working
+  # directory is green from the repository root and nowhere else (#404). The static rule
+  # in tests/test_fixture_layout.py matches only the tree names it enumerates, so varying
+  # the working directory tests the property directly and needs no list. The browser
+  # tier reaches no fixture path the other tiers do not, so it stays at the root.
+  # History: #721 added a separate job that reran the whole non-browser suite from
+  # outside the checkout; running each job from there covers the same tests once.
+
+  # Lint and format.
   lint-format:
     runs-on: ubuntu-latest
     permissions:
@@ -70,40 +84,8 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run --locked ruff format --check .
 
-  # Fast tests: run on every supported interpreter.
+  # Fast tests.
   fast-tests:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
-    steps:
-      - uses: actions/checkout@v7
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: uv sync --locked
-      - name: Run fast tests
-        if: ${{ !cancelled() }}
-        run: uv run --locked pytest -m "not slow and not browser" -v
-
-  # The non-browser suite, run from a directory that is NOT the checkout.
-  #
-  # Every other job runs from the repository root, so a fixture path resolved against the
-  # current working directory is green in all of them (#404). The static rule that polices
-  # this matches only the tree names it enumerates, so a CWD-relative path into any other
-  # directory is unpoliced; varying the CWD tests the property directly and needs no list.
-  #
-  # Not the fast tier alone: several of the dependencies this found are `@pytest.mark.slow`,
-  # including one that skipped rather than failed. The browser tier is excluded because it
-  # needs a Playwright install and reaches no fixture path the other tiers do not.
-  cwd-independence:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -115,31 +97,46 @@ jobs:
         run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      # The PDF extraction cache (tests/pdf_corpus.py) is keyed by PDF content and the
+      # extractor's fingerprint (pdf_text.py, pypdfium2 and the Python runtime the tests run
+      # on), so an entry restored from an earlier run is exactly what extraction would
+      # produce now. Without it every job re-extracts the corpus from scratch.
+      # The cache key carries the same fingerprint, so an extractor change starts from empty
+      # rather than restoring entries nothing can read, and the PDFs' hash, so a new fixture
+      # is saved instead of being re-extracted on every later hit. The job name is in the key
+      # because each job extracts a different subset: one shared key would be saved by
+      # whichever job finished first and starve the others.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        # Assigned first so a failing command fails the step (bash -e), instead of writing an
+        # empty fingerprint into the key.
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
-      # Absolute paths: a relative one resolves against the directory this job exists to vary.
-      - name: Run the non-browser suite from outside the repository root
+      - name: Run fast tests
         if: ${{ !cancelled() }}
         working-directory: ${{ runner.temp }}/not-the-repo-root
-        run: uv run --locked --project "$GITHUB_WORKSPACE" pytest "$GITHUB_WORKSPACE/tests" -m "not browser" -q
+        run: uv run --locked --project "$GITHUB_WORKSPACE" pytest "$GITHUB_WORKSPACE/tests" -m "not slow and not browser" -v
 
-  # Browser tests: run on every supported interpreter. Includes Playwright install.
+  # Browser tests. Includes the Playwright install.
   browser-tests:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install
       - name: Install dependencies
         run: uv sync --locked
       - name: Install Playwright browser
@@ -153,155 +150,168 @@ jobs:
         run: uv run --locked pytest -m browser --run-browser -v
 
   # External-validation suite: committee reports + legislative branch validation.
-  # Runs on every supported interpreter.
   external-validation:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      - name: Make a working directory outside the checkout
+        run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       - name: Run external-validation suite
         if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
-          uv run --locked pytest -v -m slow
-          tests/test_committee_report.py
-          tests/test_validate_extraction.py
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_committee_report.py"
+          "$GITHUB_WORKSPACE/tests/test_validate_extraction.py"
 
   # Corpus correctness gates: parametrize over committed manifest.
-  # Runs on every supported interpreter.
   corpus-gates:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      # PDF extraction cache: see fast-tests.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        # Assigned first so a failing command fails the step (bash -e), instead of writing an
+        # empty fingerprint into the key.
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
+      - name: Make a working directory outside the checkout
+        run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       - name: Run corpus correctness gates (committed manifest)
         if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
-          uv run --locked pytest -v -m slow
-          tests/test_corpus_properties.py
-          tests/test_corpus_tree_properties.py
-          tests/test_diff_validation.py
-          tests/test_node_join_corpus.py
-          tests/test_xml_subsection_nodes.py
-          tests/test_pdf_subsection_recall.py
-          tests/test_canonical_baseline.py
-          tests/test_pdf_canonical_baseline.py
-          tests/test_pdf_matching_boundary.py
-          tests/test_pdf_observation_emission.py
-          tests/test_pdf_observation_identity.py
-          tests/test_pdf_round1_retrieval.py
-          tests/test_pdf_round1_revocation.py
-          tests/test_pdf_round2_stages.py
-          tests/test_matching_contracts.py
-          tests/test_assignment_classification_boundary.py
-          tests/test_round1_stages.py
-          tests/test_round1_pairing_sentinel.py
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_corpus_properties.py"
+          "$GITHUB_WORKSPACE/tests/test_corpus_tree_properties.py"
+          "$GITHUB_WORKSPACE/tests/test_diff_validation.py"
+          "$GITHUB_WORKSPACE/tests/test_node_join_corpus.py"
+          "$GITHUB_WORKSPACE/tests/test_xml_subsection_nodes.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_subsection_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_canonical_baseline.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_canonical_baseline.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_matching_boundary.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_observation_emission.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_observation_identity.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_round1_retrieval.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_round1_revocation.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_round2_stages.py"
+          "$GITHUB_WORKSPACE/tests/test_matching_contracts.py"
+          "$GITHUB_WORKSPACE/tests/test_assignment_classification_boundary.py"
+          "$GITHUB_WORKSPACE/tests/test_round1_stages.py"
+          "$GITHUB_WORKSPACE/tests/test_round1_pairing_sentinel.py"
 
-  # Packaging gate: build wheel, install in clean env, run diff from outside checkout.
-  # Runs on every supported interpreter.
+  # Packaging gate: build wheel, install in clean env, run diff from outside the checkout.
   packaging-gate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      - name: Make a working directory outside the checkout
+        run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       - name: Run packaging gate (build, install, diff from outside the checkout)
         if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
-          uv run --locked pytest -v -m slow
-          tests/test_engine_installs.py
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_engine_installs.py"
 
   # Remaining slow suites: all other @slow modules against committed fixtures.
-  # Runs on every supported interpreter.
   remaining-slow:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12.0", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Set up Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      # PDF extraction cache: see fast-tests.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        # Assigned first so a failing command fails the step (bash -e), instead of writing an
+        # empty fingerprint into the key.
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
+      - name: Make a working directory outside the checkout
+        run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       - name: Run remaining slow suites (committed fixtures)
         if: ${{ !cancelled() }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
-          uv run --locked pytest -v -m slow
-          tests/test_classify_bill.py
-          tests/test_pdf_corpus_smoke.py
-          tests/test_bill_tree.py
-          tests/test_structure_tree.py
-          tests/test_diff_bill.py
-          tests/test_pdf_compare.py
-          tests/test_financial_diff.py
-          tests/test_pipeline_parity.py
-          tests/test_pdf_xml_amount_recall.py
-          tests/test_pdf_xml_prose_recall.py
-          tests/test_pdf_word_break_recall.py
-          tests/test_front_matter_parity.py
-          tests/test_xml_compare.py
-          tests/test_toc_tree.py
-          tests/test_format_html.py
-          tests/test_manifest_report_fixtures.py
-          tests/test_canonical_tree.py
-          tests/test_reconcile.py
-          tests/test_pdf_watermark_recall.py
-          tests/test_formatters_text_serializer.py
-          tests/test_pdf_xml_withheld_recall.py
-          tests/test_cli_api_parity.py
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_classify_bill.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_corpus_smoke.py"
+          "$GITHUB_WORKSPACE/tests/test_bill_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_structure_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_diff_bill.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_compare.py"
+          "$GITHUB_WORKSPACE/tests/test_financial_diff.py"
+          "$GITHUB_WORKSPACE/tests/test_pipeline_parity.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_xml_amount_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_xml_prose_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_word_break_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_full_text_layout.py"
+          "$GITHUB_WORKSPACE/tests/test_report_from_document.py"
+          "$GITHUB_WORKSPACE/tests/test_front_matter_parity.py"
+          "$GITHUB_WORKSPACE/tests/test_xml_compare.py"
+          "$GITHUB_WORKSPACE/tests/test_toc_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_format_html.py"
+          "$GITHUB_WORKSPACE/tests/test_manifest_report_fixtures.py"
+          "$GITHUB_WORKSPACE/tests/test_canonical_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_reconcile.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_watermark_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_formatters_text_serializer.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_xml_withheld_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_cli_api_parity.py"
 
   # The required status check on `develop` and `main` is a context named exactly
-  # `test`. The matrix jobs above report per-leg contexts (e.g., `fast-tests (3.12)`),
-  # and the non-matrix `lint-format` reports a single context. Without this aggregator
-  # the first matrix edit would silently strand branch protection: every following
-  # pull request would wait on a `test` context that no longer reports (#426 review).
-  # This job reports `test` forever, no matter how the matrix is renamed or resized,
-  # and no branch-protection edit is needed.
+  # `test`. Each job above reports its own context under its own name, so without this
+  # aggregator the first job rename, split or matrix would silently strand branch
+  # protection: every following pull request would wait on a context that no longer
+  # reports (#426 review). This job reports `test` forever, however the jobs are
+  # renamed or resized, and no branch-protection edit is needed.
   #
   # `if: always()` is load-bearing: a skipped or failed dependency would otherwise
   # skip this job too, and a skipped aggregator reports no verdict at all. The
@@ -310,7 +320,7 @@ jobs:
   # without the comparison below those would count as a pass, making the aggregator
   # a rubber stamp.
   test:
-    needs: [lint-format, fast-tests, cwd-independence, browser-tests, external-validation, corpus-gates, packaging-gate, remaining-slow]
+    needs: [lint-format, fast-tests, browser-tests, external-validation, corpus-gates, packaging-gate, remaining-slow]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -320,7 +330,6 @@ jobs:
         env:
           LINT_FORMAT_RESULT: ${{ needs.lint-format.result }}
           FAST_TESTS_RESULT: ${{ needs.fast-tests.result }}
-          CWD_INDEPENDENCE_RESULT: ${{ needs.cwd-independence.result }}
           BROWSER_TESTS_RESULT: ${{ needs.browser-tests.result }}
           EXTERNAL_VALIDATION_RESULT: ${{ needs.external-validation.result }}
           CORPUS_GATES_RESULT: ${{ needs.corpus-gates.result }}
@@ -330,7 +339,6 @@ jobs:
           for result in \
             "$LINT_FORMAT_RESULT" \
             "$FAST_TESTS_RESULT" \
-            "$CWD_INDEPENDENCE_RESULT" \
             "$BROWSER_TESTS_RESULT" \
             "$EXTERNAL_VALIDATION_RESULT" \
             "$CORPUS_GATES_RESULT" \

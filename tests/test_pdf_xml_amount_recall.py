@@ -30,8 +30,8 @@ from __future__ import annotations
 import pytest
 from pdf_corpus import cached_pages, dual_format_versions, full_text
 
-from deltatrack.bill_tree import normalize_bill
 from deltatrack.diff_bill import extract_amounts
+from tests.parsed_bills import parsed_bill
 
 pytestmark = pytest.mark.slow
 
@@ -52,7 +52,7 @@ _VERSIONS = dual_format_versions()
     ids=[f"{name}/{xml.stem}" for name, xml, _ in _VERSIONS],
 )
 def test_xml_amounts_appear_in_pdf(bill: str, xml_path, pdf_path) -> None:
-    tree = normalize_bill(xml_path)
+    tree = parsed_bill(xml_path)
     xml_amounts: set[int] = set()
     for node in tree.nodes:
         xml_amounts.update(extract_amounts(node.body_text))

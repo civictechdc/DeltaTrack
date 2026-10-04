@@ -25,6 +25,7 @@ from slowapi.middleware import SlowAPIASGIMiddleware
 
 from deltatrack.compare.pdf import UnsupportedLayoutError, compare_pdfs, compare_pdfs_html
 from deltatrack.compare.xml import compare_xml, compare_xml_html
+from deltatrack.version_stems import version_identity_from_filename
 
 # The static front-end (web/webapp/) ships inside this package and is served by
 # the app itself — see the StaticFiles mount at the bottom of the file. Resolved
@@ -50,10 +51,10 @@ DIFF_TIMEOUT_S = 120
 # throttled.
 COMPARE_RATE_LIMIT_PER_MINUTE = 10
 
-# Format → (label-extension, html entry point, json entry point).
+# Format → (html entry point, json entry point).
 _COMPARE = {
-    "pdf": (".pdf", compare_pdfs_html, compare_pdfs),
-    "xml": (".xml", compare_xml_html, compare_xml),
+    "pdf": (compare_pdfs_html, compare_pdfs),
+    "xml": (compare_xml_html, compare_xml),
 }
 
 app = FastAPI(
@@ -245,18 +246,6 @@ async def _read_upload(upload: UploadFile, field: str, fmt: str) -> bytes:
     return data
 
 
-def _label_from_filename(name: str | None, fallback: str, ext: str) -> str:
-    """Derive a human label from the uploaded filename, defensively (strip any
-    path components a client might send, drop the format extension)."""
-    if not name:
-        return fallback
-    stem = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
-    if stem.lower().endswith(ext):
-        stem = stem[: -len(ext)]
-    stem = stem.strip()
-    return stem or fallback
-
-
 @app.post("/api/compare")
 async def compare(
     start_file: UploadFile = File(...),
@@ -264,12 +253,14 @@ async def compare(
     output: str = Query("html", pattern="^(html|json)$"),
     fmt: str = Query("pdf", alias="format", pattern="^(pdf|xml)$"),
 ):
-    ext, html_fn, json_fn = _COMPARE[fmt]
+    html_fn, json_fn = _COMPARE[fmt]
     start_bytes = await _read_upload(start_file, "start_file", fmt)
     end_bytes = await _read_upload(end_file, "end_file", fmt)
 
-    start_label = _label_from_filename(start_file.filename, "Start version", ext)
-    end_label = _label_from_filename(end_file.filename, "End version", ext)
+    # The rule the command line and the published examples use (#692). It drops any
+    # path components the client sent before reading the name.
+    start = version_identity_from_filename(start_file.filename, fallback="Start version")
+    end = version_identity_from_filename(end_file.filename, fallback="End version")
 
     compare_fn = html_fn if output == "html" else json_fn
 
@@ -282,8 +273,10 @@ async def compare(
                     compare_fn,
                     start_bytes,
                     end_bytes,
-                    start_label=start_label,
-                    end_label=end_label,
+                    start_label=start.label,
+                    end_label=end.label,
+                    start_version_number=start.ordinal,
+                    end_version_number=end.ordinal,
                 ),
                 timeout=DIFF_TIMEOUT_S,
             )

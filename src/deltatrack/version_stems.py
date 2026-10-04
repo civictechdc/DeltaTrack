@@ -10,27 +10,65 @@ file. The readable labels stay; filenames are not migrated to a slug form.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NamedTuple
+
+
+class VersionIdentity(NamedTuple):
+    """A version's label and its per-bill ordinal, as one filename names them.
+
+    ``ordinal`` is the ``<n>`` of an ``<n>_<label>`` filename, published in the canonical
+    document as ``version_number``. It is a local, per-bill position (ADR 0013), not a
+    GPO bill-version code such as ``ih`` or ``enr``, which names a legislative stage and
+    is never read as an ordinal. A name with no ``<n>_`` prefix has no ordinal.
+    """
+
+    label: str
+    ordinal: int | None
+
+
+def version_identity_from_filename(name: str | None, *, fallback: str) -> VersionIdentity:
+    """The version a filename names: the rule every surface shares (#692).
+
+    The command line, the upload endpoint and the example renderer all call this, so one
+    file names one version wherever it is compared. ``name`` may be an anonymous
+    uploader's, so path components of either separator are dropped before anything is
+    read from it. The label is returned as text and escaped where it is rendered.
+    """
+    base = (name or "").replace("\\", "/").rsplit("/", 1)[-1].strip()
+    if base.lower().endswith((".xml", ".pdf")):
+        base = base[:-4].strip()
+    if not base:
+        return VersionIdentity(fallback, None)
+    return VersionIdentity(label_from_stem(base), version_number_from_stem(base))
+
+
+def _split_ordinal_prefix(stem: str) -> tuple[int, str] | None:
+    """``(n, label)`` when ``stem`` is ``<n>_<label>``, else None.
+
+    The ``_`` is required: a stem of digits alone (``2026``, ``1``) is a label with no
+    ordinal, not an ordinal with no label (#756 review). ``isdecimal`` rather than
+    ``isdigit``: ``"³".isdigit()`` is True while ``int("³")`` raises, so a file named
+    ``³_x.xml`` made this raise ValueError instead of answering None. Reachable from
+    :func:`local_versions`, which reads whatever is on disk.
+    """
+    prefix, sep, label = stem.partition("_")
+    return (int(prefix), label) if sep and prefix.isdecimal() else None
 
 
 def version_number_from_stem(stem: str) -> int | None:
-    """Leading ``<n>_`` version number from a filename stem, else None.
-
-    ``isdecimal`` rather than ``isdigit``: ``"³".isdigit()`` is True while ``int("³")``
-    raises, so a file named ``³_x.xml`` made this raise ValueError instead of answering
-    None. Reachable from :func:`local_versions`, which reads whatever is on disk.
-    """
-    prefix = stem.split("_", 1)[0]
-    return int(prefix) if prefix.isdecimal() else None
+    """Leading ``<n>_`` version number from a filename stem, else None."""
+    split = _split_ordinal_prefix(stem)
+    return split[0] if split else None
 
 
 def label_from_stem(stem: str) -> str:
     """Human-readable label after a numeric ``<n>_`` prefix; stem unchanged otherwise.
 
-    Same ``isdecimal`` test as above, so a prefix this module cannot turn into an
-    ordinal is not treated as one here either.
+    Shares :func:`_split_ordinal_prefix` with the ordinal, so a stem is never read as
+    numbered by one and unnumbered by the other.
     """
-    parts = stem.split("_", 1)
-    return parts[1] if len(parts) == 2 and parts[0].isdecimal() else stem
+    split = _split_ordinal_prefix(stem)
+    return split[1] if split else stem
 
 
 def local_versions(bills_dir: Path, slug: str, ext: str = "xml") -> list[tuple[int, str]]:
