@@ -166,6 +166,41 @@ def test_numbered_corpus_names_give_one_version_identity_on_every_surface(tmp_pa
 
 
 @pytest.mark.slow
+def test_an_all_digit_upload_name_is_a_label_with_no_ordinal(tmp_path):
+    """Uploads named ``2026.xml`` and ``2027.xml`` keep their labels and gain no ordinal.
+
+    #756 review: the shared resolver read a stem with no ``_`` as all prefix, so the
+    endpoint published ``version_number`` 2026 and headed the report
+    "v2026: 2026 → v2027: 2027". Develop answered null here. The identity is spelled
+    out, and the rendered line is checked, because both surfaces agreeing proves
+    nothing when they share the rule that was wrong.
+    """
+    from fastapi.testclient import TestClient
+
+    from web.app import app
+
+    old, new = tmp_path / "2026.xml", tmp_path / "2027.xml"
+    shutil.copyfile(BILL_DIR / f"{V1_STEM}.xml", old)
+    shutil.copyfile(BILL_DIR / f"{V2_STEM}.xml", new)
+
+    expected = {
+        "v1": {"label": "2026", "version_number": None, "source": "xml"},
+        "v2": {"label": "2027", "version_number": None, "source": "xml"},
+    }
+    assert _endpoint_json(old, new)["versions"] == expected
+    assert json.loads(_cli_json(tmp_path, old, new))["versions"] == expected
+
+    with open(old, "rb") as start, open(new, "rb") as end:
+        response = TestClient(app).post(
+            "/api/compare?format=xml&output=html",
+            files={"start_file": (old.name, start, "text/xml"), "end_file": (new.name, end, "text/xml")},
+        )
+    assert response.status_code == 200, response.text
+    versions_line = response.text.split('<div class="versions">', 1)[1].split("</div>", 1)[0]
+    assert versions_line.startswith("2026 &rarr; 2027"), versions_line
+
+
+@pytest.mark.slow
 def test_the_command_output_validates_against_the_published_schema(tmp_path, unprefixed_pair):
     """The parity test says the two agree; this says what they agree on is the contract."""
     jsonschema = pytest.importorskip("jsonschema")

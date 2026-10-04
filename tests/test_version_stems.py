@@ -111,6 +111,22 @@ class TestVersionIdentityFromFilename:
         identity = version_identity_from_filename(name, fallback="Start")
         assert identity == VersionIdentity(name.rsplit(".", 1)[0], None)
 
+    @pytest.mark.parametrize(
+        ("name", "label", "ordinal"),
+        [
+            ("2026.pdf", "2026", None),
+            ("1.xml", "1", None),
+            ("1_reported-in-house.pdf", "reported-in-house", 1),
+        ],
+    )
+    def test_only_an_n_underscore_prefix_carries_an_ordinal(self, name, label, ordinal):
+        """A name made only of digits is a label, not an ordinal: the ``_`` is required.
+
+        Without it, an upload named ``2026.xml`` was headed "v2026: 2026", an ordinal the
+        bill never had (#756 review).
+        """
+        assert version_identity_from_filename(name, fallback="Start version") == VersionIdentity(label, ordinal)
+
     @pytest.mark.parametrize("name", [None, "", "   ", ".pdf", "dir/"])
     def test_a_name_that_yields_nothing_falls_back(self, name):
         assert version_identity_from_filename(name, fallback="Start version") == VersionIdentity("Start version", None)

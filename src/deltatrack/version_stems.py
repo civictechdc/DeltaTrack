@@ -42,25 +42,33 @@ def version_identity_from_filename(name: str | None, *, fallback: str) -> Versio
     return VersionIdentity(label_from_stem(base), version_number_from_stem(base))
 
 
-def version_number_from_stem(stem: str) -> int | None:
-    """Leading ``<n>_`` version number from a filename stem, else None.
+def _split_ordinal_prefix(stem: str) -> tuple[int, str] | None:
+    """``(n, label)`` when ``stem`` is ``<n>_<label>``, else None.
 
-    ``isdecimal`` rather than ``isdigit``: ``"³".isdigit()`` is True while ``int("³")``
-    raises, so a file named ``³_x.xml`` made this raise ValueError instead of answering
-    None. Reachable from :func:`local_versions`, which reads whatever is on disk.
+    The ``_`` is required: a stem of digits alone (``2026``, ``1``) is a label with no
+    ordinal, not an ordinal with no label (#756 review). ``isdecimal`` rather than
+    ``isdigit``: ``"³".isdigit()`` is True while ``int("³")`` raises, so a file named
+    ``³_x.xml`` made this raise ValueError instead of answering None. Reachable from
+    :func:`local_versions`, which reads whatever is on disk.
     """
-    prefix = stem.split("_", 1)[0]
-    return int(prefix) if prefix.isdecimal() else None
+    prefix, sep, label = stem.partition("_")
+    return (int(prefix), label) if sep and prefix.isdecimal() else None
+
+
+def version_number_from_stem(stem: str) -> int | None:
+    """Leading ``<n>_`` version number from a filename stem, else None."""
+    split = _split_ordinal_prefix(stem)
+    return split[0] if split else None
 
 
 def label_from_stem(stem: str) -> str:
     """Human-readable label after a numeric ``<n>_`` prefix; stem unchanged otherwise.
 
-    Same ``isdecimal`` test as above, so a prefix this module cannot turn into an
-    ordinal is not treated as one here either.
+    Shares :func:`_split_ordinal_prefix` with the ordinal, so a stem is never read as
+    numbered by one and unnumbered by the other.
     """
-    parts = stem.split("_", 1)
-    return parts[1] if len(parts) == 2 and parts[0].isdecimal() else stem
+    split = _split_ordinal_prefix(stem)
+    return split[1] if split else stem
 
 
 def local_versions(bills_dir: Path, slug: str, ext: str = "xml") -> list[tuple[int, str]]:
