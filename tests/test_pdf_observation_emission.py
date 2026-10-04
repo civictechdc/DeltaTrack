@@ -27,14 +27,15 @@ that is fully addressable elsewhere is not a legislative unit that needs an addr
 
 from __future__ import annotations
 
+import functools
 import re
 from collections import Counter
 
 import pytest
 
 from deltatrack.amounts import extract_amounts
-from deltatrack.parsers.pdf_anchors import _is_uppercase_heading, breadcrumb_for, extract_anchors
-from deltatrack.parsers.pdf_blocks import _Block, _flatten, _group_into_blocks
+from deltatrack.parsers.pdf_anchors import Anchor, _is_uppercase_heading, breadcrumb_for, extract_anchors
+from deltatrack.parsers.pdf_blocks import _Block, _flatten, _group_into_blocks, _IndexedLine
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 from tests.corpus_paths import FIXTURES_DIR
 from tests.pdf_corpus import cached_pages
@@ -59,22 +60,35 @@ def _audit_amounts(text: str) -> Counter:
     return Counter(int(m.group().replace("$", "").replace(",", "")) for m in _AUDIT_DOLLAR_RE.finditer(text))
 
 
-def stream_and_observations(pdf):
-    """One flattened line stream and the observations built FROM IT.
+def _derive(pdf) -> tuple[tuple[_IndexedLine, ...], tuple[Anchor, ...], tuple[_Block, ...]]:
+    """One flattened line stream, the anchors, and the observations built FROM that stream.
 
-    Returned together because callers that relate the two must not re-flatten:
+    Returned together because callers that relate them must not re-flatten:
     ``_flatten`` rejoins cross-page hyphens into fresh ``_IndexedLine`` objects, so two
     calls yield equal-but-distinct instances and any identity-based lookup between them
     silently misses.
     """
     pages = cached_pages(pdf)
     stream = _flatten(pages)
-    return stream, _group_into_blocks(stream, extract_anchors(pages))
+    anchors = extract_anchors(pages)
+    return tuple(stream), tuple(anchors), tuple(_group_into_blocks(stream, anchors))
 
 
-def emitted_observations(pdf) -> list[_Block]:
+#: ``_derive`` once per document per process, shared by every test here. The stability
+#: test compares it with a fresh ``_derive``, since comparing it with itself measures
+#: nothing. Every element is a frozen dataclass and every container a tuple, so no test
+#: can change what the next one reads.
+_derivation = functools.cache(_derive)
+
+
+def stream_and_observations(pdf) -> tuple[tuple[_IndexedLine, ...], tuple[_Block, ...]]:
+    stream, _anchors, observations = _derivation(pdf)
+    return stream, observations
+
+
+def emitted_observations(pdf) -> tuple[_Block, ...]:
     """The PDF observation sequence for one document, per the rule this module states."""
-    return stream_and_observations(pdf)[1]
+    return _derivation(pdf)[2]
 
 
 def test_the_corpus_is_not_empty() -> None:
@@ -123,8 +137,12 @@ def test_emission_is_stable_across_re_derivation(pdf) -> None:
     catch. This is the in-process half of ADR 0019's open question 2; cross-process and
     cross-platform stability is still unmeasured and is why no artifact should store a PDF
     ordinal yet.
+
+    One side is derived here and the other is the shared derivation, which a separate
+    call produced. Comparing the shared derivation with itself would compare one object
+    with itself and measure nothing.
     """
-    assert emitted_observations(pdf) == emitted_observations(pdf)
+    assert _derive(pdf)[2] == emitted_observations(pdf)
 
 
 @pytest.mark.parametrize("pdf", _PDFS, ids=_IDS)
@@ -148,16 +166,17 @@ def test_stripping_never_drops_a_dollar_amount(pdf) -> None:
     118-hr-4820 and 118-s-4690 each lose exactly one, from lines like
     ``'(29 U.S.C. 792), $9,955,000.'`` which read as uppercase headings.
     """
-    pages = cached_pages(pdf)
-    stream = _flatten(pages)
-    blocks = _group_into_blocks(stream, extract_anchors(pages))
+    stream, blocks = stream_and_observations(pdf)
 
+    # `update`, not `+=`: Counter's `+=` rescans the whole counter after every addition,
+    # which over a document's lines is quadratic. The totals are the same, every count here
+    # being positive.
     in_stream: Counter = Counter()
     for line in stream:
-        in_stream += _audit_amounts(line.text)
+        in_stream.update(_audit_amounts(line.text))
     emitted: Counter = Counter()
     for block in blocks:
-        emitted += _audit_amounts(block.text)
+        emitted.update(_audit_amounts(block.text))
 
     lost = in_stream - emitted
     assert not lost, (
@@ -180,8 +199,7 @@ def test_the_amount_guard_is_actually_exercised() -> None:
     """
     retained = 0
     for pdf in _PDFS:
-        pages = cached_pages(pdf)
-        for block in _group_into_blocks(_flatten(pages), extract_anchors(pages)):
+        for block in emitted_observations(pdf):
             if not block.indexed_lines:
                 continue
             for edge in {block.indexed_lines[0], block.indexed_lines[-1]}:
@@ -235,9 +253,7 @@ def test_a_dropped_block_stays_addressable_without_being_an_observation(pdf) -> 
     A document with no collisions asserts nothing here, which is why the corpus-wide floor
     below exists.
     """
-    pages = cached_pages(pdf)
-    stream = _flatten(pages)
-    anchors = extract_anchors(pages)
+    stream, anchors, _observations = _derivation(pdf)
     dropped = _dropped_anchors(stream, anchors)
     if not dropped:
         return
@@ -258,8 +274,8 @@ def test_the_corpus_actually_contains_dropped_blocks() -> None:
     """
     total = 0
     for pdf in _PDFS:
-        pages = cached_pages(pdf)
-        total += len(_dropped_anchors(_flatten(pages), extract_anchors(pages)))
+        stream, anchors, _observations = _derivation(pdf)
+        total += len(_dropped_anchors(stream, anchors))
     assert total >= 100, (
         f"only {total} zero-content blocks across the corpus; the addressability sweep is close to asserting nothing"
     )
@@ -276,9 +292,7 @@ def test_removing_the_empty_block_filter_breaks_the_emission_rule() -> None:
     is capable of failing rather than being an absence assertion nothing can violate.
     """
     pdf = next(p for p in _PDFS if p.parent.name == "118-hr-8752")
-    pages = cached_pages(pdf)
-    stream = _flatten(pages)
-    anchors = extract_anchors(pages)
+    stream, anchors, _observations = _derivation(pdf)
     assert _dropped_anchors(stream, anchors), "this fixture must contain a collision to mutate"
 
     first_at: dict[tuple[int, int | None], int] = {}
