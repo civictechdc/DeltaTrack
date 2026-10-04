@@ -893,12 +893,99 @@ quantity, the two agree.
 | F12 XML parser → PDF helpers | Partly falsified | Found independently as a blocker (E #7): 17 XML match keys move | **Revived (partly)** |
 | F13 CLI in differ | Partly falsified | Holds as tracked debt (A): ADR 0017, #62 | No (context added) |
 | F15 no direction gate | Partly falsified | Holds (A): 4 planted violations pass every gate | Evidence strengthened |
-| F2, F3, F4d, F5, F11, F14 | Falsified / mostly | *Review D pending* | — |
+| F2 HTML in the view model | Falsified | Weakly revived (D): the cost is F1's; the renderer duplicates move/path wording | Narrowed into F1 |
+| F3 `source` branches | Mostly falsified | **Partly revived** (D, reproduced): `_card_texts` picks layout from `source` in 3.1 documents | **Yes** |
+| F4d gutter / page parsing | Falsified | Rendering correct on all 160,175 rows (D), but ADR 0006 says the line→offset map belongs in the document | **Yes**, now a contract gap |
+| F5 gutter in `full_text` | Mostly falsified | **Revived** (D, reproduced): caused the #670 money leak; a fourth copy of the format lives in `amounts.py` | **Yes** |
+| F11 TOC-shaped producers | Mostly falsified | **Partly revived** (D, reproduced): "Front Matter" string is a cross-stage key; `""` hide flag outside the schema | **Yes** |
+| F14 minor | Mostly falsified | Dismissal holds (D); vocabulary is in three places, not two | No |
 | **F16** division label decides tree level | — | **New** (E #2), reproduced | New |
 | **F17** XML `text` is the matcher's normalized body | — | **New** (E #4) | New |
 
-**Not converged.** Round 2 produced two new findings, one verdict upgrade (F7) and one
-partial revival (F12), and corrected four pieces of round 1's evidence. A round 3 is needed.
+**Not converged.** Round 2 produced two new findings (F16, F17), one upgrade (F7), five
+revivals (F3, F4d, F5, F11 and, partly, F12) and seven corrections to round 1's evidence. A
+round 3 is needed.
+
+### Review D: reviving the round-1 dismissals
+
+D re-ran its own measurements. I reproduced the F3 source flip and checked the F5 commit,
+the ADR 0006 text and the duplicated label constant myself.
+
+**F5 revived.** Round 1 dismissed it because the format is documented, and said no harm had
+been measured. The harm is on record.
+- Commit `2f0b6a5` (#670, 2026-08-20): the gutter inside PDF `full_text` stopped
+  floor-amendment notes being stripped. **428 of 1,100** leaked across 53 PDFs.
+  - Phantom amounts entered `tree[].own_amounts`, a contract field.
+  - On the change side, an unchanged appropriation split into "a -100% cut on an account
+    nobody cut".
+- The fix added a fourth copy of the format, in the money layer:
+  `amounts.py:56` `GUTTER_RE` / `strip_print_furniture`, which calls the margin number
+  "furniture, not part of the sentence". The renderer throws the text gutter away and draws
+  its own number column.
+- The gutter is **9.6%** of PDF `full_text` and **4.1%** of the serialized documents,
+  including the `diff.json` users are told to hand to an AI assistant.
+- So it is presentation in a contract that ADR 0006:52 and schema `:127` say is
+  presentation-free, and it has already caused a money defect.
+
+**F3 partly revived.**
+- The renderer's check reads `full_text_layout`, so that dismissal holds.
+- But `_card_texts` (`canonical.py:717`) still decides layout from `source` in 3.1
+  documents, which the schema reserves for 3.0 (`:33-36`, `:183-185`).
+  - Flipping only `source` with the layout unchanged changes card text on **426 of 1,415**
+    changes in 117-hr-4502 1→2 (my run), and 41% corpus-wide (D).
+  - Flipping PDF→xml puts the gutter into 6,313 of 6,371 cards.
+  - `test_the_declared_layout_wins_over_the_source` covers only the renderer.
+- Consequence: the ADR 0007 / #95 plan to switch PDF to `paragraphs` requires a viewer
+  edit.
+- `_heading_and_nav` breaks parity for front matter. XML front-matter changes have no path,
+  so they show an empty heading and "(unknown)". PDF ones show "Front Matter".
+- The view reads `v1.source`; the renderer and schema use `v2.source`.
+
+**F4d reframed.**
+- The rendering is correct. D checked all 160,175 rendered rows on both sides against the
+  parser's ground truth (page, line and text), and change starts on line as well as page:
+  v2 6,130 of 6,130, v1 1,049 of 1,049.
+- But ADR 0006:73-75 says it directly: "A parser's map from printed line to character
+  offset is derived, used and currently dropped, and belongs in the document."
+  `line_offsets` (`pdf_text.py:824-852`) is still dropped. Round 1 cited the schema's
+  layout rule (added 2026-10-04 in `ea5fd23`) and missed that the older ADR asks for more.
+- So this is a contract gap, not a rendering bug.
+
+**F11 partly revived.**
+- `"Front Matter"` is defined twice: `parsers/pdf_blocks.py:67` and `structure_tree.py:61`.
+  - `structure_tree.py:243` recognises the PDF case by string equality.
+  - It is also inside the PDF matcher's alignment key (`diff_pdf.py:290`,
+    `"<anchor text>::<preview>"`).
+  - So a display string is a cross-stage key, against the display-label / match-key rule in
+    `architecture.md:171-175`. Renaming it in the parser alone nests "Front Matter" >
+    "Preamble". `test_front_matter_parity.py:303` catches that, so it is guarded.
+- `""` is used as a hide flag. The schema (`:236`) defines `""` only for an empty-path root,
+  but XML trees carry 126 non-root `""` labels under Front Matter.
+- The producers disagree on front-matter change paths: empty on XML, `["Front Matter"]` on
+  PDF.
+
+**F2 weakly revived, folded into F1.**
+- `_citation_html` and `_move_info_html` never read `source`, so ADR 0007's
+  "pipeline-specific" reason does not cover them.
+- The renderer re-implements the same wording with different strings:
+  - `_move_note` "moved here (renumbered X → Y)" vs "Renumbered: X → Y"
+  - `_removed_appendix_html`'s "(unknown location)" vs "(unknown)"
+- One visible string is split across files (the citation's "v1: " comes from CSS). The real
+  cost is that UI wording lives in the contract module, which is F1.
+
+**F12: two reviewers, one picture.** E disabled the PDF run-in matcher (17 XML match keys
+move); D added roman enums to a PDF constant (6 XML nodes move). Both agree the coupling is
+real. D showed cross-pipeline tests catch it: 24 failures in `test_xml_subsection_nodes`, 34
+PDF recall failures. Also:
+- Importing `bill_tree` loads `pdf_anchors`, `pdf_text` and `pypdfium2`: a 3,490-line
+  closure against `bill_tree`'s own 1,547 lines.
+- Under ADR 0019's transitive-import revision rule, a future XML parser revision would
+  change on any PDF extractor edit.
+- Verdict: a real coupling, guarded by tests. Low-Med.
+
+**F14 holds dismissed.** The bill-type vocabulary is in three places (`bill_tree.py:1284`,
+`compare/pdf.py:208-211`, `diff_html.py:450-459`), but `bill.type` is a free string and the
+renderer falls back to `.upper()`, so nothing breaks across stages.
 
 ### Corrections to round 1 (things round 1 got wrong)
 
