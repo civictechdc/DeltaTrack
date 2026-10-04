@@ -204,11 +204,47 @@ def xml_prose_fragments(xml_path: Path) -> list[str]:
     return fragments
 
 
+class _Haystack:
+    """``fragment in text``, answered without scanning the whole text for every fragment.
+
+    An enrolled omnibus normalizes to about 3 MB and yields over 11,000 fragments, and a
+    plain ``in`` scans up to the whole text for each one, the whole of it for every miss.
+    Indexing the text's space-separated tokens once gives the same answer for any text.
+    A word inside a fragment (not its first or last) has a space on each side. Wherever
+    the fragment occurs in the text, that word therefore sits between two spaces there
+    too, at the same distance from the fragment's start, as one complete token. So
+    the fragment can only start at that distance before an occurrence of the word, and
+    only those starts need checking. The word with the fewest occurrences is used.
+    """
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self._starts: dict[str, list[int]] = {}
+        pos = 0
+        for token in text.split(" "):
+            self._starts.setdefault(token, []).append(pos)
+            pos += len(token) + 1
+
+    def __contains__(self, fragment: str) -> bool:
+        words = fragment.split(" ")
+        if len(words) < 3:
+            return fragment in self._text
+        offset = len(words[0]) + 1
+        rarest: tuple[int, list[int]] | None = None
+        for word in words[1:-1]:
+            starts = self._starts.get(word, [])
+            if rarest is None or len(starts) < len(rarest[1]):
+                rarest = (offset, starts)
+            offset += len(word) + 1
+        offset, starts = rarest
+        return any(self._text.startswith(fragment, start - offset) for start in starts if start >= offset)
+
+
 def prose_recall(xml_path: Path, pdf_path: Path) -> tuple[list[str], list[str]]:
     """(fragments, misses) for one version -- the shared body of the test and the
     calibration script, so the number being calibrated is the number being asserted."""
     fragments = xml_prose_fragments(xml_path)
-    haystack = normalize_for_cross_format(full_text(cached_pages(pdf_path)))
+    haystack = _Haystack(normalize_for_cross_format(full_text(cached_pages(pdf_path))))
     return fragments, [f for f in fragments if f not in haystack]
 
 
