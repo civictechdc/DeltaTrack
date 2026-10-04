@@ -103,7 +103,10 @@ jobs:
       # produce now. Without it every job re-extracts the corpus from scratch.
       # The cache key carries the same fingerprint, so an extractor change starts from empty
       # rather than restoring entries nothing can read, and the PDFs' hash, so a new fixture
-      # is saved instead of being re-extracted on every later hit. The job name is in the key
+      # is saved instead of being re-extracted on every later hit. That hash also covers
+      # tests/pdf_corpus.py, which decides what kinds of entry the directory holds: an exact hit
+      # is never saved again, so a new kind would otherwise never reach the cache. The prefix
+      # restore still brings back the entries that remain valid. The job name is in the key
       # because each job extracts a different subset: one shared key would be saved by
       # whichever job finished first and starve the others.
       - name: Fingerprint the PDF extractor
@@ -117,7 +120,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: tests/data/extract_cache
-          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
           restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
@@ -197,7 +200,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: tests/data/extract_cache
-          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
           restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
@@ -272,7 +275,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: tests/data/extract_cache
-          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
           restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
