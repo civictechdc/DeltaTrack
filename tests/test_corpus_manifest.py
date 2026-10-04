@@ -523,11 +523,18 @@ def test_skip_watch_groups_do_not_overlap() -> None:
 _CHILD_CONFTEST = """
 import sys
 sys.path.insert(0, {repo!r})
-from tests.conftest import pytest_runtest_logreport, pytest_sessionfinish  # noqa: F401
+from tests.conftest import pytest_collectreport, pytest_runtest_logreport, pytest_sessionfinish  # noqa: F401
 """
 
 
-def _run_child_session(tmp_path, test_body: str, *, xdist: bool, module: str = "test_corpus_properties.py"):
+def _run_child_session(
+    tmp_path,
+    test_body: str,
+    *,
+    xdist: bool,
+    module: str = "test_corpus_properties.py",
+    extra_modules: dict[str, str] | None = None,
+):
     """Write a one-file gate-module test under tmp_path/tests and run a child pytest.
 
     `module` names the file, which is what puts the nodeid under a watched prefix —
@@ -543,6 +550,8 @@ def _run_child_session(tmp_path, test_body: str, *, xdist: bool, module: str = "
     tests_dir.mkdir()
     (tests_dir / "conftest.py").write_text(_CHILD_CONFTEST.format(repo=repo))
     (tests_dir / module).write_text(test_body)
+    for name, body in (extra_modules or {}).items():
+        (tests_dir / name).write_text(body)
     (tmp_path / "pyproject.toml").write_text('[tool.pytest.ini_options]\ntestpaths = ["tests"]\n')
     cmd = [sys.executable, "-m", "pytest", "-p", "no:randomly", "-q"]
     if xdist:
@@ -577,6 +586,25 @@ def test_ci_slow_ceiling_fails_session_on_unlisted_skip_end_to_end(tmp_path, xdi
     assert r.returncode == 1, f"expected exit 1, got {r.returncode}\n{r.stdout}\n{r.stderr}"
     assert "undeclared skip ceiling exceeded" in r.stdout, r.stdout
     assert "CI slow-suite skip ceiling (#288)" in r.stdout, f"wrong ceiling named\n{r.stdout}"
+
+
+@pytest.mark.parametrize("xdist", [False, True], ids=["serial", "xdist"])
+def test_ceiling_fails_session_on_a_collection_time_skip_end_to_end(tmp_path, xdist) -> None:
+    """A module that skips while importing fails the session, like a skip inside a test.
+
+    The module's tests are never created, so the run-phase hook never sees them; a passing
+    control module keeps the session otherwise green, which is the state that hid this.
+    """
+    skipped = (
+        "import pytest\n"
+        "pytest.skip('missing fixture', allow_module_level=True)\n"
+        "def test_never_runs():\n    assert False\n"
+    )
+    control = {"test_control.py": "def test_ok():\n    assert True\n"}
+    r = _run_child_session(tmp_path, skipped, xdist=xdist, module="test_unlisted.py", extra_modules=control)
+    assert r.returncode == 1, f"expected exit 1, got {r.returncode}\n{r.stdout}\n{r.stderr}"
+    assert "undeclared skip ceiling exceeded" in r.stdout, r.stdout
+    assert "tests/test_unlisted.py\n      reason: missing fixture" in r.stdout, r.stdout
 
 
 def test_ci_slow_ceiling_allows_a_declared_skip_end_to_end(tmp_path) -> None:

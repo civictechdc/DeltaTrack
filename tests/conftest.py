@@ -733,7 +733,7 @@ def is_watched_case(nodeid: str) -> bool:
     return all(f"{bill}/{stem}.{fmt}" in manifested for bill, stem in referenced for fmt in formats)
 
 
-# Populated by pytest_runtest_logreport; read in pytest_sessionfinish.
+# Populated by pytest_runtest_logreport and pytest_collectreport; read in pytest_sessionfinish.
 _observed_corpus_skips: dict[str, str] = {}
 
 
@@ -777,6 +777,22 @@ def pytest_runtest_logreport(report) -> None:
     # bill to _XFAIL_ZERO_NODES would redden CI on a blank-reason "skip").
     if report.outcome != "skipped" or hasattr(report, "wasxfail"):
         return
+    _record_skip(report)
+
+
+def pytest_collectreport(report) -> None:
+    """Record a module that skipped while being collected.
+
+    `pytest.skip(..., allow_module_level=True)` and a module-level `importorskip` raise
+    during import, so the module's tests are never created and never reach
+    pytest_runtest_logreport. The xdist controller re-emits a worker's skipped collection
+    report through this hook, as it does for test reports.
+    """
+    if report.outcome == "skipped":
+        _record_skip(report)
+
+
+def _record_skip(report) -> None:
     if not report.nodeid.startswith(_WATCHED_SKIP_MODULES):
         return
     reason = ""
