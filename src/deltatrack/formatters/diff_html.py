@@ -383,8 +383,8 @@ def _versions_html(view: DiffView) -> str:
     """Render the versions line.
 
     Canonical form: "v1: {label} → v2: {label} · {congress}th Congress".
-    The "vN: " prefix is dropped when both version numbers are None — PDF
-    inputs don't carry a version index, and "v1: Reported" is misleading
+    The "vN: " prefix is dropped when both version numbers are None, which is
+    when neither input filename carries an ordinal: "v1: Reported" is misleading
     when no such index exists.
     """
     if view.v1_version_number is not None or view.v2_version_number is not None:
