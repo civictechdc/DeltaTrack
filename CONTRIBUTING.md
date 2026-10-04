@@ -221,6 +221,8 @@ uv run pytest -m slow \
 
 CI splits gate 5 across several jobs so a red build names the area it came from; run whole it covers all of them, against vendored and committed fixtures, with no downloads or API key. The deselection is CI's one deliberate omission: a live-network gate that cannot run offline.
 
+CI runs these on the interpreter `.python-version` pins, and only that one. A separate weekly workflow, [`newest-python.yml`](.github/workflows/newest-python.yml), runs the non-browser suite on the newest stable Python and files an issue if it fails; it never gates a pull request, and exists to show whether the next bump of the pin will need work.
+
 Selecting by marker means a module joining a CI step is covered here automatically. History: #220, #320, #288 — this block enumerated each step's modules and went stale in three consecutive pull requests, because nothing ties prose to the workflow.
 
 This project installs no commit hooks, so nothing lints on your behalf -- run the commands above before pushing. CI runs the configured Ruff commands against the whole tree.
