@@ -33,6 +33,7 @@ runs the broad local glob instead, for opt-in, non-CI exploration.
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -247,11 +248,28 @@ def _assert_schema_and_levels(roots: list[dict]) -> None:
     for n in nodes:
         assert n["level"] in _LEVELS, f"node {n['label']!r} has level {n['level']!r} not in the GPO enum"
     # Invariant 1: schema-validate each root against the TreeNode $def.
-    jsonschema = pytest.importorskip("jsonschema")
+    pytest.importorskip("jsonschema")
+    validator = _tree_node_validator()
+    for r in roots:
+        validator.validate(r)
+
+
+@functools.cache
+def _tree_node_validator():
+    """A validator for the published ``TreeNode`` def, built once per process.
+
+    ``jsonschema.validate`` checks the schema itself against its metaschema on every
+    call before checking the instance. Over the corpus that is hundreds of calls, and the
+    schema check cost twice as much as the validation. The schema is checked here once,
+    by the same validator class ``jsonschema.validate`` would choose.
+    """
+    import jsonschema
+
     schema = json.loads(_SCHEMA_PATH.read_text())
     node_schema = {"$ref": "#/$defs/TreeNode", "$defs": schema["$defs"]}
-    for r in roots:
-        jsonschema.validate(r, node_schema)
+    cls = jsonschema.validators.validator_for(node_schema)
+    cls.check_schema(node_schema)
+    return cls(node_schema)
 
 
 def _assert_no_blank_toc_rows(roots: list[dict], full_text: str) -> None:
