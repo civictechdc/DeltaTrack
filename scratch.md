@@ -18,8 +18,9 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 6. [Findings](#findings)
 7. [Falsification pass](#falsification-pass) (round 1)
 8. [Review round 2](#review-round-2)
-9. [Work log](#work-log)
-10. [Open questions](#open-questions)
+9. [Mapping to #653 and existing issues](#mapping-to-653-and-existing-issues)
+10. [Work log](#work-log)
+11. [Open questions](#open-questions)
 
 ---
 
@@ -1159,6 +1160,86 @@ part. A change to match keys silently changes filter results.
 
 ---
 
+## Mapping to #653 and existing issues
+
+[#653](https://github.com/civictechdc/DeltaTrack/issues/653) ("Make the view a consumer of
+the diff, not a second producer of it") is the umbrella issue for this audit. Its rule:
+
+> A consumer may derive by applying facts the document carries. It may not derive by
+> re-inferring facts the document omits.
+
+It sets a bound on what the document must carry: "carry facts the producer derived and would
+otherwise discard, not raw source material."
+
+### #653 status at `f2e698a`, checked against the code
+
+| #653 item | Status | Evidence |
+|---|---|---|
+| Renderer rebuilds line structure by parsing its own output; `(page, line) → offset` map computed, used and dropped | **Open** | `_parse_full_bill_lines` (`diff_html.py:585`) still slices the gutter; `line_offsets` still not emitted. **F4d, F5** |
+| One comparison produces two documents (`display_canonical`) | Done | `c4f5516` deleted `display_canonical`; one document carries `print_breaks` |
+| Browser reflow re-implements the producer's rejoin rule (#650) | Done | Producer emits `print_breaks`; renderer stamps `data-join`; browser applies it |
+| Acceptance shape: one document in, one report out | Done | `format_diff_html(canonical)`; title moved into the document (`1908e03`) |
+| Verification 1: render from one saved document in a fresh process | **Passes** | `tests/test_report_from_document.py` |
+| Verification 2: no viewer module parses its own rendered output | **Fails** | `_parse_full_bill_lines`, named in #653 itself |
+| Comment (2026-08-21): full-bill navigation gated twice | Resolved | `_build_sidebar` now gates on `_has_full_bill` only |
+| Comment (2026-08-24): `element_id` dropped; no key joins a change to a tree node; deferred "for lack of a current consumer" | **Open, and now has a consumer** | **F4a** (1,677 unjoined), **F4b** (119 misfiled removals, XML + PDF), **F4c** (label search) all follow from the missing key |
+
+Two items in #653's own record pull against each other:
+- The 2026-08-19 comment decided the gutter **stays** in `full_text` and that a full per-line
+  array (+28% raw / +40% gzip) is not needed; join points are enough.
+- Verification check 2 still requires that no viewer module parse its own output. The
+  renderer can't draw line numbers without either parsing the gutter or receiving them as
+  data.
+
+So closing #653 needs one of two things: a compact line-number encoding in the document (not
+the full array that was priced), or an explicit amendment of check 2 that accepts the
+documented `numbered_lines` layout as "applying a carried fact". Round 2's **F4d** reframing
+is this tension.
+
+Also note: the gutter decision was made on 2026-08-19, one day **before** `2f0b6a5`
+(#670) found the gutter leaking 428 floor-amendment notes into money observations. That
+cost was not available when the decision was made. **F5** is the case for revisiting it.
+
+### Finding → owning issue
+
+| Finding | Owning issue(s) | Already known there? | What this audit adds |
+|---|---|---|---|
+| F1 producers and viewer in one module | [#62](https://github.com/civictechdc/DeltaTrack/issues/62) (decouple engine internals; `canonical.py → diff_pdf`), ADR 0017 | Yes (the edge); the split is not proposed | A simulated split renders byte-identical; only `SCHEMA_VERSION` is shared; renderer import drops from ~0.2 s to ~34 ms with no `pypdfium2` (round 2, A) |
+| F3 `_card_texts` picks layout from `source` | #653, #95 (paragraph flow for PDF) | No | It blocks #95: switching PDF to `paragraphs` needs a viewer edit |
+| F4a / F4b / F4c no change→node key | #653 (2026-08-24 comment), #172 (the join), #552 point 3 (structural addresses) | Mechanism yes; harm no | Measured harm, including a **new misfiling bug (F4b)** with no existing issue |
+| F4d / F5 gutter and line map | #653 (bullet 1, verification 2), #656 (clean text for the LLM export), #95, #670 | Yes; gutter kept by decision | The #670 money leak post-dates the decision; the format has a fourth copy in `amounts.py` |
+| F7 move kind | [#648](https://github.com/civictechdc/DeltaTrack/issues/648) (PDF reports renames when only wrapping changed; names `_pdf_move` as a second site), #524, #551 | PDF side yes | **XML side is new**: the XML and PDF rules disagree on 167/496 XML moves; `_xml_move`'s docstring is false; nothing tests "parent and label both changed" |
+| F7 PDF identity | none found | No | `congress` is empty in 6 of 17 pairs; `_bill_identity` is untested |
+| F8 dead financial work | #693 (made it dead) | No | Canonical identical without it on 27/27 pairs; ~9% of XML compare time |
+| F9 filter before contract | README:178 documents it | Behaviour yes | Filter keys on internal `match_path` (`--filter "TITLE II"` → 0 changes) |
+| F10 summary keys | none found | No | Cosmetic; `unchanged` is outside the schema's `change_type` enum |
+| F11 "Front Matter" string as a key | #552 ("Unverified: whether any production path outside `_interior_level` still derives structure from display text"), #161 | Partly | Answers #552's unverified item: yes, `structure_tree.py:243` and `diff_pdf.py` `_block_key` |
+| F12 XML parser imports PDF privates | #62 (gate: "no `_`-prefixed cross-module imports") | The gate yes, this instance no | 17 XML match keys move when the PDF matcher is disabled; guarded by cross-pipeline tests |
+| F13 CLIs in differ modules | #62, ADR 0017 | Yes | #62's body and `__init__.py` describe a cycle that no longer exists; three real cycles listed |
+| F15 no direction gate | #62 (gate "import graph is acyclic"), #552 (render-invariance gate "tracked separately") | Partly | Four planted layering violations pass every existing gate |
+| F16 division label decides tree level | [#471](https://github.com/civictechdc/DeltaTrack/issues/471) (open bug), epic [#552](https://github.com/civictechdc/DeltaTrack/issues/552), #66 | **Yes, exactly** | Answers #471's "Unverified": the visible effect is six front-matter sections spilling to the root, because `_group_front_matter` keys on `level` |
+| F17 XML `text` is match-normalized | #76 (closed by PR #81) | Partly | #76's stated direction (carry `display_text` on the change) was not what shipped: PR #81 fixed the card in the viewer. The contract still carries `(a)Of`, so `diff.json` and the card disagree |
+
+### What this means for the audit
+
+- **Several "findings" are already-tracked work.** F16 is #471. F1, F12, F13 and part of F15
+  sit under #62. The PDF side of F7 is #648. These should be treated as evidence for those
+  issues, not as new items.
+- **Not tracked anywhere:**
+  - **F4b** (misfiled removals)
+  - the **XML side of F7**
+  - **F8**
+  - **F10**
+  - the **F9 match-key** angle
+  - **F17**'s contract residue
+- **#653-specific next steps:**
+  1. Emit a change→node key (the 2026-08-24 comment's deferred item), which now has a
+     measured consumer in F4a/F4b/F4c.
+  2. Resolve the check-2 vs gutter tension (F4d/F5).
+  3. Move `_card_texts`' layout decision off `source` (F3).
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
@@ -1166,6 +1247,7 @@ part. A change to match keys silently changes filter results.
 | 2026-10-04 | Initial audit; diagrams; findings F1–F15 recorded. No code changes. | all |
 | 2026-10-04 | Falsification pass over 27 XML + 17 PDF corpus pairs; verdicts and revised severities recorded; F4b misfiling queued as a separate fix task. No code changes. | all |
 | 2026-10-04 | Review round 2: five independent reviewers (A–E, E blind); new F16, F17; F7 strengthened; F12 partly revived; seven round-1 corrections. Not converged. No code changes. | all |
+| 2026-10-04 | Mapped findings to #653 and existing issues (#62, #471/#552, #648, #76, #656). F16 = #471. Untracked: F4b, XML side of F7, F8, F10, F9 match-key angle, F17 residue. | all |
 
 ## Open questions
 
