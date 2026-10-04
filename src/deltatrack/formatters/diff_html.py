@@ -15,6 +15,7 @@ staffers see one consistent product regardless of source format.
 from __future__ import annotations
 
 import json
+from bisect import bisect_right
 from html import escape
 
 from deltatrack.formatters._text import word_diff
@@ -265,7 +266,41 @@ def _walk_tree(nodes: list[dict]):
         yield from _walk_tree(n.get("children") or [])
 
 
-def _node_anchor_offset(full_text: str, node: dict) -> int | None:
+class _WholeLines:
+    """Where each line of a text starts, grouped by the line's exact text.
+
+    Answers "the last line before ``end`` that is exactly ``label``" by bisection,
+    where ``str.rfind`` scans backwards and, for a label with no such line, scans the
+    whole text. A report resolves every TOC node against one text, so an omnibus
+    with thousands of nodes paid that scan thousands of times over megabytes of text.
+
+    Only lines with a newline on both sides are indexed: the first line has none
+    before it and an unterminated last line none after, and ``rfind("\n" + label +
+    "\n")`` cannot match either.
+    """
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self._starts: dict[str, list[int]] = {}
+        segments = text.split("\n")
+        pos = len(segments[0]) + 1
+        for line in segments[1:-1]:
+            self._starts.setdefault(line, []).append(pos)
+            pos += len(line) + 1
+
+    def last_before(self, label: str, end: int) -> int:
+        """``self._text.rfind("\n" + label + "\n", 0, end) + 1`` when found, else -1."""
+        if "\n" in label:
+            pos = self._text.rfind("\n" + label + "\n", 0, end)
+            return pos + 1 if pos != -1 else -1
+        starts = self._starts.get(label, [])
+        # The match runs from the newline before the line through the one after it, so a
+        # line starting at s ends its match at s + len(label) + 1, which must be <= end.
+        i = bisect_right(starts, end - len(label) - 1)
+        return starts[i - 1] if i else -1
+
+
+def _node_anchor_offset(full_text: str, node: dict, lines: _WholeLines | None = None) -> int | None:
     """Char offset of the heading ROW a tree node should jump to.
 
     A node's ``full_text_span`` locates its *content*: for an interior node that is
@@ -283,6 +318,9 @@ def _node_anchor_offset(full_text: str, node: dict) -> int | None:
 
     Deriving from the label keeps this a renderer concern (no extra contract field)
     and is robust to duplicate account names: the nearest preceding match wins.
+
+    A caller resolving many nodes against one text passes ``lines``, built once from
+    that text; without it each call indexes the text afresh.
     """
     span = node.get("full_text_span")
     if not span:
@@ -291,8 +329,8 @@ def _node_anchor_offset(full_text: str, node: dict) -> int | None:
     label = node.get("label") or ""
     if not label or full_text.startswith(label, line_start):
         return line_start
-    pos = full_text.rfind("\n" + label + "\n", 0, span["start"])
-    return pos + 1 if pos != -1 else line_start
+    pos = (lines or _WholeLines(full_text)).last_before(label, span["start"])
+    return pos if pos != -1 else line_start
 
 
 def _build_tree_nav(tree_nodes: list[dict], full_text: str) -> str:
@@ -309,8 +347,10 @@ def _build_tree_nav(tree_nodes: list[dict], full_text: str) -> str:
     if not tree_nodes:
         return '<p class="tree-empty">No sections detected.</p>'
 
+    lines = _WholeLines(full_text)
+
     def link(node: dict) -> str:
-        off = _node_anchor_offset(full_text, node)
+        off = _node_anchor_offset(full_text, node, lines)
         label = escape(node["label"])
         return f'<a href="#fb-off-{off}">{label}</a>' if off is not None else f"<span>{label}</span>"
 
@@ -745,8 +785,9 @@ def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> st
     # navigation, so heading rows need no ids.
     tree_v2 = (canonical.get("tree") or {}).get("v2") if canonical.get("tree") else None
     row_ids: dict[int, str] = {}
+    lines = _WholeLines(v2_text)
     for node in _walk_tree(tree_v2 or []):
-        off = _node_anchor_offset(v2_text, node)
+        off = _node_anchor_offset(v2_text, node, lines)
         if off is not None:
             row_ids.setdefault(off, f"fb-off-{off}")
 
