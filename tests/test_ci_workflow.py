@@ -1075,19 +1075,25 @@ def _failure_report_failures(path: Path) -> list[str]:
     return failures
 
 
-def test_every_job_failure_reaches_the_failure_report() -> None:
-    """A failure anywhere in the parity job must reach the tracker, not just a parity failure.
+#: The scheduled workflows whose only output a person sees is the issue a failure files.
+#: Neither gates a pull request, so a failure that files nothing is seen by no one.
+WEEKLY_REPORTING_WORKFLOWS = [PARITY_WORKFLOW, WORKFLOWS / "newest-python.yml"]
 
-    Protects the reporting contract the workflow argues for in prose: a weekly job's
+
+@pytest.mark.parametrize("workflow", WEEKLY_REPORTING_WORKFLOWS, ids=lambda path: path.name)
+def test_every_job_failure_reaches_the_failure_report(workflow: Path) -> None:
+    """A failure anywhere in a weekly job must reach the tracker, not just a test failure.
+
+    Protects the reporting contract both workflows argue for in prose: a weekly job's
     failure has to land somewhere a person actually looks. The mutation that turns this
     red is re-adding any `steps.*.outcome` term to the condition, narrowing it to
     `success()`, or widening it to `always()`.
     """
-    failures = _failure_report_failures(PARITY_WORKFLOW)
+    failures = _failure_report_failures(workflow)
     assert not failures, (
-        f"a job failure in {PARITY_WORKFLOW.name} would not be reported ({'; '.join(failures)}). "
+        f"a job failure in {workflow.name} would not be reported ({'; '.join(failures)}). "
         "The infrastructure failures are the ones that persist: the workflow reddens weekly "
-        "into an inbox nobody owns and the parity gate stops running -- see #680."
+        "into an inbox nobody owns and the check stops running -- see #680."
     )
 
 
