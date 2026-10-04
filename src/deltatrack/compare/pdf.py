@@ -29,6 +29,7 @@ from deltatrack.parsers.pdf_text import (
     merge_print_pages,
     pdf_full_text,
     pdf_full_text_print,
+    pdf_print_join_points,
 )
 
 
@@ -189,6 +190,9 @@ def _build_canonical(
     render = pdf_full_text_print if printed else pdf_full_text
     v1_text, v1_offsets = render(old_pages)
     v2_text, v2_offsets = render(new_pages)
+    # Only the print-faithful text needs them: the merged text is already reflowed, so
+    # there is nothing left in it for a consumer to join (#650, #653).
+    join_points = {"v1": pdf_print_join_points(old_pages), "v2": pdf_print_join_points(new_pages)} if printed else None
     return pdf_diff_to_canonical(
         pdf_diff,
         bill_type="",
@@ -200,6 +204,7 @@ def _build_canonical(
         v2_version_number=end_version_number,
         full_text={"v1": v1_text, "v2": v2_text},
         line_offsets={"v1": v1_offsets, "v2": v2_offsets},
+        join_points=join_points,
     )
 
 

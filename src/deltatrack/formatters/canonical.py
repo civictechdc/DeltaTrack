@@ -28,7 +28,7 @@ from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.parsers.pdf_anchors import Anchor, breadcrumb_for
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "3.1"
 GENERATOR_NAME = "deltatrack"
 
 
@@ -186,6 +186,7 @@ def xml_diff_to_canonical(
         },
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
+        "join_points": None,  # XML has no printed line breaks to reflow (#650)
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state)
@@ -405,8 +406,14 @@ def pdf_diff_to_canonical(
     v2_version_number: int | None = None,
     full_text: dict | None = None,
     line_offsets: dict | None = None,
+    join_points: dict | None = None,
 ) -> dict:
     """Produce canonical JSON from a PdfDiff.
+
+    `join_points`, when provided, carries per side the places the printer broke a word
+    across a line in `full_text` and whether reflowing drops the hyphen. It ships only
+    with the print-faithful rendering; the merged text is already reflowed. See
+    `parsers.pdf_text.pdf_print_join_points` and schema/canonical-diff.md.
 
     `line_offsets`, when provided, is a dict with keys "v1" and "v2" each
     mapping (page_number, line_number) -> (start_char, end_char) into the
@@ -440,6 +447,7 @@ def pdf_diff_to_canonical(
         },
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
+        "join_points": join_points if normalized_full_text is not None else None,
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _pdf_hunk_to_canonical(h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2)

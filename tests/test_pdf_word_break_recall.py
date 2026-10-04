@@ -83,11 +83,15 @@ import pytest
 from lxml import etree
 from pdf_corpus import cached_pages, dual_format_versions
 
-from deltatrack.parsers.pdf_text import Page
+from deltatrack.parsers.pdf_text import Page, pdf_full_text, pdf_full_text_print, pdf_print_join_points
 
 pytestmark = pytest.mark.slow
 
 _RESIDUALS_PATH = Path(__file__).parent / "data" / "pdf" / "word_break_residuals.json"
+
+#: Width of the line-number gutter `pdf_full_text_print` renders before each row
+#: (`{number:>5}` plus two spaces), which a reflowing consumer skips past.
+_GUTTER_WIDTH = 7
 
 #: A word token as this check counts one: starts alphanumeric, may carry internal
 #: hyphens, apostrophes and periods (``E-Verify``, ``U.S.C.``, ``Nation's``).
@@ -382,6 +386,61 @@ def test_printed_word_breaks_reflow_to_real_words(bill: str, xml_path: Path, pdf
     acc = _account(cached_pages(pdf_path), XmlOracle(xml_path))
     problems = _problems(acc, _residuals().get(version, set()), _undecided_budget().get(version))
     assert not problems, f"{version}: " + " | ".join(problems)
+
+
+@pytest.mark.parametrize(
+    ("bill", "xml_path", "pdf_path"),
+    _CASES,
+    ids=[f"{b}/{p.stem}" for b, _x, p in _CASES],
+)
+def test_join_points_reproduce_the_reflowed_text(bill: str, xml_path: Path, pdf_path: Path) -> None:
+    """The carried join points are sufficient: applying them reflows the printed text
+    into exactly the whole-word text, with no re-derivation.
+
+    This is the property #653 asks the document to have — "a consumer may derive by
+    applying facts the document carries" — and it is the reason the field exists. If
+    the offsets, their delta encoding, or the drop bits were wrong in any way, the
+    reconstruction would diverge from `pdf_full_text`, which is computed independently
+    of them.
+
+    Whitespace-insensitive because the two renderings gutter differently: the printed
+    one keeps every source line's own margin number, the reflowed one keeps the merged
+    line's. The characters that matter — which words exist, and which hyphens are in
+    them — are what this compares.
+    """
+    pages = cached_pages(pdf_path)
+    printed, _ = pdf_full_text_print(pages)
+    reflowed_expected, _ = pdf_full_text(pages)
+    points = pdf_print_join_points(pages)
+
+    # Each join consumes one printed line, so the count is fixed independently of the
+    # points. Enrolled prints are set without syllable hyphenation and can carry none.
+    joins = sum(len(p.print_lines) - len(p.lines) for p in pages)
+    assert len(points["at"]) == len(points["drop"]) == joins
+
+    offsets: list[int] = []
+    running = 0
+    for delta in points["at"]:
+        running += delta
+        offsets.append(running)
+
+    assert all(printed[o] == "-" for o in offsets), "a join point does not address a hyphen"
+
+    out: list[str] = []
+    prev = 0
+    for offset, bit in zip(offsets, points["drop"]):
+        out.append(printed[prev:offset])
+        if bit == "0":
+            out.append("-")  # the word's own hyphen survives the join
+        # Skip to the continuation: past this row's newline, past the blank line that
+        # separates pages when the break sits at a page seam, then past the gutter.
+        prev = printed.index("\n", offset) + 1
+        if printed[prev : prev + 1] == "\n":
+            prev += 1
+        prev += _GUTTER_WIDTH
+    out.append(printed[prev:])
+
+    assert "".join("".join(out).split()) == "".join(reflowed_expected.split())
 
 
 # --- Negative controls -----------------------------------------------------------

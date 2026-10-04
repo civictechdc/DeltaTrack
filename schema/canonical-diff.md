@@ -1,4 +1,4 @@
-# Canonical Diff JSON — v3.0
+# Canonical Diff JSON — v3.1
 
 This document specifies the canonical JSON shape produced when comparing two
 versions of a bill. It is the public contract between the diff engine and any
@@ -8,9 +8,25 @@ XML inputs and a diff produced from PDF inputs share this shape.
 
 ## Versioning
 
-Top-level field: `schema_version: "3.0"`.
+Top-level field: `schema_version: "3.1"`.
 
 ## Changelog
+
+- **3.1** — Added optional top-level `join_points: { v1, v2 } | null` field (#653):
+  where the printer broke a word across a line inside `full_text`, and whether
+  reflowing that break drops the hyphen. Additive, backward compatible.
+
+  It exists because the answer is not recoverable from the text. GPO breaks a
+  hyphenated compound at its own hyphen and breaks a long word at a syllable, and
+  prints the two identically — `INTEL-` / `LIGENCE` reflows to `INTELLIGENCE`,
+  `McKinney-` / `Vento` to `McKinney-Vento`, and nothing in the printed line says
+  which. The producer decides it from how the document spells that word elsewhere
+  (#650) and now carries the decision instead of discarding it. Before this field,
+  three consumers each re-derived the rule and three disagreed.
+
+  Present only where `full_text` carries printed line breaks. The XML pipeline has
+  none, and the PDF pipeline's reflowed rendering has already applied them, so both
+  ship `null`.
 
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
@@ -115,6 +131,10 @@ Top-level field: `schema_version: "3.0"`.
     "v1": "TITLE I—…\n\nSECTION 101. …",
     "v2": "TITLE I—…\n\nSECTION 101. …"
   },
+  "join_points": {                          // optional, v3.1+
+    "v1": { "at": [1274, 331, 402], "drop": "101" },
+    "v2": { "at": [1274, 331, 402], "drop": "101" }
+  },
   "changes":  [ /* ChangeObject, see below */ ]
 }
 ```
@@ -136,6 +156,38 @@ fragments in `changes[].text` — `full_text` is the document; `text.old`/
 `text.new` are the diff fragments. Consumers using `full_text` for
 rendering should compute the diff at render time over the full strings,
 not try to splice the change fragments into the document.
+
+### `join_points` (optional, v3.1+)
+
+Per side, the places a printed word break falls inside `full_text[side]`, and what
+reflowing does at each. `null` (or absent) when the text carries no printed line
+breaks to reflow — the XML pipeline always, and the PDF pipeline's reflowed
+rendering, which has applied them already.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `at` | int[] | **Delta-encoded** character offsets into `full_text[side]`. The first entry is absolute; each later entry is the increment from its predecessor. Each resolved offset addresses the break hyphen ending a printed line. |
+| `drop` | string | One `0`/`1` per entry in `at`, same order. `1` = reflowing removes the hyphen (a syllable break the printer introduced). `0` = the hyphen is the word's own and stays. |
+
+To reflow, walk the resolved offsets in order and join each hyphen's line to the
+next: delete the hyphen when `drop` is `1`, delete nothing when it is `0`, and in
+**both** cases insert no space. Applying every point reproduces the whole-word text
+exactly.
+
+Delta-encoded, and `drop` a bitstring rather than an array of objects, because the
+naive shape costs about five times as much: on 118-hr-8752 the encoded form is ~2%
+of the rendered text against ~11% for one object per point.
+
+**Decided per compared pair.** A break that a version's own text cannot settle is
+settled by how the other version in the comparison spells the word: own evidence
+first, the other version's only where the own text is silent, so a version is never
+overruled about a spelling it uses itself (#650). So `drop`, and the whole-word text
+it produces, can differ for the same PDF compared against a different version. The
+same holds for the whole-word `full_text` the PDF pipeline ships.
+
+**Why the producer carries this.** Whether a break hyphen belongs to the word is not
+decidable from the break — see the 3.1 changelog entry. A consumer may apply these
+points; it may not re-infer them.
 
 ### `tree` (optional, v1.3+)
 

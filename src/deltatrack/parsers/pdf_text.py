@@ -847,6 +847,37 @@ def pdf_full_text(pages: list[Page]) -> tuple[str, dict[tuple[int, int], tuple[i
     return "\n".join(chunks), line_offsets
 
 
+def print_join_points(pages: list[Page]) -> list[tuple[int, bool]]:
+    """(printed-row index, whether the hyphen was dropped) for every join, document order.
+
+    A consumer of the print-faithful text -- the on-screen full-bill view, its in-browser
+    search -- has to reflow it to match what the reader means by a word, and today each
+    such consumer re-derives the rule and gets a different answer (#650, #653). This is
+    the producer's answer, carried as data so the consumer applies it instead of guessing.
+
+    Row indices are into the pages' printed lines flattened in document order, because a
+    join can cross a page boundary (`_rejoin_page_seam_breaks`) and `Page.merge_ranges`
+    is page-local. A break the merge left open, such as one continued by running-header
+    chrome (#535), has no point.
+
+    Read back out of the merged text rather than recorded at merge time: the two outcomes
+    differ in exactly one character, the one at ``len(acc) - 1``, so the merged line says
+    unambiguously which was chosen and there is no second copy of the decision to drift.
+    """
+    flat_print = [line.text for page in pages for line in page.print_lines]
+    flat_merged = [line.text for page in pages for line in page.lines]
+    points: list[tuple[int, bool]] = []
+    cursor = 0
+    for merged in flat_merged:
+        acc = flat_print[cursor]
+        cursor += 1
+        while acc != merged:
+            points.append((cursor - 1, merged[len(acc) - 1] != "-"))
+            acc = (acc if merged[len(acc) - 1] == "-" else acc[:-1]) + flat_print[cursor]
+            cursor += 1
+    return points
+
+
 def pdf_full_text_print(pages: list[Page]) -> tuple[str, dict[tuple[int, int], tuple[int, int]]]:
     """Render the *original printed* lines (pre-merge) for the full-bill view.
 
@@ -878,3 +909,31 @@ def pdf_full_text_print(pages: list[Page]) -> tuple[str, dict[tuple[int, int], t
         chunks.extend(rows)
         base += spans[-1][1] + 1 if spans else 0
     return "\n".join(chunks), line_offsets
+
+
+def pdf_print_join_points(pages: list[Page]) -> dict[str, object]:
+    """Join points as the canonical carries them: where to reflow, and what to do there.
+
+    ``at`` is the character offset, in the text `pdf_full_text_print` renders, of the
+    break hyphen ending a printed line; ``drop`` says whether reflowing removes it.
+    A consumer joins the hyphen's line to the next by deleting the hyphen when ``drop``
+    and deleting nothing when not, and in both cases inserting no space.
+
+    ``at`` is DELTA-encoded (first offset absolute, each later one the increment from its
+    predecessor) and ``drop`` is a bitstring rather than a per-point object. On
+    118-hr-8752 that is ~1% of the document's size against ~28% for an array of objects,
+    which is the difference between carrying this and arguing about whether to.
+    """
+    row_ends: list[int] = []
+    base = 0
+    for i, page in enumerate(pages):
+        if i > 0:
+            base += 1  # the blank line between pages
+        _rows, spans = _render_lines(page.print_lines)
+        row_ends.extend(base + end for _start, end in spans)
+        base += spans[-1][1] + 1 if spans else 0
+
+    points = print_join_points(pages)
+    offsets = [row_ends[row] - 1 for row, _dropped in points]
+    deltas = [off - (offsets[i - 1] if i else 0) for i, off in enumerate(offsets)]
+    return {"at": deltas, "drop": "".join("1" if dropped else "0" for _row, dropped in points)}

@@ -27,6 +27,21 @@
       ],
       "description": "Optional (v1.1+) full bill text per side, for full-document tracked-changes rendering."
     },
+    "join_points": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["v1", "v2"],
+          "additionalProperties": false,
+          "properties": {
+            "v1": { "$ref": "#/$defs/JoinPoints" },
+            "v2": { "$ref": "#/$defs/JoinPoints" }
+          }
+        }
+      ],
+      "description": "Optional (v3.1+) places a printed word break falls inside full_text, and whether reflowing drops the hyphen. Null when full_text carries no printed line breaks (the XML pipeline, and the reflowed PDF rendering)."
+    },
     "tree": {
       "anyOf": [
         { "type": "null" },
@@ -79,6 +94,23 @@
     }
   },
   "$defs": {
+    "JoinPoints": {
+      "type": "object",
+      "required": ["at", "drop"],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "DELTA-encoded character offsets into full_text for this side: the first entry is absolute, each later entry is the increment from its predecessor. Each resolved offset addresses the break hyphen that ends a printed line."
+        },
+        "drop": {
+          "type": "string",
+          "pattern": "^[01]*$",
+          "description": "One character per entry in `at`, in the same order. '1' means reflowing removes the hyphen (a syllable break the printer introduced); '0' means it is kept (the word's own hyphen). Either way the two lines join with no space between them."
+        }
+      }
+    },
     "TreeNode": {
       "type": "object",
       "required": ["label", "level", "own_amounts", "full_text_span", "children"],

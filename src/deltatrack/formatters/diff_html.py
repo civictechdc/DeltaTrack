@@ -472,6 +472,28 @@ def _has_full_bill(canonical: dict | None) -> bool:
     return bool(canonical and (canonical.get("full_text") or {}).get("v2"))
 
 
+def _join_dispositions(side: dict | None) -> dict[int, bool]:
+    """Resolve one side's `join_points` into {offset of break hyphen: drops the hyphen}.
+
+    `at` is delta-encoded (see schema/canonical-diff.md): the first entry is absolute
+    and each later one is the increment from its predecessor. Absent or malformed input
+    yields {}, which leaves the reader with the printed text unreflowed rather than
+    reflowed wrongly.
+    """
+    if not side:
+        return {}
+    offsets = side.get("at") or []
+    drop = side.get("drop") or ""
+    if len(offsets) != len(drop):
+        return {}
+    out: dict[int, bool] = {}
+    running = 0
+    for delta, bit in zip(offsets, drop):
+        running += delta
+        out[running] = bit == "1"
+    return out
+
+
 def _full_text_is_guttered(canonical: dict) -> bool:
     """Whether full_text lines carry the PDF line-number gutter.
 
@@ -704,6 +726,11 @@ def _full_bill_html(canonical: dict) -> str:
             row_ids.setdefault(off, f"fb-off-{off}")
 
     guttered = _full_text_is_guttered(canonical)
+    # Where a printed word break falls, and whether reflowing drops its hyphen, as the
+    # PRODUCER decided it (#650). Resolved from the delta-encoded `at` into a map from
+    # the offset of each break hyphen to its disposition, then stamped onto the row that
+    # ends there, so in-browser search applies the decision instead of re-deriving it.
+    joins = _join_dispositions((canonical.get("join_points") or {}).get("v2"))
     emitted_ids: set[str] = set()
     parts: list[str] = []
     seen_page = 0
@@ -714,15 +741,18 @@ def _full_bill_html(canonical: dict) -> str:
         body = _render_fb_row_body(v2_text, row, marks, emitted_ids)
         anchor = row_ids.get(row["raw_start"])
         row_id = f' id="{anchor}"' if anchor else ""
+        # `end` is exclusive, so the row's final character sits at end - 1.
+        disposition = joins.get(row["end"] - 1)
+        join_attr = f' data-join="{"drop" if disposition else "keep"}"' if disposition is not None else ""
         if guttered:
             gutter = str(row["line"]) if row["line"] is not None else ""
             parts.append(
-                f'<div class="fb-row"{row_id}><span class="fb-gutter">{gutter}</span>'
+                f'<div class="fb-row"{row_id}{join_attr}><span class="fb-gutter">{gutter}</span>'
                 f'<span class="fb-text">{body}</span></div>'
             )
         else:
             row_cls = "fb-row fb-row--para" if row.get("para") else "fb-row"
-            parts.append(f'<div class="{row_cls}"{row_id}><span class="fb-text">{body}</span></div>')
+            parts.append(f'<div class="{row_cls}"{row_id}{join_attr}><span class="fb-text">{body}</span></div>')
 
     meta = _full_bill_meta_html(
         total=len(canonical.get("changes", [])),
@@ -1565,14 +1595,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // view is print-faithful, so GPO's line breaks and its soft-hyphenated word
   // splits are real DOM boundaries, and every row is its own text node.
   //
-  // Normalizations, following the parser's own handling of the printed page
-  // (parsers/pdf_text.py `_merge_print_lines`):
-  //   - a word split at a syllable break (`Serv-` + lowercase continuation) is
-  //     rejoined into one word, hyphen dropped
-  //   - a real compound broken at its own hyphen (`Child-` + uppercase `Rescue`)
-  //     keeps the hyphen and closes up. The parser leaves these two lines
-  //     separate, so this is deliberately MORE than it does: on screen the
-  //     compound reads as one word, so search should treat it as one.
+  // Where a printed word break falls, and what reflowing does to its hyphen, is
+  // APPLIED from the `data-join` attribute the producer stamps on the row, not
+  // re-derived here. Whether `INTEL-` / `LIGENCE` closes up into one word and whether
+  // `McKinney-` / `Vento` keeps its hyphen is not decidable from the printed line --
+  // GPO prints a syllable break and a compound broken at its own hyphen identically --
+  // so the only correct answer is the one the extractor reached with evidence this
+  // code does not have (#650, and the rule in #653: a consumer may apply facts the
+  // document carries, and may not re-infer facts it omits). A row with no attribute
+  // is not a word break, and its line boundary becomes a space as before.
   //   - display lines joined with a single space
   //   - whitespace runs collapsed (GPO pads columns with runs of spaces)
   // The line-number gutter and page markers are print furniture, not bill text,
@@ -1621,10 +1652,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!b.classList.contains('fb-row') || !block.classList.contains('fb-row')) {
           pushBreak();
         } else {
-          var cont = node.nodeValue.replace(/^\\s+/, '').charAt(0);
-          var hyphenated = /[A-Za-z0-9]-$/.test(parts[parts.length - 1] || '');
-          if (hyphenated && cont && cont !== cont.toUpperCase()) {
-            // Soft hyphen (lowercase continuation): drop it, `Serv-`+`ices` is one word.
+          // The producer decided this at extraction and the row carries the answer
+          // (#650): `data-join` is present exactly where a printed word break falls,
+          // and says whether reflowing drops the hyphen. Re-deriving it from letter
+          // case is what made this copy of the rule disagree with the parser's.
+          var join = block.getAttribute && block.getAttribute('data-join');
+          if (join === 'drop') {
+            // A syllable break the printer introduced: `Serv-` + `ices` is one word.
             var tail = parts[parts.length - 1];
             parts[parts.length - 1] = tail.slice(0, -1);
             flatLen -= 1;
@@ -1632,9 +1666,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (--lastPiece.len === 0) pieces.pop();
             if (!parts[parts.length - 1]) parts.pop();
             lastCh = tail.charAt(tail.length - 2);
-          } else if (hyphenated && cont) {
-            // A real compound broken at its own hyphen (`Child-` / `Rescue`): keep
-            // the hyphen and close the gap, so the reader's `Child-Rescue` matches.
+          } else if (join === 'keep') {
+            // The word's own hyphen (`McKinney-` / `Vento`): keep it and close the gap.
           } else {
             pushSpace(null, 0);
           }
