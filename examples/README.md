@@ -4,7 +4,7 @@ Published DeltaTrack reports, rendered from bills in the committed corpus. Open 
 `.html` file in a browser, or start at `index.html`. No install required.
 
 These are also the project's public demo, deployed to GitHub Pages from this directory:
-<https://agoradmv.github.io/DeltaTrack/>.
+<https://civictechdc.github.io/DeltaTrack/>.
 
 ## Files
 

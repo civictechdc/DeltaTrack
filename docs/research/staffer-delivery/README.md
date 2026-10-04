@@ -1,7 +1,7 @@
 # Delivering DeltaTrack to a congressional staffer: delivery-architecture spike
 
 - Status: research, not a decision. Input to the open delivery-channel question
-  ([#112](https://github.com/AgoraDMV/DeltaTrack/issues/112)) and to a future ADR.
+  ([#112](https://github.com/civictechdc/DeltaTrack/issues/112)) and to a future ADR.
 - Date: 2026-08-05
 - Prototypes and reproduction commands: [`probes/`](probes/) and
   [Findings from prototypes](#findings-from-prototypes)
@@ -64,7 +64,7 @@ which carries the argument as it stands including where the earlier bake-off doc
 wrong, and check the PDF-related recommendations below against it rather than assuming in
 either direction.
 
-**The delivery channel is still undecided.** [#112](https://github.com/AgoraDMV/DeltaTrack/issues/112)
+**The delivery channel is still undecided.** [#112](https://github.com/civictechdc/DeltaTrack/issues/112)
 is open and no delivery-channel ADR exists. This study is evidence for that decision and
 does not make it. The record is: this study, then the PDF seam research, then eventually
 a channel decision.
@@ -225,7 +225,7 @@ build a staffer product," it is **"how does the staffer get the two files into
 and returns a report. [ADR 0011](../../decisions/0011-local-only-processing.md) records
 the deployed instance at `deltatrack.agoradmv.org` as a **deliberate interim exception**
 to the local-only rule, tracked for retirement in
-[#112](https://github.com/AgoraDMV/DeltaTrack/issues/112). Retiring it is the thing this
+[#112](https://github.com/civictechdc/DeltaTrack/issues/112). Retiring it is the thing this
 spike exists to unblock.
 
 Usefully, `compare/xml.py` and `compare/pdf.py` already expose exactly the API a local

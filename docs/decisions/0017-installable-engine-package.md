@@ -34,7 +34,7 @@ changed the decision:
   are two function-local imports (`diff_bill` and `diff_pdf` reaching into `compare/`);
   every other engine edge is acyclic. All ten modules import cleanly under the package with
   both an empty `__init__` and one that eagerly re-exports the public API, in either entry
-  order. [#62](https://github.com/AgoraDMV/DeltaTrack/issues/62) is therefore not a
+  order. [#62](https://github.com/civictechdc/DeltaTrack/issues/62) is therefore not a
   prerequisite, and the reverse ordering is the useful one: its fix wants a shared base
   module, which now has a home.
 - **A module inside a package cannot be executed as a script.** Direct execution puts the
@@ -65,7 +65,7 @@ tools do. Add `src` and pytest alone resolves the engine off disk, which makes t
 only consumer with its own rules: in a worktree with no environment the tests would quietly
 pass against that worktree while `./diff_bill.py` beside them imports another checkout. That
 split brain is rejected outright in `tests/conftest.py`
-([#435](https://github.com/AgoraDMV/DeltaTrack/issues/435)) rather than papered over. The
+([#435](https://github.com/civictechdc/DeltaTrack/issues/435)) rather than papered over. The
 roots that stay are `.`, which resolves `tests.*` and `scripts.*` as namespace packages and
 cannot make an uninstalled engine importable because `deltatrack` is not at the root to be
 found, and `tools`, whose scripts are run directly and so must resolve each other by bare
@@ -87,7 +87,7 @@ at the one call site that made it.
 
 **The repository root holds only the command wrappers and configuration.** The four dev-only
 modules that once sat there live beside what they serve
-([#401](https://github.com/AgoraDMV/DeltaTrack/issues/401)): the fixture-path resolver and
+([#401](https://github.com/civictechdc/DeltaTrack/issues/401)): the fixture-path resolver and
 the validation pair in `tests/`, the example renderer in `scripts/`. Neither directory is an
 import root of its own — both resolve as namespace packages under the `.` already on
 `pythonpath`.
@@ -117,7 +117,7 @@ import root of its own — both resolve as namespace packages under the `.` alre
 - **Console scripts remain open**, and are the natural follow-up once install is the normal
   way people get the tool.
 
-References: [#398](https://github.com/AgoraDMV/DeltaTrack/issues/398),
+References: [#398](https://github.com/civictechdc/DeltaTrack/issues/398),
 [ADR 0016](0016-product-tooling-surface-split.md),
-[#62](https://github.com/AgoraDMV/DeltaTrack/issues/62),
-[#292](https://github.com/AgoraDMV/DeltaTrack/issues/292).
+[#62](https://github.com/civictechdc/DeltaTrack/issues/62),
+[#292](https://github.com/civictechdc/DeltaTrack/issues/292).

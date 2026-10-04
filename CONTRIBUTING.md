@@ -34,9 +34,6 @@ cd DeltaTrack
 # Install dependencies (including dev tools)
 uv sync
 
-# Install pre-commit hooks (runs linting/formatting automatically on commit)
-uv run pre-commit install
-
 # Run the fast test suite to verify everything works
 uv run pytest -m "not slow and not browser"
 ```
@@ -85,7 +82,7 @@ uv run python tools/fetch_bills.py download 118 hr 4366 --format both
 
 ## Finding work to do
 
-Work is tracked in [GitHub Issues](https://github.com/AgoraDMV/DeltaTrack/issues) and on the [project board](https://github.com/orgs/AgoraDMV/projects/1). An issue moves across the board left to right:
+Work is tracked in [GitHub Issues](https://github.com/civictechdc/DeltaTrack/issues) and on the [project board](https://github.com/orgs/civictechdc/projects/24). An issue moves across the board left to right:
 
 | Column | Meaning |
 |--------|---------|
@@ -97,7 +94,7 @@ Work is tracked in [GitHub Issues](https://github.com/AgoraDMV/DeltaTrack/issues
 
 To pick up work:
 
-1. Choose an issue from **Ready**, or one labeled [`good first issue`](https://github.com/AgoraDMV/DeltaTrack/labels/good%20first%20issue) if you're new.
+1. Choose an issue from **Ready**, or one labeled [`good first issue`](https://github.com/civictechdc/DeltaTrack/labels/good%20first%20issue) if you're new.
 2. **Claim it** so two people don't start the same thing: comment on the issue to call it. If you have write access, also assign yourself and move the card to **In progress**; otherwise a maintainer will. We're a small team and work mostly async between syncs, so visible ownership matters.
 
 The board handles the later transitions for you: opening a pull request with `Closes #<n>` moves the issue to **In review**, and merging it moves the issue to **Done** and closes it. The only card you move by hand is **In progress**, when you start work.
@@ -121,7 +118,7 @@ of work logically follows another, prefer not to stack pull requests: until the
 parent merges, the child's diff shows both branches' commits, which makes review
 noisy. If you do stack one, the retargeting mechanics now work in the common
 case: this repo has "Automatically delete head branches" turned on
-([#88](https://github.com/AgoraDMV/DeltaTrack/issues/88), the issue that tracked
+([#88](https://github.com/civictechdc/DeltaTrack/issues/88), the issue that tracked
 enabling it), and it is the parent branch's *deletion* on merge that makes GitHub
 retarget the child pull request at `develop`. That is also the edge to watch: if
 the parent branch was kept alive or restored after merge, no retarget happens,
@@ -136,7 +133,7 @@ git cat-file -e origin/develop:path/to/changed/file && echo "reached develop"
 
 ### Code style
 
-This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting. If you installed the pre-commit hooks, this runs automatically on each commit. You can also run it manually:
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting. There are no commit hooks -- run it yourself before pushing, and CI runs it against the whole tree:
 
 ```bash
 uv run ruff check .          # Lint
@@ -180,7 +177,7 @@ runnable but are not executable`. Steps 1, 3 and 5 it cannot check for you:
 - A shebang is never required on its own. Paired with a `__main__` block on a file
   that lacks the executable bit, it is what raises that step-2 failure.
 - A command with no `build_parser` is documented under its bare script name rather
-  than rejected (`tools/fetch_bill_archives.py`, [#10](https://github.com/AgoraDMV/DeltaTrack/issues/10)).
+  than rejected (`tools/fetch_bill_archives.py`, [#10](https://github.com/civictechdc/DeltaTrack/issues/10)).
 - Nothing ties the floor's list back to what discovery found, which is why step 5 is
   a step and not an assertion.
 
@@ -190,7 +187,7 @@ spells each command with the path a user types.
 
 Root scripts once shipped a bare-name symlink beside them (`fetch_bills` pointing at
 `tools/fetch_bills.py`) so the `.py` could be dropped from the invocation. Those are gone
-([#319](https://github.com/AgoraDMV/DeltaTrack/issues/319)): the symlink was cosmetic,
+([#319](https://github.com/civictechdc/DeltaTrack/issues/319)): the symlink was cosmetic,
 and making "is a root symlink" the definition of a command meant anything else linked
 into the root, such as a corpus directory linked in from another checkout, was reported
 as an undocumented command.
@@ -226,7 +223,9 @@ CI splits gate 5 across several jobs so a red build names the area it came from;
 
 Selecting by marker means a module joining a CI step is covered here automatically. History: #220, #320, #288 — this block enumerated each step's modules and went stale in three consecutive pull requests, because nothing ties prose to the workflow.
 
-The pre-commit hooks run Ruff linting and formatting on eligible files touched by each commit, while CI runs the configured Ruff commands against the whole tree and may cover additional file types. Run the commands above before pushing rather than relying on the hooks. The hooks use the same Ruff release CI does, which tests/test_precommit_ruff_version.py keeps true.
+This project installs no commit hooks, so nothing lints on your behalf -- run the commands above before pushing. CI runs the configured Ruff commands against the whole tree.
+
+If you installed the pre-commit hooks before they were removed, uninstall them from your checkout with `uvx pre-commit uninstall`. The installed hook outlives its deleted config and fails every commit, and `uvx` fetches pre-commit on its own, so this works after `uv sync` has dropped it from the project.
 
 If a slow run ends in `undeclared skip ceiling exceeded`, that is not a flake: a watched gate skipped instead of asserting, and the skip is not declared. [TESTING.md](TESTING.md#when-a-skip-has-to-be-declared) says which allowlist it belongs in.
 
@@ -253,10 +252,10 @@ The reason is that a pull request's own checks test its head merged into
 afterwards the green check stays green, and it is now answering about a merge
 nobody is performing. That is the normal case here, not a rare one: across the 27
 merges in the 36 hours before 2026-07-29, 18 landed on a check that predated a
-change to `develop` ([#416](https://github.com/AgoraDMV/DeltaTrack/issues/416) has
+change to `develop` ([#416](https://github.com/civictechdc/DeltaTrack/issues/416) has
 the measurement). Usually the changes are compatible and nothing happens. Once
 they weren't, and `develop` spent hours importing a package a merge in between had
-moved ([#406](https://github.com/AgoraDMV/DeltaTrack/issues/406)). The queue tests
+moved ([#406](https://github.com/civictechdc/DeltaTrack/issues/406)). The queue tests
 the merge that is actually about to happen.
 
 What it changes for you:
@@ -377,7 +376,7 @@ need to *start*.
 ### Priority
 
 Priority lives in the **org-level Priority issue field** (defined once for the
-AgoraDMV org, so it's consistent across DeltaTrack and BillTrax), set during
+civictechdc org, so it's consistent across that org's repos), set during
 grooming. Its values are **Urgent / High / Medium / Low**:
 
 - **Urgent** — broken or trust-critical: wrong/lost diff output, silent data
