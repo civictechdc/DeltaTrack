@@ -92,6 +92,21 @@ def test_account_named_title_is_not_promoted_to_a_toc_group():
     assert any("Title 17 Innovative" in leaf for leaf in leaves)
 
 
+def test_an_account_links_to_its_heading_row_not_into_its_body():
+    """An account's span starts at its body, one line below the heading the serializer
+    emits for it, and the TOC entry must land on that heading. Red if the lookup for
+    the nearest preceding heading line misses the line directly above the body by one
+    character: the entry falls back to the body row and a reader lands below the
+    account's name."""
+    text = "DEPARTMENT OF ENERGY\nOPERATIONS\nFor necessary expenses, $1,000.\n"
+    body = text.index("For necessary")
+    tree = [_node("DEPARTMENT OF ENERGY", "agency", 0, [_node("OPERATIONS", "account", body)])]
+
+    html = _build_tree_nav(tree, text)
+
+    assert f'href="#fb-off-{text.index("OPERATIONS")}">OPERATIONS<' in html
+
+
 @pytest.mark.slow
 def test_tree_toc_covers_every_flat_section_heading():
     # Superset / no coverage regression: every heading offset the flat jump-list
