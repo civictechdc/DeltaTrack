@@ -89,6 +89,27 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --locked
+      # The PDF extraction cache (tests/pdf_corpus.py) is keyed by PDF content and the
+      # extractor's fingerprint, so an entry restored from an earlier run is exactly what
+      # extraction would produce now. Without it every job re-extracts the corpus from scratch.
+      # The cache key carries the same fingerprint, so an extractor change starts from empty
+      # rather than restoring entries nothing can read, and the PDFs' hash, so a new fixture
+      # is saved instead of being re-extracted on every later hit. The job name is in the key
+      # because each job extracts a different subset: one shared key would be saved by
+      # whichever job finished first and starve the others.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        # Assigned first so a failing command fails the step (bash -e), instead of writing an
+        # empty fingerprint into the key.
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Run fast tests
         if: ${{ !cancelled() }}
         run: uv run --locked pytest -m "not slow and not browser" -v
@@ -115,6 +136,18 @@ jobs:
         run: uv python install
       - name: Install dependencies
         run: uv sync --locked
+      # PDF extraction cache: see fast-tests.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       # Absolute paths: a relative one resolves against the directory this job exists to vary.
@@ -199,6 +232,18 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --locked
+      # PDF extraction cache: see fast-tests.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Run corpus correctness gates (committed manifest)
         if: ${{ !cancelled() }}
         run: >
@@ -268,6 +313,18 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv sync --locked
+      # PDF extraction cache: see fast-tests.
+      - name: Fingerprint the PDF extractor
+        id: extractor
+        run: |
+          fingerprint=$(uv run --locked python -c 'from tests.pdf_corpus import _extractor_fingerprint; print(_extractor_fingerprint())')
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore the PDF extraction cache
+        uses: actions/cache@v6
+        with:
+          path: tests/data/extract_cache
+          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Run remaining slow suites (committed fixtures)
         if: ${{ !cancelled() }}
         run: >

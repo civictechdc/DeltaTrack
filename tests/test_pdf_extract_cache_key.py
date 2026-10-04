@@ -5,7 +5,8 @@ skip extraction. A cache entry is only safe to reuse when both halves of what pr
 it are unchanged: the PDF, and the extractor. Keying on the PDF alone (path + mtime)
 left the second half unchecked, so editing `src/deltatrack/parsers/pdf_text.py` did
 not invalidate anything and the suites reading the cache asserted against pre-change
-text.
+text. The PDF half is its content, not its path and mtime, so an entry survives a fresh
+checkout and CI can restore the directory between runs.
 
 That failure mode is silent by construction: the tests do not skip, they pass. It hit
 hardest in `test_pdf_anchor_golden.py`, which exists to go red on exactly this drift.
@@ -83,12 +84,26 @@ def test_key_changes_when_the_extractor_changes(tmp_path, monkeypatch):
 
 
 def test_key_changes_when_the_pdf_changes(tmp_path):
-    """The guarantee that already held, pinned so the #393 fix does not trade it away."""
+    """Replacing a PDF's bytes must re-extract it, even when the rewrite keeps the old
+    mtime and size: the key is the content, not the file's metadata."""
+    pdf = _touch(tmp_path, content=b"%PDF-1.7\nA")
+    stat = pdf.stat()
+    before = pdf_corpus._cache_file(pdf)
+
+    pdf.write_bytes(b"%PDF-1.7\nB")
+    os.utime(pdf, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+    assert pdf_corpus._cache_file(pdf) != before
+
+
+def test_key_survives_a_fresh_checkout(tmp_path):
+    """Unchanged bytes keep their entry when only the mtime moves. A checkout stamps every
+    file with the time it was written, so a key that carried the mtime would miss on every
+    CI run, and restoring the directory there would buy nothing."""
     pdf = _touch(tmp_path)
     before = pdf_corpus._cache_file(pdf)
 
     os.utime(pdf, ns=(0, 12345))
-    assert pdf_corpus._cache_file(pdf) != before
+    assert pdf_corpus._cache_file(pdf) == before
 
 
 def test_key_is_stable_when_nothing_changed(tmp_path):
@@ -100,8 +115,8 @@ def test_key_is_stable_when_nothing_changed(tmp_path):
 
 
 def test_key_distinguishes_two_pdfs(tmp_path):
-    """Same stem in different directories must not collide: the key carries the resolved
-    path, not just the filename the entry is named after."""
-    a = _touch(tmp_path / "v1", "bill.pdf")
-    b = _touch(tmp_path / "v2", "bill.pdf")
+    """Same stem in different directories must not collide: the key carries the content,
+    not just the filename the entry is named after."""
+    a = _touch(tmp_path / "v1", "bill.pdf", b"%PDF-1.7\nfirst")
+    b = _touch(tmp_path / "v2", "bill.pdf", b"%PDF-1.7\nsecond")
     assert pdf_corpus._cache_file(a) != pdf_corpus._cache_file(b)

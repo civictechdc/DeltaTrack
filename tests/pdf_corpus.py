@@ -25,9 +25,11 @@ from deltatrack.parsers.pdf_text import Page, extract_clean_pages
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR, sweep_bill_dirs
 
 # Persistent extraction cache. The one gitignored subtree of the otherwise-committed
-# tests/data/ (see .gitignore). Keyed by PDF path + mtime AND the extractor's identity,
+# tests/data/ (see .gitignore). Keyed by the PDF's CONTENT and the extractor's identity,
 # via the filename, so a stale entry is simply never read. See `_extractor_fingerprint`
-# for why the second half is needed.
+# for why the second half is needed. Content rather than path + mtime so an entry stays
+# valid in a fresh checkout, which resets every mtime: that is what lets CI restore the
+# directory between runs (`actions/cache` in .github/workflows/ci.yml).
 CACHE_DIR = DATA_DIR / "extract_cache"
 
 # Optional single-bill filter for a fast TDD loop. Substring match on the bill
@@ -57,8 +59,10 @@ def _extractor_fingerprint() -> str:
 
 
 def _cache_file(pdf_path: Path) -> Path:
-    mtime_ns = pdf_path.stat().st_mtime_ns
-    key = f"{pdf_path.resolve()}::{mtime_ns}::{_extractor_fingerprint()}"
+    # Hashing reads the whole file, but `cached_pages` memoizes per path, so this runs once
+    # per PDF per process.
+    content = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
+    key = f"{content}::{_extractor_fingerprint()}"
     digest = hashlib.sha1(key.encode()).hexdigest()[:16]
     return CACHE_DIR / f"{pdf_path.stem}-{digest}.pkl"
 
