@@ -4,9 +4,8 @@ Brief map of the live home page, how it relates to the Python CLI, and where to 
 
 **Live site:** [deltatrack.agoradmv.org](https://deltatrack.agoradmv.org) (served by the FastAPI app below).
 
-HTTP→HTTPS and production deployment: see **[docs/https-redirect.md](https-redirect.md)**.
-Dokku's nginx terminates TLS and proxies both the static front-end and API to the one
-Uvicorn process. The app middleware is a backstop when the proxy signals cleartext.
+Production deployment, TLS and the HTTP→HTTPS redirect: see **[deployment.md](deployment.md)**.
+The app's own redirect middleware is a backstop when the proxy signals cleartext.
 
 ---
 
@@ -122,10 +121,8 @@ uvicorn web.app:app --reload --port 8077
 # → http://127.0.0.1:8077/
 ```
 
-Production uses the root `Procfile` and `.github/workflows/deploy.yml`. Railpack builds
-and pushes short-SHA and `latest` image tags, then the workflow deploys the short-SHA
-image to Dokku. Host setup, TLS, registry access, and proxy limits are in
-[docs/https-redirect.md](https-redirect.md).
+Production is built and deployed by `.github/workflows/deploy.yml`; see
+[deployment.md](deployment.md).
 
 ---
 
@@ -154,6 +151,3 @@ image to Dokku. Host setup, TLS, registry access, and proxy limits are in
 **Sample report** — replace `web/webapp/sample/example.html` after renderer changes (copy from `examples/*_pdf_diff.html` or regenerate). Not a discipline you have to remember: `test_served_sample_matches_the_pdf_example` compares the two byte for byte and prints the `cp` to run.
 
 **Do not** duplicate diff logic in JavaScript; the web app should stay a thin client over `POST /api/compare`.
-
-After a push to `main`, watch `.github/workflows/deploy.yml` through its build, push,
-and deploy steps. No host-side source checkout or dependency sync is part of a release.

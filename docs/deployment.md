@@ -1,4 +1,8 @@
-# Dokku deployment and HTTPS — DeltaTrack
+# Deploying the DeltaTrack hosted app
+
+The single home for how the hosted app is built, deployed and served.
+[release.md](release.md) covers when a deploy happens (promotion to `main`); this page
+covers what the deploy does and what the host needs.
 
 The public FastAPI app is deployed as a prebuilt Railpack OCI image. GitHub Actions
 builds the image, pushes it to GHCR, and asks Dokku to deploy the Git-generated
@@ -88,8 +92,11 @@ host.
    dokku git:from-image delta-track ghcr.io/civictechdc/deltatrack:SHORT_SHA
    ```
 
-The Procfile binds Uvicorn to `0.0.0.0` and `${PORT:-5000}`. It intentionally has no
-`--workers` argument, so Uvicorn runs one worker.
+A red run can mean a build, registry, SSH, or Dokku failure. Inspect the failed step
+rather than assuming the host changed.
+
+The Procfile binds Uvicorn to `0.0.0.0` and `$PORT`, which Dokku sets. It intentionally
+has no `--workers` argument, so Uvicorn runs one worker.
 
 ## Verify proxy behavior
 
