@@ -49,10 +49,10 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.bill_tree import normalize_bill
 from deltatrack.diff_bill import match_nodes
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
 from tests.corpus_paths import DATA_DIR
+from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
     complete_sequence_ordinals,
     pair_key,
@@ -75,7 +75,7 @@ def production_pairing_stream(old_path: Path, new_path: Path) -> list[list[int |
     view. Two observations sharing an id make an element-id-keyed stream unable to distinguish a
     matcher that exchanged their partners, which is precisely the change this exists to catch.
     """
-    old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+    old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
     ordinals = complete_sequence_ordinals(old_tree.nodes, new_tree.nodes)
     return [
         [ordinals[id(old)] if old is not None else None, ordinals[id(new)] if new is not None else None]

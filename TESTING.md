@@ -542,6 +542,14 @@ not carry them forward: its cache key includes the extractor fingerprint, so an
 extractor change, a pypdfium2 upgrade or a new Python patch release starts that
 cache from empty.
 
+XML has no disk cache: parsing is fast enough that only repetition costs. A test
+that reads a committed bill's tree without changing it calls
+`parsed_bill(path)` from `tests/parsed_bills.py` rather than `normalize_bill`, so
+each worker parses each file once instead of once per test. Every caller gets the
+same `BillTree`, so a test that would modify it, or that parses under a
+monkeypatched parser, calls `normalize_bill` for a private tree. `parsed_bill`
+raises if a shared tree's node list has changed since it was parsed.
+
 ## Comparing the two pipelines by eye
 
 The automated checks above don't diff the two pipelines against *each other*. To

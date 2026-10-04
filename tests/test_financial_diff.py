@@ -848,16 +848,16 @@ class TestSectionsWhoseOnlyChangeIsMoney:
         """
         from pathlib import Path
 
-        from deltatrack.bill_tree import normalize_bill
         from deltatrack.diff_bill import diff_bills
         from tests.conftest import manifest_version_pairs
+        from tests.parsed_bills import parsed_bill
 
         checked = 0
         offenders = []
         for old_path, new_path in manifest_version_pairs():
             if not (Path(old_path).exists() and Path(new_path).exists()):
                 continue
-            diff = diff_bills(normalize_bill(Path(old_path)), normalize_bill(Path(new_path)))
+            diff = diff_bills(parsed_bill(Path(old_path)), parsed_bill(Path(new_path)))
             for change in diff.changes:
                 if change.change_type != "unchanged":
                     continue
@@ -897,12 +897,12 @@ class TestAmountSourceCorpusRegression:
     @staticmethod
     @pytest.fixture(scope="class")
     def v2_v4_diff():
-        from deltatrack.bill_tree import normalize_bill
         from deltatrack.diff_bill import diff_bills
+        from tests.parsed_bills import parsed_bill
 
         return diff_bills(
-            normalize_bill(fixture_path("118-hr-4366", "2_engrossed-in-house.xml")),
-            normalize_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml")),
+            parsed_bill(fixture_path("118-hr-4366", "2_engrossed-in-house.xml")),
+            parsed_bill(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml")),
         )
 
     def test_dod_sec_128_reallocation_reaches_the_amount_table(self, v2_v4_diff):

@@ -599,14 +599,14 @@ class TestAssignmentExclusivityOnTheCorpus:
         assert_manifest_committed(manifest_version_pairs(), "matching-exclusivity")
 
     def test_the_corpus_assigner_uses_each_observation_once(self):
-        from deltatrack.bill_tree import normalize_bill
         from deltatrack.diff_bill import match_nodes
         from tests.conftest import manifest_version_pairs
+        from tests.parsed_bills import parsed_bill
 
         checked = 0
         for old_path, new_path in manifest_version_pairs():
-            old_tree = normalize_bill(old_path)
-            new_tree = normalize_bill(new_path)
+            old_tree = parsed_bill(old_path)
+            new_tree = parsed_bill(new_path)
             old_at = {id(node): i for i, node in enumerate(old_tree.nodes)}
             new_at = {id(node): i for i, node in enumerate(new_tree.nodes)}
 
