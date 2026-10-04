@@ -109,7 +109,7 @@ def test_the_declared_layout_wins_over_the_source():
     }
     html = format_diff_html(canonical)
     assert ">Making appropriations</span>" in html
-    assert "full-text--no-line-numbers" in html
+    assert 'class="full-text full-text--no-line-numbers"' in html
 
 
 _CASES = dual_format_versions()
