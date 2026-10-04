@@ -86,6 +86,31 @@ def _endpoint_json(old: Path, new: Path) -> dict:
     return response.json()
 
 
+def _embedded_versions(html: str) -> dict:
+    """``versions`` from the diff document a rendered report embeds."""
+    embedded = html.split('<script type="application/json" id="diff-data">', 1)[1].split("</script>", 1)[0]
+    return json.loads(embedded.replace("<\\/", "</"))["versions"]
+
+
+def _endpoint_html_versions(old: Path, new: Path) -> dict:
+    """``versions`` from ``POST /api/compare?output=html``, the report an upload opens."""
+    from fastapi.testclient import TestClient
+
+    from web.app import app
+
+    fmt = old.suffix.lstrip(".")
+    with open(old, "rb") as start, open(new, "rb") as end:
+        response = TestClient(app).post(
+            f"/api/compare?format={fmt}&output=html",
+            files={
+                "start_file": (old.name, start, "application/octet-stream"),
+                "end_file": (new.name, end, "application/octet-stream"),
+            },
+        )
+    assert response.status_code == 200, response.text
+    return _embedded_versions(response.text)
+
+
 @pytest.fixture(scope="module", params=["xml", "pdf"])
 def unprefixed_pair(request, tmp_path_factory) -> tuple[Path, Path]:
     """The fixture pair copied under stems carrying no ``<n>_`` ordinal.
@@ -136,14 +161,12 @@ def _example_versions(monkeypatch, tmp_path: Path, fmt: str) -> dict:
         and (s.v1_filename_stem, s.v2_filename_stem) == (V1_STEM, V2_STEM)
     )
     monkeypatch.setattr(render_examples, "EXAMPLES", tmp_path)
-    html = render_examples.RENDERERS[fmt](spec).read_text(encoding="utf-8")
-    embedded = html.split('<script type="application/json" id="diff-data">', 1)[1].split("</script>", 1)[0]
-    return json.loads(embedded.replace("<\\/", "</"))["versions"]
+    return _embedded_versions(render_examples.RENDERERS[fmt](spec).read_text(encoding="utf-8"))
 
 
 @pytest.mark.slow
 def test_numbered_corpus_names_give_one_version_identity_on_every_surface(tmp_path, monkeypatch, corpus_pair):
-    """The real ``<n>_<label>`` names: command, endpoint and published example agree.
+    """The real ``<n>_<label>`` names: command, endpoint, uploaded report and published example agree.
 
     #692: the same pair headed itself three ways (the upload kept the ``1_`` prefix and
     every PDF surface but the examples dropped the ordinal), because six call sites each
@@ -162,6 +185,7 @@ def test_numbered_corpus_names_give_one_version_identity_on_every_surface(tmp_pa
     }
     assert cli["versions"] == expected
     assert cli == endpoint
+    assert _endpoint_html_versions(old, new) == expected
     assert _example_versions(monkeypatch, tmp_path, fmt) == expected
 
 

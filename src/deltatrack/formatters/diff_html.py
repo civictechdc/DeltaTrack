@@ -19,6 +19,7 @@ from html import escape
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.print_layout import printed_document
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.palette import root_block
 
@@ -378,7 +379,7 @@ def _build_sidebar(
         order_map = _node_order_map(tree_v2)
     full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
     # A pane is paired with a view only when there is a second view to switch to.
-    has_full_text = bool(full_text_v2)
+    has_full_text = _has_full_bill(canonical)
     changes_pane_open = (
         '<div class="sidebar-changes" data-view="changes">\n' if has_full_text else '<div class="sidebar-changes">\n'
     )
@@ -394,8 +395,9 @@ def _build_sidebar(
     )
     # The tree builder owns the navigation outright (#462). It also renders the
     # "no sections" empty state, so a canonical carrying full text but no usable tree
-    # still gets a pane saying so rather than silently losing the navigation.
-    tree_html = _build_tree_nav(tree_v2 or [], full_text_v2) if full_text_v2 else None
+    # still gets a pane saying so rather than silently losing the navigation. Gated on
+    # `_has_full_bill`, the one gate every full-bill control shares.
+    tree_html = _build_tree_nav(tree_v2 or [], full_text_v2) if has_full_text else None
     tree_pane = "" if tree_html is None else f'<div class="sidebar-tree" data-view="full" hidden>{tree_html}</div>'
     return f'<nav class="sidebar">\n{changes_pane}\n{tree_pane}\n</nav>'
 
@@ -444,9 +446,31 @@ def _summary_bar_html(summary: dict[str, int]) -> str:
     return "".join(items)
 
 
-def _bill_label(view: DiffView) -> str:
-    """Pre-escaped "{BILL_TYPE} {N}" string."""
-    return f"{escape(str(view.bill_type).upper())} {escape(str(view.bill_number))}"
+# Chamber designators for the report heading (e.g. "hr" → "H.R.").
+_DESIGNATORS = {
+    "hr": "H.R.",
+    "s": "S.",
+    "hjres": "H.J.Res.",
+    "sjres": "S.J.Res.",
+    "hconres": "H.Con.Res.",
+    "sconres": "S.Con.Res.",
+    "hres": "H.Res.",
+    "sres": "S.Res.",
+}
+
+
+def _heading(bill: dict) -> str:
+    """Report heading from the document's bill fields: "H.R. 4366 — {title}".
+
+    Just the designator when the bill has no title, just the title when its type is
+    unknown, and "" when neither is known.
+    """
+    title = (bill.get("title") or "").strip()
+    bill_type = str(bill.get("type") or "")
+    if not bill_type:
+        return title
+    label = f"{_DESIGNATORS.get(bill_type.lower(), bill_type.upper())} {bill.get('number')}"
+    return f"{label} — {title}" if title else label
 
 
 def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = None) -> str:
@@ -494,13 +518,14 @@ def _has_full_bill(canonical: dict | None) -> bool:
 
 
 def _full_text_is_guttered(canonical: dict) -> bool:
-    """Whether full_text lines carry the PDF line-number gutter.
+    """Whether full_text is ``numbered_lines`` (see schema/canonical-diff.md).
 
-    ``pdf_full_text`` emits each line as a fixed 7-char gutter (``{num:>5}  ``)
-    plus content; the XML pipeline serialises plain paragraph text with no gutter.
-    Default to guttered (the PDF path that built this view); only an explicit
-    ``xml`` v2 source switches the parser to gutterless paragraph flow.
+    Read from the document's ``full_text_layout``. A 3.0 document predates the field,
+    and only for it is the layout taken from the v2 source.
     """
+    layout = canonical.get("full_text_layout")
+    if layout is not None:
+        return layout == "numbered_lines"
     src = ((canonical.get("versions") or {}).get("v2") or {}).get("source")
     return src != "xml"
 
@@ -558,7 +583,8 @@ def _wrap_mark(change: dict, slice_text: str, emitted_ids: set[str]) -> str:
 
 
 def _parse_full_bill_lines(text: str, *, guttered: bool = True) -> list[dict]:
-    """Split full_text into per-source-line display rows.
+    """Split full_text into per-source-line display rows, by the layout rule
+    schema/canonical-diff.md states for ``full_text_layout``.
 
     PDF path (``guttered=True``): each rendered line is ``{number:>5}  {content}``
     (five spaces of padding when the source line was unnumbered) and pages are
@@ -673,7 +699,7 @@ def _removed_appendix_html(removed: list[dict], v1_text: str) -> str:
     )
 
 
-def _full_bill_html(canonical: dict) -> str:
+def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> str:
     """Project the change set inline onto the end-version full text.
 
     Mirrors the canonical full-text view: end-version text with each change's
@@ -725,6 +751,10 @@ def _full_bill_html(canonical: dict) -> str:
             row_ids.setdefault(off, f"fb-off-{off}")
 
     guttered = _full_text_is_guttered(canonical)
+    # Where a printed word break falls, and whether rejoining drops its hyphen, as the
+    # PRODUCER decided it (#650), stamped onto the row that ends there so in-browser
+    # search applies the decision instead of re-deriving it.
+    joins = joins or {}
     emitted_ids: set[str] = set()
     parts: list[str] = []
     seen_page = 0
@@ -735,15 +765,20 @@ def _full_bill_html(canonical: dict) -> str:
         body = _render_fb_row_body(v2_text, row, marks, emitted_ids)
         anchor = row_ids.get(row["raw_start"])
         row_id = f' id="{anchor}"' if anchor else ""
+        # `end` is exclusive, so the row's final character sits at end - 1.
+        disposition = joins.get(row["end"] - 1)
+        join_attr = f' data-join="{"drop" if disposition else "keep"}"' if disposition is not None else ""
         if guttered:
             gutter = str(row["line"]) if row["line"] is not None else ""
             parts.append(
-                f'<div class="full-text-line"{row_id}><span class="full-text-line__number">{gutter}</span>'
+                f'<div class="full-text-line"{row_id}{join_attr}><span class="full-text-line__number">{gutter}</span>'
                 f'<span class="full-text-line__text">{body}</span></div>'
             )
         else:
             row_cls = "full-text-line full-text-line--paragraph" if row.get("para") else "full-text-line"
-            parts.append(f'<div class="{row_cls}"{row_id}><span class="full-text-line__text">{body}</span></div>')
+            parts.append(
+                f'<div class="{row_cls}"{row_id}{join_attr}><span class="full-text-line__text">{body}</span></div>'
+            )
 
     meta = _full_bill_meta_html(
         total=len(canonical.get("changes", [])),
@@ -759,13 +794,11 @@ def _full_bill_html(canonical: dict) -> str:
 def _views_html(
     view: DiffView,
     canonical: dict | None,
-    display_canonical: dict | None = None,
     order_map: dict[tuple, int] | None = None,
 ) -> str:
     """Main content: classic cards, or the toggled changes/full-text pair.
 
-    The full-text view renders from ``display_canonical`` when given (the
-    print-faithful text + spans) and falls back to ``canonical`` otherwise.
+    The full-text view renders the document laid out as printed (`printed_document`).
     """
     if order_map is None:
         order_map = _node_order_map((canonical.get("tree") or {}).get("v2") if canonical else None)
@@ -775,7 +808,7 @@ def _views_html(
     )
     if not _has_full_bill(canonical):
         return changes_inner
-    full_bill = _full_bill_html(display_canonical or canonical)
+    full_bill = _full_bill_html(*printed_document(canonical))
     return (
         f'<div class="view view-changes" data-view="changes">{changes_inner}</div>'
         f'<div class="view view-full" data-view="full" hidden>{full_bill}</div>'
@@ -887,9 +920,6 @@ def _export_modal_html(canonical: dict | None) -> str:
 
 def format_diff_html(
     canonical: dict,
-    title: str | None = None,
-    *,
-    display_canonical: dict | None = None,
 ) -> str:
     """Assemble a complete standalone HTML report from a canonical diff document.
 
@@ -904,41 +934,28 @@ def format_diff_html(
     pipelines carry full text today; a document without it renders the change
     cards alone, still carrying its payload.
 
-    ``display_canonical``, when given, supplies the print-faithful text + spans
-    the on-screen full-text view renders from (the PDF path passes one built
-    from the original printed lines); the embedded/exported ``canonical`` keeps
-    the merged whole-word text regardless. This is the second upstream artifact
-    DeltaTrack#653 removes; it stays until the document itself carries the
-    printed text and the join points needed to reflow it.
+    The full-text view and its navigation show the printed page, laid out from the
+    document's `print_breaks` (`print_layout.printed_document`); the cards, and the
+    embedded document, keep its whole-word text.
 
-    ``title``, when given, sets the report heading (the PDF path passes a bill
-    title derived from the document); otherwise it falls back to the bill
-    label, or a generic heading when no label is available.
+    The heading comes from the document's ``bill`` fields (``_heading``), or a
+    generic one when they name nothing.
     """
     view = view_from_canonical(canonical)
-    bill_label = _bill_label(view)
-    if title and title.strip():
-        heading = escape(title.strip())
-        doc_title = f"{escape(title.strip())} — Diff"
-    elif bill_label.strip():
-        heading = f"{bill_label} &mdash; Comparison"
-        doc_title = f"{bill_label} — Diff"
-    else:
-        heading = "Bill Comparison"
-        doc_title = "Bill Comparison — Diff"
+    heading = escape(_heading(canonical.get("bill") or {}) or "Bill Comparison")
+    doc_title = f"{heading} — Diff"
     # Unconditional, and deliberately not gated on `_has_full_bill` like the controls
     # below: the report carries the diff document it was rendered from, whatever that
     # document happens to contain. Gating it on full text reads as a tidy-up (the
     # in-report features would not touch the payload without it) and silently strips
     # the document from every report built from a canonical that carries no full text.
     data_script = _embed_canonical(canonical)
-    # The TOC/full-text anchors must come from the same canonical the full-text view
-    # renders from (display_canonical when given), so their offsets line up.
-    sidebar_canonical = (display_canonical or canonical) if _has_full_bill(canonical) else None
     # One order map for both panes, from the join's canonical — guarantees the
     # sidebar and cards can never sort their shared groups from different trees.
     order_map = _node_order_map((canonical.get("tree") or {}).get("v2"))
-    sidebar = _build_sidebar(view, sidebar_canonical, order_map)
+    # The TOC's anchors index the text the full-bill view renders, so it reads the
+    # same printed layout.
+    sidebar = _build_sidebar(view, printed_document(canonical)[0], order_map)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -969,7 +986,7 @@ def format_diff_html(
 {_export_button_html(canonical)}
 </div>
 </div>
-{_views_html(view, canonical, display_canonical, order_map)}
+{_views_html(view, canonical, order_map)}
 </div>
 </div>
 {_export_modal_html(canonical)}
@@ -1589,14 +1606,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // view is print-faithful, so GPO's line breaks and its soft-hyphenated word
   // splits are real DOM boundaries, and every row is its own text node.
   //
-  // Normalizations, following the parser's own handling of the printed page
-  // (parsers/pdf_text.py `_merge_print_lines`):
-  //   - a word split at a syllable break (`Serv-` + lowercase continuation) is
-  //     rejoined into one word, hyphen dropped
-  //   - a real compound broken at its own hyphen (`Child-` + uppercase `Rescue`)
-  //     keeps the hyphen and closes up. The parser leaves these two lines
-  //     separate, so this is deliberately MORE than it does: on screen the
-  //     compound reads as one word, so search should treat it as one.
+  // Where a printed word break falls, and what reflowing does to its hyphen, is
+  // APPLIED from the `data-join` attribute the producer stamps on the row, not
+  // re-derived here. Whether `INTEL-` / `LIGENCE` closes up into one word and whether
+  // `McKinney-` / `Vento` keeps its hyphen is not decidable from the printed line --
+  // GPO prints a syllable break and a compound broken at its own hyphen identically --
+  // so the only correct answer is the one the extractor reached with evidence this
+  // code does not have (#650, and the rule in #653: a consumer may apply facts the
+  // document carries, and may not re-infer facts it omits). A row with no attribute
+  // is not a word break, and its line boundary becomes a space as before.
   //   - display lines joined with a single space
   //   - whitespace runs collapsed (GPO pads columns with runs of spaces)
   // The line-number gutter and page markers are print furniture, not bill text,
@@ -1645,10 +1663,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!b.classList.contains('full-text-line') || !block.classList.contains('full-text-line')) {
           pushBreak();
         } else {
-          var cont = node.nodeValue.replace(/^\\s+/, '').charAt(0);
-          var hyphenated = /[A-Za-z0-9]-$/.test(parts[parts.length - 1] || '');
-          if (hyphenated && cont && cont !== cont.toUpperCase()) {
-            // Soft hyphen (lowercase continuation): drop it, `Serv-`+`ices` is one word.
+          // The producer decided this at extraction and the row carries the answer
+          // (#650): `data-join` is present exactly where a printed word break falls,
+          // and says whether reflowing drops the hyphen. Re-deriving it from letter
+          // case is what made this copy of the rule disagree with the parser's.
+          var join = block.getAttribute && block.getAttribute('data-join');
+          if (join === 'drop') {
+            // A syllable break the printer introduced: `Serv-` + `ices` is one word.
             var tail = parts[parts.length - 1];
             parts[parts.length - 1] = tail.slice(0, -1);
             flatLen -= 1;
@@ -1656,9 +1677,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (--lastPiece.len === 0) pieces.pop();
             if (!parts[parts.length - 1]) parts.pop();
             lastCh = tail.charAt(tail.length - 2);
-          } else if (hyphenated && cont) {
-            // A real compound broken at its own hyphen (`Child-` / `Rescue`): keep
-            // the hyphen and close the gap, so the reader's `Child-Rescue` matches.
+          } else if (join === 'keep') {
+            // The word's own hyphen (`McKinney-` / `Vento`): keep it and close the gap.
           } else {
             pushSpace(null, 0);
           }

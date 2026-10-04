@@ -193,11 +193,11 @@ def _xml_tree_payload_for(path: Path) -> tuple[list[dict], str]:
 def _pdf_tree_payload_for(path: Path) -> tuple[list[dict], str, tuple, dict]:
     """The contract-shaped PDF tree for one version, plus its full_text — built the
     way the shipped canonical does. Uses ``pdf_full_text`` (the merged whole-word
-    variant), NOT ``pdf_full_text_print``: ``compare_pdfs`` builds the contract tree
-    from the non-print text (``_build_canonical(printed=False)``); the print variant
-    is display-only, and a dollar amount broken across a printed line would extract
-    differently there — so the print variant would measure a tree the consumer never
-    sees (feedback_measure_at_consumed_output).
+    text), NOT ``pdf_full_text_print``: the canonical carries the whole-word text and
+    builds its tree there; the printed layout is derived for display only, and a
+    dollar amount broken across a printed line would extract differently in it — so
+    the print variant would measure a tree the consumer never sees
+    (feedback_measure_at_consumed_output).
 
     Also returns the anchors and the offset table: the zero-anchor gate needs them to
     tell "this layout carries no margin line numbers" (#141) apart from "anchor

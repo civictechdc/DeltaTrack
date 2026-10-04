@@ -292,6 +292,8 @@ jobs:
           "$GITHUB_WORKSPACE/tests/test_pdf_xml_amount_recall.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_xml_prose_recall.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_word_break_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_full_text_layout.py"
+          "$GITHUB_WORKSPACE/tests/test_report_from_document.py"
           "$GITHUB_WORKSPACE/tests/test_front_matter_parity.py"
           "$GITHUB_WORKSPACE/tests/test_xml_compare.py"
           "$GITHUB_WORKSPACE/tests/test_toc_tree.py"
