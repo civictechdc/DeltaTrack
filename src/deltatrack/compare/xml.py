@@ -164,7 +164,7 @@ def compare_xml_trees(
         new_version_number=new_version_number,
         filter_text=filter_text,
         financial_only=financial_only,
-    )[0]
+    )
 
 
 def compare_xml_trees_html(
