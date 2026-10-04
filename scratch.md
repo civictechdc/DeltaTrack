@@ -16,9 +16,10 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 4. [PDF pipeline, end to end](#pdf-pipeline-end-to-end)
 5. [Overlap map](#overlap-map) (per seam)
 6. [Findings](#findings)
-7. [Falsification pass](#falsification-pass)
-8. [Work log](#work-log)
-9. [Open questions](#open-questions)
+7. [Falsification pass](#falsification-pass) (round 1)
+8. [Review round 2](#review-round-2)
+9. [Work log](#work-log)
+10. [Open questions](#open-questions)
 
 ---
 
@@ -415,6 +416,8 @@ at the baseline commit.
 | F13 | Differ modules host CLIs that import back up into `compare/` | E1, E2, X3, P5 | Diff ↔ Entry | Low-Med → Low | **Partly falsified** | open |
 | F14 | Minor: structural filter in JS, duplicate bill-type vocab, web palette copy | R3, R4, P6, E3 | Misc | Low → nit | **Mostly falsified** | open |
 | F15 | No import-direction gate for the pipeline layers | all | Enforcement | Medium → Medium | **Partly falsified** (3 gates exist) | open |
+| F16 | Division display label decides structural level in the tree | X2 → X6 → C → R3 | Parse ↔ Contract | — → Medium | **New in round 2**, reproduced | open |
+| F17 | XML `changes[].text` is the matcher's normalized body; view swaps text for XML only | X3 → C → R1 | Diff ↔ Contract | — → Low-Med | **New in round 2**, reproduced | open |
 
 ---
 
@@ -853,14 +856,233 @@ A finding survives only if all three fail to knock it down.
 
 ---
 
+## Review round 2
+
+**2026-10-04, baseline `f2e698a`.** Five independent reviewers ran with fresh context. None
+saw round 1's evidence or verdicts; each had to reproduce or break the claims with its own
+code.
+
+| Reviewer | Brief |
+|---|---|
+| **A** | Try to break F1, F13, F15. |
+| **B** | Try to break F4a, F4b, F4c. |
+| **C** | Try to break F7, F8, F9, F10. |
+| **D** | Try to *revive* the findings round 1 dismissed: F2, F3, F4d, F5, F11, F12, F14. |
+| **E** | Blind audit. Never read this file; found overlaps independently. |
+
+I re-ran every new finding, every verdict change and the one reviewer conflict myself
+(`round2/spot*.py` in the session scratchpad): F7's flip counts, F9's filter case, F12's
+17 keys, F16, F17, and F4c (B vs E). All reproduced exactly. The other numbers below are
+the reviewer's own measurement: F1's simulated split, F15's planted violations, F4b's PDF
+counts and examples, and C's identity and timing figures. Where round 1 measured the same
+quantity, the two agree.
+
+### Convergence check
+
+| Finding | Round 1 | Round 2 | Changed? |
+|---|---|---|---|
+| F1 split producers / viewer | Holds | Holds, weakened (A); found independently (E #3) | Evidence corrected |
+| F4a node join misses | Narrowed | Holds (B); fix direction corrected | Evidence corrected |
+| F4b removed-change misfile | Defect | Defect, strengthened on PDF (B); found independently (E #1) | Example corrected, PDF added |
+| F4c TOC label search | Holds | Holds, "producer knows" weakened (B); found independently (E #6) | Evidence corrected |
+| F7 move kind | Holds | **Strengthened** (C) | Yes |
+| F7 PDF identity | Holds | Holds, more evidence (C); found independently (E minor) | No |
+| F8 dead financial work | Holds | Holds (C); ADR staleness only half true | Narrowed |
+| F9 filters before contract | Holds | Holds; documented and tested (C); filter keys on match keys (E #5) | Narrowed + new angle |
+| F10 summary shape | Holds | Holds, cosmetic (C) | No |
+| F12 XML parser → PDF helpers | Partly falsified | Found independently as a blocker (E #7): 17 XML match keys move | **Revived (partly)** |
+| F13 CLI in differ | Partly falsified | Holds as tracked debt (A): ADR 0017, #62 | No (context added) |
+| F15 no direction gate | Partly falsified | Holds (A): 4 planted violations pass every gate | Evidence strengthened |
+| F2, F3, F4d, F5, F11, F14 | Falsified / mostly | *Review D pending* | — |
+| **F16** division label decides tree level | — | **New** (E #2), reproduced | New |
+| **F17** XML `text` is the matcher's normalized body | — | **New** (E #4) | New |
+
+**Not converged.** Round 2 produced two new findings, one verdict upgrade (F7) and one
+partial revival (F12), and corrected four pieces of round 1's evidence. A round 3 is needed.
+
+### Corrections to round 1 (things round 1 got wrong)
+
+1. **F4b example pair.** The `114-hr-2029` case is in pair **4→5** (`4_reported-in-senate →
+   5_engrossed-amendment-senate`, change `c-0046`), not 1→3. Pair 1→3 has no misfiled
+   removal. The fix-task card queued in round 1 carried the wrong pair; it was dismissed.
+2. **F1 "the viewer half uses no producer names" is false.** `_reject_unknown_major` uses
+   `SCHEMA_VERSION`. The split still works, but the reader needs its own supported-major
+   constant or a tiny shared module. Round 1's AST check only looked for a fixed list of
+   names.
+3. **F4c "the producer already knows the heading offset" is overstated.**
+   `serialize_tree_for_tree`'s heading-offset map keeps the **first** occurrence per
+   `display_path`. For 63 nodes in the pair v2 trees (75 across all 58 versions) that is
+   the wrong, earlier heading, so emitting the map as-is would make those anchors worse.
+   The per-node offset exists inside the walk (`heading_markers`), not in what it exposes.
+   Round 1's "line equals the label in 100%" check could not see this, because a duplicate
+   heading also equals the label. The count is 9,722 content nodes on the pair v2 trees;
+   round 1's 8,723 used a different population.
+4. **F4a fix direction was wrong.** The unjoined nodes' `element_id` spans are
+   zero-length, and the join deliberately drops zero-length spans
+   (`canonical.py:576`). Simulating the join with them still fails 1,672 of 1,675. The fix
+   needs a node reference on the change, or a non-empty span such as the `SEC.` line.
+5. **F15 missed a gate.** `tests/test_matching_contracts.py:552` asserts that
+   `deltatrack.matching` imports nothing from `deltatrack`.
+6. **F8 "ADR 0006 is stale" was half right.** The `--filter` / `--financial` flags still
+   exist and decide on `amounts_changed`. Only the clause saying the multiset facts reach
+   output is stale. The post-#693 behaviour is documented in `README.md:178` and pinned
+   by `test_financial_diff.py::test_the_flag_adds_no_money_to_the_document`.
+7. **F9 is documented, deliberate behaviour.** `README.md:178` says the output keeps its
+   shape and `summary` counts what remains; `tests/test_diff_bill.py:923` pins the
+   all-zero summary for a filter that matches nothing.
+
+### What strengthened
+
+**F7 move kind (C, spot-checked).**
+- The two rules disagree in **both** directions. The PDF rule applied to XML moves flips
+  **167 of 496** (34%) from `relocated` to `renumbered`; 164 of those have section-number
+  labels. The XML rule applied to PDF moves flips 85 of 161. Both reproduce exactly.
+- They disagree exactly when the parent and the last label both change. The schema's two
+  kinds don't cover that case. Read literally (`schema/canonical-diff.md:448-451`), it
+  favours the PDF rule.
+- The PDF rule is plainly wrong on headings. 23 of its 153 `renumbered` moves involve
+  account or heading labels: line-wrap fragments (`FOR CIVIL WORKS` → `CIVIL WORKS`) and
+  different accounts (`ELECTRICITY DELIVERY` → `NUCLEAR ENERGY`, 115-hr-5895 3→4). These
+  render as "Renumbered:".
+- `_xml_move`'s docstring says it is "mirroring `_pdf_move` (#188)" (`canonical.py:122`).
+  It does not.
+- No test covers "parent and label both changed"
+  (`tests/test_formatters_canonical.py:132-165`).
+
+**F4b (B, E, round-1 numbers reproduced).**
+- PDF misfiles too: 26 of 190 joined removals, **24 under a different top-level title or
+  division**.
+- B walked the rendered HTML: `c-0046` sits inside TITLE II's `<details>` in both the cards
+  and the sidebar.
+- E found more examples independently. In 115-hr-5895 2→4, `c-0013` (`… > sec. 101 >
+  (b)`) is filed under `Sec. 3 > (b)`.
+- `schema/canonical-diff.md:242` says the tree is per-side, "not paired — cross-version
+  node pairing remains the diff engine's job". The view is doing exactly that.
+- No test guards it. `test_xml_removed_changes_place_into_v2_groups` only asserts a
+  non-empty `node_path`, and the unit tests use unique labels.
+
+**F15 (A).** A copy of the repo with four planted layering violations passed every
+boundary gate (228 passed):
+1. `diff_html` → `diff_bill`
+2. `bill_tree` → `similarity`, and `bill_tree` → `compare.xml`
+3. `diff_bill` → `formatters.diff_html`
+4. `structure_tree` → `diff_pdf`
+
+**F1 (A).**
+- A simulated split (the viewer half plus `SCHEMA_VERSION` in a standalone module)
+  renders **byte-identical** reports for 115-hr-5895 1→2, both XML and PDF.
+- Renderer import drops to ~34 ms with no `pypdfium2`, and no other import route pulls the
+  engine back in.
+- Friction to plan for:
+  - `tests/test_canonical_node_join.py:349-353` monkeypatches `canonical._span_join_index`.
+  - Five test files import `view_from_canonical` from `canonical`.
+  - A frozen research probe imports `_move_info_html` from `canonical`, and
+    `test_research_probes.py` turns red without a re-export.
+- Already tracked: open issue #62 lists `canonical.py` → `diff_pdf` as the main obstacle to
+  packaging the engine cleanly.
+- Separately, the `diff_pdf` edge could go under `TYPE_CHECKING` today, since `PdfDiff`
+  and `PdfHunk` are annotation-only.
+
+**F12 (E, partly revives the round-1 dismissal).** Disabling the PDF run-in matcher changes
+**17 XML `match_path` keys** across 3 bills. So tuning PDF anchors changes the XML diff, and
+only the byte-identity baselines would notice. The sharing is still deliberate; what's
+revived is that it blocks independent work in practice, not just in principle.
+
+### New findings
+
+**F16 — A division's display label decides its structural level in the tree.** *(E #2;
+reproduced.)*
+- Stages: X2 (display label) → X6 (`structure_tree`) → C (`tree[].level`) → R3
+  (navigation and grouping).
+- `structure_tree.py:58, 88-93` assigns `division` / `title` by regex over label text, and
+  `_group_front_matter` (`:233`) keys on those levels.
+- Rendering division labels in GPO form (`DIVISION A—…`, the #66 direction) on 118-hr-4366
+  5→6 leaves every change identical. But the v2 root goes from `{division: 7, preamble: 1}`
+  to `{heading: 7, section: 6, preamble: 1}`: the division level is lost and six
+  front-matter sections spill to the root.
+- This contradicts the recorded separation. `bill_tree.py:13-21` and `:563-570`,
+  `pdf_anchors.py:35-40` and `architecture.md:171-175` all say the division label is
+  display-only. That separation was built for match keys (#468), not for the tree.
+- Fix direction: carry a typed level from the parser (the `Division` object, the anchor's
+  kind) into `TreeNode`; stop regex-matching labels.
+
+**F17 — XML `changes[].text` carries the matcher's normalized body; the view swaps in
+readable text for XML only.** *(E #4; consistent with the `_card_texts` docstring.)*
+- Stages: X3 (match normalization) → C → R1.
+- `diff_bill.py:1048-1049`: `old_text` / `new_text` "stay body_text — they feed matching,
+  text_diff and the JSON payload". `_card_texts` (`canonical.py:697-731`) slices readable
+  `full_text` instead, for XML only.
+- The card and the exported `diff.json` disagree on 439 of 1,377 text sides (117-hr-4502),
+  220 of 553 (115-hr-5895) and 728 of 766 (119-hr-1). The differences are whitespace only
+  (`(a)Of` vs `(a) Of`), but they are different tokens to anything word-diffing the JSON.
+- The same leak shows in `path`. In-title sections carry the lowercased match form
+  `sec. 101` (`bill_tree.py:910`, `_build_paths:662-664`), while body-level sections carry
+  `Sec. 3`.
+- This reframes part of F3. The source branch in `_card_texts` exists to undo a matcher
+  representation leaking into the contract, not only because of the PDF gutter.
+- Recorded as a workaround (#76). Fix direction: the producer emits readable text in
+  `text` and keeps `body_text` internal.
+
+**F9, new angle — the CLI filter keys on internal match keys.** *(E #5; reproduced.)*
+`--filter "TITLE II"` on 118-hr-4366 1→2 returns **0 changes**, while 13 change
+breadcrumbs contain "TITLE II". `filter_diff` matches against `match_path`, which drops the
+title enum and division (`diff_bill.py:1898-1920`). The help text concedes the division
+part. A change to match keys silently changes filter results.
+
+### Context added, no verdict change
+
+- **F7 identity (C).**
+  - Across 17 PDF pairs, `congress` is `""` in 6, the title is a lowercase fragment in 5,
+    and the title is missing in all 3 pairs of 113-hr-3547.
+  - `_bill_identity` has no unit test.
+  - XML takes type, number and congress from the **old** tree but the title from the
+    **new** one; PDF reads everything from the new version.
+  - `congress` is a string on PDF and an integer on XML.
+- **F8 (C).** Canonical output is SHA-256 identical with the fields dropped *or replaced by
+  junk*, on 27 of 27 pairs. The wasted financial work is 0.90 s of 9.66 s total XML compare
+  time (~9%).
+- **F10 (C).** No consumer is affected (`_summary_bar_html` uses `.get(k, 0)`; no JS reads
+  `summary`). But `unchanged` is outside the schema's `change_type` enum, which the prose
+  says summary keys are drawn from.
+- **F13 (A).**
+  - Recorded debt in ADR 0017 (lines 33-38) and issue #62.
+  - `filter_diff` sits under the `# --- CLI ---` header but is library code used by
+    `compare/xml.py`.
+  - The `src/deltatrack/__init__.py` docstring and #62's body describe a cycle that no
+    longer exists.
+  - The real cycles:
+    - `compare.xml` → `diff_bill` ⇢ `compare.xml`
+    - `compare.pdf` → `canonical` → `diff_pdf` ⇢ `compare.pdf`
+    - `diff_html` → `canonical` → `diff_pdf` ⇢ `compare.pdf` → `diff_html`
+- **F4a (B).**
+  - 1,675 of the 1,676 unjoined null-span changes are #188 empty-body sections.
+  - 1,622 of them cause the same top-level heading to render twice: the flat fallback
+    group repeats a tree group's label.
+  - `test_xml_join_matches_structural_path` skips exactly this class (fail-open).
+- **F4c (B, E).**
+  - The search never picks a wrong heading: all 15,313 search decisions across the 58 XML
+    versions were checked against an independent re-walk of the serializer.
+  - E flagged 21 anchors on 118-hr-4366 v6 that land 200+ lines above their span. I checked
+    the top cases. They are content nodes labelled with their parent title's name (for
+    example a headerless "may be cited as" section), and the search correctly lands on
+    that title heading. The quirk is duplicate labels in the tree, not a wrong anchor.
+  - One real but tiny flaw: "Receipts collected" (Export-Import Bank) has a body that
+    starts with its own label, so the own-line check anchors 20 characters below the real
+    heading. One node per affected version, 9 of 58 versions.
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
 |---|---|---|
 | 2026-10-04 | Initial audit; diagrams; findings F1–F15 recorded. No code changes. | all |
 | 2026-10-04 | Falsification pass over 27 XML + 17 PDF corpus pairs; verdicts and revised severities recorded; F4b misfiling queued as a separate fix task. No code changes. | all |
+| 2026-10-04 | Review round 2: five independent reviewers (A–E, E blind); new F16, F17; F7 strengthened; F12 partly revived; seven round-1 corrections. Not converged. No code changes. | all |
 
 ## Open questions
+
+- **Convergence criterion** for these review rounds: a round in which (1) no verdict changes, (2) a blind audit finds nothing outside the list, and (3) no evidence correction beyond wording.
 
 - F2/F3/F5 were reclassified as recorded decisions (ADR 0006/0007, schema). Does the team want any of them reopened as ADR changes?
 - F4b: fix narrowly in the view (prefix match), or move v1→v2 container correspondence into the producer?
