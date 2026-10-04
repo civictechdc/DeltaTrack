@@ -22,8 +22,10 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 10. [Review round 3](#review-round-3)
 11. [Review round 4 (final)](#review-round-4-final)
 12. [Mapping to #653 and existing issues](#mapping-to-653-and-existing-issues)
-13. [Work log](#work-log)
-14. [Open questions](#open-questions)
+13. [Design draft](#design-draft)
+14. [Open PRs vs. the node-identity gap](#open-prs-vs-the-node-identity-gap)
+15. [Work log](#work-log)
+16. [Open questions](#open-questions)
 
 ---
 
@@ -1509,6 +1511,152 @@ cost was not available when the decision was made. **F5** is the case for revisi
 
 ---
 
+## Design draft
+
+**Status: draft, 2026-10-04.** Root cause agreed with the user: the contract has no tree-node
+identity, and that drives most of the remaining overlap. Decisions D2–D4 below are still open.
+
+### Three root causes
+
+| Root cause | What it forces | Findings |
+|---|---|---|
+| **No node identity in the contract.** Tree nodes have no IDs; a change doesn't say which node it belongs to; a node's address is its display breadcrumb and its level is guessed from label text | The viewer rebuilds structure itself: span joins, label remaps, heading searches, four copies of the hoisting rule | F4a, F4b, F4c, F6, F11, F16 (#552) |
+| **Decisions made at the wrong stage.** No typed diff result shared by both pipelines; each adapter into the contract decides things | Move kind, identity, summary keys, `text` content and filtering are decided in adapters or the CLI | F3, F7a, F7b, F8, F9, F10, F17 |
+| **Module boundaries don't match stages** | Producer and viewer share a file; the XML parser borrows PDF privates; CLIs sit in differs; nothing enforces direction | F1, F12, F13, F15 |
+
+### Target shape
+
+```
+parse/        xml, pdf, grammar (shared run-in catchline rule, public)
+  ↓
+diff/         matching, similarity, xml, pdf → one typed DiffResult
+  ↓
+contract/     produce(DiffResult, docs) → canonical; SCHEMA_VERSION; reader guard
+  ↓
+view/         view_from_canonical, html, print_layout   (imports contract.version only)
+
+compare/  orchestrates      cli/  commands      web/  unchanged
+```
+
+A layering test lists the allowed import edges and starts from an allowlist of today's
+violations, which shrinks with each fix.
+
+### D1: node identity, minimal slice (settle before #736 merges)
+
+The smallest additive contract change (schema 3.x minor) that removes the re-inference.
+Everything it needs is already held by the producer:
+
+| Addition | Meaning | Already held where |
+|---|---|---|
+| `TreeNode.id` | Unique per side, deterministic (ADR 0008), **per-document only**; not a cross-version address (that is #552's harder half) | Tree build order; leaves also have `BillNode.element_id` (XML) or the `Anchor` object (PDF, already used as `id(anchor)` in `_pdf_tree_payload`) |
+| `TreeNode.heading_span` | Where the node's heading row is in `full_text`, or null | XML: the serializer's per-node `heading_markers` (not the first-occurrence map; see F4c). PDF: the anchor line's offset |
+| `TreeNode.body_span` | The node's own prose, excluding its heading lines | XML: the `element_id` body span. PDF: the block's lines after `_strip_heading_lines` |
+| `change.node: {v1, v2}` | Which tree node each side of a change belongs to | XML: `element_id_old/new` (read at `canonical.py:91-92`, then dropped). PDF: `hunk.v1_anchor/v2_anchor` |
+
+**What it removes from the viewer:**
+- the span join (`_span_join_index` / `_join_node_path`)
+- the v1 side of the removal remap
+- the label search for headings (F4c, #766)
+- the duplicate hoisting rules (F6)
+- the "Front Matter" string as a key (F11)
+
+**It also fixes F4a outright:** the 1,676 empty-body sections get a node reference even though
+they have no text span.
+
+**What it does not do:**
+- It does not change how containers are built; they are still synthesized from `display_path`.
+  That's #552.
+- It does not give cross-version identity.
+- It does not decide where a removal belongs in v2 (D2).
+- Running heads inside a body span stay a parser-accuracy issue (#535): the parser should keep
+  them out of `full_text` rather than consumers skipping them.
+
+### D2: removal placement (open)
+
+The diff stage derives container correspondence from settled leaf matches and emits
+`placement: {v2: node_id | null}`. The viewer applies it. This is the principled fix for F4b.
+Alternative: the viewer files removals under their own v1 path (honest, but v1-only groups
+become common). Because F4b is a live defect (93 XML and 26 PDF misfiles), a narrow
+prefix-match fix in the viewer is cheap if D2 won't land soon. D2 needs D1's node IDs first.
+
+### D3: move semantics as facts (open)
+
+Classification emits `identifier_changed`, `container_changed` and `body_unchanged`, one
+definition each. The viewer derives the wording. For PDF, `identifier_changed` is `null` until
+heading identity exists (#648, #551), rather than a false "Renumbered". `kind` stays derived
+through 3.x and is removed in 4.0.
+
+### D4: one typed DiffResult (open; generalises #698)
+
+- A single `contract.produce()`.
+- `summary` computed from the final changes with a fixed key set (#706 / PR #731 option A).
+- `text` carries readable display text; `body_text` stays internal (F17), which removes F3's
+  `v1.source` branch.
+- Bill identity comes from each parser, preferring the new version and falling back field by
+  field (F7b).
+
+### D5: filters run after the contract is built
+
+`--filter` and `--financial` apply to the canonical document on `path`. An optional `filter`
+field records that the document is filtered (F9).
+
+### D6: leave decided items alone
+
+The gutter (F5) and layout parsing (F4d) stay as decided (#653, #769). Typed levels and
+cross-version addresses stay with #552 / #471, which D1 makes easier.
+
+### Sequencing
+
+| Phase | Work | Output change | Closes |
+|---|---|---|---|
+| 0 | Package split + layering test; move run-in grammar out of the PDF parser; CLIs to `cli/` | None (F1's split proven byte-identical) | F1, F12, F13, F15; helps #751 |
+| **1** | **D1 minimal slice** (additive); viewer applies it | Additive | F4a, F4c, F6, F11 (part); unblocks D2 and #736's ledger keying |
+| 2 | D2 placement, D3 move facts, D4 typed `DiffResult`, D5 filters | Yes; baselines regenerated | F4b, F3, F7a, F7b, F8, F9, F10, F17 |
+| 3 | #552: typed container levels, cross-version addresses | Yes | F16, rest of F11 |
+
+Phase 1 can go before or alongside Phase 0. It touches only `formatters/canonical.py`, the
+serializer, the schema and the viewer.
+
+### Open decisions
+
+1. Removal placement: diff-stage `placement` (recommended), or viewer files by own v1 path? Do
+   the narrow F4b fix in the meantime?
+2. Move semantics: orthogonal facts (recommended), or a third `kind` value? Additive in 3.x or
+   wait for 4.0?
+3. ADR: D1 and D3 change what the contract promises. A new ADR ("node identity and move facts
+   in the canonical contract") rather than another edit to ADR 0006?
+4. Coordination with PR #736: key the ledger by `node` once D1 lands, or land D1 first? See the
+   next section.
+
+## Open PRs vs. the node-identity gap
+
+Checked 2026-10-04 by reading each branch's code (fetched from `mattzamora/DeltaTrack`) and
+re-running the F4b measurement on it. The three PRs are stacked: #739 on #736 on #734.
+
+| PR | Driven by missing node identity? | Evidence |
+|---|---|---|
+| **#739** XML header-only headings in breadcrumbs (closes #733, #521) | **Yes, directly** | The tree is built from `display_path` prefixes, so the PR inserts headings into `display_path` (`bill_tree.py`); `structure_tree.py` and the serializer are untouched. New nodes get level `heading` from the label-regex fallback. Change `path` moves on 22 of 27 XML pairs. Measured on its code: F4b misfiles **93 → 95**, across top-level groups **48 → 50**; unjoined changes unchanged at 1,677. This is #552's "a container exists only if some leaf's breadcrumb contains it"; #521 is one of #552's listed instances. |
+| **#736** typed financial ledger and views | **Yes, in three places** | (1) `LedgerSection.path` names the node by repeating `[label, level]` from the root plus a span: there's no node ID to point at. (2) `financial._prose_blocks` re-reads rendered `full_text` within the node span, skipping furniture and heading lines with private PDF helpers (`pdf_heading_passes._FURNITURE`, `pdf_blocks._is_strippable_heading_line`), because nodes carry no body or heading span. That's a sixth place that understands the gutter layout. (3) `financial_views.comparison_rows` joins changes to ledger sections by span overlap (`_overlapping_groups`), a third copy of the join mechanism; the 1,676 null-span changes can never appear in the comparison. The ledger is also a second per-node money structure beside `tree[].own_amounts`. |
+| **#734** PDF heading recovery (closes #732, #524) | **Mostly no** | Genuine parse-stage accuracy work (wrapped headings, agency vs account scope, quoted text). Edges: its accuracy gate compares PDF to XML by heading-label chains (#552's cross-pipeline address problem; fine for a test); its #648 gain (Renumbered 156 → 143) fixes anchor text while `_pdf_move` still compares raw text (F7a); agency scope lives in breadcrumb logic (`_agency_reaches`) and such agencies are still reported as accounts. XML results unchanged by it (measured). |
+
+### Implications
+
+- **#736 creates a contract surface keyed by label paths.** Once published, re-keying the
+  ledger by node is a breaking change. The cheapest moment to decide is before it merges.
+  - With D1: a ledger section is `{node: id, clauses, …}`.
+  - It reads `body_span` instead of re-detecting headings.
+  - The comparison becomes a lookup on `change.node`.
+- **#739 is a reasonable interim.** But it is another fix landing "on a model that generates
+  the next instance" (#552). With D1 in place its breadcrumb changes would stop reaching
+  grouping, because consumers would key on IDs, not labels. Its ADR 0024 should say the
+  breadcrumb stands in for typed container nodes until #552.
+- **#734 can proceed independently.**
+- **Version clash:** #736 bumps `SCHEMA_VERSION` "3.0" → "3.1", but `develop` is already 3.1
+  (`print_breaks`, `full_text_layout`). Both PRs show conflicts against `develop`, so the
+  ledger needs its own minor.
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
@@ -1519,8 +1667,11 @@ cost was not available when the decision was made. **F5** is the case for revisi
 | 2026-10-04 | Mapped findings to #653 and existing issues (#62, #471/#552, #648, #76, #656). F16 = #471. Untracked: F4b, XML side of F7, F8, F10, F9 match-key angle, F17 residue. | all |
 | 2026-10-04 | Review round 3: four fresh reviewers (one blind). No verdict changes; blind audit found nothing outside the list; precision corrections only (fourth cycle, 7-char gutter, `v1.source`, counts, F12 revision cost). Current register written. Not yet converged on precision. | all |
 | 2026-10-04 | Review round 4 (final): two verbatim verifiers + third blind audit. **Converged** under the user's rule (no verdict changes, no new findings). Precision and ownership corrections folded in; F4d resolved by decision on develop (#769, #653 closed); F5 downgraded. No code changes. | all |
+| 2026-10-04 | Design draft (root causes, target shape, D1–D6, phases). Compared open PRs #734/#736/#739: #739 and #736 driven by missing node identity (measured F4b 93→95 on #739); #734 mostly independent. Root cause agreed with user; D1 minimal slice to settle before #736 merges. No code changes. | F4a–c, F6, F11, F16, D1 |
 
 ## Open questions
+
+- Design decisions D2–D4 and the #736 coordination question: see [Design draft → Open decisions](#open-decisions).
 
 - ~~Convergence criterion: no verdict changes, blind audit finds nothing new, no evidence correction beyond wording.~~ Relaxed by the user before round 4 to "stop if no findings change"; precision corrections don't count. Met in round 4.
 
