@@ -10,6 +10,22 @@ XML inputs and a diff produced from PDF inputs share this shape.
 
 Top-level field: `schema_version: "3.1"`.
 
+- A consumer claiming support for this contract MUST reject a document whose major
+  version it does not support, rather than interpreting it as the current shape. This
+  is an obligation on the consumer: the JSON Schema constrains the document, and cannot
+  enforce what a reader does at runtime.
+- Additive, backward-compatible changes (new optional fields) bump the minor:
+  `1.0 → 1.1`.
+- Breaking changes (renamed/removed/restructured fields) bump the major:
+  `1.0 → 2.0`. N-way comparison support is planned as a later major break.
+- **A version is released when `develop` is promoted to `main`, and changes merged to
+  `develop` before then share one unreleased version.** A pull request that changes
+  the contract adds a line under that version's changelog entry instead of bumping
+  `schema_version`. The first contract change after a release opens the next version;
+  a later breaking change raises it to the next major if it is only a minor ahead of
+  `main`. Bumping per pull request would mint versions no consumer ever receives, and
+  parallel pull requests would collide on the same next number.
+
 ## Changelog
 
 - **3.1** — Added optional top-level `print_breaks: { v1, v2 } | null` (#653): where
@@ -110,15 +126,6 @@ Top-level field: `schema_version: "3.1"`.
   compatible with 1.0 (consumers that ignore unknown fields keep working).
 - **1.0** — Initial public contract.
 
-- A consumer claiming support for this contract MUST reject a document whose major
-  version it does not support, rather than interpreting it as the current shape. This
-  is an obligation on the consumer: the JSON Schema constrains the document, and cannot
-  enforce what a reader does at runtime.
-- Additive, backward-compatible changes (new optional fields) bump the minor:
-  `1.0 → 1.1`.
-- Breaking changes (renamed/removed/restructured fields) bump the major:
-  `1.0 → 2.0`. N-way comparison support is planned as a later major break.
-
 ## Scope
 
 - **Binary only.** This contract represents a single comparison of two bill versions
@@ -131,7 +138,7 @@ Top-level field: `schema_version: "3.1"`.
 
 ```jsonc
 {
-  "schema_version": "3.0",
+  "schema_version": "3.1",
   "generator": { "name": "deltatrack", "version": "0.x" },
   "bill":      { "type": "hr", "number": 4366, "congress": 118, "title": "Making appropriations…" },
   "versions": {
