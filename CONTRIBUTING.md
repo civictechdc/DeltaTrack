@@ -34,9 +34,6 @@ cd DeltaTrack
 # Install dependencies (including dev tools)
 uv sync
 
-# Install pre-commit hooks (runs linting/formatting automatically on commit)
-uv run pre-commit install
-
 # Run the fast test suite to verify everything works
 uv run pytest -m "not slow and not browser"
 ```
@@ -136,7 +133,7 @@ git cat-file -e origin/develop:path/to/changed/file && echo "reached develop"
 
 ### Code style
 
-This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting. If you installed the pre-commit hooks, this runs automatically on each commit. You can also run it manually:
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting. There are no commit hooks -- run it yourself before pushing, and CI runs it against the whole tree:
 
 ```bash
 uv run ruff check .          # Lint
@@ -226,7 +223,7 @@ CI splits gate 5 across several jobs so a red build names the area it came from;
 
 Selecting by marker means a module joining a CI step is covered here automatically. History: #220, #320, #288 — this block enumerated each step's modules and went stale in three consecutive pull requests, because nothing ties prose to the workflow.
 
-The pre-commit hooks run Ruff linting and formatting on eligible files touched by each commit, while CI runs the configured Ruff commands against the whole tree and may cover additional file types. Run the commands above before pushing rather than relying on the hooks. The hooks use the same Ruff release CI does, which tests/test_precommit_ruff_version.py keeps true.
+This project installs no commit hooks, so nothing lints on your behalf -- run the commands above before pushing. CI runs the configured Ruff commands against the whole tree and may cover additional file types.
 
 If a slow run ends in `undeclared skip ceiling exceeded`, that is not a flake: a watched gate skipped instead of asserting, and the skip is not declared. [TESTING.md](TESTING.md#when-a-skip-has-to-be-declared) says which allowlist it belongs in.
 
