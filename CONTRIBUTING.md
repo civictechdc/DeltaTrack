@@ -223,7 +223,9 @@ CI splits gate 5 across several jobs so a red build names the area it came from;
 
 Selecting by marker means a module joining a CI step is covered here automatically. History: #220, #320, #288 — this block enumerated each step's modules and went stale in three consecutive pull requests, because nothing ties prose to the workflow.
 
-This project installs no commit hooks, so nothing lints on your behalf -- run the commands above before pushing. CI runs the configured Ruff commands against the whole tree and may cover additional file types.
+This project installs no commit hooks, so nothing lints on your behalf -- run the commands above before pushing. CI runs the configured Ruff commands against the whole tree.
+
+If you installed the pre-commit hooks before they were removed, uninstall them from your checkout with `uvx pre-commit uninstall`. The installed hook outlives its deleted config and fails every commit, and `uvx` fetches pre-commit on its own, so this works after `uv sync` has dropped it from the project.
 
 If a slow run ends in `undeclared skip ceiling exceeded`, that is not a flake: a watched gate skipped instead of asserting, and the skip is not declared. [TESTING.md](TESTING.md#when-a-skip-has-to-be-declared) says which allowlist it belongs in.
 
