@@ -20,50 +20,77 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 8. [Falsification pass](#falsification-pass) (round 1)
 9. [Review round 2](#review-round-2)
 10. [Review round 3](#review-round-3)
-11. [Mapping to #653 and existing issues](#mapping-to-653-and-existing-issues)
-12. [Work log](#work-log)
-13. [Open questions](#open-questions)
+11. [Review round 4 (final)](#review-round-4-final)
+12. [Mapping to #653 and existing issues](#mapping-to-653-and-existing-issues)
+13. [Work log](#work-log)
+14. [Open questions](#open-questions)
 
 ---
 
 ## Current register
 
-The precise, corrected statement of every finding after round 3. This supersedes the
-earlier per-finding sections wherever they disagree. Corpus: 27 adjacent XML pairs (17,873
-changes) and 17 accepted PDF pairs (6,371 changes; 6 declined as unnumbered). Baseline
-`f2e698a`.
+**Converged after review round 4 (2026-10-04).** This is the corrected statement of every
+finding and supersedes the earlier per-finding sections wherever they disagree.
+- **Corpus:** 27 adjacent XML pairs (17,873 changes) and 17 accepted PDF pairs (6,371
+  changes; 6 declined as unnumbered).
+- **Baseline:** `f2e698a`.
+- **Status on `develop` (`9cfadee`, checked after round 4):** a syntax-tree comparison that
+  ignores comments and docstrings shows **no code change** in any module these findings cite,
+  except `formatters/diff_html.py`. There, the TOC-anchor search was re-indexed (`cde9e7f`,
+  same label-match semantics) and the CSS moved to package stylesheets (#768). Two findings
+  changed status because of repository *decisions*, not code: see F4d and F5.
 
 ### Open findings
 
-| ID | Finding (corrected wording) | Key evidence | Owning issue | Severity |
+| ID | Finding | Key evidence | Owning issue | Severity |
 |---|---|---|---|---|
-| **F4b** | Removed changes are filed into the v2 grouping by label, deepest segment first (`_remap_removed_path`), so generic labels match unrelated nodes | **XML:** 93 of 582 joined removals land outside the deepest v1 ancestor that still exists in v2, 48 under a different top-level group. **PDF:** 26 of 190, 24. Example: 114-hr-2029 4→5 `c-0046`. Visible in rendered HTML. `schema/canonical-diff.md:242-243` says pairing is the engine's job. No test. | none; part of #653 | **High** (defect) |
-| **F1** | `formatters/canonical.py` holds the producers and `view_from_canonical`, so importing the renderer loads the PDF differ, both parsers and `pypdfium2` | The viewer half shares only `SCHEMA_VERSION`. A simulated split renders byte-identical on all 27 + 17 pairs; renderer import drops to ~34 ms with no `pypdfium2`. Friction: 5 test files import `view_from_canonical`; one monkeypatches `canonical._span_join_index`; `pdf_move_user_facing.py` probe would break **silently**; docs name the location. | #62 (edge), #751 (`pypdfium2` route) | Med-High |
-| **F7a** | `move.kind` is decided in `canonical.py` by two rules (`_xml_move`, `_pdf_move`) | Flip 167 of 496 XML and 85 of 161 PDF moves, exactly when parent and last label both change. PDF rule labels wrap fragments "renumbered" (19 prefix/suffix cases). XML rule calls one-element paths "renumbered". `_xml_move`'s docstring is false. No unit test for "both changed"; the SHA-256 baselines pin today's answer without judging it. | #648 (PDF side only) | Medium |
-| **F5** | PDF `full_text` embeds a 7-character gutter (5-wide number plus 2 spaces); the schema writes it into the contract, against ADR 0006's presentation-free rule | Width encoded in 5 places: `_render_lines`, `_GUTTER_WIDTH`, `amounts.GUTTER_RE`, `_parse_full_bill_lines`, `print_layout`. Caused #670 (426–428 of 1,100 annotations leaked). 9.6% of `full_text`. Kept by #653's 2026-08-19 decision, which predates #670. | #653, #656, #95 | Medium |
-| **F15** | No test guards the import direction for viewer → producers/parsers, the XML parser, differ → viewer, or differ → `compare/` | 4 planted violations pass every boundary gate (233 passed). The full suite fails only via provenance hashes, which a comment also trips. `formatters/` already imports producers, so a gate must start at `diff_html`. | #62 (acyclic gate) | Medium |
-| **F16** | `structure_tree` types `division` / `title` by regex over display labels | GPO-form division labels change both sides' root levels: v2 `{division:7, preamble:1}` → `{heading:7, section:6, preamble:1}`, and v1 loses Front Matter. The change set is unchanged. | **#471**, epic #552 | Medium |
-| **F3** | `_card_texts` decides layout from `versions.v1.source` (`canonical.py:784`), even in 3.1 documents | Flipping `v1.source` changes 7,290 of 17,873 cards (whitespace only); flipping `v2` changes 0. The schema's 3.0 fallback names `v2.source`. The renderer correctly reads `full_text_layout`. Blocks #95. | #653, #95 | Low-Med |
-| **F4a** | Empty-body `sec.` changes have no span in the document, so the offset join cannot place them | 1,677 of 17,873 unjoined (9.38%); 1,676 are #188 empty-body sections, null span in the document, all with a `path`. 1,622 produce 111 duplicated top-level headings. `test_node_join_corpus.py:90` skips them. PDF: 51 of 6,371. | **#701**, #653 | Low-Med |
-| **F4c** | TOC heading rows are found by searching `full_text` for the label | Decides 9,717 of 34,715 XML v2 nodes (28%); never wrong. The exposed heading map keeps the first occurrence, so emitting it as-is would misplace 63. "Receipts collected" own-line flaw on 5 trees, 3 bills. PDF always falls back, harmlessly. | #653 (2026-08-24 comment) | Low-Med |
-| **F4d** | The renderer recovers line and page numbers by parsing the documented `numbered_lines` gutter; `line_offsets` is used and dropped | Correct on all 194,267 rows. All 145,867 `line_offsets` entries land on row starts. ADR 0006:73-75 says the map belongs in the document. Fails #653's verification check 2. | #653 | Low-Med |
-| **F7b** | PDF identity is regex over `pages[0].lines[:10]` of the new side, in `compare/pdf.py`; XML identity takes type, number and congress from the **old** tree | PDF `congress` empty in 6 of 17 pairs (old side has it in 4); `_bill_identity` untested. **4 of 27 XML pairs emit empty `bill.type` and `number`**; XML title null in 9 of 27. | none | Low-Med |
-| **F8** | `compare/xml.py` computes `bill_diff_to_dict(financial=True)` and canonical ignores the result | Byte-identical without `financial`, `text_diff`, `match_path` on 27 of 27 pairs; ~8% of XML compare time. Docstrings and `architecture.md:59` describe a dead purpose. One ADR 0006 clause stale since #693. | none | Low-Med |
-| **F9** | The CLI filters before canonicalization, on internal `match_path` | `summary` recomputed, no marker (documented, tested). `--filter "TITLE II"` → 0 changes vs 13 breadcrumbs, because `match_path` drops the title. `--help` wording is wrong. | **#689** | Low-Med |
-| **F11** | The display string "Front Matter" is a cross-stage key, and `""` labels act as a TOC hide flag | Defined twice; string-equality at `structure_tree.py:243`; part of the PDF `_block_key`. Non-root `""` labels: 101 in paired documents, 173 across 58 XML documents; outside the schema's definition. XML front-matter paths are `null`, PDF ones `["Front Matter"]`. Guarded by `test_front_matter_parity`. | #552, #161 | Low-Med |
-| **F12** | The XML parser imports private PDF-anchor helpers (deliberate label parity) | Disabling the PDF matcher changes 17 XML keys (10 distinct, 3 bills). `bill_tree` import loads the PDF modules and `pypdfium2`. The XML parser revision hashes the PDF modules: a comment-only edit to `pdf_text.py` fails 27 provenance checks (documented over-breadth). Only `test_sec_547` checks catchline wording. | #62, #751 | Low-Med |
-| **F17** | XML `changes[].text` is the matcher's normalized `body_text`; the card shows readable `full_text` | `diff.json` and the card disagree on 7,916 of 17,534 non-empty sides (whitespace only). `path` mixes `sec.` (12,954) and `Sec.` (305). | #76 (fixed in the viewer by PR #81, not in the contract) | Low-Med |
+| **F4b** | Removed changes are filed into the v2 grouping by label, deepest segment first (`_remap_removed_path`), so generic labels match unrelated nodes | **XML:** 93 of 582 joined removals land outside the deepest v1 ancestor that still exists in v2 (case-insensitive label path), 48 under a different top-level group. **PDF:** 26 of 190, 24. Example: 114-hr-2029 4→5 `c-0046`, visible in rendered HTML. `schema/canonical-diff.md:242-243` says pairing is the engine's job. The 5 remap unit tests use no cross-parent case; the corpus gate skips removals. | **none.** The mechanism (no change→node key) is assigned to #552 by #653's closing comment | **High** (defect) |
+| **F1** | `formatters/canonical.py` holds the producers and `view_from_canonical`, so importing the renderer loads the PDF differ, both parsers and `pypdfium2` | The viewer half shares only `SCHEMA_VERSION`. A simulated split renders byte-identical on all 27 + 17 pairs; renderer import drops to ~30–53 ms with no `pypdfium2`. Friction: 5 test files import `view_from_canonical`; `test_canonical_node_join.py:353` monkeypatches `canonical._span_join_index`; the `pdf_move_user_facing.py` probe would break **silently** (`test_research_probes.py` scans only provision-matching probes); docs name the location. | #62 (edge), #751 (`pypdfium2` route) | Med-High |
+| **F7a** | `move.kind` is decided in `canonical.py` by two rules (`_xml_move`, `_pdf_move`) | Flip 167 of 496 XML and 85 of 161 PDF moves, exactly when parent and last label both change. The PDF rule labels **18** line-wrap fragments "renumbered" (a 19th prefix pair, 118-hr-2882 4→5 `SEC. 2` → `SEC. 202`, is a genuine renumbering). The XML rule calls 7 one-element paths "renumbered". `_xml_move`'s docstring is false. `diff_pdf` records `move_basis` as "deliberately not a legislative claim", yet the canonicalizer re-decides. `body_unchanged` has three definitions, which disagree on 9 moves. No unit test for "both changed"; the baselines pin today's answer without judging it. | #648 (PDF side only) | Medium |
+| **F15** | No test guards the import direction for viewer → producers/parsers, the XML parser, differ → viewer, or differ → `compare/` | 4 planted violations pass every boundary gate (233 passed). The full suite fails only the 27 provenance checks, which a comment also trips. `formatters/` already imports producers, so a gate must start at `diff_html`. | #62 (acyclic gate) | Medium |
+| **F16** | `structure_tree` types `division` / `title` by regex over display labels | GPO-form division labels change both sides' root levels: v2 `{division:7, preamble:1}` → `{heading:7, section:6, preamble:1}`, and v1 loses Front Matter. The change set is unchanged apart from label text. | **#471**, epic #552, #557 (the missing render-invariance test) | Medium |
+| **F5** | PDF `full_text` embeds a 7-character gutter (5-wide number plus 2 spaces) | Width encoded in 5 places: `_render_lines`, `_GUTTER_WIDTH`, `amounts.GUTTER_RE`, `_parse_full_bill_lines`, `print_layout`. Caused #670: 426 of 1,100 annotations leak under the pre-#670 regex (the commit says 428). 9.6% of `full_text`. `amounts.py` also holds a dead page-hyphen rule (0 matches since 3.1). **Status:** kept by #653's 2026-08-19 decision, and ADR 0006 on `develop` (#769) now names `full_text_layout` as a carried fact. So the ADR conflict is resolved by decision; the #670-class cost and the five copies remain. | #656, #95 | Low-Med (was Medium) |
+| **F3** | `_card_texts` decides layout from `versions.v1.source` (`canonical.py:784`), even in 3.1 documents | Flipping `v1.source` changes 7,290 of 17,873 cards (whitespace only); flipping `v2` changes 0. The schema's 3.0 fallback names `v2.source`. The renderer correctly reads `full_text_layout`. Blocks #95. | #95 (#653 closed) | Low-Med |
+| **F4a** | Empty-body section changes (1,634 `sec.`, 42 `Sec.`) have no span in the document, so the offset join cannot place them | 1,677 of 17,873 unjoined (9.38%); 1,676 are #188 empty-body sections with null span and a `path` (1,548 added, 128 removed). 1,622 produce 111 duplicated top-level headings. `test_node_join_corpus.py:90` skips them. PDF: 51 of 6,371. | **#701**; mechanism → #552 | Low-Med |
+| **F4c** | TOC heading rows are found by matching the label against `full_text` | Decides 9,717 of 34,715 XML v2 nodes (28%), never wrong. The exposed heading map keeps the first occurrence, so emitting it as-is would misplace 63. "Receipts collected" own-line flaw on 5 trees, 3 bills. PDF always falls back, harmlessly. Same semantics on `develop` after `cde9e7f`. | **#766** | Low-Med |
+| **F7b** | PDF identity is regex over the new side (`congress` from `pages[0].lines[:10]`; type, number and title from the first ~1,500 characters, `compare/pdf.py:223-228`); XML identity takes type, number and congress from the **old** tree | PDF `congress` empty in 6 of 17 pairs (old side has it in 4); `_bill_identity` untested. **4 of 27 XML pairs emit empty `bill.type` and `number`**; XML title null in 9 of 27. | none | Low-Med |
+| **F8** | `compare/xml.py` computes `bill_diff_to_dict(financial=True)` and canonical ignores the result | Byte-identical without `financial`, `text_diff`, `match_path` on 27 of 27 pairs; ~8% of XML compare time. Docstrings and `architecture.md:59` describe a dead purpose. #698's "Unverified" note assumes the financial step needs a destination; it has none. | **#698** | Low-Med |
+| **F9** | The CLI filters before canonicalization, on internal `match_path` | `summary` recomputed, no marker (tested; README:178 documents the recount for `--financial` only). `--filter "TITLE II"` → 0 changes vs 13 breadcrumbs, because `match_path` drops the title. `--help` wording is wrong. | **none** (closest: #764, #691) | Low-Med |
+| **F11** | The display string "Front Matter" is a cross-stage key, and `""` labels act as a TOC hide flag | Defined twice; string-equality at `structure_tree.py:243`; part of the PDF `_block_key`. Non-root `""` labels: 101 in paired documents, 173 across 58 XML documents; outside the schema's definition. XML front-matter paths are `null`, PDF ones `["Front Matter"]`. Guarded by `test_front_matter_parity`. | #552, #557, #161 | Low-Med |
+| **F12** | The XML parser imports private PDF-anchor helpers (deliberate label parity) | Disabling the PDF matcher changes 17 XML keys (10 distinct, 3 bills). `bill_tree` import loads the PDF modules and `pypdfium2`. The XML parser revision hashes the PDF modules: a comment-only edit to `pdf_text.py` fails 27 provenance checks (documented over-breadth). Catchline wording is asserted only on the synthetic Sec. 547 snippets in `test_bill_tree.py` and on the real Sec. 547 in `test_sec_547`. | #62, #751 | Low-Med |
+| **F17** | XML `changes[].text` is the matcher's normalized `body_text`; the card shows readable `full_text` | `diff.json` and the card disagree on 7,916 of 17,534 non-empty sides (whitespace only). `path` mixes `sec.` (12,954) and `Sec.` (305). | #76 (fixed in the viewer by PR #81, not in the contract); #698 touches the same adapter | Low-Med |
 | **F13** | CLIs live inside `diff_bill.py` / `diff_pdf.py`; four cycles exist through function-local imports | `compare.xml → diff_bill ⇢ compare.xml`; `compare.pdf → diff_pdf ⇢ compare.pdf`; `compare.pdf → canonical → diff_pdf ⇢ compare.pdf`; `diff_html → canonical → diff_pdf ⇢ compare.pdf → diff_html`. No cycle is module-level only. The `__init__.py` docstring and #62 describe a dead cycle. Library functions sit under CLI headers. | ADR 0017, #62 | Low |
-| **F10** | XML `summary` always has five keys including `unchanged` (always 0); PDF emits only present types | 7 PDF key sets over 17 pairs. No consumer is affected. `unchanged` is outside the schema's prose. | none | Low |
-| **F6** | The renderer reads both `DiffView` and the raw document; the "hoist unlabeled nodes" path rule is implemented twice (`_node_order_map`, `_v2_label_lookup`) | Reading the document directly is sanctioned by ADR 0007. The outcome is guarded by `tests/test_diff_html_node_groups.py:179`. **Not re-reviewed since round 1.** | none | Low |
+| **F10** | XML `summary` always has five keys including `unchanged` (always 0); PDF emits only present types | 7 PDF key sets over 17 pairs. No consumer is affected. | **#706** (fix PR #731 open) | Low |
+| **F6** | The renderer reads both `DiffView` and the raw document; the "hoist unlabeled nodes" path rule is implemented three times (`_span_join_index` `canonical.py:573`, `_v2_label_lookup` `canonical.py:630`, `_node_order_map` `diff_html.py:195`), plus a fourth for the TOC in `_build_tree_nav` | Reading the document directly is sanctioned by ADR 0007. Only the join's copy is guarded (`test_canonical_node_join.py:152`); the other two are inert on the corpus and untested. | none | Low |
 
-### Dismissed (held through rounds 2 and 3)
+### Resolved by decision on `develop`
+
+- **F4d.** The renderer recovers line and page numbers by parsing the documented
+  `numbered_lines` gutter.
+  - Correct on all 160,175 printed rows of the 17 accepted pairs.
+  - All 120,209 `line_offsets` entries land on row starts.
+  - At baseline this conflicted with ADR 0006:73-75 ("belongs in the document") and with
+    #653's verification check 2.
+  - On `develop`, #769 rewrote that bound to name `full_text_layout` as the carried fact the
+    report applies, and #653 was closed as completed (shipped in #755).
+  - So parsing the layout is now the recorded design. No further action unless the gutter
+    decision (F5) is revisited.
+
+### Dismissed (held through rounds 2–4)
 
 - **F2.** HTML and UI wording in the view model is sanctioned by ADR 0007. The residual cost is
   F1's, plus duplicated wording in the renderer: `_move_note` vs `_move_info_html`, "(unknown
   location)" vs "(unknown)", and `diff_html.py:685` re-implementing `_join_path`.
 - **F14.** The "Structural" filter applies the carried `change_type`. The bill-type vocabulary
   is two lists plus one rule; `bill.type` is a free string with an `.upper()` fallback.
+
+### Not tracked in any issue
+
+- **F4b**: misfiled removals.
+- **F7a, XML side**: the rule mismatch, the false docstring, and `body_unchanged`.
+- **F7b**: XML pairs emitting an empty identity.
+- **F9**: the filter keyed on `match_path`.
+- **F6**.
 
 ---
 
@@ -1338,9 +1365,71 @@ of every finding. Round 4 checks it verbatim.
 - **ADR 0020's context row on `word_diff` is stale** (blind). The coupling it describes was
   fixed and is guarded by `tests/test_formatter_boundary.py`.
 
+## Review round 4 (final)
+
+**2026-10-04, baseline `f2e698a`.** Two verifiers checked every fact in the register
+verbatim (split by seam), and a third blind audit was steered toward less-read areas: the web
+app, print layout, `amounts.py`, and the embedded JavaScript. Stopping rule, set by the user
+before this round: **stop if no findings change; precision corrections don't count.**
+
+### Result: converged
+
+| Criterion | Round 4 |
+|---|---|
+| No verdict changes | **Met.** No row falsified; F2 and F14 dismissals hold verbatim |
+| No new findings | **Met.** All 7 blind items map to existing rows: F4b, F17, F7a, F1 (+F7 amounts/identity), F16 + F4c, F9 + F8 + F10, F5 |
+| Precision only | Corrections below change numbers, wording, or owning issues, not results |
+
+### Precision corrections folded into the register
+
+- **F4a.** 42 of the empty-body changes are `Sec.`, not `sec.`.
+- **F4d.** The two counts are restricted to the 17 accepted pairs: 160,175 rows and 120,209
+  `line_offsets` entries. The earlier 194,267 and 145,867 included declined-pair v1 sides.
+- **F6.**
+  - The hoist rule exists in **three** places plus a TOC copy, not two.
+  - The cited guard test does **not** guard it: removing the hoist from `_node_order_map` or
+    `_v2_label_lookup` leaves all 44 reports byte-identical and all 64 node-group tests green.
+  - Only `_span_join_index`'s copy is guarded (`test_canonical_node_join.py:152`).
+- **F7a.**
+  - 18 wrap-fragment cases plus one genuine renumbering, not 19 fragments.
+  - Added: the `move_basis` provenance note in `diff_pdf`, and three disagreeing definitions
+    of `body_unchanged` (9 moves).
+- **F7b.** `_bill_identity` reads the first ~1,500 characters, not only the first 10 lines.
+- **F12.** Catchline wording is also asserted in `test_bill_tree.py`, on synthetic Sec. 547
+  snippets.
+- **F5.** `amounts.py` holds a dead copy of the page-hyphen rule (0 matches since 3.1).
+- **Owning issues.**
+  - F8 → **#698**; F10 → **#706** (fix PR #731); F4c → **#766**; F16 also → **#557**.
+  - F9 is **not** #689; that issue is about CSS class names.
+  - #653 is **closed** (shipped in #755, 2026-10-04 21:48Z).
+
+### Status changes from repository events (not review results)
+
+`develop` moved past the baseline during this round (`9cfadee`). A docstring-insensitive
+syntax-tree comparison shows no code change in any module the findings cite except
+`diff_html.py`:
+- **TOC anchors** (`cde9e7f`): the same label match, with an index.
+- **CSS** moved to package stylesheets (#768).
+
+Two findings changed status because of recorded decisions:
+- **F4d → resolved by decision.** #769 rewrote ADR 0006's carried-facts bound to name
+  `full_text_layout`, and #653 was closed as completed.
+- **F5 → Low-Med.** The same ADR edit sanctions the layout as a carried fact. The #670-class
+  cost and the five copies of the width remain, with #656 / #95.
+
 ---
 
 ## Mapping to #653 and existing issues
+
+> **Update after round 4:** #653 was closed as completed on 2026-10-04 (shipped in #755).
+> Its closing comment re-homes the remaining threads:
+> - #769: the ADR 0006 bound
+> - #766: the label-matched TOC anchor (F4c)
+> - #552: the change→node mechanism behind F4a/F4b
+> - #656: the export
+>
+> The tables below reflect the state *before* the closure. The register at the top of this
+> file has the current owners.
 
 [#653](https://github.com/civictechdc/DeltaTrack/issues/653) ("Make the view a consumer of
 the diff, not a second producer of it") is the umbrella issue for this audit. Its rule:
@@ -1429,10 +1518,11 @@ cost was not available when the decision was made. **F5** is the case for revisi
 | 2026-10-04 | Review round 2: five independent reviewers (A–E, E blind); new F16, F17; F7 strengthened; F12 partly revived; seven round-1 corrections. Not converged. No code changes. | all |
 | 2026-10-04 | Mapped findings to #653 and existing issues (#62, #471/#552, #648, #76, #656). F16 = #471. Untracked: F4b, XML side of F7, F8, F10, F9 match-key angle, F17 residue. | all |
 | 2026-10-04 | Review round 3: four fresh reviewers (one blind). No verdict changes; blind audit found nothing outside the list; precision corrections only (fourth cycle, 7-char gutter, `v1.source`, counts, F12 revision cost). Current register written. Not yet converged on precision. | all |
+| 2026-10-04 | Review round 4 (final): two verbatim verifiers + third blind audit. **Converged** under the user's rule (no verdict changes, no new findings). Precision and ownership corrections folded in; F4d resolved by decision on develop (#769, #653 closed); F5 downgraded. No code changes. | all |
 
 ## Open questions
 
-- **Convergence criterion** for these review rounds: a round in which (1) no verdict changes, (2) a blind audit finds nothing outside the list, and (3) no evidence correction beyond wording.
+- ~~Convergence criterion: no verdict changes, blind audit finds nothing new, no evidence correction beyond wording.~~ Relaxed by the user before round 4 to "stop if no findings change"; precision corrections don't count. Met in round 4.
 
 - F2/F3/F5 were reclassified as recorded decisions (ADR 0006/0007, schema). Does the team want any of them reopened as ADR changes?
 - F4b: fix narrowly in the view (prefix match), or move v1→v2 container correspondence into the producer?
