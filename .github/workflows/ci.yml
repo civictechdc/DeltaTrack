@@ -114,14 +114,14 @@ jobs:
       - name: Set up Python
         run: uv python install
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
       # Absolute paths: a relative one resolves against the directory this job exists to vary.
       - name: Run the non-browser suite from outside the repository root
         if: ${{ !cancelled() }}
         working-directory: ${{ runner.temp }}/not-the-repo-root
-        run: uv run --project "$GITHUB_WORKSPACE" pytest "$GITHUB_WORKSPACE/tests" -m "not browser" -q
+        run: uv run --locked --project "$GITHUB_WORKSPACE" pytest "$GITHUB_WORKSPACE/tests" -m "not browser" -q
 
   # Browser tests: run on every supported interpreter. Includes Playwright install.
   browser-tests:
