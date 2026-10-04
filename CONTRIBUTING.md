@@ -226,7 +226,7 @@ CI splits gate 5 across several jobs so a red build names the area it came from;
 
 Selecting by marker means a module joining a CI step is covered here automatically. History: #220, #320, #288 — this block enumerated each step's modules and went stale in three consecutive pull requests, because nothing ties prose to the workflow.
 
-The pre-commit hooks run Ruff linting and formatting on eligible files touched by each commit, while CI runs the configured Ruff commands against the whole tree and may cover additional file types. Run the commands above before pushing rather than relying on the hooks. The hooks use the same Ruff release CI does, which tests/test_precommit_ruff_version.py keeps true.
+The pre-commit hooks run Ruff linting and formatting on eligible files touched by each commit, while CI runs the configured Ruff commands against the whole tree. Run the commands above before pushing rather than relying on the hooks. The hooks run `uv run ruff`, as CI does, so they use the Ruff version pinned in `pyproject.toml`; tests/test_precommit_ruff_version.py keeps that true.
 
 If a slow run ends in `undeclared skip ceiling exceeded`, that is not a flake: a watched gate skipped instead of asserting, and the skip is not declared. [TESTING.md](TESTING.md#when-a-skip-has-to-be-declared) says which allowlist it belongs in.
 
