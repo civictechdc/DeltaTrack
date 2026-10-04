@@ -2126,8 +2126,9 @@ class _IntermixedSubParser(argparse.ArgumentParser):
     3.13.14 (call `_parse_known_args2`). `requires-python` is ">=3.12" and Ubuntu
     24.04 ships 3.12.3, so the re-entering band is supported and the guard stays.
     tests/test_diff_bill.py::TestIntermixedSubParserGuard simulates the re-entering
-    shape by monkeypatching, so the guard is pinned on every interpreter -- not only
-    on the CI floor leg that happens to run an interpreter from that band.
+    shape by monkeypatching, so the guard is pinned on whatever interpreter runs the
+    suite. CI runs the latest 3.12 patch, which is outside that band, so the simulation
+    is the guard's only coverage there.
 
     `add_subparsers(parser_class=...)` binds EVERY subparser of this parser, not only
     `compare`: a future subcommand with a `nargs=REMAINDER` positional raises

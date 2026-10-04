@@ -1,6 +1,6 @@
 """Guardrails on the triggers of the workflows that own a required status check.
 
-Five properties are pinned here: that the test suite runs when a commit lands on the
+Seven properties are pinned here: that the test suite runs when a commit lands on the
 integration branch (#412), that both required checks answer the merge_group event so
 a merge queue can complete a merge (#416), that every module carrying a @slow test
 is named by some workflow, since the marker alone makes a gate runnable but never run,
@@ -10,7 +10,9 @@ have to agree about what is being tested, and these steps run under
 ``if: !cancelled()`` so no command can rely on an earlier one having stopped the job,
 and that the slow tier's hand-maintained partition stays a partition (#672) -- no module
 listed explicitly by two pytest invocations, and every `CI_SLOW_MODULES` entry
-explicitly selected by a slow step.
+explicitly selected by a slow step -- that ci.yml runs only the interpreter
+`.python-version` pins, and that its non-browser test steps run from outside the
+checkout (#404).
 
 
 Nothing ran the test suite when a commit landed on ``develop``, so a broken integration
@@ -110,15 +112,11 @@ def test_required_checks_report_to_a_merge_queue(filename: str, context: str) ->
 def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     """The required `test` context must survive any job rename or resize.
 
-    The workflow now has multiple independent jobs (two non-matrix: `lint-format`
-    and `cwd-independence`; six matrix jobs: `fast-tests`, `browser-tests`,
-    `external-validation`, `corpus-gates`, `packaging-gate`, `remaining-slow`).
-    Each matrix job reports one context per leg (e.g., `fast-tests (3.12)`). The
-    aggregator job named exactly `test` needs ALL of them, runs unconditionally,
-    and fails unless every job succeeded.
-
-    `cwd-independence` is non-matrix: it varies the working directory, not the
-    interpreter.
+    The workflow has seven independent jobs (`lint-format`, `fast-tests`,
+    `browser-tests`, `external-validation`, `corpus-gates`, `packaging-gate`,
+    `remaining-slow`), each reporting its own context. The aggregator job named
+    exactly `test` needs ALL of them, runs unconditionally, and fails unless every
+    job succeeded.
 
     Each pinned property fails silently without the other: without `if: always()`
     a skipped dependency skips the aggregator too (no verdict at all), and without
@@ -135,10 +133,6 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     earlier step, so a correct binding added later cannot vouch for a misrouted
     one in the gate.
 
-    That contract is load-bearing for `fail-fast: false` on the matrix jobs:
-    they may run every leg to completion, and the aggregator stays non-permissive
-    only because it fails whenever any job (or any leg of a matrix job) is not
-    `success`.
     """
     jobs = _workflow()["jobs"]
     aggregator = jobs.get("test")
@@ -148,10 +142,8 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     )
     needs = aggregator.get("needs")
     needs = [needs] if isinstance(needs, str) else list(needs or [])
-    # The aggregator must need all 8 jobs: 2 non-matrix + 6 matrix
     expected_jobs = {
         "lint-format",
-        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",
@@ -245,74 +237,78 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     )
 
 
-def test_ci_matrix_jobs_do_not_cancel_sibling_legs() -> None:
-    """One leg's failure must not erase the other leg's verdict.
+def test_ci_runs_only_the_pinned_interpreter() -> None:
+    """Every ci.yml job runs the interpreter `.python-version` pins, and nothing else.
 
-    Each matrix leg tests a different supported interpreter, so their verdicts are not
-    interchangeable -- WHICH leg broke is most of the diagnosis. Under the default
-    ``fail-fast: true`` a failure in any one cancels the rest mid-run, and the cancelled
-    legs report nothing: a floor-only regression hides behind an unrelated flake on a newer
-    version, a 3.14-only regression hides behind a flake on the floor, and the reviewer sees
-    a wall of red from one cause.
+    The project supports one interpreter, the one contributors and the deployment use, and
+    moves to a newer one by editing the pin. A job that installs a different version tests
+    something nobody runs while the pinned version goes untested in that job, and it looks
+    exactly like extra coverage.
 
-    This is the same rule ``test_ci_does_not_cancel_in_progress_runs`` enforces one level up,
-    for the same reason: never destroy a verdict. It does **not** make CI permissive. A
-    failed leg still fails, and ``test_required_test_context_is_an_aggregator_over_all_jobs``
-    separately pins the aggregator that demands success from every job (and every leg).
+    It also guards the hazard a matrix brings back. Under one, a bare ``uv run`` falls back
+    to `.python-version`, removes ``.venv`` and rebuilds it on 3.12, so a "3.14" leg reports
+    its own label while testing 3.12 (measured when 3.13/3.14 were first added). Restoring a
+    matrix therefore means restoring the per-leg ``UV_PYTHON`` pin and ``fail-fast: false``
+    with it. History: a four-interpreter matrix ran until the move to one interpreter;
+    cf89bd9 for the ``UV_PYTHON`` defect.
     """
     workflow = _workflow()
-    matrix_job_names = [
-        "fast-tests",
-        "browser-tests",
-        "external-validation",
-        "corpus-gates",
-        "packaging-gate",
-        "remaining-slow",
-    ]
-    for job_name in matrix_job_names:
-        job = workflow["jobs"][job_name]
-        strategy = job.get("strategy", {})
-        assert strategy.get("fail-fast") is False, (
-            f"ci.yml's '{job_name}' matrix does not set `fail-fast: false`, so one leg's "
-            "failure cancels the other before it reports. The cancelled leg's verdict is lost, "
-            "which is how a floor-only regression hides behind an unrelated failure on the "
-            "newest patch."
-        )
+    failures = []
+    for job_id, job in workflow["jobs"].items():
+        if (job.get("strategy") or {}).get("matrix"):
+            failures.append(f"{job_id}: declares a strategy.matrix")
+        if "UV_PYTHON" in (job.get("env") or {}):
+            failures.append(f"{job_id}: sets UV_PYTHON")
+        for step in job.get("steps") or []:
+            run = step.get("run")
+            if not isinstance(run, str):
+                continue
+            for command in _logical_commands(run):
+                words = command.split()
+                if words[:3] == ["uv", "python", "install"] and len(words) > 3:
+                    failures.append(f"{job_id}: `{command.strip()}` installs a version other than the pin")
+    assert not failures, (
+        "ci.yml must run only the interpreter `.python-version` pins. To change the version, "
+        "edit the pin. To add a matrix, also restore the UV_PYTHON and fail-fast guards this "
+        "replaced:\n  " + "\n  ".join(failures)
+    )
 
 
-def test_ci_matrix_jobs_pin_the_interpreter_they_claim_to_test() -> None:
-    """A leg labelled 3.14 must actually run on 3.14.
+def test_non_browser_test_steps_run_from_outside_the_checkout() -> None:
+    """Every pytest step except the browser one runs from a directory that is not the checkout.
 
-    Without ``UV_PYTHON``, the matrix is decorative. ``uv sync`` builds the right
-    environment and the next bare ``uv run`` decides it does not satisfy
-    ``.python-version`` (3.12), removes ``.venv`` and rebuilds it on 3.12 -- so the leg
-    reports its own label while testing something else, and reports it GREEN. Measured
-    when 3.13/3.14 were added: a "3.14" leg ran the suite on 3.12.12.
-
-    The 3.12 legs cannot show this, because any 3.12 patch satisfies a "3.12" request.
-    That is precisely why it needs a test rather than a comment: the failure is invisible
-    on exactly the versions that were in the matrix when the hole opened.
+    A fixture path resolved against the current working directory passes from the
+    repository root and nowhere else (#404), and CI is the only place the suite is run from
+    anywhere but the root. Running the steps from a temporary directory tests that property
+    for every module they name, with no list of paths to police. A step moved back to the
+    root goes green there while its modules stop being checked, which is why this is
+    asserted rather than left to the ci.yml comment. History: #721 ran the whole suite a
+    second time from outside the checkout, in a job of its own.
     """
-    workflow = _workflow()
-    matrix_job_names = [
-        "fast-tests",
-        "browser-tests",
-        "external-validation",
-        "corpus-gates",
-        "packaging-gate",
-        "remaining-slow",
-    ]
-    for job_name in matrix_job_names:
-        job = workflow["jobs"][job_name]
-        assert job.get("env", {}).get("UV_PYTHON") == "${{ matrix.python-version }}", (
-            f"ci.yml's '{job_name}' job no longer pins UV_PYTHON to the matrix version. Every "
-            "uv call in the job, including ones made from inside a test, falls back to "
-            "`.python-version` -- so every non-3.12 leg silently tests 3.12 and passes."
-        )
+    jobs = _workflow()["jobs"]
+    checked = []
+    for job_id, job in jobs.items():
+        for step in job.get("steps") or []:
+            run = step.get("run")
+            if not isinstance(run, str) or not any(_INVOKES_PYTEST.search(c) for c in _logical_commands(run)):
+                continue
+            if re.search(r"-m\s+browser\b", run):
+                continue
+            checked.append(job_id)
+            assert "runner.temp" in str(step.get("working-directory", "")), (
+                f"ci.yml's '{job_id}' runs pytest from the checkout, so a path resolved against the "
+                "working directory passes there unseen. Give the step "
+                "`working-directory: ${{ runner.temp }}/...` and absolute paths into $GITHUB_WORKSPACE."
+            )
+            assert "--project" in run, (
+                f"ci.yml's '{job_id}' runs from outside the checkout without `--project`, so uv "
+                "cannot find the project it is meant to run."
+            )
+    assert checked, "found no non-browser pytest step in ci.yml, so this guard asserted nothing"
 
 
 def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
-    """The eight leaf jobs must not depend on each other.
+    """The seven leaf jobs must not depend on each other.
 
     Issue #364 exists because independent checks were serialized in a single job.
     The parallel architecture requires that each leaf job runs independently --
@@ -320,12 +316,11 @@ def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
     A `needs:` edge between leaf jobs would reintroduce the serialization #364 fixed.
 
     This guard is deliberately narrow: it does not forbid `needs:` globally (the
-    aggregator legitimately uses it). It only forbids `needs:` on the eight leaf jobs.
+    aggregator legitimately uses it). It only forbids `needs:` on the seven leaf jobs.
     """
     workflow = _workflow()
     leaf_jobs = {
         "lint-format",
-        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",
@@ -500,7 +495,11 @@ def _is_slow_marker(node: ast.AST) -> bool:
 #: name anywhere would also match one quoted inside an English sentence -- which
 #: corpus-parity.yml really does contain, in the body of the issue its failure step
 #: files. That step runs, so restricting to `run:` blocks alone does not exclude it.
-_TEST_MODULE_ARGUMENT = re.compile(r"(?:^|\s)(?:[\w./-]*/)?(test_[A-Za-z0-9_]+\.py)(?=\s|$)", re.MULTILINE)
+#: The argument may be wrapped in double quotes and qualified through a shell variable,
+#: which is how ci.yml's steps name modules from outside the checkout
+#: (`"$GITHUB_WORKSPACE/tests/test_x.py"`). A backtick, the quoting that issue body uses,
+#: still does not match.
+_TEST_MODULE_ARGUMENT = re.compile(r'(?:^|\s)"?(?:[\w./$-]*/)?(test_[A-Za-z0-9_]+\.py)"?(?=\s|$)', re.MULTILINE)
 
 #: A command counts only if it invokes pytest. The issue-filing step above is the reason:
 #: it is executable and names a module, but it runs `gh issue create`, so the module it
@@ -1354,8 +1353,7 @@ def _module_invocations(directory: Path, *, slow_only: bool = False) -> dict[str
 def test_no_module_is_run_by_two_ci_invocations() -> None:
     """No module is listed explicitly by more than one pytest invocation.
 
-    The partition has to be a partition. A module in two jobs runs once per leg of each,
-    which for a four-interpreter matrix is eight runs of the same file per CI run, and
+    The partition has to be a partition. A module in two jobs runs once in each, and
     nothing in the repository reported it -- the existing coverage guard is satisfied by
     one naming and does not count them.
 
@@ -1363,14 +1361,13 @@ def test_no_module_is_run_by_two_ci_invocations() -> None:
     It is the tell. A hand-maintained partition restated in two files drifts, and this is
     what it looks like when it does, so the guard is on the shape rather than the cost.
 
-    Scoped to explicit module arguments, so it does not claim each module runs once
-    across all of CI: the cwd-independence job deliberately reruns the non-browser suite
-    by directory from another working directory (#721).
+    Scoped to explicit module arguments. The fast step selects its tests by directory
+    and marker rather than by naming modules, so it is outside what this checks.
     """
     duplicated = {module: sites for module, sites in sorted(_module_invocations(WORKFLOWS).items()) if len(sites) > 1}
     assert duplicated == {}, (
-        "these modules are named by more than one pytest invocation, so each runs once per "
-        "leg of every job that names it:\n" + "\n".join(f"  {module}: {sites}" for module, sites in duplicated.items())
+        "these modules are named by more than one pytest invocation, so each runs once in "
+        "every job that names it:\n" + "\n".join(f"  {module}: {sites}" for module, sites in duplicated.items())
     )
 
 
@@ -1378,11 +1375,9 @@ def test_every_ci_slow_module_is_named_by_a_slow_step() -> None:
     """`CI_SLOW_MODULES` means what its comment says: named by a slow CI step.
 
     The tuple is the second copy of the partition, and its membership rule was a claim
-    about `ci.yml` that nothing checked. Each member's @slow tests reach the interpreter
-    matrix only because a step selecting the slow marker names the module explicitly, so
-    this keeps them on the legs they were enrolled for. (The cwd-independence job also runs
-    them, once, unmatrixed; that is not the coverage this roster stands for.)
-    `test_every_slow_module_is_run_by_a_workflow` cannot see the loss: a module still
+    about `ci.yml` that nothing checked. Each member's @slow tests run in CI only because a
+    step selecting the slow marker names the module explicitly, so this keeps them in the
+    slow step they were enrolled for. `test_every_slow_module_is_run_by_a_workflow` cannot see the loss: a module still
     named by a step whose marker stopped selecting the slow tier counts as run there.
 
     Asserted in one direction only. A slow-step module absent from the tuple still has its
@@ -1394,7 +1389,7 @@ def test_every_ci_slow_module_is_named_by_a_slow_step() -> None:
     orphaned = sorted(entry for entry in CI_SLOW_MODULES if Path(entry).name not in named_by_slow_step)
     assert orphaned == [], (
         "CI_SLOW_MODULES claims these are named by a slow CI step, and no slow step names "
-        f"them, so their @slow tests have lost their matrix coverage: {orphaned}"
+        f"them, so their @slow tests no longer run in a slow CI step: {orphaned}"
     )
 
 

@@ -85,8 +85,8 @@ def installed_engine(tmp_path_factory) -> Path:
 
     venv = workspace / "venv"
     # `--python sys.executable`, not a bare `uv venv`: uv resolves an unpinned request
-    # through `.python-version` (3.12) first, so on any other leg every assertion below
-    # would report on 3.12 while labelled as evidence for that leg's version.
+    # through `.python-version` (3.12) first, so under any other interpreter every assertion
+    # below would report on 3.12 while labelled as evidence for the one running the test.
     # `test_the_clean_install_uses_the_interpreter_running_the_test` fails without it.
     _run([uv, "venv", "--python", sys.executable, str(venv)])
     # A venv lays its interpreter out per-platform: POSIX `bin/python`, Windows
@@ -323,9 +323,9 @@ def test_the_pdf_wrapper_also_resolves_the_installed_engine(installed_engine, tm
 def test_the_clean_install_uses_the_interpreter_running_the_test(installed_engine):
     """The gate must report on the interpreter it is running on, not on `.python-version`.
 
-    Everything else here asks "does the engine install and work"; this asks WHERE. A leg
-    labelled 3.14 that quietly builds a 3.12 environment is not weaker evidence, it is
-    evidence for the wrong claim, and it reads green either way.
+    Everything else here asks "does the engine install and work"; this asks WHERE. A run
+    on 3.14 that quietly builds a 3.12 environment is not weaker evidence, it is evidence
+    for the wrong claim, and it reads green either way.
 
     Compared as (major, minor, micro), so a build tag or a differing `sys.version`
     preamble cannot make two identical interpreters look unequal.
