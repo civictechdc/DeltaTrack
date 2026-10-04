@@ -1,6 +1,6 @@
-"""The boundary this slice creates: classification classifies, and decides nothing.
+"""The boundary between assignment and classification: classification classifies, and decides nothing.
 
-One architectural property became true in ``diff_bill``:
+The architectural property in ``diff_bill``:
 
     Classification no longer thresholds or revokes a provisional ``(old, new)`` pairing.
 
@@ -20,24 +20,16 @@ correspondence_cutoff`` catches exactly one regression: someone re-inlining the 
 correspondence and satisfy it. It is kept because it names the offending line, and because
 it costs nothing -- not because it establishes the architecture.
 
-**Retired in #659: the transcriptions and everything that consumed them.** This module used to
-carry the pre-refactor revocation decision as it stood at ``97f91ba``, and a transcription of
-the whole pre-slice-2 pipeline from the pairing seam onward -- change records, filtered sides,
-move candidates, selected links, reconciliation -- together with the corpus comparisons run
-against them and the guards that kept them independent of the stages they checked. The commit
-that removed them names each one.
+History: #659 retired the transcribed pre-refactor pipeline and the corpus comparisons run against
+it. They answered whether the extraction preserved behaviour, and after a legitimate matching-policy
+change they fail by construction. What remains is what stays true across such a change: the shape
+contract, the threshold split, the assignment policy pins, the ADR 0019 addressing tests, and the
+record-order gates. Whole output is owned by ``tests/test_canonical_baseline.py``, and round-1
+correspondence by ``tests/test_round1_pairing_sentinel.py``.
 
-They answered whether the extraction preserved behaviour. That question is closed, and after a
-legitimate change to matching policy the comparisons fail by construction -- keeping them means
-transcribing a new "before" each time, which is the burden ADR 0020's closure removes. What
-survives is what is still true after such a change: the shape contract, the threshold split,
-the assignment policy pins, the ADR 0019 addressing tests, and the record-order gates. Whole
-output is owned by ``tests/test_canonical_baseline.py``, and round-1 correspondence by
-``tests/test_round1_pairing_sentinel.py``.
-
-``migrated_stages`` stays. It was inventoried as oracle machinery, and it is not: it calls the
-real production stages in the real order and keeps each intermediate, so a control that
-perturbs one is seen exactly as ``diff_bills`` would see it. Five retained tests read it.
+``migrated_stages`` is not oracle machinery: it calls the real production stages in the real
+order and keeps each intermediate, so a control that perturbs one is seen exactly as
+``diff_bills`` would see it.
 
 **Element identity is checked here by ``element_id``**, which is traceability information
 and not ADR 0019 observation identity. It is used only to ask "is this the same node the
@@ -126,9 +118,7 @@ def migrated_stages(old_tree, new_tree) -> dict:
 def decided_pairings(old_tree, new_tree) -> list:
     """The provisional pairing stream after the similarity rule, through the real stages.
 
-    The post-#591 seam was one call; it is now evidence-then-rule, and every place that used to
-    say `apply_similarity_revocation(match_nodes(...))` says this instead. One home for the
-    composition, so a later change to the seam does not have to be found in five places.
+    Evidence-then-rule, composed in one place so a change to the seam is made once.
     """
     registry = observation_registry(old_tree, new_tree)
     pairings = match_nodes(old_tree, new_tree)
@@ -177,17 +167,16 @@ def shape_violations(decided: list, changes: list) -> list[str]:
 def threshold_references_in(source: str, function_name: str, watched: set[str] | None = None) -> list[str]:
     """Correspondence-cutoff names *applied* inside one function's body.
 
-    ``watched`` defaults to the round-1 cutoff and its measure. Slice 2 passes a wider set when
+    ``watched`` defaults to the round-1 cutoff and its measure. A wider set is passed when
     checking ``classify``, which must name no cutoff at all -- including the move cutoff, whose
     only legitimate reader is the stage that decides correspondence.
 
     **A name passed as a keyword argument is wiring, not application, and is not reported.**
     ``diff_bills`` is the orchestrator: handing a cutoff to the stage that owns it is exactly
-    what ADR 0020 asks for, and round 2 has always done it
-    (``assign_moves(..., threshold=MOVE_THRESHOLD)``) without tripping anything, because
-    ``MOVE_THRESHOLD`` was simply not in the watched set. Slice A gives round 1 the same shape,
-    which made the asymmetry visible: the question this checker exists to ask is whether a
-    function *decides* with a cutoff, not whether it can spell one.
+    what ADR 0020 asks for, and round 2 does it
+    (``assign_moves(..., threshold=MOVE_THRESHOLD)``), and round 1 has the same shape. The question
+    this checker exists to ask is whether a function *decides* with a cutoff, not whether it can
+    spell one.
 
     So a bare read still trips -- a comparison, a branch, an assignment, a positional argument --
     and only ``name=CUTOFF`` at a call site is exempt. Both directions are pinned below, because
@@ -267,9 +256,9 @@ def test_the_similarity_cutoff_is_pinned_for_phase_1():
 
 
 def test_the_shape_checker_rejects_a_pairing_split_into_a_removal_and_an_addition():
-    """The exact regression this slice removes: classification splitting a live pairing.
+    """The regression the boundary rules out: classification splitting a live pairing.
 
-    Doctors a classified result back into the pre-refactor shape -- one decided ``(old,
+    Doctors a classified result into the split shape -- one decided ``(old,
     new)`` emerging as an adjacent removal and addition -- and requires the checker to
     refuse it. Without this, the corpus test could be green because nothing ever splits
     rather than because splitting would be caught.
@@ -442,12 +431,10 @@ def settled_sides(settled: tuple[SettledCorrespondence, ...], registry: Observat
 def test_classification_preserves_the_shape_it_receives():
     """Classification is a length-, order- and side-preserving map from SETTLED CORRESPONDENCE.
 
-    The pre-slice version of this test had to stub ``reconcile_moves`` to the identity in order
-    to look at classification alone, because a second retrieval pass ran after it and rebuilt the
-    list. There is nothing left to neutralise: retrieval and assignment both finish before
-    classification starts, so this now runs against the unmodified production call.
+    Retrieval and assignment both finish before classification starts, so this runs against the
+    unmodified production call with nothing to neutralise.
 
-    The same single statement still refuses all five ways classification could touch
+    The same single statement refuses all five ways classification could touch
     correspondence -- splitting one settled correspondence into two records and joining two into
     one both move the length, while dropping a side, inventing one, and substituting a different
     observation each surface as a mismatch at that correspondence's own index.
@@ -468,7 +455,7 @@ def test_classification_preserves_the_shape_it_receives():
     assert checked, "the shape invariant ran over zero version pairs"
 
 
-# --- Slice 2: Phase-1 policy pins ------------------------------------------------------
+# --- Phase-1 policy pins ------------------------------------------------------
 
 
 def test_the_move_cutoff_is_pinned_for_phase_1():
@@ -560,7 +547,7 @@ def test_a_registry_refuses_one_node_object_listed_twice():
         ObservationRegistry([shared, shared], [_node("new-0", "alpha")])
 
 
-# --- Slice 2: the round-2 stages over the committed corpus -----------------------------
+# --- the round-2 stages over the committed corpus -----------------------------
 
 
 def _baseline_pairs():
@@ -574,7 +561,7 @@ def _baseline_pairs():
     return baseline_pairs()
 
 
-# --- Slice 2: the retrieval / assignment threshold split, proven separable --------------
+# --- the retrieval / assignment threshold split, proven separable --------------
 
 
 def _synthetic_population(old_texts: list[str], new_texts: list[str]):
@@ -664,7 +651,7 @@ def test_the_live_stages_read_the_thresholds_they_are_given():
     assert run(MOVE_THRESHOLD, 0.95)[1] < production[1], "raising the assignment threshold did not drop any link"
 
 
-# --- Slice 2: assignment policy pinned where it can actually be seen --------------------
+# --- assignment policy pinned where it can actually be seen --------------------
 
 
 def test_an_equal_similarity_tie_breaks_on_the_HIGHER_population_position():
@@ -706,7 +693,7 @@ def test_reordering_the_population_changes_the_selected_correspondence():
     """`(ri, ai)` is a POSITION, so the population's order is matching policy.
 
     Reverses one side of the population and requires the selection to move somewhere on the
-    corpus. If it did not, the ordering this slice works to preserve would not be load-bearing
+    corpus. If it did not, the ordering would not be load-bearing
     and every ordered assertion above would be untestable.
     """
     changed = 0
@@ -727,7 +714,7 @@ def test_reordering_the_population_changes_the_selected_correspondence():
     assert changed, "reversing the unmatched population changed no selection anywhere in the corpus"
 
 
-# --- Slice 2: settlement, and the append-only contradiction it must not create ----------
+# --- settlement, and the append-only contradiction it must not create ----------
 
 
 @pytest.mark.slow
@@ -757,7 +744,7 @@ def test_settlement_refuses_an_observation_that_already_corresponds():
         settle_correspondences(pairs, registry, (intruder,), round1_evidence=round1_evidence)
 
 
-# --- Slice 2: record ORDER belongs to classification ------------------------------------
+# --- record ORDER belongs to classification ------------------------------------
 
 
 @pytest.mark.slow

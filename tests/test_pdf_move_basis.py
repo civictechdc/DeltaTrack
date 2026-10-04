@@ -1,23 +1,16 @@
-"""Slice 6a: the moved-vs-modified call is assignment's, and classification only reads it.
+"""The moved-vs-modified call is assignment's, and classification only reads it.
 
-Before this slice, ``_hunk_for_paired_blocks`` compared a round-1 pairing's ``word_overlap``
-against ``MOVE_THRESHOLD`` and decided ``moved`` vs ``modified`` there. That is a threshold over
-correspondence evidence inside classification, which ADR 0020 invariant 6 forbids: every rule
-deciding whether two observations *correspond*, or on what basis, belongs to assignment.
-
-6a moves the rule and preserves it exactly. ``pdf_round1_move_basis`` applies it, reading named
-evidence; the verdict travels as ``PdfSettledCorrespondence.move_basis``; classification emits.
+ADR 0020 invariant 6: every rule deciding whether two observations *correspond*, or on what
+basis, belongs to assignment, so classification holds no threshold over correspondence evidence.
+``pdf_round1_move_basis`` applies the rule, reading named evidence; the verdict travels as
+``PdfSettledCorrespondence.move_basis``; classification emits.
 
 **Why an output comparison cannot be the control here.** The policy is unchanged, so production
 output is byte-identical either way — the canonical PDF baseline stays green whether the decision
 happens in assignment or in classification. An output gate cannot test *which code applied a
-rule*, a lesson this thread learned twice (research record §"An output gate cannot test which
-code applied a rule"). So the controls below move the *decision* and watch classification follow,
-contradict the evidence and require the basis to win, and read the shipped source statically.
-
-The population itself is preserved by gates that already exist and are untouched:
-``tests/test_pdf_canonical_baseline.py`` (byte digest over the corpus), and the live-stage
-gates in ``tests/test_pdf_round1_retrieval.py`` and ``tests/test_pdf_round2_stages.py``.
+rule* (research record §"An output gate cannot test which code applied a rule"). So the controls
+below move the *decision* and watch classification follow, contradict the evidence and require
+the basis to win, and read the shipped source statically.
 """
 
 from __future__ import annotations
@@ -101,9 +94,9 @@ def test_classification_follows_the_move_basis(basis: str | None, expected: str)
 
 
 def test_a_basis_makes_a_move_of_a_pair_the_old_rule_would_have_called_modified() -> None:
-    """The decisive direction: evidence that FAILS the legacy rule, with a basis attached.
+    """The decisive direction: evidence that FAILS the overlap-vs-cutoff rule, with a basis attached.
 
-    Overlap 0.05 is far below the 0.6 cutoff, so the pre-6a classification would have emitted
+    Overlap 0.05 is far below the 0.6 cutoff, so a classification applying that rule would emit
     ``modified``. Classification must emit ``moved`` anyway, because assignment said so. This is
     the case a surviving re-computation cannot pass.
     """
@@ -116,7 +109,7 @@ def test_a_basis_makes_a_move_of_a_pair_the_old_rule_would_have_called_modified(
 
 
 def test_no_basis_leaves_modified_a_pair_the_old_rule_would_have_called_moved() -> None:
-    """And the other direction: evidence that PASSES the legacy rule, with no basis."""
+    """And the other direction: evidence that PASSES the overlap-vs-cutoff rule, with no basis."""
     old, new = _block("alpha beta gamma", "SEC. 5"), _block("alpha beta gamma delta", "SEC. 6")
     evidence = _evidence(**{TEXT_IDENTICAL: False, WORD_OVERLAP: 0.99, ANCHOR_RELATION: ANCHOR_DIFFERENT})
     settled, registry = _settled(old, new, evidence, None)
@@ -125,14 +118,14 @@ def test_no_basis_leaves_modified_a_pair_the_old_rule_would_have_called_moved() 
     assert [h.change_type for h in classify_pdf(settled, registry)] == ["modified"]
 
 
-# --- Control 2: classification cannot silently recompute the old rule ----------------------
+# --- Control 2: classification cannot silently recompute the rule --------------------------
 
 
 def test_classification_emits_a_move_from_evidence_that_carries_no_overlap_at_all() -> None:
-    """The strongest form: withhold the number the old rule needed and require the type anyway.
+    """The strongest form: withhold the number the overlap rule needs and require the type anyway.
 
     Contradicting ``word_overlap`` shows the basis wins an argument. Removing it shows there is
-    no argument to have — the legacy rule could not run on this record at any threshold, so a
+    no argument to have — that rule could not run on this record at any threshold, so a
     classification that still tried would raise rather than quietly agree.
     """
     old, new = _block("alpha beta", "SEC. 5"), _block("gamma delta", "SEC. 6")
@@ -152,7 +145,7 @@ def test_classification_emits_modified_from_evidence_that_carries_no_signals_at_
 
 
 def test_no_classification_function_mentions_the_move_cutoff_or_the_overlap_reader() -> None:
-    """Statically: the names the old decision was made of do not appear in the shipped stage.
+    """Statically: the names a moved-vs-modified decision is made of do not appear in classification.
 
     A behavioural control proves the basis is honoured on the inputs it was given. This proves
     there is no surviving path — a branch reachable only by a corpus shape no fixture has —
@@ -186,10 +179,10 @@ def test_no_classification_function_mentions_the_move_cutoff_or_the_overlap_read
 
 
 def test_classification_no_longer_reads_the_round_either() -> None:
-    """``round`` is provenance now. A round-2 record with no basis must not become a move.
+    """``round`` is provenance, not a decision input. A round-2 record with no basis must not become a move.
 
-    The pre-6a rule keyed on ``item.round == MOVE_ROUND``. Leaving that in beside the basis would
-    be a second authority, and it would be invisible in production where the two always agree.
+    A rule keyed on ``item.round`` beside the basis would be a second authority, invisible in
+    production where the two always agree.
     """
     old, new = _block("alpha beta", "SEC. 5"), _block("gamma delta", "SEC. 6")
     registry = PdfObservationRegistry([old], [new])
@@ -224,9 +217,8 @@ def test_the_round1_basis_rule_follows_evidence_that_contradicts_the_blocks() ->
 def test_a_missing_anchor_is_not_a_different_anchor() -> None:
     """The three-state representation, exercised on the state a boolean would have lost.
 
-    The legacy condition read ``v1_anchor and v2_anchor and ...``, so an absent anchor declined
-    for a different reason than an equal one. Both still decline; they are no longer the same
-    fact.
+    An absent anchor declines for a different reason than an equal one. Both decline; they are
+    different facts.
     """
     assert pdf_round1_move_basis(_evidence(**{WORD_OVERLAP: 1.0, ANCHOR_RELATION: ANCHOR_MISSING}), 0.0) is None
     assert _pdf_anchor_relation(_block("a", None), _block("a", "SEC. 1")) == ANCHOR_MISSING
@@ -288,8 +280,8 @@ def test_an_unknown_move_basis_is_refused_where_it_is_recorded(basis: str) -> No
 def test_the_move_basis_vocabulary_is_exactly_the_two_names_slice_6a_defines() -> None:
     """Pinned as literals, so growing the vocabulary is a deliberate edit in two places.
 
-    Also pins what the names are NOT: the reviewer ruled out ``structural_path`` (PDF round 1 is
-    block-key alignment, not a path) and ``relocation_recovery`` (the study did not establish
-    that a round-2 correspondence is a legislative relocation). Both names are provenance.
+    Also pins what the names are NOT: not ``structural_path`` (PDF round 1 is block-key
+    alignment, not a path) and not ``relocation_recovery`` (the study did not establish that a
+    round-2 correspondence is a legislative relocation). Both names are provenance.
     """
     assert MOVE_BASES == frozenset({"round1_anchor_similarity", "round2_unmatched_recovery"})

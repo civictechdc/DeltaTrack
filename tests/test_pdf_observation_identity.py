@@ -1,13 +1,12 @@
 """The PDF ADR 0019 identity machinery: parser revision, and the observation registry.
 
-Slice 3 of the ADR 0020 PDF convergence work. Two things are under test, and they fail in
-opposite directions, so each needs its own controls.
+Two things are under test, and they fail in opposite directions, so each needs its own controls.
 
 **The parser revision** answers "which parse was this stored judgment about?". Its whole job
 is to move when observation-producing code moves and to stay put otherwise, so a test that
 only checked "it returns a hash" would certify a constant. The exclusion half is the
-load-bearing one: slice 1 existed specifically so that editing a matching threshold could no
-longer redefine observation identity, and an exclusion is an absence claim, which is the shape
+load-bearing one: editing a matching threshold must not redefine observation identity, and
+an exclusion is an absence claim, which is the shape
 that passes vacuously. It is therefore proved twice — once by mutating the matcher and seeing
 nothing move, and once by *injecting an import of the matcher into the parser* and seeing the
 revision move. The second is what separates "the exclusion holds" from "the walker is broken".
@@ -16,12 +15,9 @@ revision move. The second is what separates "the exclusion holds" from "the walk
 or re-sorted view as a genuine new hazard, because such an address looks valid and points at
 the wrong observation. Gate 5
 (``test_pdf_observation_emission.test_an_ordinal_over_a_filtered_view_addresses_a_different_observation``)
-already pins that hazard against the emitted sequence and is not duplicated here. What is new
-in slice 3 is the *address resolution layer* on top of it: totality, injectivity, round-trip,
-and failing closed on an address the parse never issued.
-
-No production behaviour is exercised: nothing consumes ``PdfObservation`` yet. These are tests
-of the representation itself, which is the only thing slice 3 adds.
+already pins that hazard against the emitted sequence and is not duplicated here. This file
+covers the *address resolution layer* on top of it: totality, injectivity, round-trip, and
+failing closed on an address the parse never issued.
 """
 
 from __future__ import annotations
@@ -64,8 +60,8 @@ RESULT_BEARING = (
     "deltatrack.parsers.pdf_text",
 )
 
-#: Matching and classification policy. None of these may reach observation identity — that is
-#: what slices 1 and 1a bought, and what a stored PDF artifact will depend on.
+#: Matching and classification policy. None of these may reach observation identity, which a
+#: stored PDF artifact depends on.
 MATCHING_ONLY = (
     "deltatrack.diff_pdf",
     "deltatrack.similarity",
@@ -267,7 +263,7 @@ def test_editing_a_parser_module_changes_the_revision_and_restoring_it_returns(m
 def test_editing_the_matcher_or_a_threshold_leaves_the_revision_identical(module: str, package_copy: Path) -> None:
     """The exclusion, demonstrated rather than read off a list of filenames.
 
-    This is the property slice 1 was for. Without it, retuning ``SIMILARITY_THRESHOLD`` — a
+    Without this property, retuning ``SIMILARITY_THRESHOLD`` — a
     matching-policy change that cannot move a single emitted observation — would invalidate
     every stored PDF observation identity, and a genuine re-segmentation would be
     indistinguishable from it.

@@ -53,7 +53,7 @@ def test_anchors_match_golden(name: str):
 
 
 # Kinds that existed before #104 added `agency`. The frozen `.pre-agency-anchors`
-# baseline (never regenerated) pins these so a FUTURE slice's golden regeneration
+# baseline (never regenerated) pins these so a later golden regeneration
 # can't silently launder a change to an originally-detected anchor: the full
 # golden is self-referential after regeneration, and the agency floors filter to
 # kind=="agency", so without this guard a corrupted section/title/account on s-4795

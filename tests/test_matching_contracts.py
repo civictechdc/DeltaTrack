@@ -8,8 +8,7 @@ lets one pair reach assignment twice — so a test asserting only "one candidate
 assignment" passes in the first case. Both directions are covered here.
 
 What is deliberately *not* here: any assertion about a retriever, a measure, a threshold
-or a stage boundary. None exists yet. A test that mocked one would be pinning a design
-this slice has not committed to.
+or a stage boundary. Those are policy, and the contract types do not commit to them.
 """
 
 from __future__ import annotations
@@ -51,7 +50,7 @@ def evidence_for_link(old_ref: ObservationRef, new_ref: ObservationRef) -> Corre
     """An evidence record for one selected link, carrying no signals.
 
     Valid by design: a correspondence must carry one record per link, but which signals
-    exist is Phase 2 policy this slice does not choose. See `CorrespondenceEvidence`.
+    exist is policy the contract types do not choose. See `CorrespondenceEvidence`.
     """
     return CorrespondenceEvidence.of(old_ref, new_ref)
 

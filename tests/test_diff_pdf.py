@@ -8,9 +8,9 @@ from deltatrack.diff_pdf import (
 )
 from deltatrack.parsers.pdf_anchors import Anchor
 
-# Observation production moved to `parsers.pdf_blocks` in ADR 0020 slice 1; the matching
-# helpers above stayed in `diff_pdf`. Imported from their owning modules rather than
-# through `diff_pdf`'s re-export, so this file states the boundary it is testing across.
+# Observation production lives in `parsers.pdf_blocks`; the matching helpers above live in
+# `diff_pdf`. Imported from their owning modules rather than through `diff_pdf`'s re-export,
+# so this file states the boundary it is testing across.
 from deltatrack.parsers.pdf_blocks import (
     _Block,
     _group_into_blocks,
