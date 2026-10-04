@@ -514,21 +514,33 @@ The first run extracts each PDF and caches the result to
 instead of re-reading the PDF, so re-running the same tests is near-instant.
 
 An entry is reused only when nothing that produced it has changed, so the key
-covers both halves: the PDF (path and modification time) and the extractor
-(`src/deltatrack/parsers/pdf_text.py` and the pypdfium2 version). Editing or
-replacing a PDF re-extracts it, and so does any edit to the extractor. Before
+covers both halves: the PDF (its content) and the extractor
+(`src/deltatrack/parsers/pdf_text.py`, the pypdfium2 version, and the Python
+runtime running the tests, down to the patch release). Editing or replacing a PDF
+re-extracts it, and so does any edit to the extractor or any change of
+interpreter. The runtime is part of the extractor because its `str` methods follow
+the interpreter's Unicode database: the same PDF can extract differently on two
+Python versions, so an entry written before a `.python-version` bump must not be
+served after it. Before
 that second half was in the key (#393), an extractor change left every entry
 looking current, and the golden suites reading the cache asserted against
 pre-change text and stayed green on a real regression.
+
+The key is the PDF's content rather than its path and modification time so that
+an entry survives a fresh checkout, which resets every mtime. That is what lets
+CI restore the directory between runs instead of re-extracting the corpus in
+every job (the `actions/cache` steps in `.github/workflows/ci.yml`).
 
 The rule is deliberately blunt: a comment-only edit to
 `src/deltatrack/parsers/pdf_text.py` also invalidates the cache, so the next run
 pays one full re-extraction.
 
-Superseded entries are never reclaimed, so each invalidation leaves the previous
-set on disk. Nothing reads them and nothing in CI restores the directory, so to
-reclaim the space just delete it: `rm -rf tests/data/extract_cache`. The next run
-re-extracts.
+Superseded entries are never reclaimed locally, so each invalidation leaves the
+previous set on disk. Nothing reads them, so to reclaim the space just delete the
+directory: `rm -rf tests/data/extract_cache`. The next run re-extracts. CI does
+not carry them forward: its cache key includes the extractor fingerprint, so an
+extractor change, a pypdfium2 upgrade or a new Python patch release starts that
+cache from empty.
 
 ## Comparing the two pipelines by eye
 

@@ -1,0 +1,80 @@
+name: Newest Python
+
+# Weekly run of the non-browser suite on the newest stable CPython. CI tests only the
+# interpreter `.python-version` pins (ci.yml), and the project moves to a newer one by
+# editing that pin. This is the early warning for that edit: it says whether the next
+# bump will need work, before anyone has to find out mid-bump.
+#
+# NOT a pull-request gate, on purpose. A failure here means the next version is not ready
+# yet (a dependency without wheels for it, a changed stdlib behaviour), not that anything
+# on the pinned interpreter is broken, so no contributor's PR should go red for it.
+#
+# The version is chosen when the job runs, as the highest stable CPython uv can download,
+# so a new release is picked up without editing this file.
+
+on:
+  schedule:
+    - cron: "41 7 * * 1" # Mondays 07:41 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: newest-python
+  cancel-in-progress: false
+
+jobs:
+  newest-python:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # only to report a failure, below
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Pick the newest stable CPython
+        # Stable releases only: a pre-release (3.15.0rc1) or a free-threaded build does not
+        # match the pattern. UV_PYTHON reaches every later uv call, including the ones tests
+        # make, so nothing falls back to `.python-version` (cf89bd9).
+        run: |
+          version=$(uv python list --only-downloads | grep -oE '^cpython-3\.[0-9]+\.[0-9]+-linux-x86_64-gnu' | sed -E 's/^cpython-([0-9.]+)-.*/\1/' | sort -V | tail -1)
+          test -n "$version"
+          echo "Newest stable CPython: $version"
+          echo "UV_PYTHON=$version" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        run: uv python install "$UV_PYTHON"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run the non-browser suite
+        run: uv run --locked pytest -m "not browser" -q
+
+      - name: Report a failure as an issue
+        # `failure()` alone, so a setup failure is reported too: on a new Python the likeliest
+        # failure is `uv sync` finding no wheel for a dependency, which is exactly what this
+        # workflow exists to say. tests/test_ci_workflow.py pins the condition (#680).
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          title='Test suite fails on the newest Python'
+          body="The weekly newest-Python run failed on CPython ${UV_PYTHON:-unknown}. Run log: $RUN_URL
+
+          This does not affect pull requests or the pinned interpreter: CI tests only the version in \`.python-version\`. It means moving the pin to this version needs work first. The log names the step that failed: \`Install dependencies\` usually means a dependency has no wheels for this version yet, and a test failure means a behaviour change to fix before the bump.
+
+          Filed automatically by \`.github/workflows/newest-python.yml\`."
+
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" \
+              --body "Still failing on CPython ${UV_PYTHON:-unknown} as of the weekly run: $RUN_URL"
+            exit 0
+          fi
+          gh issue create --repo "$GITHUB_REPOSITORY" --type Task --title "$title" --body "$body" \
+            || gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"

@@ -40,7 +40,7 @@ attributable.
 
 1. **Confirm continuous integration is green on the exact commit being promoted.**
    CI runs on pull requests, on pushes to **both** `main` and `develop`, and on
-   `merge_group` events, and the `develop` push run is the same full matrix a pull
+   `merge_group` events, and the `develop` push run is the same full set of jobs a pull
    request gets. So the integrated state *is* checked automatically. Two separate
    mechanisms cover it: the merge queue tests each merge commit before it lands
    (prevention), and the push run re-tests it afterwards, attributed to the merge that
