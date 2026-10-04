@@ -71,8 +71,10 @@ rendered output to recover a structural fact is evidence the document omitted it
 
 The document is therefore a superset rather than a minimum, and a bound follows:
 **carry facts the producer derived and would otherwise discard, not raw source
-material.** A parser's map from printed line to character offset is derived, used and
-currently dropped, and belongs in the document. Glyph geometry and font metrics are raw
+material.** Where the printer broke each whole-word line (`print_breaks`) and how the
+full text is laid out in rows and line numbers (`full_text_layout`) are both derived by
+the producer, so the document carries them and the report lays out the printed page by
+applying them rather than re-guessing them. Glyph geometry and font metrics are raw
 source and stay out. This is what keeps the contract presentation-free while letting a
 view be a pure consumer of it.
 
