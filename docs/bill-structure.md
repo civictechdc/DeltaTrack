@@ -97,11 +97,30 @@ Grouping headers (`ADMINISTRATIVE PROVISIONS`, `GENERAL PROVISIONS`,
 ### Emitted `level` vocabulary (the canonical structure tree, #108)
 
 The leveled tree (`src/deltatrack/structure_tree.py`, exposed as the canonical `tree` field) labels
-every node with one `level` from a **shared 9-value enum** both pipelines map into, so
+every node with one `level` from a **shared 10-value enum** both pipelines map into, so
 the contract speaks one language and the renderer branches on data, not source
-(`schema/canonical-diff.schema.json` → `TreeNode.level`). The enum names are *budget
-roles*, not DTD tag names — note `Intermediate` (the tag) surfaces as the level
-`agency`. The two pipelines derive a level differently, and that asymmetry is real:
+(`schema/canonical-diff.schema.json` → `TreeNode.level`).
+
+The enum is a normalized vocabulary grounded in GPO's structure, not a copy of it, and
+its values come from three places:
+
+- **GPO units:** `division`, `title`, `section` and `subsection` name bill-DTD elements.
+- **Budget roles:** `major`, `agency` and `account` name what the three
+  `appropriations-*` tags hold (see the budget sources below), not the tags themselves:
+  `appropriations-intermediate` surfaces as `agency`.
+- **DeltaTrack's own:** `heading` is a container the XML tree synthesizes with no typed
+  source, and `grouping` a PDF grouping header. `preamble` labels the whole front matter
+  (the `<form>` block, the enacting or resolving clause, and a resolution's
+  `<preamble>`), which is wider than the DTD's `<preamble>` element, the whereas clauses
+  alone.
+
+It is not an exhaustive GPO taxonomy. The DTD's other structural units have no level of
+their own: above the section, the bill's own `subtitle`, `part`, `chapter`, `subchapter`
+and `subpart` surface in the XML tree as `heading` nodes labeled with their header text,
+and nested ones can be joined into a single node (units inside quoted amendatory text
+are not the bill's structure and get no node); below the subsection, `paragraph` through
+`subitem` are not nodes at all. The two pipelines derive a level differently, and that
+asymmetry is real:
 
 | `level` | XML source (`_LEAF_LEVEL` / `_interior_level`) | PDF source (`AnchorKind`) |
 |---|---|---|
