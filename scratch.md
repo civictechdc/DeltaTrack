@@ -16,8 +16,9 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 4. [PDF pipeline, end to end](#pdf-pipeline-end-to-end)
 5. [Overlap map](#overlap-map) (per seam)
 6. [Findings](#findings)
-7. [Work log](#work-log)
-8. [Open questions](#open-questions)
+7. [Falsification pass](#falsification-pass)
+8. [Work log](#work-log)
+9. [Open questions](#open-questions)
 
 ---
 
@@ -397,27 +398,29 @@ at the baseline commit.
 
 ### Summary
 
-| # | Finding | Stages | Seam | Severity | Status |
-|---|---|---|---|---|---|
-| F1 | Contract producers and viewer input share one module; renderer imports the engine | X7, P8, R1, R3 | Contract ↔ Viewer | High | open |
-| F2 | View model carries HTML and UI copy built in the contract module | R1 → R3 | Contract ↔ Viewer | High | open |
-| F3 | Viewer branches on `source` (pipeline identity) | R1, R3 | Contract ↔ Viewer | Medium | open |
-| F4 | Viewer re-infers facts the contract omits | R1, R3 ← X3, X6, P5, P7 | Diff/Parse ↔ Viewer | High | open |
-| F5 | Display gutter baked into PDF `full_text` | P7, R2, R3 | Parse ↔ Viewer | Med-High | open |
-| F6 | Renderer reads two inputs (DiffView + raw document) | R1, R3 | Viewer internal | Low-Med | open |
-| F7 | Meaning-level decisions made in the canonicalizer and orchestration | X7, P8, P4, P6 | Diff ↔ Contract | Med-High | open |
-| F8 | XML-only intermediate dict with dead fields | X5 → X7 | Diff ↔ Contract | Medium | open |
-| F9 | Filters run before canonicalization and change the document | X4 | Diff ↔ Contract | Medium | open |
-| F10 | `summary` shape differs per pipeline | X3, P5 → C | Diff ↔ Contract | Low-Med | open |
-| F11 | Structure tree spans every layer and is shaped by TOC needs | X6, P5, P8, R3 | Producer ↔ Viewer | Medium | open |
-| F12 | XML parser imports private PDF parser helpers | X2 ← pdf_anchors | Parse ↔ Parse | Medium | open |
-| F13 | Differ modules host CLIs that import back up into `compare/` | E1, E2, X3, P5 | Diff ↔ Entry | Low-Med | open |
-| F14 | Minor: structural filter in JS, duplicate bill-type vocab, web palette copy | R3, R4, P6, E3 | Misc | Low | open |
-| F15 | No import-direction gate for the pipeline layers | all | Enforcement | Medium | open |
+| # | Finding | Stages | Seam | Severity (was → now) | Verdict | Status |
+|---|---|---|---|---|---|---|
+| F1 | Contract producers and viewer input share one module; renderer imports the engine | X7, P8, R1, R3 | Contract ↔ Viewer | High → Med-High | **Holds**, low runtime cost | open |
+| F2 | View model carries HTML and UI copy built in the contract module | R1 → R3 | Contract ↔ Viewer | High → Low | **Falsified** (ADR 0007 by design) | open |
+| F3 | Viewer branches on `source` (pipeline identity) | R1, R3 | Contract ↔ Viewer | Medium → Low | **Mostly falsified**; rests on F5 | open |
+| F4 | Viewer re-infers facts the contract omits | R1, R3 ← X3, X6, P5, P7 | Diff/Parse ↔ Viewer | High → High | **Split**: a narrowed, b **defect**, c holds, d falsified | open |
+| F5 | Display gutter baked into PDF `full_text` | P7, R2, R3 | Parse ↔ Viewer | Med-High → Low | **Mostly falsified** (documented in schema) | open |
+| F6 | Renderer reads two inputs (DiffView + raw document) | R1, R3 | Viewer internal | Low-Med → Low | **Partly falsified** | open |
+| F7 | Meaning-level decisions made in the canonicalizer and orchestration | X7, P8, P4, P6 | Diff ↔ Contract | Med-High → Medium | **Split**: move kind + identity hold; rest falsified | open |
+| F8 | XML-only intermediate dict with dead fields | X5 → X7 | Diff ↔ Contract | Medium → Medium | **Holds**, confirmed | open |
+| F9 | Filters run before canonicalization and change the document | X4 | Diff ↔ Contract | Medium → Low-Med | **Holds**, CLI-only | open |
+| F10 | `summary` shape differs per pipeline | X3, P5 → C | Diff ↔ Contract | Low-Med → Low-Med | **Holds**, confirmed | open |
+| F11 | Structure tree spans every layer and is shaped by TOC needs | X6, P5, P8, R3 | Producer ↔ Viewer | Medium → Low | **Mostly falsified** | open |
+| F12 | XML parser imports private PDF parser helpers | X2 ← pdf_anchors | Parse ↔ Parse | Medium → Low | **Partly falsified** (sharing is deliberate) | open |
+| F13 | Differ modules host CLIs that import back up into `compare/` | E1, E2, X3, P5 | Diff ↔ Entry | Low-Med → Low | **Partly falsified** | open |
+| F14 | Minor: structural filter in JS, duplicate bill-type vocab, web palette copy | R3, R4, P6, E3 | Misc | Low → nit | **Mostly falsified** | open |
+| F15 | No import-direction gate for the pipeline layers | all | Enforcement | Medium → Medium | **Partly falsified** (3 gates exist) | open |
 
 ---
 
 ### F1 — Contract producers and viewer input share one module
+
+> **Falsification verdict:** Holds. Viewer half uses no producer names; split is mechanical. Runtime cost ~0.2 s, no install cost. See [falsification pass](#falsification-pass).
 
 - **Stages:** X7, P8 (producers) · R1 (consumer) · R3 (imports R1)
 - **Where:**
@@ -435,6 +438,8 @@ at the baseline commit.
 
 ### F2 — View model carries HTML and UI copy built in the contract module
 
+> **Falsification verdict:** Falsified as a defect. ADR 0007 puts this display work in view building on purpose. See [falsification pass](#falsification-pass).
+
 - **Stages:** R1 → R3
 - **Where:** `canonical.py:466-536` (`_join_path`, `_format_range_str`, `_heading_and_nav`,
   `_citation_html`, `_move_info_html`); `formatters/view_model.py` fields `heading_html`,
@@ -448,6 +453,8 @@ at the baseline commit.
 
 ### F3 — Viewer branches on `source`
 
+> **Falsification verdict:** Mostly falsified. ADR 0007 allows source-specific work in R1; R3's check is the documented 3.0 shim. See [falsification pass](#falsification-pass).
+
 - **Stages:** R1, R3 reading C
 - **Where:** `canonical.py:490` (`_heading_and_nav`), `canonical.py:717` (`_card_texts`,
   slices `full_text` only when `source == "xml"`), `diff_html.py:529`
@@ -459,6 +466,8 @@ at the baseline commit.
   heading.
 
 ### F4 — Viewer re-infers facts the contract omits (ADR 0006 violation)
+
+> **Falsification verdict:** 4a narrowed (9.4% XML unjoined) · 4b demonstrated defect (93 misfiled) · 4c holds (8,723 offsets dropped) · 4d falsified (0/6,130 mismatches). See [falsification pass](#falsification-pass).
 
 ADR 0006: "A consumer may derive by applying facts the document carries; it may not
 derive by re-inferring facts the document omits."
@@ -484,6 +493,8 @@ derive by re-inferring facts the document omits."
 
 ### F5 — Display gutter baked into PDF `full_text`
 
+> **Falsification verdict:** Mostly falsified. Format is specified in `schema/canonical-diff.md:180`; residual is string encoding. See [falsification pass](#falsification-pass).
+
 - **Stages:** P7 → C → R2, R3
 - **Where:** `parsers/pdf_text.py:808` (`_render_lines` emits `{n:>5}  text`),
   `formatters/print_layout.py:90` (re-emits `f"{line_number:>5}  "`),
@@ -496,6 +507,8 @@ derive by re-inferring facts the document omits."
 
 ### F6 — Renderer reads two inputs
 
+> **Falsification verdict:** Partly falsified. Reading C directly is by design (ADR 0007); duplicate path rule remains. See [falsification pass](#falsification-pass).
+
 - **Stages:** R1, R3
 - **Where:** `format_diff_html` (`diff_html.py:921`) renders cards from `DiffView` but
   sidebar tree, full-bill view, heading and feature gates from the raw document.
@@ -506,6 +519,8 @@ derive by re-inferring facts the document omits."
   dropped and the renderer reads C directly. Pick one. Put the path convention in one place.
 
 ### F7 — Meaning-level decisions made in the canonicalizer and orchestration
+
+> **Falsification verdict:** Move-kind rules disagree on 85/161 PDF moves; identity placement holds; `anchor_resolution` falsified; amounts is duplication, not layer. See [falsification pass](#falsification-pass).
 
 - **Stages:** X7, P8, P4, P6
 - **Where:**
@@ -527,6 +542,8 @@ derive by re-inferring facts the document omits."
 
 ### F8 — XML-only intermediate dict with dead fields
 
+> **Falsification verdict:** Confirmed. Canonical identical without the fields on 27/27 pairs; 6,720 financial entries discarded. See [falsification pass](#falsification-pass).
+
 - **Stages:** X5 → X7
 - **Where:** `compare/xml.py:69` calls `bill_diff_to_dict(result, financial=True)`;
   `diff_bill.py:1852-1895`.
@@ -541,6 +558,8 @@ derive by re-inferring facts the document omits."
 
 ### F9 — Filters run before canonicalization and change the document
 
+> **Falsification verdict:** Confirmed on 25/27 pairs; CLI-only, so lower severity. See [falsification pass](#falsification-pass).
+
 - **Stages:** X4 (between X3 and X5)
 - **Where:** `compare/xml.py:64` (`filter_diff(filter_text, financial_only)`),
   `diff_bill.py:1898`.
@@ -552,6 +571,8 @@ derive by re-inferring facts the document omits."
 
 ### F10 — `summary` shape differs per pipeline
 
+> **Falsification verdict:** Confirmed. XML: one 5-key set on 27/27; PDF: 7 different key sets across 17 pairs. See [falsification pass](#falsification-pass).
+
 - **Stages:** X3, P5 → C
 - **Where:** XML `_count_changes` (`diff_bill.py:1794`) always emits five keys including
   `unchanged`; PDF `PdfDiff.summary` (`diff_pdf.py:112`) emits only types that occur.
@@ -560,6 +581,8 @@ derive by re-inferring facts the document omits."
   key set; tighten the schema.
 
 ### F11 — Structure tree spans every layer and is shaped by TOC needs
+
+> **Falsification verdict:** Mostly falsified. Structural choices are the producer's; residual is `""` label used as a hide flag. See [falsification pass](#falsification-pass).
 
 - **Stages:** X6, P5, P8 → R3
 - **Where:**
@@ -577,6 +600,8 @@ derive by re-inferring facts the document omits."
 
 ### F12 — XML parser imports private PDF parser helpers
 
+> **Falsification verdict:** Partly falsified. Sharing is required for label parity; only the private placement remains. See [falsification pass](#falsification-pass).
+
 - **Stages:** X2 ← pdf_anchors
 - **Where:** `bill_tree.py:8` imports `_RUNIN_QUOTED_LINE`, `_match_runin_subsection` from
   `parsers/pdf_anchors`.
@@ -589,6 +614,8 @@ derive by re-inferring facts the document omits."
 
 ### F13 — Differ modules host CLIs that import back up
 
+> **Falsification verdict:** Partly falsified. `python -m` entry is documented; the upward import is function-local. See [falsification pass](#falsification-pass).
+
 - **Stages:** E1, E2 inside X3, P5
 - **Where:** `diff_bill.py:1934-2217` (argparse, version listing, path resolution,
   `cmd_compare`); `diff_pdf.py:1314-1400`. Both lazy-import `compare.*` "to avoid a
@@ -597,6 +624,8 @@ derive by re-inferring facts the document omits."
   importing `compare/`.
 
 ### F14 — Minor
+
+> **Falsification verdict:** Structural filter falsified (applies carried `change_type`); designator nit stands. See [falsification pass](#falsification-pass).
 
 - "Structural" filter defined in the report JS as `type !== 'modified'`
   (`diff_html.py:391, 1380`): a classification rule lives in UI code. (R4)
@@ -607,6 +636,8 @@ derive by re-inferring facts the document omits."
 
 ### F15 — No import-direction gate for the pipeline layers
 
+> **Falsification verdict:** Partly falsified. Three gates exist; viewer, XML parser and differ→compare directions are unguarded. See [falsification pass](#falsification-pass).
+
 - **Stages:** all
 - **Where:** `tests/test_surface_boundary.py` gates product vs `tools/`/`web/`;
   `tests/test_formatter_boundary.py` gates one constant. Nothing asserts
@@ -616,14 +647,223 @@ derive by re-inferring facts the document omits."
 
 ---
 
+## Falsification pass
+
+**2026-10-04, baseline `f2e698a`.** Each finding was treated as a hypothesis and attacked
+three ways:
+
+1. **Run it.** Run the real pipeline over the committed corpus and measure the claim.
+2. **Is it sanctioned?** Look for an ADR, schema text or docstring that makes the
+   behaviour a deliberate decision rather than drift.
+3. **Is it already guarded?** Look for a test that already catches it.
+
+A finding survives only if all three fail to knock it down.
+
+**Corpus.**
+- XML: every adjacent committed pair under `tests/corpus/` (27 pairs, 17,873 changes).
+- PDF: every adjacent committed pair (23), run through the production merge flow
+  (`cached_print_pages` → sibling-evidence merge → `diff_pdfs` → `_build_canonical`).
+  6 were declined as unnumbered prints, leaving 17 pairs and 6,371 changes.
+- Experiment scripts are in the session scratchpad (`falsify_xml*.py`, `falsify_pdf.py`,
+  `f4c.py`). They are not committed. Ask if they should be.
+
+### Scoreboard
+
+| Verdict | Findings |
+|---|---|
+| Holds, confirmed or strengthened | F1, F4b (now a demonstrated defect), F4c, F8, F10 |
+| Holds, narrowed | F4a, F7 (move kind, identity), F9, F15 |
+| Mostly or partly falsified | F3, F5, F6, F11, F12, F13, F14 |
+| Falsified | F2, F4d, F7 (`anchor_resolution`) |
+
+### Evidence per finding
+
+**F1 — holds; practical cost lower than stated.**
+- The viewer half of `canonical.py` (`view_from_canonical` and its helpers) uses **none**
+  of the producer-side names (AST check): no `PdfDiff`, `PdfHunk`, `Anchor`,
+  `breadcrumb_for`, `build_pdf_tree`, `TreeNode` or `extract_amounts`. The split is
+  mechanical.
+- The `diff_pdf` import is annotation-only, but `breadcrumb_for` and `build_pdf_tree` are
+  runtime calls, so `pdf_anchors` → `pdf_text` → `pypdfium2` still loads.
+- Attack that partly landed: everything ships as one installed package, so a viewer
+  developer loses nothing at install time. Importing the renderer costs ~0.2 s, of which
+  `diff_pdf` is 0.16 s (`-X importtime`).
+- What survives is ownership and review coupling, plus the transitive closure. Severity
+  High → Med-High.
+
+**F2 — falsified as a defect.**
+- ADR 0007 §Decision: "Pipeline-specific display work (citation blocks, move-info,
+  breadcrumbs, heading construction) is done when building the view from the canonical
+  document, not in the renderer."
+- None of the HTML reaches C; it lives in `DiffView`, which is viewer-side.
+- This only matters if R1 and R3 get different owners. Revisit after the F1 split.
+
+**F3 — mostly falsified; what remains is caused by F5.**
+- ADR 0007 permits source-specific work in view building (R1). Its standing policy pushes
+  presentational differences "up into the canonical document or the view it builds".
+- The renderer-level check (`_full_text_is_guttered`) reads `full_text_layout`. It falls
+  back to `source` only for 3.0 documents, exactly as `schema/canonical-diff.md:183`
+  prescribes.
+- `_heading_and_nav`: the XML branch and the PDF branch give identical output for 17,826
+  of 17,873 XML changes. The 47 differences are path-less changes (`"(unknown)"` vs
+  `""`). The branch is near-redundant, not harmful.
+- `_card_texts`: the XML-only slice is *justified*. Slicing PDF `full_text` by change span
+  would drag the gutter into **846 of 864** two-sided PDF cards. The branch exists because
+  of F5.
+
+**F4a — narrowed.**
+- Joining a change to a tree node by span containment *applies* facts the document
+  carries (both spans are in C). ADR 0006 allows that, so the "re-infers" label was too
+  strong.
+- But it fails on facts the document has in another form:
+  - XML: **1,676 of 17,873 changes (9.4%)** go unjoined (1,548 added, 128 removed). All
+    have a null span (bodyless nodes), yet each carries a `path` locating it. They fall
+    back to the flat group.
+  - PDF: 51 of 6,371 (0.8%), all with null spans.
+
+**F4b — holds, upgraded to a demonstrated defect.**
+- XML: 711 removed changes, of which 364 are remapped to a structurally different path.
+  **93** of those land outside the deepest v1 ancestor that still exists in v2, and **48**
+  land under a different top-level group.
+- Example, `114-hr-2029` 1→3: removed `TITLE I—Department of defense > Administrative
+  provisions > sec. 122 > (a)` is filed under `TITLE II—Department of veterans affairs >
+  … > sec. 227 > (a)`, although `sec. 122` still exists in v2.
+- Cause: the deepest-segment-first label match lets generic labels such as `(a)` match
+  anywhere.
+- PDF: 155 structural remaps. The surviving-ancestor misfile was not measured on PDF.
+- Queued as a separate fix task. This is the clearest case of the viewer doing a
+  correspondence decision badly.
+
+**F4c — holds, strengthened.**
+- XML: the label search decides **9,717 of 34,715** v2 tree-node anchors (28%).
+- For **8,723** content nodes the producer already holds the exact heading offset (in
+  `serialize_tree_for_tree`'s heading-offset map; the line equals the label in 100% of
+  cases) and emits the body span instead.
+- PDF: the search never succeeds. All 8,719 spanned nodes take the fallback, because the
+  printed line starts with the gutter. The fallback lands on the anchor line, which is
+  correct. So in practice the heuristic is XML-only.
+
+**F4d — falsified.**
+- The `numbered_lines` layout is specified in the contract: "An empty row separates one
+  page from the next; pages count from 1" (`schema/canonical-diff.md:180`). Counting
+  blank rows applies a documented rule.
+- `Page.page_number` equals the physical index on 17 of 17 pairs.
+- 0 of 6,130 placed PDF changes sit under a `p. N` header different from their
+  `location.v2.start_page`.
+
+**F5 — mostly falsified.**
+- The gutter format is part of the contract (`schema/canonical-diff.md:180`), and
+  `print_breaks` reuses it by definition. `print_layout` regenerates it per spec, so this
+  is not an undocumented three-module protocol.
+- ADR 0007 / #95 already plans paragraph flow as the default with the gutter as an opt-in
+  view.
+- Residual: line numbers are string-encoded inside `full_text`, so changing gutter width
+  is a schema major. That encoding is what forces F3's `_card_texts` branch.
+
+**F6 — partly falsified.**
+- ADR 0007 says the renderer is "driven only by the canonical JSON", so reading C
+  directly is by design.
+- The duplicated "hoist unlabeled nodes" path rule (`_node_order_map` /
+  `_v2_label_lookup`) remains. Its outcome is guarded by
+  `tests/test_diff_html_node_groups.py:179`.
+
+**F7 — split.**
+- **Move kind: holds.** Applying the XML rule (same parent, last label differs →
+  renumbered) to PDF moves gives a different kind on **85 of 161** (53%). Example: `FOR
+  CIVIL WORKS` → `CIVIL WORKS` under a different parent is `renumbered` on PDF and would
+  be `relocated` on XML.
+  - Attack that landed: the PDF anchor text equals the last path element on 161 of 161
+    moves. Both rules can be computed from what C already carries, so the issue is **two
+    rules**, not which layer owns them.
+- **`anchor_resolution`: falsified.** It is computed purely from `path` and `location`,
+  both carried in C, so it is a convenience field and not a decision hidden in the wrong
+  layer.
+- **`own_amounts`: narrowed.** Both trees are built in contract-layer code (XML in
+  `structure_tree` via the parser's `amount_text`, PDF in `canonical.py` via block
+  offsets). The issue is two implementations of one money observation, not the layer.
+- **P4 / P6 identity and layout guard: holds.** XML identity comes from the parser
+  (`BillTree`); the PDF regexes live in `compare/pdf.py`.
+- Severity Med-High → Medium.
+
+**F8 — holds, confirmed.**
+- The canonical document is equal (dict equality) with and without `financial`,
+  `text_diff` and `match_path` on **27 of 27** pairs.
+- **6,720** financial entries are computed and discarded, and 0 occurrences reach C.
+- ADR 0006 still says the `--financial` multiset facts are "untouched". They reach no
+  output since #693, so the ADR text is stale.
+
+**F9 — holds, narrowed.**
+- `filter_text="title"` changed `summary` on **25 of 27** pairs. Nothing in the document
+  records the filter.
+- Only the CLI exposes filters (the web endpoint does not). Medium → Low-Med.
+
+**F10 — holds, confirmed.**
+- XML: one key set, `added, modified, moved, removed, unchanged`, on 27 of 27 pairs.
+- PDF: **7 different key sets** across 17 pairs (for example `modified` alone, or
+  `added, removed`), and never `unchanged`.
+
+**F11 — mostly falsified.**
+- Deciding that front matter is a group, and choosing node labels, are structural claims
+  the producer legitimately owns. The preamble anchor is also used for hunk attribution in
+  `_group_into_blocks`, not only for the TOC. "TOC" in the comments is motivation, not
+  coupling.
+- Residual: an empty label `""` doubles as a hide-from-TOC instruction
+  (`structure_tree.py:68-86`, `diff_html.py:334`).
+
+**F12 — partly falsified.**
+- The sharing is deliberate. `bill_tree._subsection_label` (`:446-455`) uses the PDF
+  run-in matcher "so both pipelines derive the same label from the same `.—` signal".
+- `tests/test_xml_subsection_nodes.py` checks XML labels against PDF recall, so drift
+  between the two is caught.
+- Residual: a rule both parsers depend on lives as a private name inside one of them.
+
+**F13 — partly falsified.**
+- `python -m deltatrack.diff_bill` is a documented entry point (`README.md:64`).
+- The import back up into `compare/` is function-local, so the module-load import graph
+  is clean.
+- Residual: CLI code and differ code share a file.
+
+**F14 — mostly falsified.**
+- The "Structural" filter reads only the carried `change_type`, which ADR 0006 explicitly
+  allows a consumer to do.
+- The palette copy is already acknowledged in `palette.py`.
+- Nit that stands: the bill-type vocabulary is written twice, as parse regex and display
+  map (`compare/pdf.py`, `diff_html.py:450`).
+
+**F15 — partly falsified.**
+- Three direction gates exist:
+  - product ↛ `tools/`/`web/` (`tests/test_surface_boundary.py`)
+  - PDF parser closure ↛ matcher and thresholds
+    (`tests/test_pdf_observation_identity.py:203`)
+  - formatters ↛ `SIMILARITY_THRESHOLD` (`tests/test_formatter_boundary.py:125`)
+- The last one checks *direct* references only. `canonical.py` reaches `similarity`
+  transitively via `diff_pdf`.
+- Still unguarded: viewer → producers and parsers; the XML parser; differ → `compare/`.
+
+### What changed in the overall picture
+
+- The strongest remaining items are **F1** (mechanical split, unblocks teams), **F4b**
+  (a real misfiling bug from the view doing correspondence work), **F4c** (the producer
+  drops a fact the viewer then searches for), **F7** move kind (two rules for one field),
+  **F8** (dead work plus a stale ADR statement), **F10**, and the unguarded directions in
+  **F15**.
+- Several findings were really disagreements with decisions the team already recorded
+  (ADR 0006, ADR 0007, the schema's `numbered_lines` spec). They are reclassified rather
+  than kept as defects. Reopening them would be an ADR change, not a cleanup.
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
 |---|---|---|
 | 2026-10-04 | Initial audit; diagrams; findings F1–F15 recorded. No code changes. | all |
+| 2026-10-04 | Falsification pass over 27 XML + 17 PDF corpus pairs; verdicts and revised severities recorded; F4b misfiling queued as a separate fix task. No code changes. | all |
 
 ## Open questions
 
+- F2/F3/F5 were reclassified as recorded decisions (ADR 0006/0007, schema). Does the team want any of them reopened as ADR changes?
+- F4b: fix narrowly in the view (prefix match), or move v1→v2 container correspondence into the producer?
 - Keep `DiffView` as the viewer's single input, or drop it and render from C directly? (F6)
 - Should `--financial` facts be in the contract, or deleted? ADR 0006 still describes them as available. (F8)
 - Is the F4 fix one schema minor (additive fields) or does removing the gutter (F5) force a major?
