@@ -95,11 +95,10 @@ from deltatrack.parsers.pdf_anchors import (
     _match_runin_subsection,
     _valid_subsection_enum,
     breadcrumb_for,
-    extract_anchors,
 )
 from tests.conftest import assert_manifest_committed
 from tests.corpus_paths import FIXTURES_DIR
-from tests.pdf_corpus import cached_pages
+from tests.pdf_corpus import cached_anchors
 
 pytestmark = pytest.mark.slow
 
@@ -454,7 +453,7 @@ def _xml_index(xml_path: str) -> tuple[frozenset, frozenset, frozenset]:
 def _pdf_pairs(pdf_path: str) -> frozenset:
     """Every PDF-detected ``(section, enum)`` subsection pair, section resolved from the
     anchor's breadcrumb (the nearest enclosing ``SEC.``)."""
-    anchors = extract_anchors(cached_pages(BILLS / pdf_path))
+    anchors = cached_anchors(BILLS / pdf_path)
     pairs: set[tuple[str | None, str | None]] = set()
     for a in anchors:
         if a.kind != "subsection":
@@ -583,7 +582,7 @@ def test_no_subsection_anchor_swallows_a_following_section() -> None:
         if not bill_dir.is_dir():
             continue
         for pdf in sorted(bill_dir.glob("*.pdf")):
-            for anchor in extract_anchors(cached_pages(pdf)):
+            for anchor in cached_anchors(pdf):
                 if anchor.kind != "subsection":
                     continue
                 checked += 1
