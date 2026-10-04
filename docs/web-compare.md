@@ -81,7 +81,7 @@ XML and PDF paths can disagree on section boundaries and change counts for the s
 
 ```
 Browser (web/webapp/compare.html)
-  │  POST /api/compare?output=html  (multipart: start_pdf, end_pdf)
+  │  POST /api/compare?output=html&format=pdf  (multipart: start_file, end_file)
   ▼
 web/app.py                    ← FastAPI: per-IP rate limit, upload guards, concurrency, timeout
   ▼
