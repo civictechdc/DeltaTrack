@@ -711,6 +711,7 @@ def test_reordering_the_population_changes_the_selected_correspondence():
 
         if [element_ids(registry, m) for m in shuffled] != [element_ids(registry, m) for m in stages["moves"]]:
             changed += 1
+            break  # one moved selection is the whole claim; the rest of the corpus cannot undo it
 
     assert changed, "reversing the unmatched population changed no selection anywhere in the corpus"
 

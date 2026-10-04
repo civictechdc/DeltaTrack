@@ -51,11 +51,10 @@ from deltatrack.diff_pdf import (
     settle_pdf_correspondences,
 )
 from deltatrack.matching import NEW, OLD, ObservationRef
-from deltatrack.parsers.pdf_anchors import extract_anchors
-from deltatrack.parsers.pdf_blocks import _Block, _flatten, _group_into_blocks, _IndexedLine
+from deltatrack.parsers.pdf_blocks import _Block, _IndexedLine
 from deltatrack.pdf_observations import PdfObservationRegistry
 from deltatrack.similarity import MOVE_THRESHOLD, SIMILARITY_THRESHOLD
-from tests.pdf_corpus import adjacent_pdf_pairs, cached_pages
+from tests.pdf_corpus import adjacent_pdf_pairs, cached_blocks, cached_pages
 
 _PAIRS = adjacent_pdf_pairs()
 _PAIR_IDS = [f"{bill}:{old.stem}->{new.stem}" for bill, old, new in _PAIRS]
@@ -64,9 +63,8 @@ _PAIR_IDS = [f"{bill}:{old.stem}->{new.stem}" for bill, old, new in _PAIRS]
 # --- Helpers -------------------------------------------------------------------------------
 
 
-def blocks_for(pdf: Path) -> list[_Block]:
-    pages = cached_pages(pdf)
-    return _group_into_blocks(_flatten(pages), extract_anchors(pages))
+def blocks_for(pdf: Path) -> tuple[_Block, ...]:
+    return cached_blocks(pdf)
 
 
 def round1_stream(old_blocks: list[_Block], new_blocks: list[_Block], registry: PdfObservationRegistry):

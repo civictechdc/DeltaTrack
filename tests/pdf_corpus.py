@@ -23,6 +23,8 @@ from importlib.metadata import version
 from pathlib import Path
 
 from deltatrack.parsers import pdf_text
+from deltatrack.parsers.pdf_anchors import Anchor, extract_anchors
+from deltatrack.parsers.pdf_blocks import _Block, _flatten, _group_into_blocks
 from deltatrack.parsers.pdf_text import Page, PrintPages, extract_clean_pages, extract_print_pages
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR, sweep_bill_dirs
 
@@ -136,6 +138,26 @@ def cached_print_pages(pdf_path: Path) -> PrintPages:
     would let one caller's change reach the next; each call unpickles its own.
     """
     return _load_or_extract(_cache_file(pdf_path, "print_pages"), lambda: extract_print_pages(pdf_path))
+
+
+@lru_cache(maxsize=None)
+def cached_anchors(pdf_path: Path) -> tuple[Anchor, ...]:
+    """``extract_anchors(cached_pages(pdf_path))``, derived once per process.
+
+    The PDF matching suites each re-derived the anchors of the same committed documents,
+    test after test, and anchor extraction is the costly step. The result is shared, which
+    is safe because it is a tuple of frozen ``Anchor``s: no caller can change what the next
+    one reads. A test that monkeypatches anchor extraction must call ``extract_anchors``
+    itself, since an entry derived before the patch would hide it.
+    """
+    return tuple(extract_anchors(cached_pages(pdf_path)))
+
+
+@lru_cache(maxsize=None)
+def cached_blocks(pdf_path: Path) -> tuple[_Block, ...]:
+    """The document's blocks, ``_group_into_blocks`` over its flattened lines and
+    ``cached_anchors``, derived once per process and shared on the same terms."""
+    return tuple(_group_into_blocks(_flatten(cached_pages(pdf_path)), list(cached_anchors(pdf_path))))
 
 
 def full_text(pages: list[Page]) -> str:

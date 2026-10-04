@@ -164,12 +164,16 @@ pythonpath = [".", "tools"]
 # including CI's explicit `pytest -m ...` commands, so they parallelize too without
 # changing which tests are selected. Override with `-n0` to run serially (e.g. for a
 # clean --pdb debugging session).
+# --dist worksteal lets a worker that runs out of tests take queued ones from a busier
+# worker. The default `load` hands each worker its share up front, so the run ends with
+# some workers idle while one still works through the heavy cases it was given. It changes
+# only which worker runs a test, never which tests run.
 # -rs prints the REASON for every skip in the summary. Without it a plain run ends in
 # a bare "44 skipped", which reads as routine and hides a gate that stopped asserting:
 # a fixture that went missing looks exactly like one deliberately left uncommitted.
 # Two live gaps stayed invisible behind that bare count (a headline financial gate
 # skipping on an uncommitted bill version, and a floor gate running on 2 of 8 bills).
-addopts = ["-n", "auto", "-rs"]
+addopts = ["-n", "auto", "--dist", "worksteal", "-rs"]
 markers = [
     "slow: tests that require real bill XML files (deselect with '-m not slow')",
     "browser: end-to-end tests that drive a real browser via Playwright (run with '-m browser'; need 'playwright install chromium'; pass '--run-browser' to fail closed on a launch failure, which CI's browser step does)",

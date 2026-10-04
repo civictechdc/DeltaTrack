@@ -38,19 +38,17 @@ from deltatrack.diff_pdf import (
     retrieve_pdf_round1_candidates,
 )
 from deltatrack.matching import NEW, OLD, CandidateSet, CorrespondenceEvidence, ObservationRef
-from deltatrack.parsers.pdf_anchors import extract_anchors
-from deltatrack.parsers.pdf_blocks import _Block, _flatten, _group_into_blocks, _IndexedLine
+from deltatrack.parsers.pdf_blocks import _Block, _IndexedLine
 from deltatrack.pdf_observations import PdfObservationRegistry
 from deltatrack.similarity import SIMILARITY_THRESHOLD, text_similarity
 from tests.corpus_paths import DATA_DIR
-from tests.pdf_corpus import adjacent_pdf_pairs, cached_pages
+from tests.pdf_corpus import adjacent_pdf_pairs, cached_blocks
 
 _PAIRS = adjacent_pdf_pairs()
 
 
-def _blocks(pdf: Path) -> list[_Block]:
-    pages = cached_pages(pdf)
-    return _group_into_blocks(_flatten(pages), extract_anchors(pages))
+def _blocks(pdf: Path) -> tuple[_Block, ...]:
+    return cached_blocks(pdf)
 
 
 #: The alignment invocation, for hand-built pairings that stand in for `equal`-opcode output.

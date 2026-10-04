@@ -48,12 +48,11 @@ from deltatrack.diff_bill import extract_amounts
 from deltatrack.formatters.canonical import _pdf_tree_payload
 from deltatrack.formatters.diff_html import _build_tree_nav
 from deltatrack.formatters.text_serializer import _xml_tree_payload, serialize_tree_for_tree
-from deltatrack.parsers.pdf_anchors import extract_anchors
 from deltatrack.parsers.pdf_text import pdf_full_text
 from tests.conftest import CORPUS_SWEEP, assert_manifest_committed, manifest_pdf_files, manifest_xml_files
 from tests.corpus_paths import fixture_path
 from tests.parsed_bills import parsed_bill
-from tests.pdf_corpus import cached_pages
+from tests.pdf_corpus import cached_anchors, cached_pages
 
 pytestmark = pytest.mark.slow
 
@@ -206,7 +205,7 @@ def _pdf_tree_payload_for(path: Path) -> tuple[list[dict], str, tuple, dict]:
     extraction regressed" (#262)."""
     pages = cached_pages(path)
     full_text, offsets = pdf_full_text(pages)
-    anchors = tuple(extract_anchors(pages))
+    anchors = cached_anchors(path)
     return _pdf_tree_payload(anchors, offsets, full_text), full_text, anchors, offsets
 
 

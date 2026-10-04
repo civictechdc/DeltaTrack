@@ -42,7 +42,7 @@ from deltatrack.diff_bill import extract_amounts
 from deltatrack.diff_pdf import diff_pdfs
 from deltatrack.parsers.pdf_text import Line, Page
 from deltatrack.similarity import SIMILARITY_THRESHOLD, text_similarity
-from tests.pdf_corpus import adjacent_pdf_pairs, cached_pages
+from tests.pdf_corpus import adjacent_pdf_pairs, cached_blocks
 
 pytestmark = pytest.mark.slow
 
@@ -118,11 +118,8 @@ def test_split_population_exists_and_carries_money_on_both_sides() -> None:
     import difflib
 
     from deltatrack.diff_pdf import _block_key
-    from deltatrack.parsers.pdf_anchors import extract_anchors
-    from deltatrack.parsers.pdf_blocks import _flatten, _group_into_blocks
 
-    v1_blocks = _group_into_blocks(_flatten(cached_pages(old)), extract_anchors(cached_pages(old)))
-    v2_blocks = _group_into_blocks(_flatten(cached_pages(new)), extract_anchors(cached_pages(new)))
+    v1_blocks, v2_blocks = cached_blocks(old), cached_blocks(new)
     matcher = difflib.SequenceMatcher(
         a=[_block_key(b) for b in v1_blocks], b=[_block_key(b) for b in v2_blocks], autojunk=False
     )
