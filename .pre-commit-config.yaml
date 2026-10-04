@@ -1,15 +1,23 @@
-# The `rev` IS the Ruff version: pre-commit builds an isolated virtualenv per hook repo
-# (`language: python`, no `additional_dependencies`), and each ruff-pre-commit tag pins the
-# matching `ruff==` release. So this tag has to track the `ruff==` pin in pyproject.toml,
-# which is what CI runs via `uv run ruff`. When the two drift, the hook silently enforces a
-# different formatter than CI and a contributor can pass locally and fail CI (#646).
+# The hooks run `uv run ruff`, the same command CI runs, so the Ruff version is the `ruff==`
+# pin in pyproject.toml and nothing here can drift from it. A hook from the
+# astral-sh/ruff-pre-commit repo would instead install the release its `rev` tag names into its
+# own virtualenv: a second copy of the version that Dependabot never moves (#646, #743).
+# `tests/test_precommit_ruff_version.py` fails if a Ruff hook stops going through uv.
 #
-# `tests/test_precommit_ruff_version.py` fails if this tag and that pin disagree, because
-# nothing else notices: Dependabot's `uv` ecosystem moves the pin and never touches this file.
+# `types_or` and `--force-exclude` follow ruff-pre-commit's own hook manifest. `--force-exclude`
+# applies pyproject.toml's excludes to the files pre-commit passes explicitly.
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.1
+  - repo: local
     hooks:
       - id: ruff-check
-        args: [--fix]
+        name: ruff check
+        entry: uv run ruff check --force-exclude --fix
+        language: unsupported
+        types_or: [python, pyi, jupyter]
+        require_serial: true
       - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --force-exclude
+        language: unsupported
+        types_or: [python, pyi, jupyter, markdown]
+        require_serial: true
