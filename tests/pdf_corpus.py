@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import os
 import pickle
+import sys
 import tempfile
 from functools import lru_cache
 from importlib.metadata import version
@@ -27,9 +28,10 @@ from tests.corpus_paths import DATA_DIR, FIXTURES_DIR, sweep_bill_dirs
 # Persistent extraction cache. The one gitignored subtree of the otherwise-committed
 # tests/data/ (see .gitignore). Keyed by the PDF's CONTENT and the extractor's identity,
 # via the filename, so a stale entry is simply never read. See `_extractor_fingerprint`
-# for why the second half is needed. Content rather than path + mtime so an entry stays
-# valid in a fresh checkout, which resets every mtime: that is what lets CI restore the
-# directory between runs (`actions/cache` in .github/workflows/ci.yml).
+# for why the second half is needed, and why it includes the Python runtime. Content
+# rather than path + mtime so an entry stays valid in a fresh checkout, which resets every
+# mtime: that is what lets CI restore the directory between runs (`actions/cache` in
+# .github/workflows/ci.yml).
 CACHE_DIR = DATA_DIR / "extract_cache"
 
 # Optional single-bill filter for a fast TDD loop. Substring match on the bill
@@ -51,11 +53,22 @@ def _extractor_fingerprint() -> str:
     exactly that drift. The engine version is in here for the same reason: a pypdfium2
     upgrade can alter glyph handling without any source edit.
 
-    Deliberately blunt. A comment-only edit to the extractor also invalidates, costing
-    one re-extraction; that is cheaper than reasoning about which edits are behavioral.
+    So is the Python runtime running the tests, down to the patch release. The extractor
+    leans on `str` methods whose answers follow the interpreter's Unicode database, so
+    the same source and engine can extract the same PDF differently on two interpreters
+    (a hyphen break before U+1C89 rejoins on 3.14, Unicode 16, and not on 3.12). Without
+    this, an entry written before a `.python-version` bump is served after it, and the
+    corpus and golden gates certify the previous runtime's extraction. It is read from
+    the executing interpreter, not from the pin, because the entry is whatever that
+    interpreter produced.
+
+    Deliberately blunt. A comment-only edit to the extractor, or any patch release of
+    Python, also invalidates, costing one re-extraction; that is cheaper than reasoning
+    about which changes are behavioral.
     """
     src = Path(pdf_text.__file__).read_bytes()
-    return hashlib.sha1(src + version("pypdfium2").encode()).hexdigest()[:12]
+    runtime = f"{sys.implementation.name}-{'.'.join(str(part) for part in sys.version_info)}"
+    return hashlib.sha1(src + version("pypdfium2").encode() + runtime.encode()).hexdigest()[:12]
 
 
 def _cache_file(pdf_path: Path) -> Path:

@@ -515,8 +515,13 @@ instead of re-reading the PDF, so re-running the same tests is near-instant.
 
 An entry is reused only when nothing that produced it has changed, so the key
 covers both halves: the PDF (its content) and the extractor
-(`src/deltatrack/parsers/pdf_text.py` and the pypdfium2 version). Editing or
-replacing a PDF re-extracts it, and so does any edit to the extractor. Before
+(`src/deltatrack/parsers/pdf_text.py`, the pypdfium2 version, and the Python
+runtime running the tests, down to the patch release). Editing or replacing a PDF
+re-extracts it, and so does any edit to the extractor or any change of
+interpreter. The runtime is part of the extractor because its `str` methods follow
+the interpreter's Unicode database: the same PDF can extract differently on two
+Python versions, so an entry written before a `.python-version` bump must not be
+served after it. Before
 that second half was in the key (#393), an extractor change left every entry
 looking current, and the golden suites reading the cache asserted against
 pre-change text and stayed green on a real regression.
@@ -534,7 +539,8 @@ Superseded entries are never reclaimed locally, so each invalidation leaves the
 previous set on disk. Nothing reads them, so to reclaim the space just delete the
 directory: `rm -rf tests/data/extract_cache`. The next run re-extracts. CI does
 not carry them forward: its cache key includes the extractor fingerprint, so an
-extractor change starts that cache from empty.
+extractor change, a pypdfium2 upgrade or a new Python patch release starts that
+cache from empty.
 
 ## Comparing the two pipelines by eye
 

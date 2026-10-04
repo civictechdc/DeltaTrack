@@ -98,8 +98,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
       # The PDF extraction cache (tests/pdf_corpus.py) is keyed by PDF content and the
-      # extractor's fingerprint, so an entry restored from an earlier run is exactly what
-      # extraction would produce now. Without it every job re-extracts the corpus from scratch.
+      # extractor's fingerprint (pdf_text.py, pypdfium2 and the Python runtime the tests run
+      # on), so an entry restored from an earlier run is exactly what extraction would
+      # produce now. Without it every job re-extracts the corpus from scratch.
       # The cache key carries the same fingerprint, so an extractor change starts from empty
       # rather than restoring entries nothing can read, and the PDFs' hash, so a new fixture
       # is saved instead of being re-extracted on every later hit. The job name is in the key
