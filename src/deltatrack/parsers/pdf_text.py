@@ -242,7 +242,7 @@ def _is_break_tail(text: str) -> bool:
     `tion`). Gating the join on the marker would stop joining all of them. The
     marker is also disposition-blind: GPO breaks a compound at its own hyphen and
     PDFium marks that identically (`McKinney￾22 Vento`), so it cannot answer the
-    question `_break_keeps_hyphen` exists for.
+    question `BreakEvidence.keeps_hyphen` exists for.
 
     A period before the hyphen counts, so an abbreviation compound broken at its own
     hyphen (`U.S.-` / `FSM Compact`, `U.S.-` / `Palau Compact`) is a break like any
