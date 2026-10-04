@@ -38,8 +38,8 @@ class TestFullDocument:
         assert "No changes found between these versions." in html
 
     def test_summary_bar_counts_change_types(self):
-        h_mod = PdfHunk("modified", None, None, (1, 1, 1, 1), (1, 1, 1, 1), "a", "b", ())
-        h_add = PdfHunk("added", None, None, None, (1, 2, 1, 2), "", "c", ())
+        h_mod = PdfHunk("modified", None, None, (1, 1, 1, 1), (1, 1, 1, 1), "a", "b")
+        h_add = PdfHunk("added", None, None, None, (1, 2, 1, 2), "", "c")
         diff = _diff_with([h_mod, h_add])
         html = format_pdf_html(diff, bill_type="hr", bill_number=1, congress=119)
         assert ">modified</span> <strong>1</strong>" in html

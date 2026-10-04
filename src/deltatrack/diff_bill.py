@@ -146,7 +146,6 @@ class FinancialChange:
     old_amounts: tuple[int, ...]
     new_amounts: tuple[int, ...]
     amounts_changed: bool
-    paired_amounts: tuple[tuple[int | None, int | None], ...]
     has_amendment_annotations: bool = False
 
 
@@ -168,12 +167,10 @@ def compute_financial_change(
     if not old_amounts and not new_amounts:
         return None
 
-    paired = match_amounts(old_text, new_text)
     return FinancialChange(
         old_amounts=old_amounts,
         new_amounts=new_amounts,
         amounts_changed=Counter(old_amounts) != Counter(new_amounts),
-        paired_amounts=tuple(paired),
         has_amendment_annotations=has_annotations,
     )
 
@@ -181,14 +178,19 @@ def compute_financial_change(
 def financial_change_to_dict(fc: FinancialChange) -> dict:
     """Serialize a FinancialChange for JSON output.
 
-    `paired_amounts` is deliberately absent (#671). What survives here are multiset
-    facts about one section — which dollar figures appear on each side, and whether
-    the two sets differ. Those need no type model to be true. Pairing a figure on one
-    side with a figure on the other and publishing the difference is a claim about an
-    account, and an appropriations paragraph mixes top-line appropriations,
-    sub-allocations carved out of them, "not to exceed" ceilings and loan guarantee
-    commitment limitations with nothing distinguishing them; ADR 0018 defers the layer
-    that could to #115. The pairs stay on the dataclass, unpublished, for that layer.
+    What survives here are multiset facts about one section — which dollar figures
+    appear on each side, and whether the two sets differ. Those need no type model to
+    be true. Pairing a figure on one side with a figure on the other and publishing the
+    difference is a claim about an account, and an appropriations paragraph mixes
+    top-line appropriations, sub-allocations carved out of them, "not to exceed"
+    ceilings and loan guarantee commitment limitations with nothing distinguishing
+    them; ADR 0018 defers the layer that could to #115.
+
+    #671 removed the paired form from both published contracts; #687 then removed the
+    unread `paired_amounts` field that kept computing it. A populated field nothing
+    reads presents as available, which made re-publishing the account claim the path of
+    least resistance. `match_amounts` is unchanged and still tested — #115 calls it
+    once it has an account model to name what each figure is.
     """
     return {
         "old_amounts": list(fc.old_amounts),
@@ -2096,7 +2098,7 @@ def cmd_compare(args: argparse.Namespace) -> None:
         output = json.dumps(diff_dict, indent=2)
 
     if args.output:
-        with open(args.output, "w") as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             f.write(output)
     else:
         print(output)

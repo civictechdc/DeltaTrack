@@ -1192,10 +1192,12 @@ def r1_reliability(key: dict, adjudicated: dict) -> dict:
     NO SCALAR INPUT EXISTS. A PASS requires committed pair-level evidence, which is why the
     `r1_role_agreement` parameter was removed rather than defaulted.
     """
-    # A48 -- the builder's own answer, not a re-derivation. `.get(..., True)` keeps a
-    # pre-A48 key meaning exactly what it meant before, so an older artifact is not silently
-    # reinterpreted as having fewer required routes than it was built with.
-    d_required = key.get("d_decision_route_required", True)
+    # A54 -- THE ONE EFFECTIVE-ROUTE OWNER. A48's `.get(..., True)` kept a pre-A48 key meaning
+    # exactly what it meant when built, which is correct for every key but the frozen
+    # confirmatory one: there it demands human answers on a route A27.3 had already made
+    # non-decision-bearing, so no completed review could ever satisfy it. The owner re-derives
+    # the budget from that key's OWN committed census and leaves its route bytes untouched.
+    d_required = _bo().effective_d_decision_required(key)
 
     by_base = {}
     for bid, record in key["stimuli"].items():
@@ -1518,7 +1520,7 @@ def heading_metrics(inputs: ScoreInputs) -> dict:
     # measured and agreed on nothing, which is empirical evidence this run never gathered.
     # `pooled` already drops a frame with no stimuli, so absence stays absence. The full D
     # census is untouched in the committed frames and in the decider's own budget reading.
-    d_required = inputs.oracle_key.get("d_decision_route_required", True)
+    d_required = _bo().effective_d_decision_required(inputs.oracle_key)
     frame_purposes = ((_bo().C_FRAME, _bo().PURPOSE_C_METRICS),)
     if d_required:
         frame_purposes += ((_bo().D_FRAME, _bo().PURPOSE_D_DECISION),)

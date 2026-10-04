@@ -86,7 +86,7 @@ Things worth knowing before running any of it:
   validation fixtures nor the report.
 - **Step 1 currently produces a nine-fixture diff you should not commit.** Six
   committee-report fixtures have drifted from their sources and are never rebuilt
-  from them ([#293](https://github.com/AgoraDMV/DeltaTrack/issues/293)); on the
+  from them ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)); on the
   current tree the rebuild regenerates `match_path` values as `null`, quietly
   dropping those accounts to the agency-scoped fallback. Committing that diff
   degrades the ground truth while looking like a refresh.
@@ -163,16 +163,6 @@ and open both reports ([TESTING.md](../TESTING.md#comparing-the-two-pipelines-by
 | `parity_table.py` | Print the PDF↔XML change-parity table for the four evidence bills — the snapshot [ADR 0014](../docs/decisions/0014-leveled-heading-tree-scope.md) records. Reporting only; `tests/test_pipeline_parity.py` is the gate that asserts the bands. |
 | `ugly_money_table.py <old.xml> <new.xml> -o <out>` | Emit a deliberately unstyled money-diff table for staffer validation (fidelity stripped so only the money diff is under test). |
 | `render_examples.py` | Regenerate the committed example HTML diffs and landing page under `examples/`. The only renderer of the published examples; CI deploys what it wrote, and `tests/test_committed_examples.py` fails if they're stale. |
-
-## Similarity-threshold audit prototypes
-
-One-off prototypes from the similarity-function investigation; kept for reproducibility.
-
-| Script | What it does |
-|--------|--------------|
-| `p1_similarity_fixtures.py` | P.1 — synthetic stress fixtures for the similarity function. |
-| `p2_catalog_survey.py` | P.2 — real-bill cliff survey. Requires BillTrax data (MySQL/container). |
-| `p3_prototypes.py` | P.3 — alternative similarity-function prototypes (normalize / Levenshtein / Jaccard). |
 
 ## Smoke test
 

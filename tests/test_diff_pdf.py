@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from deltatrack.diff_pdf import (
     _block_key,
-    _hunk_for_added,
-    _hunk_for_removed,
     diff_pdfs,
 )
 from deltatrack.parsers.pdf_anchors import Anchor
@@ -402,31 +400,6 @@ class TestAnchorLabeling:
         assert [a.text for a in diff.v2_anchors] == ["Front Matter", "SEC. 101"]
 
 
-class TestNumericClassification:
-    def test_dollar_amount_change_populates_amount_pairs(self):
-        v1 = [_page(2, (14, "SEC. 101. heading"), (15, "appropriated $281,358,000 for"))]
-        v2 = [_page(2, (14, "SEC. 101. heading"), (15, "appropriated $249,708,000 for"))]
-        h = diff_pdfs(v1, v2).hunks[0]
-        assert h.amount_pairs == ((281358000, 249708000),)
-
-    def test_no_amount_change_leaves_pairs_empty(self):
-        v1 = [_page(2, (14, "SEC. 101. heading"), (15, "the program shall be operated"))]
-        v2 = [_page(2, (14, "SEC. 101. heading"), (15, "the program may be operated"))]
-        h = diff_pdfs(v1, v2).hunks[0]
-        assert h.amount_pairs == ()
-
-    def test_unchanged_amount_preserved_alongside_changed_amount(self):
-        # When a hunk's body changes one amount but leaves another stable,
-        # both pairs survive — including the unchanged one. Renderer parity
-        # with the XML callout (which shows `$X → $X (+$0)` rows for stable
-        # amounts in modified sections).
-        v1 = [_page(2, (14, "SEC. 101. heading"), (15, "$100,000,000 of which $5,000,000 shall remain"))]
-        v2 = [_page(2, (14, "SEC. 101. heading"), (15, "$200,000,000 of which $5,000,000 shall remain"))]
-        h = diff_pdfs(v1, v2).hunks[0]
-        assert (100_000_000, 200_000_000) in h.amount_pairs
-        assert (5_000_000, 5_000_000) in h.amount_pairs
-
-
 class TestMovedClassification:
     def test_renumbered_section_at_same_position_classified_as_moved(self):
         # When a SEC. number changes but body is identical and it's at the
@@ -514,7 +487,6 @@ class TestAccountHeadingRename:
         hunks = diff_pdfs(v1, v2).hunks
         assert len(hunks) == 1
         assert hunks[0].change_type == "modified"
-        assert hunks[0].amount_pairs == ((1000, 1500),)
 
 
 class TestSecInlineSubsectionCollision:
@@ -584,32 +556,3 @@ class TestPdfDiffSummary:
         ]
         result = diff_pdfs(v1, v2)
         assert result.summary == {"modified": 1, "added": 1}
-
-
-class TestWholeItemAmounts:
-    """#86: whole-account added/removed PDF hunks must carry their dollar amounts.
-
-    Previously ``_hunk_for_added`` / ``_hunk_for_removed`` hardcoded
-    ``amount_pairs=()``, so a PDF-only added or removed account surfaced no money
-    at all. The builders now run ``match_amounts`` against the empty other side.
-    """
-
-    def test_added_hunk_carries_amounts(self):
-        block = _block(
-            Anchor(1, 1, "account", "NEW PROGRAM"),
-            (1, 1, "NEW PROGRAM"),
-            (1, 2, "For necessary expenses, $5,000,000."),
-        )
-        hunk = _hunk_for_added(block)
-        assert hunk.change_type == "added"
-        assert hunk.amount_pairs == ((None, 5000000),)
-
-    def test_removed_hunk_carries_amounts(self):
-        block = _block(
-            Anchor(1, 1, "account", "OLD PROGRAM"),
-            (1, 1, "OLD PROGRAM"),
-            (1, 2, "For necessary expenses, $5,000,000."),
-        )
-        hunk = _hunk_for_removed(block)
-        assert hunk.change_type == "removed"
-        assert hunk.amount_pairs == ((5000000, None),)

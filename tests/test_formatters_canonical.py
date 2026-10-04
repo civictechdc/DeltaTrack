@@ -473,7 +473,13 @@ def test_pdf_relocated_move_when_anchor_text_unchanged():
 def test_pdf_change_carries_no_deprecated_amounts_field():
     """#274: the export has exactly one money field. A second, changed-only list with
     nothing saying which is authoritative is what let a consumer read a fraction of
-    the money and report it confidently."""
+    the money and report it confidently.
+
+    Until #687 this fed the hunk a populated `amount_pairs` so the assertion showed the
+    canonical dropped pairs it was actually handed. That field is gone, so the input is
+    no longer expressible; the assertion still guards the canonical output itself, which
+    is the direction that can regress.
+    """
     hunk = PdfHunk(
         change_type="modified",
         v1_anchor=SEC_101,
@@ -482,7 +488,6 @@ def test_pdf_change_carries_no_deprecated_amounts_field():
         v2_range=(1, 1, 1, 5),
         v1_text="x",
         v2_text="y",
-        amount_pairs=((1000, 1500), (2000, 2000), (None, 500), (5000, None)),
     )
     diff = PdfDiff(hunks=(hunk,), v1_anchors=(SEC_101,), v2_anchors=(SEC_101,))
     canonical = pdf_diff_to_canonical(diff, **_pdf_meta())
@@ -509,7 +514,7 @@ def test_xml_canonical_validates_against_json_schema():
                 "old_text": "x",
                 "new_text": "y",
                 "section_number": "",
-                "financial": {"paired_amounts": [(100, 200)]},
+                "financial": {"old_amounts": [100], "new_amounts": [200], "amounts_changed": True},
             },
             {
                 "change_type": "added",
@@ -542,7 +547,7 @@ def _schema_probe_change() -> dict:
         "old_text": "x",
         "new_text": "y",
         "section_number": "",
-        "financial": {"paired_amounts": [(100, 200)]},
+        "financial": {"old_amounts": [100], "new_amounts": [200], "amounts_changed": True},
     }
 
 
@@ -935,7 +940,7 @@ def test_full_text_invalid_shape_rejected():
 
 def test_pdf_canonical_validates_against_json_schema():
     hunks = (
-        PdfHunk("modified", SEC_101, SEC_101, (1, 10, 1, 20), (2, 5, 2, 8), "x", "y", amount_pairs=((100, 200),)),
+        PdfHunk("modified", SEC_101, SEC_101, (1, 10, 1, 20), (2, 5, 2, 8), "x", "y"),
         PdfHunk("moved", SEC_101, SEC_201, (1, 10, 1, 20), (5, 1, 5, 12), "same", "same"),
         PdfHunk("modified", None, None, (3, 1, 3, 4), (3, 1, 3, 4), "a", "b"),
         PdfHunk("added", None, SEC_201, None, (5, 1, 5, 12), "", "new"),

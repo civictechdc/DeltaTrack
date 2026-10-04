@@ -277,13 +277,43 @@ def extract_archive(archive: Path, dest_dir: Path) -> None:
         zf.extractall(dest_dir)
 
 
+class ArchivesNotExtracted(Exception):
+    """A batch finished with at least one archive that never became a folder of bills.
+
+    Raised after every archive has been attempted, never during the batch: one bad
+    archive must not cost the healthy ones, which is what the broad ``except`` in
+    ``extract_archives`` is for. What it adds is the other half of that trade. Both
+    ceilings above refuse loudly inside ``extract_archive``, but the caller used to
+    log the refusal and return a shorter list, and nothing downstream can tell a
+    congress and bill type whose archive was refused from one that legitimately has no
+    bills -- so the run reported success over a corpus missing every bill that archive
+    held (#325). Carrying the failure out to the exit status is the direction this
+    repository already took for a skipped CSV row in ``fetch_bills.py download-all``.
+    """
+
+    def __init__(self, archives: list[str]) -> None:
+        self.not_extracted = list(archives)
+        super().__init__(
+            f"{len(self.not_extracted)} archive(s) were not extracted, so their bills are "
+            f"missing from the index: {', '.join(self.not_extracted)}. A ceiling refusal "
+            "means either the data or the ceiling needs raising; anything else is a bad "
+            "download to delete and re-fetch."
+        )
+
+
 def extract_archives(source: Path | str | None = None) -> list[Path]:
-    """Extract all ZIP archives in source, skipping existing folders."""
+    """Extract all ZIP archives in source, skipping existing folders.
+
+    Raises :class:`ArchivesNotExtracted` if any archive could not be extracted, after
+    attempting all of them -- so the batch keeps its resilience and the caller still
+    cannot mistake a partial corpus for a complete one (#325).
+    """
     source = resolve_destination(source)
     if not source.is_dir():
         raise ValueError(f"Source folder does not exist: {source}")
 
     extracted: list[Path] = []
+    not_extracted: list[str] = []
     archives = sorted(source.glob("*.zip"))
     total = len(archives)
 
@@ -301,10 +331,15 @@ def extract_archives(source: Path | str | None = None) -> list[Path]:
             if dest_dir.exists():
                 shutil.rmtree(dest_dir)
             print(f"{prefix} Failed {archive.name}: {exc}", file=sys.stderr)
+            # Recorded, not only logged: on a long run this line scrolls past, and an
+            # unattended one never reads it at all.
+            not_extracted.append(archive.name)
             continue
 
         extracted.append(dest_dir)
 
+    if not_extracted:
+        raise ArchivesNotExtracted(not_extracted)
     return extracted
 
 
@@ -553,6 +588,10 @@ def fetch_bill_archives(
 
     Each phase skips work that is already done: existing ZIPs, extracted folders,
     and bill ids already present in the index (when merging).
+
+    Raises :class:`ArchivesNotExtracted` once every phase has run, if any archive
+    could not be extracted: what did extract is still indexed, and what did not is
+    never handed back as a complete corpus (#325).
     """
     destination = resolve_destination(destination)
 
@@ -565,10 +604,19 @@ def fetch_bill_archives(
     )
 
     print("Phase 2/3: Extract archives", file=sys.stderr)
-    extract_archives(destination)
+    not_extracted: ArchivesNotExtracted | None = None
+    try:
+        extract_archives(destination)
+    except ArchivesNotExtracted as exc:
+        # Held rather than propagated here: every archive that DID extract still has to
+        # reach the index, and stopping at the end of phase 2 would discard work that
+        # succeeded on account of work that did not. Re-raised below, once the run has
+        # done everything it can, so the caller is never handed a partial corpus that
+        # looks complete.
+        not_extracted = exc
 
     print("Phase 3/3: Parse metadata into index", file=sys.stderr)
-    return parse_bill_archives(
+    records = parse_bill_archives(
         from_congress,
         to_congress,
         bill_types=bill_types,
@@ -576,7 +624,29 @@ def fetch_bill_archives(
         index=index,
         mode=mode,
     )
+    if not_extracted is not None:
+        raise not_extracted
+    return records
+
+
+def main() -> int:
+    """Run every phase over the hardcoded congress range; return the process exit code.
+
+    Nonzero when an archive was refused or would not open (#325). The bills of such an
+    archive are absent from the index while the phase-3 log for them reads like any
+    other congress and bill type with nothing new, so the status is the only signal a
+    scheduled job or a `fetch && <next step>` chain can act on.
+    """
+    try:
+        fetch_bill_archives(112, 119, index=BillIndex(DEFAULT_BILLS_DIR / "bills.csv"))
+    except ArchivesNotExtracted as exc:
+        # An actionable one-liner rather than a traceback: the fault is in the data or
+        # in a ceiling, not in this script. Same shape as fetch_bills.py's handler for
+        # CongressNotAvailable.
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    fetch_bill_archives(112, 119, index=BillIndex(DEFAULT_BILLS_DIR / "bills.csv"))
+    sys.exit(main())

@@ -30,6 +30,7 @@ import fetch_bill_archives
 from fetch_bill_archives import (
     MAX_MEMBER_COUNT,
     MAX_UNCOMPRESSED_BYTES,
+    ArchivesNotExtracted,
     archive_destination,
     archive_error_path,
     archive_extract_dir,
@@ -517,9 +518,12 @@ class TestExtractArchivesCacheCoherence:
         corrupt = tmp_path / "119-hr.zip"
         corrupt.write_bytes(b"not a zip")
 
-        extracted = extract_archives(tmp_path)
+        # The batch reports what it could not extract rather than returning a shorter
+        # list (#325); tests/test_fetch_bill_archives_run_status.py owns that contract.
+        # What is pinned here is that reporting it does not leave the debris behind.
+        with pytest.raises(ArchivesNotExtracted):
+            extract_archives(tmp_path)
 
-        assert extracted == []
         assert not archive_extract_dir(tmp_path, corrupt).exists()
 
     def test_a_failed_archive_does_not_abort_the_batch(self, tmp_path):
@@ -528,9 +532,11 @@ class TestExtractArchivesCacheCoherence:
         (tmp_path / "119-aaa.zip").write_bytes(b"not a zip")
         write_archive(tmp_path, "119-zzz")
 
-        extracted = extract_archives(tmp_path)
+        # Reported once the batch is over, never in place of it (#325): the healthy
+        # archive below is the whole point, and a bare raise would cost it.
+        with pytest.raises(ArchivesNotExtracted):
+            extract_archives(tmp_path)
 
-        assert [p.name for p in extracted] == ["119-zzz"]
         assert (tmp_path / "119-zzz" / "119-zzz-1.xml").exists()
         assert not (tmp_path / "119-aaa").exists()
 

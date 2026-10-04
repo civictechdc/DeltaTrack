@@ -1,7 +1,7 @@
 # Results: browser PDF backend bake-off + zero-egress proof
 
 - Status: **research, not a decision.** Input to the delivery-channel question
-  ([DeltaTrack#112](https://github.com/AgoraDMV/DeltaTrack/issues/112)) and to a future ADR.
+  ([DeltaTrack#112](https://github.com/civictechdc/DeltaTrack/issues/112)) and to a future ADR.
 - Spike run **2026-08-05** against the spec in [`README.md`](README.md), with metrics fixed
   in advance in [`PRE-REGISTRATION.md`](PRE-REGISTRATION.md).
 - **Adversarially audited 2026-08-05**, immediately after publication. The audit changed
@@ -266,7 +266,7 @@ A frozen protocol for that confirmatory run is proposed in
 # Original findings, as published 2026-08-05 (historical record)
 
 - Status: **research, not a decision.** Input to the delivery-channel question
-  ([DeltaTrack#112](https://github.com/AgoraDMV/DeltaTrack/issues/112)) and to a future ADR.
+  ([DeltaTrack#112](https://github.com/civictechdc/DeltaTrack/issues/112)) and to a future ADR.
 - Run 2026-08-05 against the spec in [`README.md`](README.md), with metrics fixed in
   advance in [`PRE-REGISTRATION.md`](PRE-REGISTRATION.md).
 - Reproduction: [`probes/`](probes/). Raw output: [`results/`](results/).

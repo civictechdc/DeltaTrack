@@ -3,7 +3,8 @@
 This is the in-process wrap of the existing PDF pipeline, with the inputs coming
 from uploaded bytes instead of files on disk:
 
-    extract_clean_pages()  (parsers.pdf_text)
+    extract_print_pages()  (parsers.pdf_text)   — both sides, before either is merged
+    merge_print_pages()    (parsers.pdf_text)   — own evidence first, sibling as fallback
     diff_pdfs()            (diff_pdf)
     pdf_full_text()        (parsers.pdf_text)   — both paths (full text + offsets)
     pdf_diff_to_canonical()(formatters.canonical) — both paths (JSON out / embedded)
@@ -22,7 +23,13 @@ from pathlib import Path
 from deltatrack.diff_pdf import PdfDiff, diff_pdfs
 from deltatrack.formatters.canonical import pdf_diff_to_canonical
 from deltatrack.formatters.diff_html import format_diff_html
-from deltatrack.parsers.pdf_text import Page, extract_clean_pages, pdf_full_text, pdf_full_text_print
+from deltatrack.parsers.pdf_text import (
+    Page,
+    extract_print_pages,
+    merge_print_pages,
+    pdf_full_text,
+    pdf_full_text_print,
+)
 
 
 class UnsupportedLayoutError(ValueError):
@@ -119,8 +126,23 @@ def _extract_and_diff(
         start_path.write_bytes(start_bytes)
         end_path.write_bytes(end_bytes)
 
-        old_pages = extract_clean_pages(start_path)
-        new_pages = extract_clean_pages(end_path)
+        # Read both documents before merging either, so each side can borrow the other's
+        # spellings for breaks its own text leaves open (#650). Two versions of one bill
+        # are near-identical, so a compound one version never happens to spell out
+        # unbroken is often spelled out in the other.
+        #
+        # Each side keeps its OWN evidence first and consults the sibling only where it
+        # is silent. Merging the two into one index and taking a majority would let the
+        # larger document overrule the smaller about its own text: if v1 writes
+        # `Non-Dedicated` and never `NonDedicated`, while v2 writes `NonDedicated` more
+        # often, a pooled majority renders both as `NonDedicated`. That corrupts v1,
+        # which was never ambiguous, and erases a real spelling change between the two
+        # versions, so the diff stops reporting a difference the documents have.
+        old_read = extract_print_pages(start_path)
+        new_read = extract_print_pages(end_path)
+        old_evidence, new_evidence = old_read.evidence(), new_read.evidence()
+        old_pages = merge_print_pages(old_read, old_evidence.then(new_evidence))
+        new_pages = merge_print_pages(new_read, new_evidence.then(old_evidence))
 
     if _is_unnumbered_layout(old_pages) or _is_unnumbered_layout(new_pages):
         raise UnsupportedLayoutError(_DECLINE_MESSAGE)

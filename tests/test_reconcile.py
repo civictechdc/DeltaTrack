@@ -204,8 +204,10 @@ class TestReconcileMoves:
 
 @pytest.mark.slow
 class TestReconcileIntegration:
-    HR2882_V4 = "tests/corpus/118-hr-2882/4_engrossed-amendment-senate.xml"
-    HR2882_V5 = "tests/corpus/118-hr-2882/5_engrossed-amendment-house.xml"
+    # fixture_path, not a repo-relative literal: the literal resolves against the CWD, so off
+    # the repo root these silently skipped rather than failing (#404).
+    HR2882_V4 = fixture_path("118-hr-2882", "4_engrossed-amendment-senate.xml")
+    HR2882_V5 = fixture_path("118-hr-2882", "5_engrossed-amendment-house.xml")
 
     @staticmethod
     def _skip_if_missing(*paths):
@@ -218,15 +220,13 @@ class TestReconcileIntegration:
                 pytest.skip(f"Test XML not found: {p}")
 
     def test_udall_sections_moved(self):
-        from pathlib import Path
-
         from deltatrack.bill_tree import normalize_bill
         from deltatrack.diff_bill import diff_bills
 
         self._skip_if_missing(self.HR2882_V4, self.HR2882_V5)
 
-        old = normalize_bill(Path(self.HR2882_V4))
-        new = normalize_bill(Path(self.HR2882_V5))
+        old = normalize_bill(self.HR2882_V4)
+        new = normalize_bill(self.HR2882_V5)
         result = diff_bills(old, new)
 
         moved = [c for c in result.changes if c.change_type == "moved"]

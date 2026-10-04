@@ -85,7 +85,7 @@ Alternatives:
   static-HTML, and local-app channels remain in. The pick among the survivors — driven
   also by the SAA/CAO install-gate reality above — is a separate open question to be
   decided on its own, tracked in
-  [DeltaTrack#112](https://github.com/AgoraDMV/DeltaTrack/issues/112).
+  [DeltaTrack#112](https://github.com/civictechdc/DeltaTrack/issues/112).
 - The server-rendered web channel is not invalidated as a way to serve the UI, or to
   work with already-public bills where no user-provided content is transmitted. But a
   hosted path that ingests uploaded bills **is noncompliant with this rule**, whoever

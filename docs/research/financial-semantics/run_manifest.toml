@@ -1,0 +1,73 @@
+# Verified run manifest — financial classifier stress test
+# Reproduced by: uv run python docs/research/financial-semantics/stress_test_analysis.py
+# Run date: 2026-08-26
+# stress_test_analysis.py checks these digests at startup and fails if bytes differ.
+
+[run]
+date = "2026-08-26"
+command = "uv run python docs/research/financial-semantics/stress_test_analysis.py"
+parser_revision = "ea9192b13e4f9a63b08e8719c42cab59ff9052cf"
+classifier_sha256 = "99f5fac26d025b4961dd23b5b29171910e1dccf20b65fd605e4e054296896073"
+
+[[bills]]
+bill = "118-hr-4366"
+label = "MILCON/VA FY2024 approp"
+version = "1_reported-in-house.xml"
+source_sha256 = "37ef6e4705d6d0ff0153d793b34e2e78f0e49c272e229868265761896d419124"
+dollar_nodes = 72
+unknowns = 2
+fp_risks = 2
+
+[[bills]]
+bill = "119-hr-1"
+label = "Big Beautiful Bill (reconciliation)"
+version = "1_reported-in-house.xml"
+source_sha256 = "c837c7f62418fda8c22d19a11a40c12f99261e144634509b5e0c042242630858"
+dollar_nodes = 221
+unknowns = 132
+fp_risks = 1
+
+[[bills]]
+bill = "118-s-2226"
+label = "NDAA FY2024 (authorization)"
+version = "1_reported-in-senate.xml"
+source_sha256 = "b5125aa6a9b922ff082b66799ac93e9c029d02cab313fabd56b6b7ae8e9e4238"
+dollar_nodes = 97
+unknowns = 72
+fp_risks = 0
+
+[[bills]]
+bill = "115-hr-2"
+label = "2018 Farm Bill (authorization)"
+version = "1_introduced-in-house.xml"
+source_sha256 = "498a090a23abe6a29c794aa9c568fae6e50950e8eedff4fbaeb507461d8a7fa5"
+dollar_nodes = 89
+unknowns = 53
+fp_risks = 0
+
+[[bills]]
+bill = "117-hr-3684"
+label = "IIJA (infrastructure auth)"
+version = "1_introduced-in-house.xml"
+source_sha256 = "5fea8b096d1d9def82d700619e2066570affe7c7eaecb7b3cf35ef181c6bfcf3"
+dollar_nodes = 99
+unknowns = 57
+fp_risks = 0
+
+[[bills]]
+bill = "117-hr-5376"
+label = "IRA (reconciliation)"
+version = "1_reported-in-house.xml"
+source_sha256 = "71dff916e7ff88cde74c450f882217db4212215577c1ae0f40ef5369822cca98"
+dollar_nodes = 612
+unknowns = 157
+fp_risks = 4
+
+[[bills]]
+bill = "118-hr-4368"
+label = "CJS FY2024 approp"
+version = "1_reported-in-house.xml"
+source_sha256 = "2343d3ec886326baa93270bdf05aba28f297c1d1a0974b0fce25038c5a23e01b"
+dollar_nodes = 84
+unknowns = 2
+fp_risks = 5

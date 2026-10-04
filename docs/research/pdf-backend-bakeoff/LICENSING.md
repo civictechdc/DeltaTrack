@@ -103,7 +103,8 @@ WASM binary to a congressional office is conveying the work, and the AGPL's sour
 provision obligations attach to conveyance regardless of §13. Reaching for the §13
 argument would be answering a question nobody asked.
 
-The obligation would also **pass downstream to BillTrax** (ADR 0005), which is the more
+The obligation would also **pass downstream to any tool that consumes DeltaTrack's
+output** (ADR 0005), which is the more
 consequential half: a licensing choice made here for DeltaTrack's convenience becomes a
 constraint on a separate product's distribution. That is exactly the kind of decision
 that should be made deliberately by the maintainer rather than absorbed as a side effect

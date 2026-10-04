@@ -191,7 +191,6 @@ class TestComputeFinancialChange:
         assert result.amounts_changed is True
         assert result.old_amounts == (1876875000,)
         assert result.new_amounts == (2022775000,)
-        assert result.paired_amounts == ((1876875000, 2022775000),)
 
     def test_amounts_unchanged(self):
         result = compute_financial_change(
@@ -210,7 +209,6 @@ class TestComputeFinancialChange:
         assert result.amounts_changed is True
         assert result.old_amounts == ()
         assert result.new_amounts == (2022775000,)
-        assert result.paired_amounts == ((None, 2022775000),)
 
     def test_removed_section_with_amounts(self):
         result = compute_financial_change(
@@ -283,16 +281,15 @@ class TestFinancialChangeToDict:
     def test_serialize(self):
         """Exact dict, so a field ADDED back is as red as a field lost (#671).
 
-        `paired_amounts` is populated on the dataclass here and must still not appear
-        in the output: the pairing is computed, it is simply not published. Written as
-        an equality rather than a `not in` for that reason -- `not in` would pass just
-        as well if the serializer had quietly stopped emitting `old_amounts` too.
+        Written as an equality rather than a `not in` for that reason -- `not in` would
+        pass just as well if the serializer had quietly stopped emitting `old_amounts`
+        too. #687 removed `paired_amounts` from the dataclass entirely, so this now
+        guards against a paired field reappearing on either side of the serializer.
         """
         fc = FinancialChange(
             old_amounts=(1876875000,),
             new_amounts=(2022775000,),
             amounts_changed=True,
-            paired_amounts=((1876875000, 2022775000),),
         )
         result = financial_change_to_dict(fc)
         assert result == {
@@ -307,7 +304,6 @@ class TestFinancialChangeToDict:
             old_amounts=(),
             new_amounts=(5000000,),
             amounts_changed=True,
-            paired_amounts=((None, 5000000),),
         )
         result = financial_change_to_dict(fc)
         assert result["old_amounts"] == []
@@ -1048,8 +1044,10 @@ class TestCbpAccountIsNotCutByItsOwnAmendmentNotes:
         have gone vacuous rather than red -- ``change.get("amount_entries") or []`` is
         ``[]`` for every change once nothing writes it. It is deleted rather than
         adapted, because it added nothing here: on the PDF path the export field was
-        built by ``_extract_amount_pairs``, which is ``tuple(match_amounts(...))`` over
-        the very texts this asserts on. The pairing IS the guarantee.
+        built by ``match_amounts`` over the very texts this asserts on, so it restated
+        this assertion's own subject. The pairing IS the guarantee. (#687 later removed
+        the unread hunk field and the wrapper that fed it; this calls ``match_amounts``
+        directly, which is unchanged.)
         """
         change = self._cbp_change(canonical)
         assert change is not None, "no change carries the CBP appropriation; the assertions here would be vacuous"
