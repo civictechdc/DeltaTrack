@@ -1,13 +1,16 @@
 """Guardrails on the triggers of the workflows that own a required status check.
 
-Four properties are pinned here: that the test suite runs when a commit lands on the
+Five properties are pinned here: that the test suite runs when a commit lands on the
 integration branch (#412), that both required checks answer the merge_group event so
 a merge queue can complete a merge (#416), that every module carrying a @slow test
 is named by some workflow, since the marker alone makes a gate runnable but never run,
-and that every workflow command able to resolve the dependency graph asserts the
+that every workflow command able to resolve the dependency graph asserts the
 committed lockfile itself (#678), since the tests and the required vulnerability audit
 have to agree about what is being tested, and these steps run under
-``if: !cancelled()`` so no command can rely on an earlier one having stopped the job.
+``if: !cancelled()`` so no command can rely on an earlier one having stopped the job,
+and that the slow tier's hand-maintained partition stays a partition (#672) -- no module
+listed explicitly by two pytest invocations, and every `CI_SLOW_MODULES` entry
+explicitly selected by a slow step.
 
 
 Nothing ran the test suite when a commit landed on ``develop``, so a broken integration
@@ -37,6 +40,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+
+from tests.conftest import CI_SLOW_MODULES
 
 WORKFLOWS = Path(__file__).parent.parent / ".github" / "workflows"
 WORKFLOW = WORKFLOWS / "ci.yml"
@@ -105,12 +110,15 @@ def test_required_checks_report_to_a_merge_queue(filename: str, context: str) ->
 def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     """The required `test` context must survive any job rename or resize.
 
-    The workflow now has multiple independent jobs (one non-matrix: `lint-format`,
-    six matrix jobs: `fast-tests`, `browser-tests`, `external-validation`,
-    `corpus-gates`, `packaging-gate`, `remaining-slow`). Each matrix job reports
-    one context per leg (e.g., `fast-tests (3.12)`). The aggregator job named
-    exactly `test` needs ALL of them, runs unconditionally, and fails unless every
-    job succeeded.
+    The workflow now has multiple independent jobs (two non-matrix: `lint-format`
+    and `cwd-independence`; six matrix jobs: `fast-tests`, `browser-tests`,
+    `external-validation`, `corpus-gates`, `packaging-gate`, `remaining-slow`).
+    Each matrix job reports one context per leg (e.g., `fast-tests (3.12)`). The
+    aggregator job named exactly `test` needs ALL of them, runs unconditionally,
+    and fails unless every job succeeded.
+
+    `cwd-independence` is non-matrix: it varies the working directory, not the
+    interpreter.
 
     Each pinned property fails silently without the other: without `if: always()`
     a skipped dependency skips the aggregator too (no verdict at all), and without
@@ -140,9 +148,10 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     )
     needs = aggregator.get("needs")
     needs = [needs] if isinstance(needs, str) else list(needs or [])
-    # The aggregator must need all 7 jobs: 1 non-matrix + 6 matrix
+    # The aggregator must need all 8 jobs: 2 non-matrix + 6 matrix
     expected_jobs = {
         "lint-format",
+        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",
@@ -303,7 +312,7 @@ def test_ci_matrix_jobs_pin_the_interpreter_they_claim_to_test() -> None:
 
 
 def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
-    """The seven leaf jobs must not depend on each other.
+    """The eight leaf jobs must not depend on each other.
 
     Issue #364 exists because independent checks were serialized in a single job.
     The parallel architecture requires that each leaf job runs independently --
@@ -311,11 +320,12 @@ def test_leaf_jobs_have_no_inter_job_dependencies() -> None:
     A `needs:` edge between leaf jobs would reintroduce the serialization #364 fixed.
 
     This guard is deliberately narrow: it does not forbid `needs:` globally (the
-    aggregator legitimately uses it). It only forbids `needs:` on the seven leaf jobs.
+    aggregator legitimately uses it). It only forbids `needs:` on the eight leaf jobs.
     """
     workflow = _workflow()
     leaf_jobs = {
         "lint-format",
+        "cwd-independence",
         "fast-tests",
         "browser-tests",
         "external-validation",
@@ -1269,4 +1279,147 @@ def test_failure_report_titles_and_explains_each_condition(
     assert wrong_phrase not in body, (
         f"PARITY_OUTCOME={parity_outcome!r} filed a body describing the OTHER condition "
         f"({wrong_phrase!r}), which sends the reader after the wrong cause: {body!r}"
+    )
+
+
+# --- The hand-maintained slow-tier partition ------------------------------------
+# The slow tier is divided between CI jobs by listing every module by name in `ci.yml`,
+# and that partition is restated a second time as `CI_SLOW_MODULES` in tests/conftest.py.
+# Neither copy was derived from anything, and neither was checked (#672). The drift this
+# invites had already happened when the issue was written: one module was listed in two
+# jobs and ran eight times per CI run.
+#
+# `test_every_slow_module_is_run_by_a_workflow` above is the existing guard and it is
+# one-directional by design -- it catches a module that runs NOWHERE. It cannot catch a
+# module listed by TWO invocations, and it says nothing about the second copy. The two
+# guards below close those two directions.
+#
+# What is deliberately NOT done here: deriving `CI_SLOW_MODULES` from `ci.yml`, the other
+# remedy #672 floats. Every module's skips are watched regardless, by the default group in
+# tests/conftest.py (#721); the named rosters only route a skip to the allowlist that
+# documents it. Deriving the tuple would re-route the slow-step modules it omits onto
+# `ALLOWED_CI_SLOW_SKIPS`, which is a change to how skips are classified, not a
+# de-duplication. So the claim is verified in one direction only: everything the tuple
+# names must be explicitly selected by a slow step.
+
+
+def _slow_marker_selected(command: str) -> bool:
+    """True when `-m ...` selects the slow tier, rather than merely mentioning it.
+
+    The fast step's marker is `not slow and not browser`, which contains the word and
+    means the opposite. Reading for the bare word would classify it as a slow step; it
+    names no modules today, so nothing would go wrong yet, which is exactly the kind of
+    latent wrongness that surfaces the first time someone adds an argument to it.
+    """
+    match = re.search(r"-m\s+(\"[^\"]*\"|'[^']*'|\S+)", command)
+    if match is None:
+        return False
+    expression = match.group(1).strip("\"'")
+    return "slow" in expression and "not slow" not in expression
+
+
+def _module_invocations(directory: Path, *, slow_only: bool = False) -> dict[str, list[str]]:
+    """Every module CI lists explicitly, mapped to the pytest invocations that name it.
+
+    One entry per invocation, so a module named by two jobs -- or twice inside one
+    command -- has two. That per-invocation granularity is the whole point:
+    `_modules_run_by_workflows` returns a SET, which is what makes it structurally
+    unable to see a duplicate, and a duplicate is the defect that actually occurred.
+
+    `slow_only` narrows to invocations that actually select the slow tier, which is the
+    membership rule `CI_SLOW_MODULES` states for itself.
+
+    Reuses the same four filters as that function, via `_logical_commands`, so a module
+    named in a shell comment or inside the prose of an issue-filing step is excluded here
+    on identical terms.
+    """
+    invocations: dict[str, list[str]] = {}
+    for path in _workflow_files(directory):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for job_id, job in (workflow.get("jobs") or {}).items():
+            for step in (job or {}).get("steps") or []:
+                block = (step or {}).get("run")
+                if not isinstance(block, str):
+                    continue
+                for command in _logical_commands(block):
+                    if not _INVOKES_PYTEST.search(command):
+                        continue
+                    if slow_only and not _slow_marker_selected(command):
+                        continue
+                    for module in _TEST_MODULE_ARGUMENT.findall(command):
+                        invocations.setdefault(module, []).append(f"{path.name}:{job_id}")
+    return invocations
+
+
+def test_no_module_is_run_by_two_ci_invocations() -> None:
+    """No module is listed explicitly by more than one pytest invocation.
+
+    The partition has to be a partition. A module in two jobs runs once per leg of each,
+    which for a four-interpreter matrix is eight runs of the same file per CI run, and
+    nothing in the repository reported it -- the existing coverage guard is satisfied by
+    one naming and does not count them.
+
+    The wasted minutes are not the harm; the duplicated file took under three seconds.
+    It is the tell. A hand-maintained partition restated in two files drifts, and this is
+    what it looks like when it does, so the guard is on the shape rather than the cost.
+
+    Scoped to explicit module arguments, so it does not claim each module runs once
+    across all of CI: the cwd-independence job deliberately reruns the non-browser suite
+    by directory from another working directory (#721).
+    """
+    duplicated = {module: sites for module, sites in sorted(_module_invocations(WORKFLOWS).items()) if len(sites) > 1}
+    assert duplicated == {}, (
+        "these modules are named by more than one pytest invocation, so each runs once per "
+        "leg of every job that names it:\n" + "\n".join(f"  {module}: {sites}" for module, sites in duplicated.items())
+    )
+
+
+def test_every_ci_slow_module_is_named_by_a_slow_step() -> None:
+    """`CI_SLOW_MODULES` means what its comment says: named by a slow CI step.
+
+    The tuple is the second copy of the partition, and its membership rule was a claim
+    about `ci.yml` that nothing checked. Each member's @slow tests reach the interpreter
+    matrix only because a step selecting the slow marker names the module explicitly, so
+    this keeps them on the legs they were enrolled for. (The cwd-independence job also runs
+    them, once, unmatrixed; that is not the coverage this roster stands for.)
+    `test_every_slow_module_is_run_by_a_workflow` cannot see the loss: a module still
+    named by a step whose marker stopped selecting the slow tier counts as run there.
+
+    Asserted in one direction only. A slow-step module absent from the tuple still has its
+    skips watched, under another group's allowlist; requiring an equality would re-route
+    those skips onto `ALLOWED_CI_SLOW_SKIPS`, which is a classification decision rather
+    than a partition check.
+    """
+    named_by_slow_step = {Path(module).name for module in _module_invocations(WORKFLOWS, slow_only=True)}
+    orphaned = sorted(entry for entry in CI_SLOW_MODULES if Path(entry).name not in named_by_slow_step)
+    assert orphaned == [], (
+        "CI_SLOW_MODULES claims these are named by a slow CI step, and no slow step names "
+        f"them, so their @slow tests have lost their matrix coverage: {orphaned}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("marker_expression", "selects_slow"),
+    [
+        ("-m slow", True),
+        ('-m "not slow and not browser"', False),
+        ("-m browser", False),
+        ("", False),
+    ],
+)
+def test_slow_marker_reading_is_not_fooled_by_a_negated_marker(marker_expression: str, selects_slow: bool) -> None:
+    """The fast step's marker contains the word `slow` and means the opposite.
+
+    The guard above is only as good as this reading, and the live workflows cannot
+    exercise the trap: the fast step is the one spelled `not slow and not browser`, and it
+    names no modules, so a helper that read the bare word would classify it as a slow step
+    and nothing would go red. The wrongness would surface the first time someone added a
+    module argument to that step, which is precisely when nobody is looking for it.
+
+    Pinned directly for that reason, on the four marker spellings these workflows actually
+    use. The mutation is a one-word simplification to `"slow" in expression`.
+    """
+    command = f"uv run pytest -v {marker_expression} tests/test_example.py".strip()
+    assert _slow_marker_selected(command) is selects_slow, (
+        f"marker {marker_expression!r} was read as selects_slow={not selects_slow}"
     )
