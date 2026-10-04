@@ -80,7 +80,7 @@ from pathlib import Path
 import pytest
 
 from deltatrack.compare.pdf import UnsupportedLayoutError, compare_pdfs
-from deltatrack.version_stems import label_from_stem
+from deltatrack.version_stems import version_identity_from_filename
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR
 
 pytestmark = pytest.mark.slow
@@ -133,8 +133,8 @@ def baseline_record(old_path: Path, new_path: Path) -> dict:
         canonical = compare_pdfs(
             old_path.read_bytes(),
             new_path.read_bytes(),
-            start_label=label_from_stem(old_path.stem),
-            end_label=label_from_stem(new_path.stem),
+            start_label=version_identity_from_filename(old_path.name, fallback="Start version").label,
+            end_label=version_identity_from_filename(new_path.name, fallback="End version").label,
         )
     except UnsupportedLayoutError as refusal:
         return {"declined": True, "message": refusal.message}

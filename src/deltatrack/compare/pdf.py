@@ -30,6 +30,7 @@ from deltatrack.parsers.pdf_text import (
     pdf_full_text,
     pdf_full_text_print,
 )
+from deltatrack.version_stems import version_identity_from_filename
 
 
 class UnsupportedLayoutError(ValueError):
@@ -247,11 +248,22 @@ def compare_pdfs(
     *,
     start_label: str = "Start version",
     end_label: str = "End version",
+    start_version_number: int | None = None,
+    end_version_number: int | None = None,
 ) -> dict:
     """Diff two PDF documents and return canonical diff JSON (see schema/canonical-diff.md)."""
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
     congress = _derive_congress(new_pages)
-    return _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress)
+    return _build_canonical(
+        pdf_diff,
+        old_pages,
+        new_pages,
+        start_label,
+        end_label,
+        congress=congress,
+        start_version_number=start_version_number,
+        end_version_number=end_version_number,
+    )
 
 
 def compare_pdfs_html(
@@ -277,9 +289,8 @@ def compare_pdfs_html(
     it stays until the document itself carries the printed text plus the join
     points needed to reflow it.
 
-    Pass the version numbers when the caller knows the bill's legislative ordinals
-    (rendering a numbered corpus file, not an upload) so the report heads itself
-    identically to the XML report for the same pair.
+    Callers holding files or filenames take the labels and ordinals from
+    :func:`version_identity_from_filename`, so one file is one version on every surface.
     """
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
     congress = _derive_congress(new_pages)
@@ -290,3 +301,27 @@ def compare_pdfs_html(
     )
     title = _derive_bill_title(canonical)
     return format_diff_html(canonical, title, display_canonical=display_canonical)
+
+
+def compare_pdf_files_html(
+    old_path: Path,
+    new_path: Path,
+    *,
+    start_label: str | None = None,
+    end_label: str | None = None,
+) -> str:
+    """Standalone HTML report for two bill PDF files, named as their filenames name them.
+
+    The PDF counterpart of ``compare.xml.compare_xml_files_html``. A label passed here
+    replaces the filename's label only; the ordinal still comes from the filename.
+    """
+    old = version_identity_from_filename(old_path.name, fallback="Start version")
+    new = version_identity_from_filename(new_path.name, fallback="End version")
+    return compare_pdfs_html(
+        old_path.read_bytes(),
+        new_path.read_bytes(),
+        start_label=old.label if start_label is None else start_label,
+        end_label=new.label if end_label is None else end_label,
+        start_version_number=old.ordinal,
+        end_version_number=new.ordinal,
+    )

@@ -7,9 +7,11 @@ from pathlib import Path
 import pytest
 
 from deltatrack.version_stems import (
+    VersionIdentity,
     label_from_stem,
     local_versions,
     resolve_version_file,
+    version_identity_from_filename,
     version_number_from_stem,
 )
 
@@ -76,6 +78,42 @@ class TestLabelFromStem:
     def test_a_prefix_that_is_not_an_ordinal_is_not_stripped(self):
         """Mirrors version_number_from_stem: what cannot become an ordinal is not one."""
         assert label_from_stem("³_reported-in-house") == "³_reported-in-house"
+
+
+class TestVersionIdentityFromFilename:
+    """The one filename-to-version rule every surface calls (#692).
+
+    The stem rules are pinned above; these pin what a filename adds on top: the
+    extension, path components an uploader can send, and the fallback.
+    """
+
+    def test_a_numbered_corpus_name_gives_label_and_ordinal(self):
+        assert version_identity_from_filename("1_reported-in-house.pdf", fallback="Start") == VersionIdentity(
+            "reported-in-house", 1
+        )
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "../../etc/2_engrossed-in-house.XML",
+            "C:\\Users\\a\\2_engrossed-in-house.xml",
+            "/abs/2_engrossed-in-house.pdf",
+        ],
+    )
+    def test_path_components_are_dropped_before_anything_is_read(self, name):
+        """An upload's filename is client-supplied; only its last component names a version."""
+        assert version_identity_from_filename(name, fallback="End") == VersionIdentity("engrossed-in-house", 2)
+
+    @pytest.mark.parametrize("name", ["BILLS-118hr4366enr.xml", "enr_enrolled-bill.pdf", "chairs-mark.pdf"])
+    def test_a_name_without_an_ordinal_prefix_keeps_its_label_and_no_ordinal(self, name):
+        """A GPO stage code (`enr`, `ih`) is a legislative stage, not this bill's local
+        ordinal, and an arbitrary draft name has none: both stay unknown, label intact."""
+        identity = version_identity_from_filename(name, fallback="Start")
+        assert identity == VersionIdentity(name.rsplit(".", 1)[0], None)
+
+    @pytest.mark.parametrize("name", [None, "", "   ", ".pdf", "dir/"])
+    def test_a_name_that_yields_nothing_falls_back(self, name):
+        assert version_identity_from_filename(name, fallback="Start version") == VersionIdentity("Start version", None)
 
 
 class TestLocalVersions:

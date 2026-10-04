@@ -70,7 +70,7 @@ from deltatrack.similarity import (
     move_candidates,
     text_similarity,
 )
-from deltatrack.version_stems import label_from_stem
+from deltatrack.version_stems import version_identity_from_filename
 
 ChangeType = Literal["added", "removed", "modified", "moved"]
 
@@ -1320,21 +1320,15 @@ def render_pdf_diff_html(
 ) -> str:
     """Render an HTML diff page for two PDF paths.
 
-    Delegates to ``compare.pdf.compare_pdfs_html`` — the same pipeline
-    the web app uses — so the report carries the full-bill text view, in-page
-    search, section TOC, and embedded export. Title and Congress are derived
-    from the PDF front matter; labels default to the (de-prefixed) filename
-    stems. Imported lazily to avoid a circular import (compare.pdf imports
-    diff_pdf).
+    Delegates to ``compare.pdf.compare_pdf_files_html``, the entry point the published
+    examples render through, so the report carries the full-bill text view, in-page
+    search, section TOC, and embedded export, and names the versions as the filenames
+    do. A label given here replaces the filename's label, not its ordinal. Imported
+    lazily to avoid a circular import (compare.pdf imports diff_pdf).
     """
-    from deltatrack.compare.pdf import compare_pdfs_html
+    from deltatrack.compare.pdf import compare_pdf_files_html
 
-    return compare_pdfs_html(
-        v1_pdf.read_bytes(),
-        v2_pdf.read_bytes(),
-        start_label=v1_label if v1_label is not None else label_from_stem(v1_pdf.stem),
-        end_label=v2_label if v2_label is not None else label_from_stem(v2_pdf.stem),
-    )
+    return compare_pdf_files_html(v1_pdf, v2_pdf, start_label=v1_label, end_label=v2_label)
 
 
 def render_pdf_diff_json(
@@ -1359,11 +1353,15 @@ def render_pdf_diff_json(
     """
     from deltatrack.compare.pdf import compare_pdfs
 
+    old = version_identity_from_filename(v1_pdf.name, fallback="Start version")
+    new = version_identity_from_filename(v2_pdf.name, fallback="End version")
     return compare_pdfs(
         v1_pdf.read_bytes(),
         v2_pdf.read_bytes(),
-        start_label=v1_label if v1_label is not None else label_from_stem(v1_pdf.stem),
-        end_label=v2_label if v2_label is not None else label_from_stem(v2_pdf.stem),
+        start_label=old.label if v1_label is None else v1_label,
+        end_label=new.label if v2_label is None else v2_label,
+        start_version_number=old.ordinal,
+        end_version_number=new.ordinal,
     )
 
 
