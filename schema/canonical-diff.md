@@ -12,21 +12,23 @@ Top-level field: `schema_version: "3.1"`.
 
 ## Changelog
 
-- **3.1** — Added optional top-level `join_points: { v1, v2 } | null` field (#653):
-  where the printer broke a word across a line inside `full_text`, and whether
-  reflowing that break drops the hyphen. Additive, backward compatible.
+- **3.1** — Added optional top-level `print_breaks: { v1, v2 } | null` (#653): where
+  the printer broke a line inside each whole-word line of `full_text`, so a consumer
+  can lay the text out as printed. Additive, backward compatible.
 
-  It exists because the answer is not recoverable from the text. GPO breaks a
-  hyphenated compound at its own hyphen and breaks a long word at a syllable, and
-  prints the two identically — `INTEL-` / `LIGENCE` reflows to `INTELLIGENCE`,
-  `McKinney-` / `Vento` to `McKinney-Vento`, and nothing in the printed line says
-  which. The producer decides it from how the document spells that word elsewhere
-  (#650) and now carries the decision instead of discarding it. Before this field,
-  three consumers each re-derived the rule and three disagreed.
+  It exists because the printed layout is not recoverable from the whole-word text,
+  and the PDF pipeline used to ship a second, print-faithful document beside this one
+  for its own report, with different text and offsets. The report and the exported
+  document disagreed on most change spans, so what a reader downloaded was not what
+  they were looking at. One document now serves both: `full_text` stays whole-word,
+  and the report applies `print_breaks` to show the printed page.
 
-  Present only where `full_text` carries printed line breaks. The XML pipeline has
-  none, and the PDF pipeline's reflowed rendering has already applied them, so both
-  ship `null`.
+  Whether a break hyphen belongs to the word is decided by the producer, not left to
+  the consumer. GPO breaks a hyphenated compound at its own hyphen and breaks a long
+  word at a syllable, and prints the two identically: `INTEL-` / `LIGENCE` is
+  `INTELLIGENCE`, `McKinney-` / `Vento` is `McKinney-Vento`. The producer decides it
+  from how the document spells that word elsewhere (#650). Before this field, three
+  consumers each re-derived the rule and three disagreed.
 
   Also added optional top-level `full_text_layout`, which states how `full_text` is
   laid out (`"numbered_lines"` or `"paragraphs"`) and writes the rule for each into
@@ -141,9 +143,9 @@ Top-level field: `schema_version: "3.1"`.
     "v1": "TITLE I—…\n\nSECTION 101. …",
     "v2": "TITLE I—…\n\nSECTION 101. …"
   },
-  "join_points": {                          // optional, v3.1+
-    "v1": { "at": [1274, 331, 402], "drop": "101" },
-    "v2": { "at": [1274, 331, 402], "drop": "101" }
+  "print_breaks": {                         // optional, v3.1+ (PDF only)
+    "v1": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" },
+    "v2": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" }
   },
   "changes":  [ /* ChangeObject, see below */ ]
 }
@@ -182,26 +184,31 @@ A 3.0 document has no `full_text_layout`. Its PDF text is `"numbered_lines"` and
 its XML text `"paragraphs"`, which a reader may take from `versions.v2.source`;
 that fallback exists for those documents only.
 
-### `join_points` (optional, v3.1+)
+### `print_breaks` (optional, v3.1+)
 
-Per side, the places a printed word break falls inside `full_text[side]`, and what
-reflowing does at each. `null` (or absent) when the text carries no printed line
-breaks to reflow — the XML pipeline always, and the PDF pipeline's reflowed
-rendering, which has applied them already.
+Per side, every place the printer broke a line inside one of `full_text`'s
+whole-word lines (`numbered_lines` layout). The PDF pipeline joins a word the printer
+broke across lines, including across a page, back onto one line; this records each
+join so a consumer can undo it and show the printed page. `null` (or absent) when the
+text was not printed: the XML pipeline always.
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `at` | int[] | **Delta-encoded** character offsets into `full_text[side]`. The first entry is absolute; each later entry is the increment from its predecessor. Each resolved offset addresses the break hyphen ending a printed line. |
-| `drop` | string | One `0`/`1` per entry in `at`, same order. `1` = reflowing removes the hyphen (a syllable break the printer introduced). `0` = the hyphen is the word's own and stays. |
+| `at` | int[] | **Delta-encoded** character offsets into `full_text[side]`: the first entry is absolute, each later one the increment from its predecessor. Each resolved offset is where the continuing printed line's text begins. |
+| `drop` | string | One `0`/`1` per break, same order. `1`: the printer's hyphen was removed when the word was joined, so it is restored before the break. `0`: the hyphen is the word's own and is already in the text. |
+| `line` | (int \| null)[] | The continuing printed line's line number, same order; `null` when unnumbered. |
+| `seam` | string | One `0`/`1` per break, same order. `1`: the continuing line is the first line of the next page. |
 
-To reflow, walk the resolved offsets in order and join each hyphen's line to the
-next: delete the hyphen when `drop` is `1`, delete nothing when it is `0`, and in
-**both** cases insert no space. Applying every point reproduces the whole-word text
-exactly.
+To lay a side out as printed, walk its breaks in order. At each resolved offset,
+insert `-` when `drop` is `1`, then a row boundary (`\n`), or a page separator (`\n\n`)
+when `seam` is `1`, then the continuing line's number column as `numbered_lines`
+defines it. A seam break moves its page boundary up to the break, so the page
+separator that follows the joined line in `full_text` becomes a single `\n`. A span
+starting at a break offset moves after the inserted text; one ending there stays
+before it.
 
-Delta-encoded, and `drop` a bitstring rather than an array of objects, because the
-naive shape costs about five times as much: on 118-hr-8752 the encoded form is ~2%
-of the rendered text against ~11% for one object per point.
+Delta-encoded, with the per-break flags as bitstrings, because one object per break
+costs several times as much.
 
 **Decided per compared pair.** A break that a version's own text cannot settle is
 settled by how the other version in the comparison spells the word: own evidence
@@ -212,7 +219,7 @@ same holds for the whole-word `full_text` the PDF pipeline ships.
 
 **Why the producer carries this.** Whether a break hyphen belongs to the word is not
 decidable from the break — see the 3.1 changelog entry. A consumer may apply these
-points; it may not re-infer them.
+breaks; it may not re-infer them.
 
 ### `tree` (optional, v1.3+)
 

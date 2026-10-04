@@ -701,9 +701,9 @@ def _rejoin_page_seam_breaks(
     join now happens once, upstream, for every consumer.
 
     Consequence worth knowing: the continuation's printed line on the next page is no
-    longer covered by any merged line's range, so `pdf_full_text_print` has no offset
-    entry for it. A change citing that coordinate cannot be located and gets a null
-    span, the same degradation that already applied to unnumbered lines.
+    longer a merged line of its own, so a change citing that coordinate cannot be
+    located and gets a null span, the same degradation that already applied to
+    unnumbered lines.
     """
     for i in range(len(merged) - 1):
         while merged[i] and merged[i + 1] and _is_break_tail(merged[i][-1].text):
@@ -800,6 +800,11 @@ def extract_clean_pages(pdf_path: Path) -> list[Page]:
     return merge_print_pages(read, read.evidence())
 
 
+#: Width of the line-number column `_render_lines` puts before each row: the number
+#: right-aligned in 5, then 2 spaces (schema/canonical-diff.md, `numbered_lines`).
+_GUTTER_WIDTH = 7
+
+
 def _render_lines(lines: tuple[Line, ...]) -> tuple[list[str], list[tuple[int, int]]]:
     """Render a page's lines as `{number:>5}  {content}` rows (five-space pad
     when unnumbered). Returns the rendered rows and, parallel to them, each
@@ -822,8 +827,8 @@ def pdf_full_text(pages: list[Page]) -> tuple[str, dict[tuple[int, int], tuple[i
     This is the canonical full text: it backs the embedded ``diff.json`` and the
     export, and its offsets anchor change spans. Each line gets a 5-char
     right-aligned line-number prefix (blank padding when unnumbered); pages are
-    separated by a blank line. For the print-faithful reading view, see
-    ``pdf_full_text_print``.
+    separated by a blank line. Where the printer broke these lines, see
+    ``pdf_print_breaks``.
 
     Returns (text, line_offsets) where line_offsets maps (page_number,
     line_number) -> (start_char, end_char) in `text`. Only lines with a
@@ -847,93 +852,73 @@ def pdf_full_text(pages: list[Page]) -> tuple[str, dict[tuple[int, int], tuple[i
     return "\n".join(chunks), line_offsets
 
 
-def print_join_points(pages: list[Page]) -> list[tuple[int, bool]]:
-    """(printed-row index, whether the hyphen was dropped) for every join, document order.
+def pdf_print_breaks(pages: list[Page]) -> dict[str, object]:
+    """Where the printer broke a line inside a whole-word line of `pdf_full_text`.
 
-    A consumer of the print-faithful text -- the on-screen full-bill view, its in-browser
-    search -- has to reflow it to match what the reader means by a word, and today each
-    such consumer re-derives the rule and gets a different answer (#650, #653). This is
-    the producer's answer, carried as data so the consumer applies it instead of guessing.
+    The document carries these so a consumer can lay the whole-word text out as it was
+    printed without re-deciding anything (#653): whether a break hyphen was the
+    printer's or the word's own is decided here from the document's evidence (#650),
+    and a consumer that re-derived it from the printed line would get it wrong.
 
-    Row indices are into the pages' printed lines flattened in document order, because a
-    join can cross a page boundary (`_rejoin_page_seam_breaks`) and `Page.merge_ranges`
-    is page-local. A break the merge left open, such as one continued by running-header
-    chrome (#535), has no point.
+    One entry per join, in document order, as parallel fields:
 
-    Read back out of the merged text rather than recorded at merge time: the two outcomes
-    differ in exactly one character, the one at ``len(acc) - 1``, so the merged line says
-    unambiguously which was chosen and there is no second copy of the decision to drift.
+      ``at``    offset in the `pdf_full_text` rendering where the continuation's text
+                begins, DELTA-encoded (first absolute, each later one the increment)
+      ``drop``  ``1`` where the printer's hyphen was removed by the join, ``0`` where
+                the hyphen is the word's own and is still in the text
+      ``line``  the continuation's printed line number, or None when unnumbered
+      ``seam``  ``1`` where the continuation is the first line of the next page
+
+    Read back out of the merged lines rather than recorded at merge time: the two
+    outcomes differ in exactly the character at ``len(acc) - 1``, so the merged line
+    says unambiguously which was chosen and there is no second copy of the decision to
+    drift. A break the merge left open, such as one continued by running-header chrome
+    (#535), has no entry. Pages without printed lines (built directly in tests) carry
+    none.
     """
-    flat_print = [line.text for page in pages for line in page.print_lines]
-    flat_merged = [line.text for page in pages for line in page.lines]
-    points: list[tuple[int, bool]] = []
-    cursor = 0
-    for merged in flat_merged:
-        acc = flat_print[cursor]
-        cursor += 1
-        while acc != merged:
-            points.append((cursor - 1, merged[len(acc) - 1] != "-"))
-            acc = (acc if merged[len(acc) - 1] == "-" else acc[:-1]) + flat_print[cursor]
-            cursor += 1
-    return points
+    flat_print = [(i, line) for i, page in enumerate(pages) for line in page.print_lines]
+    offsets: list[int] = []
+    drop: list[str] = []
+    line_numbers: list[int | None] = []
+    seam: list[str] = []
+    if flat_print:
+        cursor = 0
+        base = 0
+        for i, page in enumerate(pages):
+            if i > 0:
+                base += 1  # the blank line between pages
+            _rows, spans = _render_lines(page.lines)
+            for merged, (row_start, _row_end) in zip(page.lines, spans):
+                page_of, first = flat_print[cursor]
+                acc = first.text
+                cursor += 1
+                while acc != merged.text:
+                    dropped = merged.text[len(acc) - 1] != "-"
+                    acc = acc[:-1] if dropped else acc
+                    cont_page, cont = flat_print[cursor]
+                    offsets.append(base + row_start + _GUTTER_WIDTH + len(acc))
+                    drop.append("1" if dropped else "0")
+                    line_numbers.append(cont.line_number)
+                    seam.append("1" if cont_page != page_of else "0")
+                    acc += cont.text
+                    page_of = cont_page
+                    cursor += 1
+            base += spans[-1][1] + 1 if spans else 0
+    deltas = [off - (offsets[i - 1] if i else 0) for i, off in enumerate(offsets)]
+    return {"at": deltas, "drop": "".join(drop), "line": line_numbers, "seam": "".join(seam)}
 
 
-def pdf_full_text_print(pages: list[Page]) -> tuple[str, dict[tuple[int, int], tuple[int, int]]]:
-    """Render the *original printed* lines (pre-merge) for the full-bill view.
+def pdf_full_text_print(pages: list[Page]) -> str:
+    """Render the *original printed* lines (pre-merge), as `pdf_full_text` renders the
+    merged ones: every printed line number, and the printer's word breaks left split.
 
-    Unlike `pdf_full_text`, this keeps every printed line number and the GPO
-    line breaks (soft-hyphenated words stay split, as on the page), so the
-    on-screen text matches a printed copy line for line.
-
-    Returns (text, line_offsets) where line_offsets maps (page_number,
-    **merged** line_number) -> (start_char, end_char) in this print-faithful
-    text, spanning all the printed lines the merged line was built from. Keying
-    by the merged line number (via `Page.merge_ranges`) lets change spans —
-    which are expressed in merged-line coordinates — land on the right printed
-    lines when fed to pdf_diff_to_canonical(..., line_offsets=...).
+    Independent of `pdf_print_breaks`, so it is the reference that applying the carried
+    breaks to `pdf_full_text` has to reproduce.
     """
     chunks: list[str] = []
-    line_offsets: dict[tuple[int, int], tuple[int, int]] = {}
-    base = 0
     for i, page in enumerate(pages):
         if i > 0:
             chunks.append("")  # blank line between pages
-            base += 1
-        rows, spans = _render_lines(page.print_lines)
-        for line, (start_idx, end_idx) in zip(page.lines, page.merge_ranges):
-            if line.line_number is None:
-                continue
-            start = base + spans[start_idx][0]
-            end = base + spans[end_idx - 1][1]
-            line_offsets[(page.page_number, line.line_number)] = (start, end)
+        rows, _spans = _render_lines(page.print_lines)
         chunks.extend(rows)
-        base += spans[-1][1] + 1 if spans else 0
-    return "\n".join(chunks), line_offsets
-
-
-def pdf_print_join_points(pages: list[Page]) -> dict[str, object]:
-    """Join points as the canonical carries them: where to reflow, and what to do there.
-
-    ``at`` is the character offset, in the text `pdf_full_text_print` renders, of the
-    break hyphen ending a printed line; ``drop`` says whether reflowing removes it.
-    A consumer joins the hyphen's line to the next by deleting the hyphen when ``drop``
-    and deleting nothing when not, and in both cases inserting no space.
-
-    ``at`` is DELTA-encoded (first offset absolute, each later one the increment from its
-    predecessor) and ``drop`` is a bitstring rather than a per-point object. On
-    118-hr-8752 that is ~1% of the document's size against ~28% for an array of objects,
-    which is the difference between carrying this and arguing about whether to.
-    """
-    row_ends: list[int] = []
-    base = 0
-    for i, page in enumerate(pages):
-        if i > 0:
-            base += 1  # the blank line between pages
-        _rows, spans = _render_lines(page.print_lines)
-        row_ends.extend(base + end for _start, end in spans)
-        base += spans[-1][1] + 1 if spans else 0
-
-    points = print_join_points(pages)
-    offsets = [row_ends[row] - 1 for row, _dropped in points]
-    deltas = [off - (offsets[i - 1] if i else 0) for i, off in enumerate(offsets)]
-    return {"at": deltas, "drop": "".join("1" if dropped else "0" for _row, dropped in points)}
+    return "\n".join(chunks)

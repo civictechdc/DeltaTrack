@@ -189,7 +189,7 @@ def xml_diff_to_canonical(
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
         "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
-        "join_points": None,  # XML has no printed line breaks to reflow (#650)
+        "print_breaks": None,  # XML text has no printed line breaks
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state)
@@ -410,14 +410,13 @@ def pdf_diff_to_canonical(
     v2_version_number: int | None = None,
     full_text: dict | None = None,
     line_offsets: dict | None = None,
-    join_points: dict | None = None,
+    print_breaks: dict | None = None,
 ) -> dict:
     """Produce canonical JSON from a PdfDiff.
 
-    `join_points`, when provided, carries per side the places the printer broke a word
-    across a line in `full_text` and whether reflowing drops the hyphen. It ships only
-    with the print-faithful rendering; the merged text is already reflowed. See
-    `parsers.pdf_text.pdf_print_join_points` and schema/canonical-diff.md.
+    `print_breaks`, when provided, carries per side where the printer broke a line of
+    the whole-word `full_text`, so a consumer can lay it out as printed. See
+    `parsers.pdf_text.pdf_print_breaks` and schema/canonical-diff.md.
 
     `line_offsets`, when provided, is a dict with keys "v1" and "v2" each
     mapping (page_number, line_number) -> (start_char, end_char) into the
@@ -452,7 +451,7 @@ def pdf_diff_to_canonical(
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
         "full_text_layout": "numbered_lines" if normalized_full_text is not None else None,
-        "join_points": join_points if normalized_full_text is not None else None,
+        "print_breaks": print_breaks if normalized_full_text is not None else None,
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _pdf_hunk_to_canonical(h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2)
@@ -784,9 +783,9 @@ def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
     source = canonical["versions"]["v1"]["source"]
     full_text = canonical.get("full_text")
-    # The join reads only THIS canonical's tree — on PDF the caller also builds a
-    # print-faithful display_canonical whose full_text offsets differ; joining
-    # change spans (from here) against that tree would misfile silently (#172).
+    # The join reads only THIS canonical's tree, in the whole-word text's offsets. The
+    # full-bill view moves spans onto the printed layout (`print_layout`); joining
+    # change spans against a tree in the other offsets would misfile silently (#172).
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
     join_index = {side: _span_join_index(tree.get(side) or []) for side in ("v1", "v2")}
     v2_lookup = _v2_label_lookup(tree.get("v2") or [])

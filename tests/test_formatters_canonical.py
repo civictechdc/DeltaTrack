@@ -31,10 +31,10 @@ from deltatrack.formatters.canonical import (
 )
 from deltatrack.parsers.pdf_anchors import Anchor
 
-# Local pin (guard against unintended bumps). 3.1 added the optional `join_points`
-# field (#653); 3.0 removed `amount_entries` (#671), so a change object carries no
-# money field at all; 2.0 had removed the deprecated `amounts` before it (#274); 1.3
-# added the optional `tree` field (#108).
+# Local pin (guard against unintended bumps). 3.1 added the optional `print_breaks`,
+# `full_text_layout` and `bill.title` (#653); 3.0 removed `amount_entries` (#671), so
+# a change object carries no money field at all; 2.0 had removed the deprecated
+# `amounts` before it (#274); 1.3 added the optional `tree` field (#108).
 SCHEMA_VERSION = "3.1"
 
 

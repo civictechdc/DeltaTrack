@@ -7,6 +7,7 @@ from uploaded bytes instead of files on disk:
     merge_print_pages()    (parsers.pdf_text)   — own evidence first, sibling as fallback
     diff_pdfs()            (diff_pdf)
     pdf_full_text()        (parsers.pdf_text)   — both paths (full text + offsets)
+    pdf_print_breaks()     (parsers.pdf_text)   — both paths (where the printer broke it)
     pdf_diff_to_canonical()(formatters.canonical) — both paths (JSON out / embedded)
     format_diff_html()     (formatters.diff_html) — HTML path (canonical → report)
 
@@ -28,8 +29,7 @@ from deltatrack.parsers.pdf_text import (
     extract_print_pages,
     merge_print_pages,
     pdf_full_text,
-    pdf_full_text_print,
-    pdf_print_join_points,
+    pdf_print_breaks,
 )
 
 
@@ -175,24 +175,18 @@ def _build_canonical(
     end_label: str,
     *,
     congress: str = "",
-    printed: bool = False,
     start_version_number: int | None = None,
     end_version_number: int | None = None,
 ) -> dict:
     """Canonical diff JSON (see schema/canonical-diff.md) with full text + per-change spans.
 
-    Shared by both entry points: it is the JSON response on the JSON path and
-    the embedded ``diff.json`` (driving export) on the HTML path. With
-    ``printed=True`` the full text and spans use the print-faithful rendering
-    (`pdf_full_text_print`) instead of the merged whole-word text — that variant
-    drives only the on-screen full-bill view, not the embed/export.
+    Shared by both entry points: it is the JSON response on the JSON path and the
+    document the report renders from, and embeds, on the HTML path. The full text is
+    whole-word; `print_breaks` carries where the printer broke it, so the report lays
+    out the printed page from this document alone (#653).
     """
-    render = pdf_full_text_print if printed else pdf_full_text
-    v1_text, v1_offsets = render(old_pages)
-    v2_text, v2_offsets = render(new_pages)
-    # Only the print-faithful text needs them: the merged text is already reflowed, so
-    # there is nothing left in it for a consumer to join (#650, #653).
-    join_points = {"v1": pdf_print_join_points(old_pages), "v2": pdf_print_join_points(new_pages)} if printed else None
+    v1_text, v1_offsets = pdf_full_text(old_pages)
+    v2_text, v2_offsets = pdf_full_text(new_pages)
     bill_type, bill_number, title = _bill_identity(new_pages)
     return pdf_diff_to_canonical(
         pdf_diff,
@@ -206,7 +200,7 @@ def _build_canonical(
         v2_version_number=end_version_number,
         full_text={"v1": v1_text, "v2": v2_text},
         line_offsets={"v1": v1_offsets, "v2": v2_offsets},
-        join_points=join_points,
+        print_breaks={"v1": pdf_print_breaks(old_pages), "v2": pdf_print_breaks(new_pages)},
     )
 
 
@@ -270,17 +264,9 @@ def compare_pdfs_html(
 ) -> str:
     """Diff two PDF documents and return a standalone HTML report.
 
-    The canonical dict is computed and handed to the renderer so the report can
-    carry the full-bill view and an embedded ``diff.json`` for export. The
-    renderer builds its own view from that document, so the cards and the
-    embedded ``diff.json`` cannot come from different sources.
-
-    A second document is also built from the same diff with the printer's line
-    breaks and handed over as ``display_canonical``, because the on-screen
-    full-bill view renders from it while the embedded ``diff.json`` keeps the
-    merged whole-word text. That is the upstream fork DeltaTrack#653 removes, and
-    it stays until the document itself carries the printed text plus the join
-    points needed to reflow it.
+    One document is built and handed to the renderer, which renders every view from
+    it and embeds it, so the report and the ``diff.json`` it exports cannot disagree.
+    The printed-page view is laid out from the document's `print_breaks` (#653).
 
     Pass the version numbers when the caller knows the bill's legislative ordinals
     (rendering a numbered corpus file, not an upload) so the report heads itself
@@ -289,8 +275,6 @@ def compare_pdfs_html(
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
     congress = _derive_congress(new_pages)
     numbers = {"start_version_number": start_version_number, "end_version_number": end_version_number}
-    canonical = _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, **numbers)
-    display_canonical = _build_canonical(
-        pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, printed=True, **numbers
+    return format_diff_html(
+        _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, **numbers)
     )
-    return format_diff_html(canonical, display_canonical=display_canonical)

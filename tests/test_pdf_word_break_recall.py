@@ -83,15 +83,19 @@ import pytest
 from lxml import etree
 from pdf_corpus import cached_pages, dual_format_versions
 
-from deltatrack.parsers.pdf_text import Page, pdf_full_text, pdf_full_text_print, pdf_print_join_points
+from deltatrack.formatters.print_layout import print_side
+from deltatrack.parsers.pdf_text import (
+    Page,
+    extract_print_pages,
+    merge_print_pages,
+    pdf_full_text,
+    pdf_full_text_print,
+    pdf_print_breaks,
+)
 
 pytestmark = pytest.mark.slow
 
 _RESIDUALS_PATH = Path(__file__).parent / "data" / "pdf" / "word_break_residuals.json"
-
-#: Width of the line-number gutter `pdf_full_text_print` renders before each row
-#: (`{number:>5}` plus two spaces), which a reflowing consumer skips past.
-_GUTTER_WIDTH = 7
 
 #: A word token as this check counts one: starts alphanumeric, may carry internal
 #: hyphens, apostrophes and periods (``E-Verify``, ``U.S.C.``, ``Nation's``).
@@ -393,54 +397,37 @@ def test_printed_word_breaks_reflow_to_real_words(bill: str, xml_path: Path, pdf
     _CASES,
     ids=[f"{b}/{p.stem}" for b, _x, p in _CASES],
 )
-def test_join_points_reproduce_the_reflowed_text(bill: str, xml_path: Path, pdf_path: Path) -> None:
-    """The carried join points are sufficient: applying them reflows the printed text
-    into exactly the whole-word text, with no re-derivation.
+def test_print_breaks_lay_out_the_printed_page_exactly(bill: str, xml_path: Path, pdf_path: Path) -> None:
+    """Applying the carried breaks to the whole-word text reproduces the printed page,
+    character for character.
 
-    This is the property #653 asks the document to have — "a consumer may derive by
-    applying facts the document carries" — and it is the reason the field exists. If
-    the offsets, their delta encoding, or the drop bits were wrong in any way, the
-    reconstruction would diverge from `pdf_full_text`, which is computed independently
-    of them.
-
-    Whitespace-insensitive because the two renderings gutter differently: the printed
-    one keeps every source line's own margin number, the reflowed one keeps the merged
-    line's. The characters that matter — which words exist, and which hyphens are in
-    them — are what this compares.
+    The report shows the printed page from one document (#653): `full_text` is whole-word
+    and the renderer lays it out with `print_breaks`. The reference, `pdf_full_text_print`,
+    is rendered straight from the printed lines and owes nothing to the breaks, so a wrong
+    offset, hyphen bit, line number or seam bit shows up as a difference.
     """
     pages = cached_pages(pdf_path)
-    printed, _ = pdf_full_text_print(pages)
-    reflowed_expected, _ = pdf_full_text(pages)
-    points = pdf_print_join_points(pages)
-
+    breaks = pdf_print_breaks(pages)
     # Each join consumes one printed line, so the count is fixed independently of the
-    # points. Enrolled prints are set without syllable hyphenation and can carry none.
-    joins = sum(len(p.print_lines) - len(p.lines) for p in pages)
-    assert len(points["at"]) == len(points["drop"]) == joins
+    # breaks. Enrolled prints are set without syllable hyphenation and can carry none.
+    assert len(breaks["at"]) == sum(len(p.print_lines) - len(p.lines) for p in pages)
+    whole_word, _ = pdf_full_text(pages)
+    assert print_side(whole_word, breaks).text == pdf_full_text_print(pages)
 
-    offsets: list[int] = []
-    running = 0
-    for delta in points["at"]:
-        running += delta
-        offsets.append(running)
 
-    assert all(printed[o] == "-" for o in offsets), "a join point does not address a hyphen"
-
-    out: list[str] = []
-    prev = 0
-    for offset, bit in zip(offsets, points["drop"]):
-        out.append(printed[prev:offset])
-        if bit == "0":
-            out.append("-")  # the word's own hyphen survives the join
-        # Skip to the continuation: past this row's newline, past the blank line that
-        # separates pages when the break sits at a page seam, then past the gutter.
-        prev = printed.index("\n", offset) + 1
-        if printed[prev : prev + 1] == "\n":
-            prev += 1
-        prev += _GUTTER_WIDTH
-    out.append(printed[prev:])
-
-    assert "".join("".join(out).split()) == "".join(reflowed_expected.split())
+def test_print_breaks_hold_under_the_pair_evidence_a_comparison_merges_with() -> None:
+    """A comparison merges each version with the other's spellings as a fallback (#650),
+    so its whole-word text can differ from a single-document merge, and the breaks are
+    read back from whichever merge ran. Both sides of a real pair must still lay out
+    exactly.
+    """
+    _bill, _xml, old_pdf = _CASES[0]
+    new_pdf = next(p for b, _x, p in _CASES if b == _bill and p != old_pdf)
+    old_read, new_read = extract_print_pages(old_pdf), extract_print_pages(new_pdf)
+    for read, sibling in ((old_read, new_read), (new_read, old_read)):
+        pages = merge_print_pages(read, read.evidence().then(sibling.evidence()))
+        whole_word, _ = pdf_full_text(pages)
+        assert print_side(whole_word, pdf_print_breaks(pages)).text == pdf_full_text_print(pages)
 
 
 # --- Negative controls -----------------------------------------------------------

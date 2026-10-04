@@ -120,6 +120,5 @@ _CASES = dual_format_versions()
 def test_every_corpus_print_follows_the_rule(pdf_path):
     """Real prints, both renderings: no line text carries a newline, no number overflows."""
     pages = cached_pages(pdf_path)
-    for render, printed in ((pdf_full_text, False), (pdf_full_text_print, True)):
-        text, _ = render(pages)
-        assert _read_numbered_lines(text) == _expected(pages, printed)
+    assert _read_numbered_lines(pdf_full_text(pages)[0]) == _expected(pages, printed=False)
+    assert _read_numbered_lines(pdf_full_text_print(pages)) == _expected(pages, printed=True)

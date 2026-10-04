@@ -31,7 +31,7 @@
       "anyOf": [{ "type": "null" }, { "enum": ["numbered_lines", "paragraphs"] }],
       "description": "Optional (v3.1+) how full_text is laid out. numbered_lines: each row is a 5-character right-aligned line number (5 spaces when unnumbered), 2 spaces, then the text; an empty row separates pages. paragraphs: plain text, an empty row is a paragraph break. Null exactly when full_text is."
     },
-    "join_points": {
+    "print_breaks": {
       "anyOf": [
         { "type": "null" },
         {
@@ -39,12 +39,12 @@
           "required": ["v1", "v2"],
           "additionalProperties": false,
           "properties": {
-            "v1": { "$ref": "#/$defs/JoinPoints" },
-            "v2": { "$ref": "#/$defs/JoinPoints" }
+            "v1": { "$ref": "#/$defs/PrintBreaks" },
+            "v2": { "$ref": "#/$defs/PrintBreaks" }
           }
         }
       ],
-      "description": "Optional (v3.1+) places a printed word break falls inside full_text, and whether reflowing drops the hyphen. Null when full_text carries no printed line breaks (the XML pipeline, and the reflowed PDF rendering)."
+      "description": "Optional (v3.1+) where the printer broke a line inside a whole-word line of full_text, so a consumer can lay the text out as printed. Null when full_text was not printed (the XML pipeline)."
     },
     "tree": {
       "anyOf": [
@@ -102,20 +102,30 @@
     }
   },
   "$defs": {
-    "JoinPoints": {
+    "PrintBreaks": {
       "type": "object",
-      "required": ["at", "drop"],
+      "required": ["at", "drop", "line", "seam"],
       "additionalProperties": false,
       "properties": {
         "at": {
           "type": "array",
           "items": { "type": "integer" },
-          "description": "DELTA-encoded character offsets into full_text for this side: the first entry is absolute, each later entry is the increment from its predecessor. Each resolved offset addresses the break hyphen that ends a printed line."
+          "description": "DELTA-encoded character offsets into full_text for this side: the first entry is absolute, each later entry is the increment from its predecessor. Each resolved offset is where the text of the printed line that continues the word begins."
         },
         "drop": {
           "type": "string",
           "pattern": "^[01]*$",
-          "description": "One character per entry in `at`, in the same order. '1' means reflowing removes the hyphen (a syllable break the printer introduced); '0' means it is kept (the word's own hyphen). Either way the two lines join with no space between them."
+          "description": "One character per break, same order as `at`. '1': the printer's hyphen was removed from full_text and is restored before the break. '0': the hyphen is the word's own and is already in full_text."
+        },
+        "line": {
+          "type": "array",
+          "items": { "type": ["integer", "null"] },
+          "description": "The continuing printed line's line number, same order as `at`; null when the line is unnumbered."
+        },
+        "seam": {
+          "type": "string",
+          "pattern": "^[01]*$",
+          "description": "One character per break, same order as `at`. '1': the continuing line is the first line of the next page."
         }
       }
     },

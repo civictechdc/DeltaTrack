@@ -985,15 +985,15 @@ _FIND_PAGE_SRC = (
 )
 
 
-def _find_fixture_texts() -> tuple[str, str, dict]:
-    """(printed display text, merged whole-word text, that page's join points).
+def _find_fixture_texts() -> tuple[str, dict]:
+    """(merged whole-word text, that page's print breaks).
 
-    All three come from the producer the browser has to agree with — `pdf_full_text`
-    is the reflowed ground truth the flattened search string must reproduce, so the
-    fixture can't encode a belief about GPO's line-joining that the parser doesn't
-    share. Since #650 the join points travel with the text for the same reason: the
-    browser applies the producer's decision rather than re-deriving one, so a fixture
-    that withheld them would be testing a document the pipeline never emits.
+    Both come from the producer the browser has to agree with — `pdf_full_text` is the
+    whole-word ground truth the flattened search string must reproduce, so the fixture
+    can't encode a belief about GPO's line-joining that the parser doesn't share. The
+    report lays the printed page out from the breaks (#653), and the browser applies
+    the producer's hyphen decisions rather than re-deriving them, so a fixture that
+    withheld them would be testing a document the pipeline never emits.
 
     The page is merged with its OWN evidence, exactly as `extract_clean_pages` does.
     """
@@ -1003,16 +1003,14 @@ def _find_fixture_texts() -> tuple[str, str, dict]:
         _merge_print_lines,
         _parse_print_lines,
         pdf_full_text,
-        pdf_full_text_print,
-        pdf_print_join_points,
+        pdf_print_breaks,
     )
 
     print_lines = _parse_print_lines(_FIND_PAGE_SRC.rstrip("\n"))
     merged, ranges = _merge_print_lines(print_lines, BreakEvidence.from_print_lines([print_lines]))
     page = Page(1, tuple(merged), tuple(print_lines), tuple(ranges))
-    printed_text, _ = pdf_full_text_print([page])
     merged_text, _ = pdf_full_text([page])
-    return printed_text, merged_text, pdf_print_join_points([page])
+    return merged_text, pdf_print_breaks([page])
 
 
 def _render_find_report() -> str:
@@ -1024,8 +1022,8 @@ def _render_find_report() -> str:
     """
     from deltatrack.formatters.diff_html import format_diff_html
 
-    printed_text, _, join_points = _find_fixture_texts()
-    start = printed_text.index("vehicles")
+    merged_text, breaks = _find_fixture_texts()
+    start = merged_text.index("vehicles")
     canonical = {
         "schema_version": "3.1",
         "bill": {"type": "hr", "number": 8752, "congress": 118},
@@ -1034,8 +1032,8 @@ def _render_find_report() -> str:
             "v2": {"label": "Enrolled", "version_number": 2, "source": "pdf"},
         },
         "summary": {"added": 0, "removed": 0, "modified": 1},
-        "full_text": {"v1": "", "v2": printed_text},
-        "join_points": {"v1": {"at": [], "drop": ""}, "v2": join_points},
+        "full_text": {"v1": "", "v2": merged_text},
+        "print_breaks": {"v1": {"at": [], "drop": "", "line": [], "seam": ""}, "v2": breaks},
         "changes": [
             {
                 "id": "c0",
@@ -1162,7 +1160,7 @@ def test_find_agrees_with_the_parser_merged_text(chromium, tmp_path):
     """
     import re as _re
 
-    _, merged_text, _joins = _find_fixture_texts()
+    merged_text, _breaks = _find_fixture_texts()
     # Windows stay inside one merged line. Each merged line is already whole-word
     # (the parser rejoined its soft hyphens), so this pins the de-hyphenation
     # contract without asserting how the JS joins one display line to the next.
@@ -1197,8 +1195,8 @@ def test_find_rejoins_a_word_broken_across_a_page(chromium, tmp_path):
         PrintPages,
         _parse_print_lines,
         merge_print_pages,
-        pdf_full_text_print,
-        pdf_print_join_points,
+        pdf_full_text,
+        pdf_print_breaks,
     )
 
     page_one = _parse_print_lines(
@@ -1207,7 +1205,7 @@ def test_find_rejoins_a_word_broken_across_a_page(chromium, tmp_path):
     page_two = _parse_print_lines("1 ices to remain available until expended")
     read = PrintPages((tuple(page_one), tuple(page_two)), ({}, {}))
     pages = merge_print_pages(read, read.evidence())
-    printed_text, _ = pdf_full_text_print(pages)
+    whole_word, _ = pdf_full_text(pages)
     canonical = {
         "schema_version": "3.1",
         "bill": {"type": "hr", "number": 8752, "congress": 118},
@@ -1216,8 +1214,8 @@ def test_find_rejoins_a_word_broken_across_a_page(chromium, tmp_path):
             "v2": {"label": "Enrolled", "version_number": 2, "source": "pdf"},
         },
         "summary": {"added": 0, "removed": 0, "modified": 0},
-        "full_text": {"v1": "", "v2": printed_text},
-        "join_points": {"v1": {"at": [], "drop": ""}, "v2": pdf_print_join_points(pages)},
+        "full_text": {"v1": "", "v2": whole_word},
+        "print_breaks": {"v1": {"at": [], "drop": "", "line": [], "seam": ""}, "v2": pdf_print_breaks(pages)},
         "changes": [],
     }
     report = tmp_path / "seam_report.html"

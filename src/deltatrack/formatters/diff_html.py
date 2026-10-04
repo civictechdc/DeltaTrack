@@ -19,6 +19,7 @@ from html import escape
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.print_layout import printed_document
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.palette import root_block
 
@@ -370,11 +371,11 @@ def _build_sidebar(
         f"{_build_change_groups(view, order_map)}\n"
         "</div>"
     )
-    full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
     # The tree builder owns the navigation outright (#462). It also renders the
     # "no sections" empty state, so a canonical carrying full text but no usable tree
-    # still gets a pane saying so rather than silently losing the navigation.
-    toc_html = _build_toc_from_tree(tree_v2 or [], full_text_v2) if full_text_v2 else None
+    # still gets a pane saying so rather than silently losing the navigation. Gated on
+    # `_has_full_bill`, the one gate every full-bill control shares.
+    toc_html = _build_toc_from_tree(tree_v2 or [], canonical["full_text"]["v2"]) if _has_full_bill(canonical) else None
     toc_pane = "" if toc_html is None else f'<div class="sidebar-toc" hidden>{toc_html}</div>'
     return f'<nav class="sidebar">\n{changes_pane}\n{toc_pane}\n</nav>'
 
@@ -492,28 +493,6 @@ def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = Non
 def _has_full_bill(canonical: dict | None) -> bool:
     """Full-bill view is available only when the canonical carries v2 full text."""
     return bool(canonical and (canonical.get("full_text") or {}).get("v2"))
-
-
-def _join_dispositions(side: dict | None) -> dict[int, bool]:
-    """Resolve one side's `join_points` into {offset of break hyphen: drops the hyphen}.
-
-    `at` is delta-encoded (see schema/canonical-diff.md): the first entry is absolute
-    and each later one is the increment from its predecessor. Absent or malformed input
-    yields {}, which leaves the reader with the printed text unreflowed rather than
-    reflowed wrongly.
-    """
-    if not side:
-        return {}
-    offsets = side.get("at") or []
-    drop = side.get("drop") or ""
-    if len(offsets) != len(drop):
-        return {}
-    out: dict[int, bool] = {}
-    running = 0
-    for delta, bit in zip(offsets, drop):
-        running += delta
-        out[running] = bit == "1"
-    return out
 
 
 def _full_text_is_guttered(canonical: dict) -> bool:
@@ -698,7 +677,7 @@ def _removed_appendix_html(removed: list[dict], v1_text: str) -> str:
     )
 
 
-def _full_bill_html(canonical: dict) -> str:
+def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> str:
     """Project the change set inline onto the end-version full text.
 
     Mirrors the canonical full-text view: end-version text with each change's
@@ -750,11 +729,10 @@ def _full_bill_html(canonical: dict) -> str:
             row_ids.setdefault(off, f"fb-off-{off}")
 
     guttered = _full_text_is_guttered(canonical)
-    # Where a printed word break falls, and whether reflowing drops its hyphen, as the
-    # PRODUCER decided it (#650). Resolved from the delta-encoded `at` into a map from
-    # the offset of each break hyphen to its disposition, then stamped onto the row that
-    # ends there, so in-browser search applies the decision instead of re-deriving it.
-    joins = _join_dispositions((canonical.get("join_points") or {}).get("v2"))
+    # Where a printed word break falls, and whether rejoining drops its hyphen, as the
+    # PRODUCER decided it (#650), stamped onto the row that ends there so in-browser
+    # search applies the decision instead of re-deriving it.
+    joins = joins or {}
     emitted_ids: set[str] = set()
     parts: list[str] = []
     seen_page = 0
@@ -792,13 +770,11 @@ def _full_bill_html(canonical: dict) -> str:
 def _views_html(
     view: DiffView,
     canonical: dict | None,
-    display_canonical: dict | None = None,
     order_map: dict[tuple, int] | None = None,
 ) -> str:
     """Main content: classic cards, or the toggled changes/full-bill pair.
 
-    The full-bill view renders from ``display_canonical`` when given (the
-    print-faithful text + spans) and falls back to ``canonical`` otherwise.
+    The full-bill view renders the document laid out as printed (`printed_document`).
     """
     if order_map is None:
         order_map = _node_order_map((canonical.get("tree") or {}).get("v2") if canonical else None)
@@ -808,7 +784,7 @@ def _views_html(
     )
     if not _has_full_bill(canonical):
         return changes_inner
-    full_bill = _full_bill_html(display_canonical or canonical)
+    full_bill = _full_bill_html(*printed_document(canonical))
     return f'<div class="view view-changes">{changes_inner}</div><div class="view view-full" hidden>{full_bill}</div>'
 
 
@@ -917,8 +893,6 @@ def _export_modal_html(canonical: dict | None) -> str:
 
 def format_diff_html(
     canonical: dict,
-    *,
-    display_canonical: dict | None = None,
 ) -> str:
     """Assemble a complete standalone HTML report from a canonical diff document.
 
@@ -933,12 +907,9 @@ def format_diff_html(
     pipelines carry full text today; a document without it renders the change
     cards alone, still carrying its payload.
 
-    ``display_canonical``, when given, supplies the print-faithful text + spans
-    the on-screen full-bill view renders from (the PDF path passes one built
-    from the original printed lines); the embedded/exported ``canonical`` keeps
-    the merged whole-word text regardless. This is the second upstream artifact
-    DeltaTrack#653 removes; it stays until the document itself carries the
-    printed text and the join points needed to reflow it.
+    The full-bill view and its navigation show the printed page, laid out from the
+    document's `print_breaks` (`print_layout.printed_document`); the cards, and the
+    embedded document, keep its whole-word text.
 
     The heading comes from the document's ``bill`` fields (``_heading``), or a
     generic one when they name nothing.
@@ -952,13 +923,12 @@ def format_diff_html(
     # in-report features would not touch the payload without it) and silently strips
     # the document from every report built from a canonical that carries no full text.
     data_script = _embed_canonical(canonical)
-    # The TOC/full-bill anchors must come from the same canonical the full-bill view
-    # renders from (display_canonical when given), so their offsets line up.
-    sidebar_canonical = (display_canonical or canonical) if _has_full_bill(canonical) else None
     # One order map for both panes, from the join's canonical — guarantees the
     # sidebar and cards can never sort their shared groups from different trees.
     order_map = _node_order_map((canonical.get("tree") or {}).get("v2"))
-    sidebar = _build_sidebar(view, sidebar_canonical, order_map)
+    # The TOC's anchors index the text the full-bill view renders, so it reads the
+    # same printed layout.
+    sidebar = _build_sidebar(view, printed_document(canonical)[0], order_map)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -989,7 +959,7 @@ def format_diff_html(
 {_export_button_html(canonical)}
 </div>
 </div>
-{_views_html(view, canonical, display_canonical, order_map)}
+{_views_html(view, canonical, order_map)}
 </div>
 </div>
 {_export_modal_html(canonical)}

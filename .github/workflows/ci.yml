@@ -255,6 +255,7 @@ jobs:
           tests/test_pdf_xml_prose_recall.py
           tests/test_pdf_word_break_recall.py
           tests/test_full_text_layout.py
+          tests/test_report_from_document.py
           tests/test_front_matter_parity.py
           tests/test_xml_compare.py
           tests/test_toc_tree.py
