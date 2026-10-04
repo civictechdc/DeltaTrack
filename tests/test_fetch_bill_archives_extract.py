@@ -92,8 +92,8 @@ FIXED_ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
 
 # The mode ``writestr`` puts on a normal file when it builds the ``ZipInfo`` itself.
 # Supplying our own ``ZipInfo`` opts out of those defaults, so this is set back
-# explicitly rather than left to ``_open_to_write``, which happens to back-fill a zero
-# ``external_attr`` with the same value. Relying on that back-fill would make the
+# explicitly rather than left to ``ZipFile._open_to_write`` (stdlib, private), which happens to
+# back-fill a zero ``external_attr`` with the same value; relying on that would make the
 # fixture's member mode a side effect of an implementation detail two call levels down.
 NORMAL_FILE_EXTERNAL_ATTR = 0o600 << 16
 

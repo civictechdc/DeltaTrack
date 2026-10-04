@@ -4,21 +4,11 @@ ADR 0020 separated round-1 matching into retrieval, evidence and assignment. Thi
 the properties of that separation which no output comparison can see -- what a stage is allowed
 to look at, what provenance it records, what it may not recompute, and what it must refuse.
 
-## What is not here any more
+## Where the preservation coverage lives
 
-Until #659 this module was a preservation harness. It carried ``legacy_*`` -- a transcription
-of the composition in ``diff_bill.match_nodes`` as it stood at ``0ff0eb1e`` -- froze that
-transcription's full trace into a committed artifact under ``tests/data/``, and compared
-production against it on every committed pair. Both are in git history, before #659.
-
-That machinery answered one question: did the extraction change the rule. The answer was no,
-the slices are merged, and the question is closed. It could never answer the open one, which is
-whether the correspondence is *right*; and it could not survive a deliberate matching-policy
-change, because after one the comparison fails by construction and the only repairs are to
-transcribe a new "before" or to delete the guard that gave it meaning. That standing
-re-transcription cost is what #659 removed.
-
-What replaced it, so a reader can find the coverage rather than assume it was dropped:
+A transcription of the pre-ADR-0020 composition cannot survive a deliberate matching-policy
+change (the comparison fails by construction) and could never say whether the correspondence is
+*right*. History: #659 retired it. The coverage it carried:
 
 ``tests/test_round1_pairing_sentinel.py``
     round-1 correspondence itself, per committed pair, as one digest over the pairing stream
@@ -96,17 +86,6 @@ from tests.round1_identity import (
 _PROBES = PROJECT_ROOT / "docs" / "research" / "provision-matching" / "probes"
 
 
-# --- The oracle: the legacy composition, transcribed -----------------------------------
-#
-# Nothing below may call diff_bill. See the module docstring and the independence guard.
-
-
-# --- Trace shape and digest -------------------------------------------------------------
-
-
-# --- Completeness floor ------------------------------------------------------------------
-
-
 def test_manifest_fixtures_committed():
     assert_manifest_committed(manifest_version_pairs(), "round-1 preservation")
 
@@ -115,16 +94,14 @@ def test_manifest_fixtures_committed():
 
 
 def observed_retrieval_populations(old_tree, new_tree) -> list[dict]:
-    """The populations B1's RETRIEVAL STAGES emit, in order, addressed by ADR 0019 ordinal.
+    """The populations the RETRIEVAL STAGES emit, in order, addressed by ADR 0019 ordinal.
 
-    Recorded at the new stage boundary rather than by wrapping ``_similarity_pair``. The
-    pre-B1 version of this helper spied on the scorer and inferred each invocation's phase from
-    a call counter; the phase is now a property of which retrieval function produced the
-    population, so it is read rather than reconstructed.
+    Recorded at the stage boundary: the phase is a property of which retrieval function produced
+    the population, so it is read rather than inferred.
 
     Only populations that actually form candidates are reported. A division present on one side
     only is a real retrieval output and is deliberately emitted by the stage, but it pairs
-    nothing and runs no invocation, so it is not part of the invocation trace the oracle froze.
+    nothing and runs no invocation, so it is not part of the invocation trace.
     """
     from deltatrack import diff_bill as db
 
@@ -173,20 +150,17 @@ def observed_retrieval_populations(old_tree, new_tree) -> list[dict]:
 def test_assignment_never_receives_the_candidate_set():
     """Structural: ``CandidateSet`` order cannot become assignment order.
 
-    ADR 0020's candidate set is canonically ordered by ordinal pair, and B0 measured that using
-    that order as assignment order changes the selected links on 174 of 329 greedy invocations.
-    The protection is the call signature: :func:`assign_group` is handed the ordered population
-    and the evidence, holds no reference to the set, and so no ordering it carries can reach a
-    selection.
+    ADR 0020's candidate set is canonically ordered by ordinal pair, and using that order as
+    assignment order changes the selected links. History: the round-1 audit measured 174 of 329
+    greedy invocations. The protection is the call signature: :func:`assign_group` is handed the
+    ordered population and the evidence, holds no reference to the set, and so no ordering it
+    carries can reach a selection.
 
-    **The evidence stage now legitimately receives it, and that is the reviewed B2 correction.**
-    The set is the admission authority -- nothing is described unless it holds the pair under the
-    describing invocation -- so the guard cannot be "no stage sees the set". It is narrower and
-    more exact: the set may gate *what* is described and may not order anything. Both halves are
-    required here, so removing the parameter from the evidence stage reddens exactly as adding
-    one to assignment does.
-
-    Retargeted from ``_similarity_pair``, which B2 removed.
+    **The evidence stage legitimately receives it.** The set is the admission authority --
+    nothing is described unless it holds the pair under the describing invocation -- so the guard
+    cannot be "no stage sees the set". It is narrower and more exact: the set may gate *what* is
+    described and may not order anything. Both halves are required here, so removing the
+    parameter from the evidence stage reddens exactly as adding one to assignment does.
     """
     import inspect
 
@@ -201,7 +175,7 @@ def test_assignment_never_receives_the_candidate_set():
         "constrain what reaches assignment"
     )
 
-    # Both orchestrators, because B3 gave the unique path its own. A guard that inspected only the
+    # Both orchestrators, because the unique path has its own. A guard that inspected only the
     # collision one would have gone on passing while the new call site handed assignment the set.
     staged = ("group_correspondence_evidence", "assign_group")
     for orchestrator in (_match_collision_group, _match_unique_path_group):
@@ -320,22 +294,21 @@ def test_the_measurement_guard_can_fire():
     )
 
 
-# --- B1: the CandidateSet, bound independently of the code that builds it --------------------
+# --- The CandidateSet, bound independently of the code that builds it ----------------------
 #
 # Assignment consumes `population.old` / `population.new` and the evidence describing them, and
-# never the candidate set -- true of the fused scorer and still true of `assign_group`. So
-# candidate materialisation can be wrong -- a dropped pair, a mis-attributed invocation -- while
-# the frozen pairing stream, the retrieval-population tests and the canonical bytes all stay
-# exact. Nothing above binds it. These do.
+# never the candidate set. So candidate materialisation can be wrong -- a dropped pair, a
+# mis-attributed invocation -- while the pairing stream, the retrieval-population tests and the
+# canonical bytes all stay exact. Nothing above binds it. These do.
 
-#: The two invocations B1's retrieval stages run under, rebuilt here from the literal names and
+#: The invocations the retrieval stages run under, rebuilt here from the literal names and
 #: round rather than imported from production. Importing the constant would let a change to it
 #: move expectation and actual together, which is the whole failure mode this file exists to
 #: refuse. `1` is `PATH_ROUND`, spelled out for the same reason.
 EXPECTED_INVOCATION = {
     "within": RetrieverInvocation.of("path_division_group", round=1),
     "cross": RetrieverInvocation.of("path_group_cross_division", round=1),
-    # B3's unique-path retriever. Its population is a whole ``match_path`` group holding at most
+    # The unique-path retriever. Its population is a whole ``match_path`` group holding at most
     # one observation per side, so it is neither of the two above -- and it must not be spelled as
     # either, because a candidate's provenance is what makes a recall figure attributable to the
     # rule that surfaced it.
@@ -442,10 +415,9 @@ def test_the_candidate_set_materialises_exactly_what_retrieval_considered(old_pa
     Binds all four at once because they fail together: a dropped pair moves membership, a
     mis-attributed proposal moves provenance, and a pair recorded twice moves deduplication.
 
-    De-coupled from the legacy oracle in #659. It used to expand the transcribed invocation
-    trace; it now expands the populations production's own retrieval stages emitted during the
-    same ``match_nodes_with_stage_outputs`` call, which is a claim about the stage boundary
-    rather than about agreement with a pre-ADR-0020 implementation. The assertions are unchanged.
+    The expectation is expanded from the populations production's own retrieval stages emitted
+    during the same ``match_nodes_with_stage_outputs`` call, so this is a claim about the stage
+    boundary. History: #659 replaced a transcribed invocation trace as the expectation source.
 
     **What this owns that production does not already refuse.**
     ``_refuse_a_candidate_retrieval_did_not_admit`` fails closed on the two directions that
@@ -522,7 +494,7 @@ def test_a_one_sided_population_contributes_no_candidates():
 
 
 def test_two_invocations_proposing_one_pair_keep_both_provenances():
-    """The bridge from B1's populations to ``CandidateSet``'s multi-proposal accumulation.
+    """The bridge from retrieval populations to ``CandidateSet``'s multi-proposal accumulation.
 
     Current policy happens to produce no pair proposed by both round-1 invocations on the
     committed corpus, and this does not pretend otherwise -- it drives the accumulation directly
@@ -565,14 +537,11 @@ def dropping_propose_into(self, candidates):
 
 
 def test_an_omitted_candidate_cannot_reach_assignment(monkeypatch):
-    """THE B2 admission control: a CandidateSet-only fault, and the boundary refusing it.
+    """THE admission control: a CandidateSet-only fault, and the boundary refusing it.
 
-    **This replaces B1's expectation that a candidate omission stays invisible to matching.**
-    That control was right for B1, where the set was observational and needed an independent gate
-    to certify itself. B2 is the slice where ``CandidateSet -> evidence -> assignment`` becomes
-    the real path, so it is now *expected* that a corrupted set stops matching. Unfaulted
-    behaviour is unchanged and still byte-identical; what changed is behaviour under a fault,
-    which was never frozen methodology.
+    ``CandidateSet -> evidence -> assignment`` is the real path, so a corrupted set must stop
+    matching rather than be tolerated. Unfaulted behaviour is byte-identical; only behaviour
+    under a fault is asserted here.
 
     One fault, four claims, on the duplicate-id fixture whose 2x2 competition selects both pairs:
 
@@ -696,16 +665,15 @@ def test_the_admission_boundary_fails_closed_across_the_corpus(monkeypatch):
 def test_the_materialisation_gate_can_still_see_a_candidate_only_defect():
     """The corpus materialisation gate's projection, shown to distinguish a dropped proposal.
 
-    That gate is kept, and kept independent -- it compares production's set against an
-    expectation expanded from the ORACLE's invocation trace, so it answers a question the
-    fail-closed boundary cannot: whether the set holds the *right* pairs under the *right*
-    invocations, rather than merely agreeing with whatever the evidence stage went on to ask for.
+    That gate compares production's set against an expectation expanded from the retrieval
+    stages' own populations, so it answers a question the fail-closed boundary cannot: whether
+    the set holds the *right* pairs under the *right* invocations, rather than merely agreeing
+    with whatever the evidence stage went on to ask for.
 
-    Its negative control moved here from the old corpus fault-injection test. It could no longer
-    live there: under a faulted candidate set production now raises before returning a set to
-    project, which is the reviewed behaviour change and is proved by the two controls above. What
-    still needs proving is the narrower thing -- that ``actual_candidate_provenance`` is capable
-    of telling a dropped proposal from an intact set -- and that needs no corpus and no engine.
+    Its negative control cannot run on a faulted corpus: under a faulted candidate set production
+    raises before returning a set to project (proved by the two controls above). What still needs
+    proving is that ``actual_candidate_provenance`` is capable of telling a dropped proposal from
+    an intact set, and that needs no corpus and no engine.
     """
     population = population_of(*duplicate_element_id_fixture())
     faulted = CandidateSet()
@@ -717,11 +685,10 @@ def test_the_materialisation_gate_can_still_see_a_candidate_only_defect():
     )
 
 
-# --- B2: the evidence/assignment boundary, bound where the frozen stream cannot see it -------
+# --- The evidence/assignment boundary, bound where the pairing stream cannot see it ---------
 #
-# B1 left one function computing every similarity, running the greedy competition and breaking
-# ties on local position. B2 splits it: `group_correspondence_evidence` describes every retrieved
-# candidate, `assign_group` decides which of them correspond.
+# `group_correspondence_evidence` describes every retrieved candidate; `assign_group` decides
+# which of them correspond.
 #
 # Nothing above can tell a real separation from a cosmetic one. A stage that recomputed the
 # measurement it was handed, or that described only the winners, or that quietly acquired the
@@ -804,7 +771,7 @@ def test_the_evidence_comparison_is_non_vacuous():
     assert described > 1000, f"only {described} candidates were described over the corpus; the gate is near-vacuous"
     assert scored, "no candidate carried a word_overlap, so the fidelity half of that gate compared nothing"
     # And that the filter above is removing a real population rather than silently matching
-    # nothing -- if B3's calls stopped arriving, the gate it defers them to would be vacuous too.
+    # nothing -- if the unique-path calls stopped arriving, the gate that owns them would be vacuous too.
     assert unique_calls > 1000, (
         f"only {unique_calls} unique-path evidence calls reached the stage; the phase filter in the "
         "gate above is excluding a population that is no longer there"
@@ -813,10 +780,9 @@ def test_the_evidence_comparison_is_non_vacuous():
 
 #: How many times ``match_nodes`` calls ``text_similarity`` on each committed version pair.
 #:
-#: **Literal, and deliberately not derived.** These were read off the legacy trace before #659
-#: retired it, and they are now committed here as the expectation itself. A count read out of a
-#: generated artifact is only as independent as the artifact; a literal is a claim this file
-#: makes and a reviewer can see move in a diff.
+#: **Literal, and deliberately not derived.** A count read out of a generated artifact is only
+#: as independent as the artifact; a literal is a claim this file makes and a reviewer can see
+#: move in a diff. History: #659 read these off the legacy trace it retired.
 #:
 #: Fourteen pairs measure nothing at all, which is not a defect: every one of their
 #: ``match_path`` groups is non-colliding or 1x1, and the 1x1 shortcut computes no ratio
@@ -888,18 +854,16 @@ def test_production_measures_exactly_the_frozen_set_of_similarities():
     and it is the one gate that catches every way the evidence stage could quietly change *what
     gets measured* while selecting identically:
 
-    - a 1x1 population that starts scoring its sole candidate inflates the count (593 shortcut
-      invocations on the committed corpus);
+    - a 1x1 population that starts scoring its sole candidate inflates the count;
     - reusing :func:`_similarity_signals` -- which computes the diff first and skips the ratio
       entirely for unchanged bodies -- deflates it;
     - describing only the greedy winners deflates it;
     - describing a pair retrieval never admitted inflates it.
 
-    De-coupled from the legacy oracle in #659: the expectation is now the committed literal
-    table :data:`EXPECTED_SIMILARITY_CALLS` rather than a count read out of a generated
-    artifact. Nothing else in this repository measures the 1x1 shortcut's cost (#623) or the
-    2.96x of routing every unique group through the collision path (ADR 0020 §13), so the gate
-    keeps its subject and changes only where its expectation is written down.
+    The expectation is the committed literal table :data:`EXPECTED_SIMILARITY_CALLS`. Nothing
+    else in this repository measures the 1x1 shortcut's cost (#623) or the 2.96x of routing every
+    unique group through the collision path (ADR 0020 §13). History: #659 replaced a count read
+    out of a generated artifact.
     """
     assert set(EXPECTED_SIMILARITY_CALLS) == {pair_key(o, n) for o, n in manifest_version_pairs()}, (
         "the call-count table drifted from the manifest; a pair with no entry would be measured "
@@ -979,7 +943,7 @@ def population_of(old_nodes: list[BillNode], new_nodes: list[BillNode]) -> Retri
 def admitted(*populations: RetrievedPopulation) -> CandidateSet:
     """The candidate set retrieval materialises for these populations.
 
-    The evidence stage now refuses a pair the set does not admit, so a test driving that stage
+    The evidence stage refuses a pair the set does not admit, so a test driving that stage
     has to supply the admission as well as the population. Built through production's own
     ``propose_into`` deliberately: these tests are about what happens *after* admission, and
     hand-rolling the set here would put a second, divergent materialisation rule in the harness.
@@ -1010,10 +974,10 @@ def sole_candidate_fixture() -> tuple[list[BillNode], list[BillNode]]:
 
 
 def test_a_1x1_population_is_described_without_measuring_anything(monkeypatch):
-    """E: the shortcut's real effect, retargeted onto the stage that inherited it.
+    """The shortcut's real effect, on the evidence stage.
 
     The pairing stream cannot show this -- selecting a sole candidate is what the greedy would
-    do anyway. What the shortcut changes is that **no ratio exists**, and B2 had an obvious way
+    do anyway. What the shortcut changes is that **no ratio exists**, and there is an obvious way
     to lose that while looking tidier: give every candidate a number so the architecture reads
     uniformly. So the record is required to be present (the candidate does reach assignment and
     every such candidate is described) and required to carry no signal at all.
@@ -1063,7 +1027,7 @@ def test_production_measures_nothing_on_an_all_1x1_group():
 
 
 def test_assignment_follows_the_supplied_evidence_and_never_recomputes_it(monkeypatch):
-    """C: THE decisive control. Evidence that disagrees with the texts, and who wins.
+    """THE decisive control. Evidence that disagrees with the texts, and who wins.
 
     The duplicate-id fixture pairs like for like: old 0 and new 0 carry one body, old 1 and new
     1 another, so recomputing the texts scores the **diagonal** 1.0 and the crossed pairs near
@@ -1076,7 +1040,7 @@ def test_assignment_follows_the_supplied_evidence_and_never_recomputes_it(monkey
     implementation cannot even reach a wrong answer quietly.
 
     The honest direction is asserted too, under the same bomb: hand assignment the evidence
-    production actually computed and it must reproduce the frozen selection without measuring.
+    production actually computed and it must reproduce the expected selection without measuring.
     That is what stops this passing because assignment ignores evidence in some third way.
     """
     from deltatrack import diff_bill as db
@@ -1145,7 +1109,7 @@ def test_the_evidence_authority_control_would_be_blind_without_the_disagreement(
 
 
 def test_assignment_breaks_ties_on_invocation_local_position(monkeypatch):
-    """D: local position decides, and the ADR 0019 ordinal would decide differently.
+    """Local position decides, and the ADR 0019 ordinal would decide differently.
 
     Driven on the interleaved fixture's fallback population, which is the one place the two
     numberings disagree: it holds ``[X2, Y1]`` -- local positions 0 and 1, complete-sequence
@@ -1191,7 +1155,7 @@ def test_assignment_breaks_ties_on_invocation_local_position(monkeypatch):
 
 
 def test_losing_candidates_keep_their_evidence_after_assignment():
-    """F: the competition stays inspectable, losers included.
+    """The competition stays inspectable, losers included.
 
     The false-green this refuses is an implementation where "evidence" quietly means "evidence
     for winners". It satisfies every per-link requirement -- each selected link carries exactly
@@ -1333,9 +1297,9 @@ def below_threshold_group_fixture() -> tuple[list[BillNode], list[BillNode]]:
 
 
 def test_the_group_competition_applies_no_threshold():
-    """The composition B2 must not collapse: an unthresholded claim, revoked later or not at all.
+    """The group competition is unthresholded: a claim revoked later or not at all.
 
-    The tempting tidy-up is to give the new assignment stage the threshold the *other* round-1
+    The tempting tidy-up is to give the assignment stage the threshold the *other* round-1
     similarity rule owns, on the reasoning that a stage which decides correspondence ought to own
     its cutoff. It would delete a whole assignment act: the group competition selects the best
     available pairing however weak, and ``apply_similarity_assignment_rule`` is what afterwards
@@ -1374,17 +1338,15 @@ def test_the_group_competition_applies_no_threshold():
 
 
 def test_assignment_leftovers_are_what_the_cross_round_retrieves():
-    """G: assignment emits the leftovers round 1b's retrieval needs, read at the stage boundary.
+    """Assignment emits the leftovers round 1b's retrieval needs, read at the stage boundary.
 
-    B2 moved this. The fused matcher returned its leftovers inline in the pairing stream, so
-    their membership and order were only ever observable through the stream; they are now a
-    field on :class:`GroupAssignment`, and this is what binds that field to the population the
-    fallback is entitled to see.
+    The leftovers are a field on :class:`GroupAssignment`, and this binds that field to the
+    population the fallback is entitled to see.
 
     **Scoped to the stage, deliberately.** It composes the stages itself, so it cannot see the
     orchestrator wiring them up wrongly -- an implementation of ``_match_collision_group`` that
     built the fallback from the observations no division ever paired, dropping the ones
-    assignment declined, leaves this green. Fault injection confirmed that:
+    assignment declined, leaves this green.
     :func:`test_assignment_leftovers_reach_the_cross_division_fallback` is the control that
     reddens there, because it reads production's own stream. The two are complementary and
     neither is redundant -- this one would stay green if ``assign_group`` returned the right
@@ -1418,18 +1380,16 @@ def test_assignment_leftovers_are_what_the_cross_round_retrieves():
     assert (link.old.element_id, link.new.element_id) == ("oA2", "nB2")
 
 
-# --- B3: the unique path, brought under the same four stages ---------------------------------
+# --- The unique path, under the same stages -------------------------------------------------
 #
-# Before B3, a non-colliding `match_path` group was paired by a tuple construction: no candidate,
-# no evidence record, no assignment. That is 14,001 of the corpus's selected round-1 pairings --
-# the great majority -- reaching the stream without passing any ADR 0020 boundary, which is why
-# the candidate set was collision-path-complete and a recall figure read off it was wrong by the
-# size of that population.
+# A non-colliding `match_path` group is paired through the same stages as a collision group. It
+# is the great majority of round-1 pairings, so a candidate set that skipped it would make a
+# recall figure read off it wrong by the size of that population.
 #
-# The frozen stream cannot see this slice at all: the unique path selected the only pairing
-# available before and still does. What these bind is that the selection now goes THROUGH the
-# stages -- admitted by the candidate set, described by the evidence stage, decided by
-# assignment -- and that the fast path's measured cost profile survived the migration.
+# The pairing stream cannot see this: the unique path selects the only pairing available either
+# way. What these bind is that the selection goes THROUGH the stages -- admitted by the
+# candidate set, described by the evidence stage, decided by assignment -- and that the fast
+# path's cost profile holds.
 
 
 def unique_path_fixture() -> tuple[list[BillNode], list[BillNode]]:
@@ -1441,7 +1401,7 @@ def unique_path_fixture() -> tuple[list[BillNode], list[BillNode]]:
 
     The two 1x1 groups are deliberately in **different divisions** on either side. A unique path
     pairs across division lines -- ``match_path`` is the grouping key and division is never
-    consulted -- and 730 committed corpus pairings do exactly this, so a migration that quietly
+    consulted -- and committed corpus pairings do exactly this, so a change that quietly
     acquired a division constraint has somewhere to fail.
     """
     old_nodes = [
@@ -1486,8 +1446,8 @@ def test_a_one_sided_unique_group_is_not_retrieved_at_all():
 
     A group with one observation and no counterpart forms no pair, so there is nothing to
     consider and no invocation to record. Returning an empty-sided population instead would put
-    ``path_unique_group`` provenance on a retrieval that never happened -- and, at 15,587 such
-    groups on the committed corpus, would do it more often than for the ones that pair.
+    ``path_unique_group`` provenance on a retrieval that never happened -- and, since such groups
+    outnumber the ones that pair on the committed corpus, would do it more often than not.
 
     The lone observation still reaches the stream, which is the half a gate could plausibly
     break, so both are asserted.
@@ -1510,7 +1470,7 @@ def test_a_one_sided_unique_group_is_not_retrieved_at_all():
 def refusing_candidate_set(refused: tuple[int, int]):
     """A ``CandidateSet`` that declines to record ONE observation pair. Nothing else changes.
 
-    The B3 counterpart of :func:`dropping_propose_into`, and deliberately faulted at the other
+    The counterpart of :func:`dropping_propose_into`, and deliberately faulted at the other
     end. ``dropping_propose_into`` mutates the *proposer*; this leaves ``propose_into`` and the
     ``RetrievedPopulation`` completely untouched and refuses the entry inside the set itself. So
     the population still says the pair was retrieved, every other pair is admitted normally, and
@@ -1532,13 +1492,13 @@ def refusing_candidate_set(refused: tuple[int, int]):
 
 @pytest.mark.slow
 def test_no_round_1_pairing_reaches_the_stream_without_an_assignment_selecting_it():
-    """THE B3 completeness gate: no two-sided round-1 output is paired by a tuple construction.
+    """THE completeness gate: no two-sided round-1 output is paired by a tuple construction.
 
-    The claim the slice exists to make true, and the one that fails silently. A bypass left in
-    place for any group shape produces an identical pairing stream -- it selected the same
-    pairing, just without passing a boundary -- so nothing else here can see it. This can: every
-    1:1 pairing in the round-1 stream must be a :class:`SelectedLink` of some
-    :class:`GroupAssignment`, and the two sets must agree exactly in both directions.
+    The claim that fails silently: a bypass left in place for any group shape produces an
+    identical pairing stream -- it selected the same pairing, just without passing a boundary --
+    so nothing else here can see it. This can: every 1:1 pairing in the round-1 stream must be a
+    :class:`SelectedLink` of some :class:`GroupAssignment`, and the two sets must agree exactly in
+    both directions.
 
     A pairing in the stream with no link behind it is a surviving bypass. A link with no pairing
     in the stream is an assignment whose decision was discarded, which would be the same defect
@@ -1629,7 +1589,7 @@ def test_the_unique_path_measures_nothing(monkeypatch):
 
 
 def test_refusing_a_unique_pair_the_candidate_set_fails_closed(monkeypatch):
-    """THE B3 DECISIVE CONTROL: the admission authority made load-bearing on the unique path.
+    """THE decisive control: the admission authority is load-bearing on the unique path.
 
     One fault, and it is a candidate-set-only fault: the entry for a real unique pair is refused
     while :func:`retrieve_unique_path_population` still returns that pair, under that invocation,
@@ -1757,19 +1717,18 @@ def test_the_refusal_control_is_not_refusing_everything():
 
 
 def test_the_unique_path_runs_no_collision_machinery():
-    """Structural: the migration reached the stages without reaching the expensive path.
+    """Structural: the unique path runs the shared stages without reaching the expensive path.
 
     ADR 0020 §13 ruled to keep the fast path's cost rather than route every unique group through
-    ``_match_collision_group``. B3 keeps that by orchestrating the SAME stages differently, not by
+    ``_match_collision_group``. The unique path keeps that by orchestrating the SAME stages differently, not by
     adding a second implementation of them -- so the guard is two-sided: the unique orchestrator
     must call the shared stages, and must not reach the division partition or the cross-division
     round, neither of which can do anything for a group holding at most one observation per side.
 
     A structural guard rather than a timing assertion, deliberately. A wall-clock threshold in the
     suite would be a flake on a loaded machine and would say nothing about *why* the cost moved.
-    What this pins is the shape -- which stages the unique path may reach -- and that is the part
-    worth keeping; the cost comparison behind the B3 ruling was a closed question and lives in
-    PR #632 rather than in a benchmark this suite has to keep alive.
+    What this pins is the shape -- which stages the unique path may reach. The cost comparison
+    lives in PR #632 rather than in a benchmark this suite has to keep alive.
     """
     import inspect
 
@@ -1797,9 +1756,9 @@ def test_a_non_colliding_group_resolves_under_only_the_unique_path_invocation():
 
     ADR 0020 §13 ruled to keep the fast path's cost by orchestrating the shared stages
     differently for a non-colliding ``match_path`` group, rather than routing it through
-    ``_match_collision_group``. Until now that routing was owned only by a structural guard over
-    ``_match_unique_path_group``'s AST and by preservation tests backed by the legacy oracle.
-    This owns it from the outside, on the stage outputs production actually produced.
+    ``_match_collision_group``. :func:`test_the_unique_path_runs_no_collision_machinery` guards
+    that routing structurally, over ``_match_unique_path_group``'s AST; this owns it from the
+    outside, on the stage outputs production actually produced.
 
     **What makes the routing observable without reading an implementation.** The three round-1
     retrievers are distinguishable by the invocation each records on the proposals it makes.
@@ -1808,8 +1767,7 @@ def test_a_non_colliding_group_resolves_under_only_the_unique_path_invocation():
     anything for a group with at most one observation per side, so a unique group that reached
     collision machinery would carry one of those two invocations on the candidate that admitted
     it -- whatever pairing it went on to select. Provenance is the thing that moves; the pairing
-    stream is not, which is why the frozen stream never saw this and a stream comparison cannot
-    replace this test.
+    stream is not, which is why a stream comparison cannot replace this test.
 
     **Production against production.** The candidate set and the assignments are both elements of
     one ``match_nodes_with_stage_outputs`` call, and the invocation is rebuilt from the literal
@@ -1854,9 +1812,6 @@ def test_a_non_colliding_group_resolves_under_only_the_unique_path_invocation():
     )
 
 
-# --- Independence, enforced structurally --------------------------------------------------
-
-
 # --- ADR 0019: where an ordinal is allowed to come from --------------------------------------
 
 
@@ -1883,8 +1838,8 @@ def test_ordinals_are_not_derived_from_an_invocation_population():
     exactly such a view: on the interleaved fixture it holds [X2, Y1], whose complete-sequence
     ordinals are [2, 1] while their positions *within that population* are [0, 1].
 
-    The trace must carry the former. If it ever carried the latter, every fallback address in
-    the frozen artifact would silently name a different observation.
+    The trace must carry the former. If it ever carried the latter, every fallback address
+    would silently name a different observation.
     """
     old_nodes, new_nodes = interleaved_division_fixture()
     recorded, _candidates = production_retrieval_populations(_TreeStandIn(old_nodes), _TreeStandIn(new_nodes))
@@ -2041,10 +1996,9 @@ def test_assignment_leftovers_reach_the_cross_division_fallback():
     has to preserve. AGENTS.md records that an implementation feeding forward only the
     structurally unmatched half is byte-identical on all 27 committed pairs and wrong.
 
-    De-coupled from the legacy oracle in #659. The three invocations are now read off the
-    populations production's retrieval stages emitted, in the order they emitted them, rather
-    than off a transcription running beside them; the expected literals are unchanged, and they
-    are literals rather than anything derived from production.
+    The three invocations are read off the populations production's retrieval stages emitted,
+    in the order they emitted them; the expected values are literals, not derived from
+    production. History: #659 retired the transcription this once read from.
 
     Addresses are ordinals: old ``[oA1, oA2, oB1]`` = 0,1,2 and new ``[nA1, nB1, nB2]`` = 0,1,2.
 
@@ -2090,17 +2044,16 @@ def test_the_duplicate_id_fixture_really_does_repeat_one_id():
 
 # --- Negative controls --------------------------------------------------------------------
 #
-# Each entry is a mutation of the oracle. The claim under test is that the FROZEN expectation
-# can distinguish it -- i.e. that a production implementation carrying this defect would be
-# caught rather than shipping green. A mutation that changed nothing would prove the gate
-# blind, which is the failure mode ADR 0020 invariant 12 names.
+# Each entry is a mutation of production. The claim under test is that the expectation can
+# distinguish it -- i.e. that an implementation carrying this defect would be caught rather
+# than shipping green. A mutation that changed nothing would prove the gate blind, which is
+# the failure mode ADR 0020 invariant 12 names.
 
 #: The three round-1 mutations the synthetic fixtures exist to catch, applied to PRODUCTION.
 #:
-#: They replace the oracle's ``variant`` mechanism, which simulated them on a transcription of
-#: the pre-ADR-0020 composition (#659). Each is now expressed as a wrapper around a production
-#: stage, so what runs is the real engine with one seam perturbed, which is where a regression
-#: would actually live. None of them re-implements a stage.
+#: Each is a wrapper around a production stage, so what runs is the real engine with one seam
+#: perturbed, which is where a regression would actually live. None of them re-implements a
+#: stage. History: #659 replaced the legacy oracle's ``variant`` mechanism.
 SYNTHETIC_CONTROLS = ["ordinal_tiebreak", "no_assignment_leftovers", "extra_cross_candidate"]
 
 
@@ -2265,12 +2218,12 @@ def test_the_corpus_cannot_see_the_two_fixture_bound_mutations():
 
 @pytest.mark.slow
 def test_the_1x1_shortcut_computes_no_word_overlap(monkeypatch):
-    """An OPTIMISATION preservation gate, not a matching one.
+    """An OPTIMISATION gate, not a matching one.
 
     The shortcut selects the sole candidate, which is what the greedy would do anyway, so the
     pairing stream cannot show whether a ratio was computed. What changes is the count of
-    ``text_similarity`` calls -- 593 invocations skip it today. #623 measured the equivalent
-    tidy-up at +21% on ``diff_bills`` and rejected it; this keeps that decision visible.
+    ``text_similarity`` calls. #623 measured the equivalent tidy-up at +21% on ``diff_bills``
+    and rejected it; this keeps that decision visible.
     """
     from deltatrack import diff_bill as db
 

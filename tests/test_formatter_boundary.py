@@ -1,10 +1,9 @@
 """The renderer decides legibility; the differ decides correspondence. Separately.
 
-ADR 0020 names one coupling in the rendering layer and requires its removal: the HTML
-renderer recomputed the differ's word-overlap score and compared it against the differ's
-own cutoff, so changing what "the same provision" means also changed what a reader saw,
-in the same edit, with no way to test the two apart. `formatters/_text.word_diff` now
-reads `LEGIBILITY_THRESHOLD`, which the rendering layer owns.
+ADR 0020 forbids a coupling in the rendering layer: the HTML renderer must not compare the
+differ's word-overlap score against the differ's own cutoff, or changing what "the same
+provision" means also changes what a reader sees, with no way to test the two apart.
+`formatters/_text.word_diff` reads `LEGIBILITY_THRESHOLD`, which the rendering layer owns.
 
 **The two numbers are equal today and nothing here asserts that.** A test pinning
 `LEGIBILITY_THRESHOLD == SIMILARITY_THRESHOLD` would rebuild the coupling inside the
@@ -33,15 +32,15 @@ reason the set has three members rather than one:
 The fourth gate is behavioural and is the only one that shows the cutoff has any effect at
 all: two synthetic cases either side of it, driven through the real `_prose_body_html`
 caller rather than through `word_diff`. Calling `word_diff` with an explicit threshold
-exercises the parameter, and the parameter is not what this slice changed.
+exercises the parameter, and the parameter is not what the separation is about.
 
 ## Why the controls are source mutations, not monkeypatches
 
 `word_diff`'s threshold is a default argument, bound once at import. Rebinding
 `_text.LEGIBILITY_THRESHOLD` (or `similarity.SIMILARITY_THRESHOLD`) at runtime therefore
 cannot reach it, and a runtime-perturbation test asserting "the render did not move"
-passes whether or not the separation exists -- it passed on the coupled code this slice
-replaced. That is a fact about the language, not about the design, so production keeps its
+passes whether or not the separation exists, coupled code included. That is a fact about
+the language, not about the design, so production keeps its
 ordinary bound default and the negative controls edit the source and re-run instead. The
 controls are recorded in the pull request rather than shipped, because each one is a
 deliberate defect.

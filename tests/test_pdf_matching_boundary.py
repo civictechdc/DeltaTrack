@@ -1,12 +1,10 @@
 """The PDF matching decisions that no gate could previously detect a change to.
 
-Slice 0 of the ADR 0020 PDF convergence work
-(``docs/research/pdf-matching-convergence/``). Four production mutations —
-``SIMILARITY_THRESHOLD`` to 0.45 and 0.35, ``MOVE_THRESHOLD`` to 0.65 and 0.55, each
-changing real corpus output — were run against the full suite and **all four stayed
-green**, 3227 tests apiece. The canonical baseline (``tests/test_pdf_canonical_baseline``)
-now catches any of them that moves a committed pair. This module catches the *rules*, at
-the sites that decide them, including on inputs the corpus does not contain.
+ADR 0020 PDF convergence work (``docs/research/pdf-matching-convergence/``). Moving
+``SIMILARITY_THRESHOLD`` or ``MOVE_THRESHOLD`` changes real corpus output, and the canonical
+baseline (``tests/test_pdf_canonical_baseline``) catches any such move that touches a committed
+pair. This module catches the *rules*, at the sites that decide them, including on inputs the
+corpus does not contain.
 
 **Every gate here carries its own falsification.** ADR 0020 invariant 12 is called out in
 the record as "a green-by-default gate of the kind that has passed while checking nothing
@@ -26,20 +24,14 @@ Round-2 competition, ordering and one-to-one exclusivity are owned by
 ``tests/test_pdf_round2_stages.py``, through live ``assign_pdf_moves`` rather than through a
 copy of the greedy kept here.
 
-**Retired in #659: the two transcribed rules and their corpus sweeps.** The transcribed move
-rule and the corpus-wide comparisons of both rules against every committed hunk are gone, together
-with ``test_the_transcribed_rules_can_fail``. They pinned the rules as they stood so that later
-slices had something to be behaviour-preserving against; that question is closed, and a
-transcription cannot survive a deliberate change to either cutoff without being rewritten to
-match it.
+History: #659 retired the two transcribed rules and their corpus sweeps, because a transcription
+cannot survive a deliberate change to either cutoff without being rewritten to match it.
 
-What that costs, recorded here rather than left to be rediscovered: ``SIMILARITY_THRESHOLD``
-keeps an off-corpus owner in ``test_split_boundary_falsifies_the_cutoff``, which straddles the
-cutoff directly. ``MOVE_THRESHOLD`` does not — after this, a change to it is caught by
+Ownership of the cutoffs: ``SIMILARITY_THRESHOLD`` has an off-corpus owner in
+``test_split_boundary_falsifies_the_cutoff``, which straddles the cutoff directly.
+``MOVE_THRESHOLD`` does not, so a change to it is caught by
 ``tests/test_pdf_canonical_baseline.py`` when it moves a committed pair, and by nothing when it
 does not.
-
-No production code is changed by this module.
 """
 
 from __future__ import annotations
@@ -61,10 +53,8 @@ pytestmark = pytest.mark.slow
 def pair_survives_the_split_rule(v1_text: str, v2_text: str) -> bool:
     """Whether an aligned pair is kept rather than split: identical, or at the cutoff.
 
-    **Fixture machinery, not an oracle.** The corpus-wide comparison against production that
-    this predicate used to serve was retired in #659 along with the rest of the transcriptions.
-    What is left is the two gates below, which need to say which pairs their fixtures put on
-    each side of the cutoff, and this is where they say it.
+    **Fixture machinery, not an oracle.** The two gates below need to say which pairs their
+    fixtures put on each side of the cutoff, and this is where they say it.
 
     Uses ``text_similarity`` rather than ``text_similarity_at_least``: the gated form returns
     0.0 below the cutoff, so building the predicate from it would inherit the very short-circuit
@@ -85,18 +75,16 @@ def _page(page_number: int, *lines: tuple[int, str]) -> Page:
 #:
 #: That is deliberate here, and it is a different choice from
 #: ``tests/test_pdf_canonical_baseline``, which pins the product-facing behaviour and so
-#: must know which pairs are accepted. The rules transcribed below are invariants of
+#: must know which pairs are accepted. The rules gated here are invariants of
 #: ``diff_pdfs`` itself; admissibility is decided a layer above, in ``compare.pdf``, and a
 #: refused pair still exercises the split and move rules. So the division is: gate 1 covers
 #: what a user can reach, this module covers what the differ must always do.
 #:
-#: An earlier version of this list tried to exclude the refused pairs with a proxy —
-#: ``len(cached_pages(...)) > 1`` — and got it wrong in both directions: it let all six
-#: declined pairs through (an enrolled print has many pages; what it lacks is line numbers)
-#: while dropping one legitimate pair whose old side is a one-page shell. The proxy is gone
-#: rather than repaired, because the real predicate is ``compare.pdf._is_unnumbered_layout``
-#: and reaching into it would add another private cross-module import to the tangle #62
-#: tracks. See the convergence record's "source conflicts" note.
+#: Why not exclude the refused pairs: a page-count proxy (``len(cached_pages(...)) > 1``) is
+#: wrong both ways, since an enrolled print has many pages and lacks line numbers instead, and a
+#: legitimate pair's old side can be a one-page shell. The real predicate is
+#: ``compare.pdf._is_unnumbered_layout``, and reaching into it would add another private
+#: cross-module import to the tangle #62 tracks. See the convergence record's "source conflicts" note.
 _ALL_PAIRS = adjacent_pdf_pairs()
 
 
@@ -230,9 +218,9 @@ def test_global_best_similarity_would_cross_the_positional_pairing() -> None:
     """MUTATION: replace the positional rule with global best-similarity assignment.
 
     Named fault injection for gate 6. The mutation is applied to a local re-implementation
-    of the pairing step rather than to production, because production is not being changed
-    in this slice; what it establishes is that the two rules disagree on this fixture, so
-    the gate above is capable of failing when a later slice substitutes one for the other.
+    of the pairing step rather than to production; what it establishes is that the two rules
+    disagree on this fixture, so the gate above is capable of failing if one is substituted
+    for the other.
     """
     old_blocks = [_OLD_1, _OLD_2]
     new_blocks = [_NEW_1, _NEW_2]

@@ -1,4 +1,4 @@
-"""Slice 4: PDF round 2 as four stages, running before classification.
+"""PDF round 2 as four stages, running before classification.
 
 Round 2 runs before classification, through ``pdf_unmatched_population`` ->
 ``retrieve_pdf_move_candidates`` -> ``pdf_move_evidence`` -> ``assign_pdf_moves``. Classification
@@ -23,11 +23,8 @@ What this module owns:
 
 Whole-output preservation is owned by ``tests/test_pdf_canonical_baseline.py``.
 
-History: until #659 this module carried a rebuild of the pre-slice-4 ``diff_pdfs`` and compared
-production's whole hunk stream and round-2 population against it. That answered whether slice 4
-preserved behaviour, a closed question, and could not survive a deliberate change to PDF matching
-policy without a fresh transcription. Its one uncovered remainder is the six ``compare.pdf``
-declines, which no user reaches and no baseline record covers.
+History: #659 retired a transcribed oracle of the whole pipeline. Its one uncovered remainder is
+the six ``compare.pdf`` declines, which no user reaches and no baseline record covers.
 
 The record's §7.4 note — that PDF's move records land where the removal was, rather than
 appended as in XML — is why ``PdfSettledCorrespondence`` carries a slot.
@@ -64,7 +61,7 @@ _PAIRS = adjacent_pdf_pairs()
 _PAIR_IDS = [f"{bill}:{old.stem}->{new.stem}" for bill, old, new in _PAIRS]
 
 
-# --- The oracle: the pre-slice-4 pipeline, transcribed -------------------------------------
+# --- Helpers -------------------------------------------------------------------------------
 
 
 def blocks_for(pdf: Path) -> list[_Block]:
@@ -75,13 +72,7 @@ def blocks_for(pdf: Path) -> list[_Block]:
 def round1_stream(old_blocks: list[_Block], new_blocks: list[_Block], registry: PdfObservationRegistry):
     """Production's post-revocation round-1 pairing stream, and the evidence behind it.
 
-    The production side of every comparison below. Slice 5 split what used to be one call into
-    align -> evidence -> revoke, so this runs the three in order rather than each test
-    re-spelling them.
-
-    It used to be the production half of a comparison against a transcription of the pre-slice-4
-    pipeline, retired in #659. The tests that read it now assert ADR 0019 addressing and the
-    corpus floor, so it is a driver rather than one side of an oracle comparison.
+    Runs align -> evidence -> revoke in order, so each test does not re-spell them.
     """
     provisional, candidates = retrieve_pdf_round1_candidates(old_blocks, new_blocks, registry)
     evidence = pdf_similarity_correspondence_evidence(provisional, registry, candidates)
@@ -94,7 +85,7 @@ def test_the_corpus_pair_list_is_not_empty() -> None:
     assert len(_PAIRS) >= 20, f"only {len(_PAIRS)} adjacent PDF pairs discovered; the corpus holds more"
 
 
-# --- Behaviour preservation over the corpus -----------------------------------------------
+# --- Corpus sweeps ------------------------------------------------------------------------
 
 
 @pytest.mark.slow
@@ -102,7 +93,7 @@ def test_the_corpus_pair_list_is_not_empty() -> None:
 def test_round_2_addresses_the_complete_parser_sequence(bill: str, old_pdf: Path, new_pdf: Path) -> None:
     """Every address entering round 2 is a complete-sequence ordinal, not a population index.
 
-    ADR 0019's hazard, at the one place slice 4 creates new addresses. A population position is
+    ADR 0019's hazard, at the one place round 2 creates new addresses. A population position is
     a different number that looks just as valid, and on a real bill the two diverge immediately
     because the first observation is rarely unmatched.
     """
@@ -294,7 +285,7 @@ def test_round_2_selection_competes_and_claims_exclusively() -> None:
     Driven through live ``assign_pdf_moves`` over a population and evidence built by production's
     own retrieval and evidence stages, so the only thing this fixture supplies is the text.
 
-    **Scope, stated because an earlier version of this docstring overclaimed it.** Distinct scores
+    **Scope.** Distinct scores
     mean the ``(ri, ai)`` tie-break never runs here, and the greedy never faces two additions
     wanting one removal, so this fixture owns *neither* the tie-break *nor* old-side exclusivity.
     Both are owned by

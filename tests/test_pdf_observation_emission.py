@@ -5,12 +5,9 @@ node_ordinal)`` and is exact about the third: *"An ordinal always addresses that
 sequence, never a filtered or re-sorted view"*, calling the alternative "a genuine new
 hazard", because such an address "looks valid and points at the wrong node".
 
-For PDF that rule had nothing to attach to. The sequence a later slice would index —
-``parsers.pdf_blocks._group_into_blocks``' output — is nowhere stated as the emitted
-sequence, and
-nothing asserts it is complete, ordered, or stable. This module states it and pins it, so
-that slice 3's ``PdfObservation`` has a rule to be built against rather than a convention
-to infer.
+For PDF the sequence an ordinal indexes is ``parsers.pdf_blocks._group_into_blocks``' output.
+This module states that as the emitted sequence and pins it as complete, ordered and stable,
+so ``PdfObservation`` is built against a rule rather than a convention to infer.
 
 **The rule, stated once:**
 
@@ -20,17 +17,12 @@ to infer.
 **Why the post-filter sequence, and not the pre-filter one.** ``_group_into_blocks``
 discards blocks whose line slice is empty — 190 across the committed corpus, every one the
 run-in subsection coordinate collision (DeltaTrack#96 Seam #2), where a section anchor and
-a subsection anchor share a ``(page, line)`` and the subsection owns the whole line. An
-earlier draft of the convergence research called those *absent observations* and proposed
-lifting the filter into retrieval so the ordinal could index a complete pre-filter list.
-That was wrong, and ``test_a_dropped_block_stays_addressable_without_being_an_observation``
-is the measurement that settles it: ADR 0019 governs the sequence the parser *emits*, and
+a subsection anchor share a ``(page, line)`` and the subsection owns the whole line. They are
+not *absent observations*, and the filter need not move into retrieval so that the ordinal can
+index a complete pre-filter list: ``test_a_dropped_block_stays_addressable_without_being_an_observation``
+is the measurement. ADR 0019 governs the sequence the parser *emits*, and
 says nothing about intermediate objects built while deriving it. A zero-content artifact
 that is fully addressable elsewhere is not a legislative unit that needs an address.
-
-No production code changes here. This is the rule made testable, ahead of anything relying
-on it — deliberately, so that moving behaviour later is a separate change with something
-to be measured against.
 """
 
 from __future__ import annotations

@@ -1,15 +1,14 @@
-"""Slice 7: PDF round-1 retrieval as a named retriever emitting a ``CandidateSet``.
+"""PDF round-1 retrieval as a named retriever emitting a ``CandidateSet``.
 
-`_block_key` + `SequenceMatcher` + the positional `replace` zip are unchanged as *policy*. What
-slice 7 adds is that what they considered is now **materialised** — a `CandidateSet` proposed
-into under a named invocation — and that the materialisation is on the result-bearing path
-rather than beside it.
+What `_block_key` + `SequenceMatcher` and the positional `replace` zip considered is
+**materialised**: a `CandidateSet` proposed into under a named invocation, on the
+result-bearing path rather than beside it.
 
-**That distinction is the whole slice, and it is what these controls exist for.** A candidate
-set built and then ignored is indistinguishable from a correct one by every gate that compares
-output: the pairings, the hunks and the canonical digest are all identical whether evidence
-consults the set or reconstructs the pair from the pairing stream. So the controls here are not
-output comparisons. They are:
+**That distinction is what these controls exist for.** A candidate set built and then ignored
+is indistinguishable from a correct one by every gate that compares output: the pairings, the
+hunks and the canonical digest are all identical whether evidence consults the set or
+reconstructs the pair from the pairing stream. So the controls here are not output comparisons.
+They are:
 
 - withholding a candidate makes evidence **fail closed** rather than reconstruct;
 - a candidate carrying the wrong invocation's provenance cannot authorize evidence;
@@ -17,16 +16,12 @@ output comparisons. They are:
 - revoked round-1 evidence is reachable after the stage completes;
 - both retrievers actually fire on the committed corpus, so none of the above is vacuous.
 
-Preservation of the population itself stays with the gates that already own it: gate 1's
-canonical baseline and gate 6's crossing fixture for the positional rule.
+The population itself is owned by gate 1's canonical baseline and gate 6's crossing fixture for
+the positional rule.
 
-**Retired in #659: the transcribed opcode walk.** Membership and provenance used to be compared
-against a transcription of the pre-slice-7 aligner's opcode walk. That answered
-whether slice 7 preserved behaviour -- a closed question -- and could not survive a deliberate
-change to PDF round-1 retrieval without someone re-transcribing a new "before".
+History: #659 retired a transcribed opcode walk that compared membership and provenance.
 
-One coverage loss is deliberate and is recorded here rather than left to be rediscovered: no
-gate now compares each pair's *attribution* against an independent expectation, so a pair
+One coverage gap is deliberate: no gate compares each pair's *attribution* against an independent expectation, so a pair
 relabelled from ``positional_replace`` to ``block_key_alignment`` would leave the pairing
 stream, the candidate set's membership, admission and the canonical digest all correct.
 ``test_both_round_1_retrievers_are_actually_exercised`` still refuses a rule that stops firing
@@ -74,7 +69,7 @@ def test_the_corpus_pair_list_is_not_empty() -> None:
     assert len(_PAIRS) >= 20, f"only {len(_PAIRS)} adjacent PDF pairs discovered; the corpus holds more"
 
 
-# --- Membership AND provenance equal the legacy considered population ----------------------
+# --- Corpus floor --------------------------------------------------------------------------
 
 
 @pytest.mark.slow
@@ -116,7 +111,7 @@ def _one_pair() -> tuple[list[_Block], list[_Block], PdfObservationRegistry]:
 
 
 def test_evidence_fails_closed_when_retrieval_did_not_admit_the_pair() -> None:
-    """THE slice 7 control. Withholding a candidate must refuse, never reconstruct.
+    """The control for materialised admission. Withholding a candidate must refuse, never reconstruct.
 
     The pairing stream still names the pair, so an evidence stage that trusted the stream would
     describe it happily and every downstream result would look correct. That is precisely the
@@ -267,10 +262,9 @@ def test_diff_pdfs_consumes_the_stage_output_helper_rather_than_its_own_round_1(
 ) -> None:
     """``pdf_round1_with_stage_outputs`` is the single implementation, proved by substitution.
 
-    The earlier version of this test called the helper twice and compared it with itself, which
-    is no control at all: ``diff_pdfs`` could inline an equivalent round 1, ignore the helper
-    entirely, and produce byte-identical canonical output while the stage-output API quietly
-    stopped being the implementation.
+    Calling the helper twice and comparing it with itself is no control: ``diff_pdfs`` could
+    inline an equivalent round 1, ignore the helper entirely, and produce byte-identical
+    canonical output while the stage-output API quietly stopped being the implementation.
 
     So this substitutes a **different** stage result and requires the diff to follow it. The
     natural round 1 keeps one particular pairing as a surviving 1:1; the fake splits that pairing

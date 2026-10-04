@@ -1,9 +1,8 @@
-"""Slice 5: the round-1 similarity revocation, as evidence plus a rule that owns its threshold.
+"""The round-1 similarity revocation, as evidence plus a rule that owns its threshold.
 
-``_emit_pair`` used to do three things in one place — measure the two block texts, decide
-whether the aligned pair survived, and emit the records. Slice 5 separates them into
-``pdf_similarity_correspondence_evidence`` (describes), ``pdf_pairing_survives_similarity_rule``
-(decides, owns the threshold) and ``apply_pdf_similarity_revocation`` (applies).
+Three stages: ``pdf_similarity_correspondence_evidence`` (describes),
+``pdf_pairing_survives_similarity_rule`` (decides, owns the threshold) and
+``apply_pdf_similarity_revocation`` (applies).
 
 **What gate 4 already covers, and is not repeated here.** ``test_pdf_matching_boundary`` pins
 the split *cutoff* at two synthetic points either side of it. That establishes where the
@@ -114,28 +113,28 @@ def _revocations_by_threshold(thresholds: tuple[float, ...]) -> dict[float, int]
 
 @pytest.mark.slow
 def test_moving_the_threshold_moves_the_split_population() -> None:
-    """THE slice 5 negative control, and it must catch two different defects.
+    """The negative control for the revocation stages, and it must catch two different defects.
 
     1. **The rule ignoring its threshold parameter** — a rule wired to
        ``SIMILARITY_THRESHOLD`` returns the same number at every point.
-    2. **The evidence producer censoring at the production cutoff** — the defect the slice 5
-       review found. ``text_similarity_at_least(..., SIMILARITY_THRESHOLD)`` returns ``0.0``
+    2. **The evidence producer censoring at the production cutoff** -- a cutoff inside the
+       evidence. ``text_similarity_at_least(..., SIMILARITY_THRESHOLD)`` returns ``0.0``
        below its bound, so a pair whose real overlap was 0.30 was recorded as ``0.0`` and
        revoked at a threshold of 0.20 that should have kept it.
 
     **0.0 is deliberately not one of the points.** A censored ``0.0`` score fails a ``>= 0.0``
     test the same way a true ``0.0`` does, so that endpoint is accidentally compatible with the
-    hidden floor and the original sweep passed while defect 2 was live. The points below
-    production's cutoff are 0.2 and 0.3, which straddle the censoring boundary: under a floor of
-    0.4 they collapse onto each other, and under honest evidence they do not.
+    hidden floor and would pass while defect 2 was live. The points below production's cutoff
+    are 0.2 and 0.3, which straddle the censoring boundary: under a floor of 0.4 they collapse
+    onto each other, and under honest evidence they do not.
 
     Aggregated over the corpus rather than one pair: a single pair can have every non-identical
     pairing already below production's cutoff, in which case raising the threshold changes
-    nothing there and the control reports a false alarm. The first draft did exactly that.
+    nothing there and the control reports a false alarm.
 
-    Measured: 0.2 → 192, 0.3 → 214, 0.4 → 230, 0.6 → 257, 0.9 → 402. Under the censored
-    evidence this slice shipped with, 0.2 and 0.3 both returned 230 — the two sub-production
-    points collapsing onto the cutoff is precisely the signature this control now detects.
+    Measured: 0.2 → 192, 0.3 → 214, 0.4 → 230, 0.6 → 257, 0.9 → 402. Under censored evidence
+    0.2 and 0.3 both return 230; the two sub-production points collapsing onto the cutoff is the
+    signature this control detects.
     """
     points = (0.2, 0.3, SIMILARITY_THRESHOLD, 0.6, 0.9)
     counts = _revocations_by_threshold(points)
@@ -198,15 +197,14 @@ def test_the_revocation_population_splits_as_223_accepted_plus_6_declined() -> N
 
     Measured and pinned rather than left as a plausible explanation.
 
-    §3.2's 224 describes the PRE-#650 extractor. Rejoining the words GPO's printer broke
-    across a line moved the accepted side by exactly one, 224 -> 223, and left the declined
-    side untouched. Attributed rather than absorbed: the whole shift is one revocation in
-    ``115-hr-5895/3_placed-on-calendar-senate->4_engrossed-amendment-senate`` (72 -> 71),
-    with the other 34 pairs identical under both extractors. That pair's blocks carry
-    hyphenated words that used to reach the matcher split, so one borderline provisional
-    pairing now clears the similarity threshold instead of being revoked. The gap to §3.2
-    is therefore a dated-measurement gap, not a population disagreement — re-derive against
-    a current extractor before treating either number as describing today's engine.
+    §3.2's 224 describes the extractor before GPO line-broken words were rejoined. The one
+    revocation that differs is in
+    ``115-hr-5895/3_placed-on-calendar-senate->4_engrossed-amendment-senate`` (72 -> 71): its
+    blocks carry hyphenated words, and one borderline provisional pairing now clears the
+    similarity threshold. The gap to §3.2 is a dated-measurement gap, not a population
+    disagreement.
+
+    History: #650 rejoined the line-broken words.
     """
     baseline = json.loads((DATA_DIR / "pdf_canonical_baseline.json").read_text())
     accepted = declined = 0
@@ -235,9 +233,8 @@ def _evidence(**signals) -> CorrespondenceEvidence:
 def test_identical_text_is_kept_at_any_threshold() -> None:
     """The short-circuit branch, as a rule: identical bodies are never revoked.
 
-    Transcribed from ``_emit_pair``'s first branch, which returned before the ratio was ever
-    computed. A threshold above 1.0 is the decisive case — if the rule fell through to the
-    numeric comparison, this would revoke.
+    A threshold above 1.0 is the decisive case: if the rule fell through to the numeric
+    comparison, this would revoke.
     """
     evidence = _evidence(**{TEXT_IDENTICAL: True, WORD_OVERLAP: 1.0})
     assert pdf_pairing_survives_similarity_rule(evidence, 1.5) is True
@@ -281,12 +278,10 @@ def _block(text: str, page: int) -> _Block:
 
 
 def test_the_short_circuit_never_measures_identical_texts(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Preserving WHICH similarity calls the engine makes, not just what it concludes.
+    """Identical texts are never measured, which is a claim about WHICH calls the engine makes.
 
-    Computing the ratio unconditionally would be tidier and would reach the same verdict, so no
-    output comparison could catch it. It would still be a behaviour change: the set of
-    ``text_similarity_at_least`` calls would differ from the set production makes today, and
-    that function is itself gated and returns 0.0 rather than the true ratio below its bound.
+    Computing the ratio unconditionally would reach the same verdict, so no output comparison
+    could catch it; only watching the measurement function can.
     """
 
     def _refuse(*_args, **_kwargs):
@@ -298,20 +293,19 @@ def test_the_short_circuit_never_measures_identical_texts(monkeypatch: pytest.Mo
 
 
 #: A pair whose true word-level overlap is exactly 0.30 — strictly between a sub-production
-#: threshold of 0.20 and the 0.40 cutoff the evidence stage used to censor at. Three of ten
+#: threshold of 0.20 and the 0.40 production cutoff. Three of ten
 #: words shared, so ``SequenceMatcher.ratio()`` is 0.3 by construction rather than by search.
 _FLOOR_OLD = "alpha beta gamma delta epsilon zeta eta theta iota kappa"
 _FLOOR_NEW = "alpha beta gamma x0 x1 x2 x3 x4 x5 x6"
 
 
 def test_evidence_does_not_censor_a_score_below_the_production_cutoff() -> None:
-    """The slice 5 review's defect, pinned as a permanent control.
+    """Evidence must not carry a correspondence cutoff inside it.
 
-    ``_pdf_similarity_signals`` used to call
-    ``text_similarity_at_least(..., SIMILARITY_THRESHOLD)``, which returns ``0.0`` rather than
-    the true ratio below its bound. That put a correspondence cutoff inside the evidence: this
-    pair's real overlap is 0.30, it was recorded as ``0.0``, and assignment handed a threshold
-    of 0.20 revoked a pairing that 0.30 >= 0.20 says it should keep.
+    A measurement gated at ``SIMILARITY_THRESHOLD`` (as ``text_similarity_at_least`` is) returns
+    ``0.0`` rather than the true ratio below its bound. This pair's real overlap is 0.30; a
+    censored 0.0 would make assignment, handed a threshold of 0.20, revoke a pairing that
+    0.30 >= 0.20 says it should keep.
 
     Both halves are asserted, because they fail apart. A repair that reported the true score
     but left the rule wrong would pass the first; one that fixed the rule while still censoring
@@ -379,10 +373,10 @@ def test_a_surviving_pairing_without_evidence_is_refused() -> None:
 
 
 def test_alignment_no_longer_revokes_anything() -> None:
-    """Retrieval stopped deciding correspondence, which is the whole point of the slice.
+    """Retrieval does not decide correspondence.
 
-    Every aligned pair leaves ``_align_blocks`` as a provisional 1:1, however dissimilar. Before
-    slice 5 this fixture produced two unmatched pairings straight out of alignment.
+    Every aligned pair leaves ``_align_blocks`` as a provisional 1:1, however dissimilar; this
+    fixture must not come out of alignment as two unmatched pairings.
     """
     old_blocks = [_block("alpha beta gamma delta epsilon", 1)]
     new_blocks = [_block("wholly unrelated words entirely", 2)]

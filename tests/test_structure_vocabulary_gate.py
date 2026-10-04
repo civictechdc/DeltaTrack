@@ -42,9 +42,9 @@ VOCABULARY_ALLOWED = {
     # use (ADR 0018 "Decision"; the future semantics layer is #115).
     "diff_bill.py": "financial layer — reads (increased|reduced|decreased) by $X",
     "diff_pdf.py": "financial layer — amount-change annotations",
-    # The financial primitive itself. `AMENDMENT_RE` was extracted from the allowlisted
-    # `diff_bill.py` (ADR 0020 slice 1a) so a parser could depend on amount extraction
-    # without depending on a differ; the exemption follows the code it was granted for.
+    # The financial primitive itself. `AMENDMENT_RE` lives apart from `diff_bill.py` so a
+    # parser can depend on amount extraction without depending on a differ; the exemption
+    # follows the code it was granted for.
     #
     # NOT a blanket exemption. `amounts.py` is the only allowlisted module a STRUCTURAL
     # parser consumes result-bearingly, so it gets a narrower guard of its own below --

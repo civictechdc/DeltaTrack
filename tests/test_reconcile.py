@@ -1,14 +1,11 @@
 """Tests for section renumbering reconciliation.
 
-**Re-aimed for ADR 0020 slice 2, meanings unchanged.** These pinned the move pass when it was
-``reconcile_moves``, a single function taking classified ``NodeDiff`` records. That pass is now
-the round-2 retrieval, evidence and assignment stages, running *before* classification over
-unmatched observations, so the tests drive it through :func:`reconciled` below.
+The move pass is the round-2 retrieval, evidence and assignment stages, running *before*
+classification over unmatched observations; the tests drive it through :func:`reconciled` below.
 
-What each test asserts is unchanged: which texts pair and which do not, what the resulting record
-looks like, and what the greedy claim leaves behind. Those are input-to-output facts derived from
-the texts, not transcriptions of the implementation, so the oracle survives the harness change --
-and their meanings staying identical is itself evidence the policy did not move.
+Each test asserts which texts pair and which do not, what the resulting record looks like, and
+what the greedy claim leaves behind. Those are input-to-output facts derived from the texts, not
+transcriptions of the implementation, so the oracle survives a change of harness.
 """
 
 import pytest
@@ -43,11 +40,10 @@ def _node(element_id: str, display_path: tuple[str, ...], body_text: str) -> Bil
 
 
 def reconciled(old_nodes: list[BillNode], new_nodes: list[BillNode]) -> list[NodeDiff]:
-    """The migrated round-2 stages over observations no round-1 pairing claimed.
+    """The round-2 stages over observations no round-1 pairing claimed.
 
     The pairing stream is every unmatched old observation followed by every unmatched new one,
-    which is the shape the pre-slice tests built directly as a list of ``removed`` records
-    followed by ``added`` ones.
+    i.e. a list of ``removed`` records followed by ``added`` ones.
     """
     pairs: list[tuple[BillNode | None, BillNode | None]] = [(node, None) for node in old_nodes]
     pairs += [(None, node) for node in new_nodes]
