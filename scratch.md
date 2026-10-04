@@ -24,8 +24,9 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 12. [Mapping to #653 and existing issues](#mapping-to-653-and-existing-issues)
 13. [Design draft](#design-draft)
 14. [Open PRs vs. the node-identity gap](#open-prs-vs-the-node-identity-gap)
-15. [Work log](#work-log)
-16. [Open questions](#open-questions)
+15. [Ideal design: nodes, correspondence, ledger](#ideal-design-nodes-correspondence-and-the-ledger-as-a-consumer)
+16. [Work log](#work-log)
+17. [Open questions](#open-questions)
 
 ---
 
@@ -1513,6 +1514,8 @@ cost was not available when the decision was made. **F5** is the case for revisi
 
 ## Design draft
 
+> **D1 and D2 are superseded** by [Ideal design](#ideal-design-nodes-correspondence-and-the-ledger-as-a-consumer) below. D3–D6 stand.
+
 **Status: draft, 2026-10-04.** Root cause agreed with the user: the contract has no tree-node
 identity, and that drives most of the remaining overlap. Decisions D2–D4 below are still open.
 
@@ -1657,6 +1660,169 @@ re-running the F4b measurement on it. The three PRs are stacked: #739 on #736 on
 
 ---
 
+## Ideal design: nodes, correspondence, and the ledger as a consumer
+
+**Status: proposal, 2026-10-04.** #736 is not fixed in place; it gets rebased onto this. This
+section supersedes D1 and D2 of the design draft above. D3–D6 stand.
+
+### The model
+
+The diff is a **correspondence between two trees**. ADR 0020 already says this inside the
+engine: assignment decides correspondence, and classification only labels it. The contract
+should publish that model directly, instead of a flat change list that consumers have to
+re-attach to a tree by offsets and labels.
+
+```
+parse/      BillTree / anchors ──► document tree per side (nodes with ids, levels, spans)
+diff/       settled leaf correspondences ──► + derived container correspondence ──► classification
+contract/   tree(v1), tree(v2), correspondence, changes (each naming its nodes), full_text
+consumers:  view/ (HTML report)   financial/ (ledger)   export/ (#656)   — none imports engine code
+```
+
+Three moves make that true:
+
+1. **The document tree becomes a parse-stage artifact.** Today it is built in `formatters/`
+   (`text_serializer` for XML, `canonical._pdf_tree_payload` for PDF). It only needs parser
+   output, so it belongs in `parse/`, built once per side. The diff stage can then refer to
+   it.
+2. **Node IDs are parser addresses.** A node's ID is its document-order position in the tree.
+   Content nodes map 1:1 onto ADR 0019 observation ordinals. Don't use `element_id`:
+   `ObservationRegistry` documents it as an address that can look valid while pointing at
+   the wrong node. IDs are per-document and explicitly *not* stable across versions or parser
+   revisions; cross-version identity stays with #552.
+3. **The diff stage publishes correspondence for every node it can, not just the changed
+   ones.** Leaf links come from settled correspondences. Container links are derived in the
+   diff stage (rule below), as a new assignment act after round 2 and before classification.
+
+### Contract additions (schema minor, additive)
+
+| Field | Content |
+|---|---|
+| `tree[side][].id` | Node ID (document order, per side) |
+| `tree[side][].heading_span`, `.body_span` | The heading row; the node's own prose without heading lines. `full_text_span` is kept for compatibility |
+| `correspondence` | `[[v1_id, v2_id, basis], …]` for every corresponded node, unchanged ones included; `basis` is `matched` (settled) or `derived` (container rule) |
+| `changes[].node` | `{v1: id \| null, v2: id \| null}` |
+
+**What consumers can then do, by applying carried facts only:**
+- Group a change under its tree node: a lookup. Fixes F4a: the 1,676 empty-body sections have
+  a node even though they have no span.
+- File a removal under its nearest v1 ancestor that has a correspondence, using the
+  counterpart's v2 node, or under its own v1 path if none. This fixes F4b with no label
+  matching.
+- Jump to a heading by `heading_span` (F4c, #766).
+- Answer "which nodes were untouched" (the #691 question in #653's 2026-08-24 comment).
+- Compare money on every corresponded node pair, not only changed ones (the ledger, below).
+- Derive `container_changed` for move facts (D3) from correspondence instead of label paths.
+
+### The container rule, prototyped (XML corpus, 27 pairs)
+
+A v1 container corresponds to the v2 node that a strict majority of its **round-1** matched
+descendants' counterparts sit under, at the same relative depth, with at least 2 votes.
+- Round-2 moves don't vote, because they are relocations by definition.
+- Votes override the container's own match when the two conflict.
+- No majority means no link, so it fails closed.
+
+| Measure | Result |
+|---|---|
+| Settled observation references that map to exactly one tree node | **46,942 / 46,942** |
+| Removed changes placed under a corresponded ancestor | 630 / 711 |
+| …of which the v2 container has the same label as the v1 container | **623 (98.9%)**, 136 of them across an added division wrapper |
+| …relabeled (follow the engine's own round-1 matches; not adjudicated) | 7 |
+| Removals that fail closed (filed under own v1 path) | 81, **none** with any surviving same-labelled ancestor |
+| Today's label remap, for comparison | 93 filed outside a surviving ancestor, 48 across top-level groups |
+
+**What the prototype got wrong first:**
+- With all votes counted, a single round-2 move decided TITLE V's counterpart in 114-hr-2029
+  4→5 (1 of 1 vote).
+- Without the override, 118-hr-4366 3→4 tied MilCon `TITLE IV › General provisions` to
+  Agriculture's `TITLE VII—General provisions`.
+
+That second case is an **engine mispairing**. The heading-only `GENERAL PROVISIONS` node has
+`match_path` `('general provisions',)`, which every division shares, and round 1 picked the
+wrong division. Its six children all went to MilCon. Today's label remap hides this; published
+correspondence exposes it. It's worth its own issue (with #552 / #468).
+
+The rule runs on "tree plus settled leaf correspondences", so one implementation can serve
+both pipelines. **PDF not yet measured.**
+
+Prototype: `ideal/proto_loose.py` in the session scratchpad (not committed).
+
+### The ledger as a consumer (rebasing #736)
+
+The ledger is interpretation: it types clauses by wording, under a versioned classifier. ADR
+0006 draws its line between what the pipeline **observes** (exported: `own_amounts`) and what
+it **claims** (held back). So the ideal home for the ledger is **a consumer of the contract,
+not a field in it**.
+
+**`deltatrack/financial/`: a pure function `ledger(canonical) → per-side ledger`.**
+- Sections are keyed by node `id`. Prose comes from `body_span`, read through the contract's
+  own text reader (below).
+- The comparison joins changes to sections through `changes[].node`, and can extend to every
+  corresponded money-bearing pair through `correspondence`, including unchanged ones.
+- It imports nothing from `parsers/`, `diff/` or `formatters/`. The classifier version lives
+  in this package.
+
+**Delivery.**
+- The HTML report computes and embeds the ledger; the CSV exports stay.
+- `diff.json` stays the contract, with no `financial` field. That settles #736's open
+  question 1.
+- Any API or CLI consumer gets the same ledger by calling the same function on the document.
+
+**What #736 loses:**
+- the private PDF-parser imports (`_FURNITURE`, `_is_strippable_heading_line`)
+- the `[label, level]` path as identity
+- the span-overlap join
+- the schema surface
+
+**What #736 keeps:** its classifier, the parity pins, the three views, and the report changes
+(tabs, find, scroll).
+
+**What it still depends on, which belongs to the parser, not the ledger:**
+- running heads inside body text (#535)
+- lettered sections the PDF reader doesn't start (`SEC. 109A`; drives the "may hold more than
+  one section" flag)
+- back matter in the last section (#735)
+
+Until those land, the ledger reports them rather than repairing them.
+
+### A contract-owned text reader
+
+`contract.text`: one implementation of the `numbered_lines` and `paragraphs` layouts, offering
+a span's plain text and a row iterator. The renderer, `print_layout`, the ledger and the #656
+export all read through it. It replaces the scattered gutter readers counted in F5 without
+reopening the decision to keep the gutter. Only the producer side (`_render_lines`,
+`_GUTTER_WIDTH`) still writes the layout.
+
+### Order of work, and where #736 lands
+
+| Step | Work | Output change |
+|---|---|---|
+| 1 | Move the structure tree to `parse/`; node IDs, `heading_span`, `body_span`, `changes[].node`; viewer groups by node | Additive; viewer simplifies |
+| 2 | Container correspondence in the diff stage (shared rule), `correspondence` emitted; viewer files removals by it | Additive; F4b fixed |
+| 3 | `contract.text` reader; renderer and `print_layout` switch to it | None |
+| 4 | **Rebase #736** onto steps 1–3 as `financial/` (a consumer) plus its views | Report only; `diff.json` unchanged |
+
+- #739 is independent. Its new heading nodes simply get IDs, and its breadcrumb changes stop
+  affecting grouping once consumers key on IDs.
+- #734 is independent.
+- Phase 0 (package split, layering test) can run alongside, and makes step 4's "imports
+  nothing from the engine" enforceable.
+
+### Decisions this needs
+
+1. **Ledger location:** a consumer outside `diff.json` (recommended), or a contract field as
+   #736 has it?
+2. **Correspondence scope:** publish it for all nodes (recommended), or only a placement for
+   removals?
+3. **Tree ownership:** move the structure tree to the parse stage (recommended)?
+4. **Container rule:** adopt the prototyped rule as the starting point, behind a corpus gate,
+   with PDF measured before it ships? And file the cross-division heading mispairing as an
+   engine issue?
+5. **ADR:** one new record for "the contract publishes node identity and correspondence"
+   (covering D3's move facts too)?
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
@@ -1668,6 +1834,7 @@ re-running the F4b measurement on it. The three PRs are stacked: #739 on #736 on
 | 2026-10-04 | Review round 3: four fresh reviewers (one blind). No verdict changes; blind audit found nothing outside the list; precision corrections only (fourth cycle, 7-char gutter, `v1.source`, counts, F12 revision cost). Current register written. Not yet converged on precision. | all |
 | 2026-10-04 | Review round 4 (final): two verbatim verifiers + third blind audit. **Converged** under the user's rule (no verdict changes, no new findings). Precision and ownership corrections folded in; F4d resolved by decision on develop (#769, #653 closed); F5 downgraded. No code changes. | all |
 | 2026-10-04 | Design draft (root causes, target shape, D1–D6, phases). Compared open PRs #734/#736/#739: #739 and #736 driven by missing node identity (measured F4b 93→95 on #739); #734 mostly independent. Root cause agreed with user; D1 minimal slice to settle before #736 merges. No code changes. | F4a–c, F6, F11, F16, D1 |
+| 2026-10-04 | Ideal design: tree to parse stage, node ids = parser addresses, diff-stage correspondence (prototyped on XML: 46,942/46,942 refs map to one node; 630/711 removals placed, 98.9% same-label container; 81 fail closed), ledger as a contract consumer; #736 to be rebased onto it. Found an engine mispairing of heading-only nodes across divisions. No code changes. | F4a, F4b, F4c, F5, D1, D2 |
 
 ## Open questions
 
