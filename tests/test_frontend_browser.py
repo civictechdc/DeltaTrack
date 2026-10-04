@@ -91,22 +91,22 @@ def _render_report_with_toc() -> str:
 
     Pulls the renderer's embedded `<style>` from an actual rendered report (so the
     test tracks current CSS, not a committed artifact) and drops in the real
-    `_build_toc_from_tree` markup for one single-line title — making
-    `.toc-group > summary` exactly one text line when laid out correctly. Built
-    directly rather than through the full report so the full-bill gating
+    `_build_tree_nav` markup for one single-line title — making
+    `.tree-group > summary` exactly one text line when laid out correctly. Built
+    directly rather than through the full report so the full-text gating
     (`full_text.v2`) isn't needed.
     """
     import re
 
     from deltatrack.diff_pdf import PdfDiff
     from deltatrack.formatters.canonical import pdf_diff_to_canonical
-    from deltatrack.formatters.diff_html import _build_toc_from_tree, format_diff_html
+    from deltatrack.formatters.diff_html import _build_tree_nav, format_diff_html
 
     canonical = pdf_diff_to_canonical(PdfDiff(hunks=()), bill_type="hr", bill_number=8752, congress=118)
     full_report = format_diff_html(canonical)
     style = re.search(r"<style>.*?</style>", full_report, re.DOTALL).group(0)
     # A labeled parent with one labeled child is the shape that renders a
-    # <details class="toc-group"> toggle; a childless node renders a plain leaf.
+    # <details class="tree-group"> toggle; a childless node renders a plain leaf.
     full_text = "Title I\nSEC. 101."
     tree = [
         {
@@ -115,17 +115,17 @@ def _render_report_with_toc() -> str:
             "children": [{"label": "SEC. 101.", "full_text_span": {"start": 8, "end": 17}, "children": []}],
         }
     ]
-    toc = _build_toc_from_tree(tree, full_text)
+    tree = _build_tree_nav(tree, full_text)
     return (
         f"<!DOCTYPE html><html><head><meta charset='utf-8'>{style}</head>"
-        f"<body><div class='sidebar'>{toc}</div></body></html>"
+        f"<body><div class='sidebar'>{tree}</div></body></html>"
     )
 
 
 def test_toc_group_caret_sits_on_header_line(chromium, tmp_path):
-    """The full-bill TOC caret and its header share one line, not stacked (#52).
+    """The full-text TOC caret and its header share one line, not stacked (#52).
 
-    Regression guard for the `.toc-group > summary` layout. With the pre-fix
+    Regression guard for the `.tree-group > summary` layout. With the pre-fix
     `display: list-item`, the `::before` caret took its own line and pushed the
     header down by ~one line-height; the flex fix keeps the header on the
     caret's row. We assert the header text begins within one line-height of the
@@ -139,7 +139,7 @@ def test_toc_group_caret_sits_on_header_line(chromium, tmp_path):
 
     metrics = page.evaluate(
         """() => {
-            const sum = document.querySelector('.toc-group > summary');
+            const sum = document.querySelector('.tree-group > summary');
             if (!sum) return null;
             const box = sum.getBoundingClientRect();
             // Range over the summary's own content (the <a>), excluding ::before,
@@ -155,7 +155,7 @@ def test_toc_group_caret_sits_on_header_line(chromium, tmp_path):
     )
     page.close()
 
-    assert metrics is not None, "no .toc-group > summary rendered"
+    assert metrics is not None, "no .tree-group > summary rendered"
     # On the stacked (buggy) layout the header starts a full line below the
     # caret; on the fixed layout it starts at the summary's top padding.
     assert metrics["offset"] < metrics["lineHeight"], (
@@ -236,7 +236,7 @@ def _render_grouped_report() -> str:
 
 
 def _render_full_bill_report() -> str:
-    """A standalone report whose full-bill view interleaves headings and changes.
+    """A standalone report whose full-text view interleaves headings and changes.
 
     ``_render_grouped_report``'s full text is two lines, so every tree node
     anchors to the same row — too coarse to say which change follows which
@@ -312,7 +312,7 @@ def _render_full_bill_report() -> str:
 
 
 def test_counter_follows_full_bill_navigation(chromium, tmp_path):
-    """In the full-bill view, an explicit jump sets the prev/next position the
+    """In the full-text view, an explicit jump sets the prev/next position the
     same way it does in the changes view (#185).
 
     The two entry points differ from the changes view and need different
@@ -334,14 +334,14 @@ def test_counter_follows_full_bill_navigation(chromium, tmp_path):
     # 1. TOC jump to a heading resolves to the first change below it, and the
     # arrow steps on from there (pre-fix this read "0 / 3" then "1 / 3").
     # TITLE II is row 18; the next change is c1 at 27, the 2nd of 3.
-    page.locator('.sidebar-toc a[href="#fb-off-18"]').click()
+    page.locator('.sidebar-tree a[href="#fb-off-18"]').click()
     assert counter.inner_text() == "2 / 3"
     page.locator("#btn-next").click()
     assert counter.inner_text() == "3 / 3"
 
     # Resolution is "at or after", not "the nearest": TITLE I is row 0 and the
     # first change is c0 at row 8, so it lands on 1 rather than staying put.
-    page.locator('.sidebar-toc a[href="#fb-off-0"]').click()
+    page.locator('.sidebar-tree a[href="#fb-off-0"]').click()
     assert counter.inner_text() == "1 / 3"
 
     # 2. A click on an inline highlight is itself a target, so it resolves
@@ -354,7 +354,7 @@ def test_counter_follows_full_bill_navigation(chromium, tmp_path):
     # 3. A heading with no change below it has no answer: the position is left
     # where it was rather than being reset or clamped. TITLE IV is the last row
     # and every change sits above it.
-    page.locator('.sidebar-toc a[href="#fb-off-56"]').click()
+    page.locator('.sidebar-tree a[href="#fb-off-56"]').click()
     assert counter.inner_text() == "2 / 3"
 
     # The changes view keeps its own exact-match resolution: switching views
@@ -367,7 +367,7 @@ def test_counter_follows_full_bill_navigation(chromium, tmp_path):
 
 
 def test_filtering_hides_empty_card_groups_and_updates_nav_counts(chromium, tmp_path):
-    """Structural filter empties the account groups: their card-group headings
+    """Structural filter empties the account groups: their change-group headings
     hide, and the TITLE I nav-group count recounts to the visible subtree (#172).
     Browser-level because the contract lives in applyFilters' runtime behavior,
     which string-level _JS assertions can't prove."""
@@ -376,7 +376,7 @@ def test_filtering_hides_empty_card_groups_and_updates_nav_counts(chromium, tmp_
     page = chromium.new_page(viewport={"width": 1280, "height": 900})
     page.goto(report.as_uri(), wait_until="domcontentloaded")
 
-    groups = page.locator(".card-group")
+    groups = page.locator(".change-group")
     assert groups.count() == 3  # TITLE I + two nested accounts
     title_count = page.locator(".nav-group__count").first
     assert title_count.inner_text() == "(3)"
@@ -384,7 +384,7 @@ def test_filtering_hides_empty_card_groups_and_updates_nav_counts(chromium, tmp_
     page.locator('input[name="change-filter"][value="structural"]').check()
     # The two account groups hold only `modified` cards -> hidden; the TITLE I
     # group keeps its direct `added` card and its count recounts.
-    assert page.locator(".card-group:visible").count() == 1
+    assert page.locator(".change-group:visible").count() == 1
     assert title_count.inner_text() == "(1)"
     assert page.locator("#change-0").is_visible()
     assert page.locator("#change-1").is_hidden()
@@ -412,7 +412,7 @@ def test_prev_next_steps_into_nested_groups_and_reveals_collapsed(chromium, tmp_
 
     # Collapse the SALARIES group, then step back to the card inside it:
     # revealCard must re-open the group so the card is actually shown.
-    salaries = page.locator(".card-group .card-group").first
+    salaries = page.locator(".change-group .change-group").first
     salaries.locator("> summary").click()
     assert salaries.evaluate("el => el.open") is False
     page.locator("#btn-prev").click()
@@ -497,7 +497,7 @@ def test_counter_follows_explicit_card_navigation(chromium, tmp_path):
     # A jump into a collapsed group still resolves to the right index: the card
     # is revealed first, so it is a visible target when indexOf runs.
     page.locator('input[name="change-filter"][value="all"]').check()
-    salaries = page.locator(".card-group .card-group").first
+    salaries = page.locator(".change-group .change-group").first
     salaries.evaluate("el => el.open = false")
     page.locator('.sidebar a[href="#change-1"]').click()
     assert salaries.evaluate("el => el.open") is True
@@ -662,7 +662,7 @@ def test_upload_pdf_pair_opens_the_report_in_a_new_tab(live_url, chromium, tmp_p
     report = report_info.value
     # The tab opens blank on the click and is written when the response lands,
     # so wait for the report's own markup rather than for the navigation.
-    report.wait_for_selector(".change-card", timeout=60_000)
+    report.wait_for_selector(".change", timeout=60_000)
 
     # It is the diff of what was uploaded, not an empty shell: the changed
     # amount is the one thing that distinguishes these two files.
@@ -708,7 +708,7 @@ def test_upload_xml_pair_uses_the_selected_format(live_url, chromium, tmp_path):
     assert "format=xml" in request_info.value.url
 
     report = report_info.value
-    report.wait_for_selector(".change-card", timeout=60_000)
+    report.wait_for_selector(".change", timeout=60_000)
     assert "H.J.Res. 25" in report.title()
     assert "approves the amended rule" in report.locator("body").inner_text()
     assert page.locator("#upload-error").is_hidden()
@@ -853,7 +853,7 @@ def test_compare_button_reports_progress_while_the_diff_runs(live_url, chromium,
 
     page.evaluate("() => window.__release()")
     report = report_info.value
-    report.wait_for_selector(".change-card", timeout=60_000)
+    report.wait_for_selector(".change", timeout=60_000)
     assert btn.inner_text() == "Compare"
     assert btn.is_enabled()
     report.close()
@@ -897,7 +897,7 @@ def test_report_tab_shows_progress_until_the_report_arrives(live_url, chromium, 
 
     # And the placeholder is replaced by the report rather than left alongside it.
     page.evaluate("() => window.__release()")
-    report.wait_for_selector(".change-card", timeout=60_000)
+    report.wait_for_selector(".change", timeout=60_000)
     assert report.locator(".spinner").count() == 0
     report.close()
     page.close()
@@ -964,8 +964,8 @@ def test_a_server_rejection_is_shown_and_the_blank_tab_is_closed(live_url, chrom
 
 # --- Find across printed line breaks (#162) ---------------------------------
 #
-# The PDF full-bill view is print-faithful: GPO's line breaks and its soft-
-# hyphenated word splits are real DOM boundaries, one `.fb-row` per printed
+# The PDF full-text view is print-faithful: GPO's line breaks and its soft-
+# hyphenated word splits are real DOM boundaries, one `.full-text-line` per printed
 # line. Matching per text node therefore made every printed line an island, so
 # a phrase the reader can see on screen returned `0 / 0`.
 
@@ -985,32 +985,36 @@ _FIND_PAGE_SRC = (
 )
 
 
-def _find_fixture_texts() -> tuple[str, str]:
-    """(printed display text, merged whole-word text) from the real parser.
+def _find_fixture_texts() -> tuple[str, dict]:
+    """(merged whole-word text, that page's print breaks).
 
-    Both come from the producer the browser has to agree with — `pdf_full_text`
-    is the de-hyphenated ground truth the flattened search string must
-    reproduce, so the fixture can't encode a belief about GPO's line-joining
-    that the parser doesn't share.
+    Both come from the producer the browser has to agree with — `pdf_full_text` is the
+    whole-word ground truth the flattened search string must reproduce, so the fixture
+    can't encode a belief about GPO's line-joining that the parser doesn't share. The
+    report lays the printed page out from the breaks (#653), and the browser applies
+    the producer's hyphen decisions rather than re-deriving them, so a fixture that
+    withheld them would be testing a document the pipeline never emits.
+
+    The page is merged with its OWN evidence, exactly as `extract_clean_pages` does.
     """
     from deltatrack.parsers.pdf_text import (
+        BreakEvidence,
         Page,
         _merge_print_lines,
         _parse_print_lines,
         pdf_full_text,
-        pdf_full_text_print,
+        pdf_print_breaks,
     )
 
     print_lines = _parse_print_lines(_FIND_PAGE_SRC.rstrip("\n"))
-    merged, ranges = _merge_print_lines(print_lines)
+    merged, ranges = _merge_print_lines(print_lines, BreakEvidence.from_print_lines([print_lines]))
     page = Page(1, tuple(merged), tuple(print_lines), tuple(ranges))
-    printed_text, _ = pdf_full_text_print([page])
     merged_text, _ = pdf_full_text([page])
-    return printed_text, merged_text
+    return merged_text, pdf_print_breaks([page])
 
 
 def _render_find_report() -> str:
-    """A real report whose full-bill view is the print-faithful page above.
+    """A real report whose full-text view is the print-faithful page above.
 
     One change span sits mid-line on the word "vehicles", so that row's text is
     split across sibling text nodes by the tracked-change mark — the in-line
@@ -1018,17 +1022,18 @@ def _render_find_report() -> str:
     """
     from deltatrack.formatters.diff_html import format_diff_html
 
-    printed_text, _ = _find_fixture_texts()
-    start = printed_text.index("vehicles")
+    merged_text, breaks = _find_fixture_texts()
+    start = merged_text.index("vehicles")
     canonical = {
-        "schema_version": "3.0",
+        "schema_version": "3.1",
         "bill": {"type": "hr", "number": 8752, "congress": 118},
         "versions": {
             "v1": {"label": "Reported", "version_number": 1, "source": "pdf"},
             "v2": {"label": "Enrolled", "version_number": 2, "source": "pdf"},
         },
         "summary": {"added": 0, "removed": 0, "modified": 1},
-        "full_text": {"v1": "", "v2": printed_text},
+        "full_text": {"v1": "", "v2": merged_text},
+        "print_breaks": {"v1": {"at": [], "drop": "", "line": [], "seam": ""}, "v2": breaks},
         "changes": [
             {
                 "id": "c0",
@@ -1112,7 +1117,7 @@ def test_find_ignores_line_number_gutter(chromium, tmp_path):
     # The rejoined hyphen is gone from the searchable text, and no gutter digit
     # is ever itself a hit.
     assert _find(page, "Serv- ices") == "0 / 0"
-    hits_in_gutter = page.evaluate("() => document.querySelectorAll('.fb-gutter mark.find-hit').length")
+    hits_in_gutter = page.evaluate("() => document.querySelectorAll('.full-text-line__number mark.find-hit').length")
     assert hits_in_gutter == 0
     page.close()
 
@@ -1133,7 +1138,8 @@ def test_find_counts_matches_not_marks_and_steps_across_rows(chromium, tmp_path)
     # Both marks belong to the current hit, and the first sits on the earlier row.
     rows = page.evaluate(
         """() => Array.from(document.querySelectorAll('mark.find-hit--current'))
-                     .map(m => m.closest('.fb-row').querySelector('.fb-gutter').textContent.trim())"""
+                     .map(m => m.closest('.full-text-line')
+                                .querySelector('.full-text-line__number').textContent.trim())"""
     )
     assert rows == ["1", "2"]
 
@@ -1155,7 +1161,7 @@ def test_find_agrees_with_the_parser_merged_text(chromium, tmp_path):
     """
     import re as _re
 
-    _, merged_text = _find_fixture_texts()
+    merged_text, _breaks = _find_fixture_texts()
     # Windows stay inside one merged line. Each merged line is already whole-word
     # (the parser rejoined its soft hyphens), so this pins the de-hyphenation
     # contract without asserting how the JS joins one display line to the next.
@@ -1177,6 +1183,53 @@ def test_find_agrees_with_the_parser_merged_text(chromium, tmp_path):
     assert control == "0 / 0", "control phrase matched — the search is not discriminating"
 
 
+def test_find_rejoins_a_word_broken_across_a_page(chromium, tmp_path):
+    """A word the printer broke at a page seam is findable whole.
+
+    The view prints a page marker between the two halves, so the rejoin has to see past
+    it. Seam breaks are common since #650 joined them (about 1,500 across the fixture
+    corpus); treating the marker as a boundary between unrelated blocks would leave
+    every one of them unfindable while the in-page cases above stay green.
+    """
+    from deltatrack.formatters.diff_html import format_diff_html
+    from deltatrack.parsers.pdf_text import (
+        PrintPages,
+        _parse_print_lines,
+        merge_print_pages,
+        pdf_full_text,
+        pdf_print_breaks,
+    )
+
+    page_one = _parse_print_lines(
+        "1 the Administrator of General Services shall provide\n2 for the Administrator of General Serv-"
+    )
+    page_two = _parse_print_lines("1 ices to remain available until expended")
+    read = PrintPages((tuple(page_one), tuple(page_two)), ({}, {}))
+    pages = merge_print_pages(read, read.evidence())
+    whole_word, _ = pdf_full_text(pages)
+    canonical = {
+        "schema_version": "3.1",
+        "bill": {"type": "hr", "number": 8752, "congress": 118},
+        "versions": {
+            "v1": {"label": "Reported", "version_number": 1, "source": "pdf"},
+            "v2": {"label": "Enrolled", "version_number": 2, "source": "pdf"},
+        },
+        "summary": {"added": 0, "removed": 0, "modified": 0},
+        "full_text": {"v1": "", "v2": whole_word},
+        "print_breaks": {"v1": {"at": [], "drop": "", "line": [], "seam": ""}, "v2": pdf_print_breaks(pages)},
+        "changes": [],
+    }
+    report = tmp_path / "seam_report.html"
+    report.write_text(format_diff_html(canonical), encoding="utf-8")
+    page = chromium.new_page(viewport={"width": 1280, "height": 900})
+    page.goto(report.as_uri(), wait_until="domcontentloaded")
+    page.locator('.view-toggle__btn[data-view="full"]').click()
+
+    assert page.locator(".full-text-page").count() == 2, "fixture no longer prints a page seam"
+    assert _find(page, "General Services to remain") == "1 / 1"
+    page.close()
+
+
 def test_find_does_not_match_across_a_deletion_and_its_replacement(chromium, tmp_path):
     """In the changes view, old and new wording are alternatives, not a sequence.
 
@@ -1192,7 +1245,7 @@ def test_find_does_not_match_across_a_deletion_and_its_replacement(chromium, tmp
     page.goto(report.as_uri(), wait_until="domcontentloaded")  # changes view is the default
 
     # The card reads "cars" (removed) immediately followed by "vehicles" (added).
-    card = page.locator(".change-card").first.inner_text()
+    card = page.locator(".change").first.inner_text()
     assert "cars" in card and "vehicles" in card, "fixture no longer shows both sides"
 
     assert _find(page, "cars vehicles") == "0 / 0"
@@ -1218,7 +1271,7 @@ def test_find_accepts_a_query_pasted_off_the_screen(chromium, tmp_path):
     # The first hit is the line the reader copied from.
     row = page.evaluate(
         """() => document.querySelector('mark.find-hit--current')
-                        .closest('.fb-row').querySelector('.fb-gutter').textContent.trim()"""
+                        .closest('.full-text-line').querySelector('.full-text-line__number').textContent.trim()"""
     )
     assert row == "1"
     page.close()

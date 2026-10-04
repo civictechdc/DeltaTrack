@@ -27,6 +27,25 @@
       ],
       "description": "Optional (v1.1+) full bill text per side, for full-document tracked-changes rendering."
     },
+    "full_text_layout": {
+      "anyOf": [{ "type": "null" }, { "enum": ["numbered_lines", "paragraphs"] }],
+      "description": "Optional (v3.1+) how full_text is laid out. numbered_lines: each row is a 5-character right-aligned line number (5 spaces when unnumbered), 2 spaces, then the text; an empty row separates pages. paragraphs: plain text, an empty row is a paragraph break. Null exactly when full_text is."
+    },
+    "print_breaks": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["v1", "v2"],
+          "additionalProperties": false,
+          "properties": {
+            "v1": { "$ref": "#/$defs/PrintBreaks" },
+            "v2": { "$ref": "#/$defs/PrintBreaks" }
+          }
+        }
+      ],
+      "description": "Optional (v3.1+) where the printer broke a line inside a whole-word line of full_text, so a consumer can lay the text out as printed. Null when full_text was not printed (the XML pipeline)."
+    },
     "tree": {
       "anyOf": [
         { "type": "null" },
@@ -57,7 +76,11 @@
       "properties": {
         "type": { "type": "string" },
         "number": { "type": ["integer", "string"] },
-        "congress": { "type": ["integer", "string"] }
+        "congress": { "type": ["integer", "string"] },
+        "title": {
+          "type": ["string", "null"],
+          "description": "Optional (v3.1+) the bill's long title (\"Making appropriations for...\"), or null when the producer found none."
+        }
       }
     },
     "versions": {
@@ -79,6 +102,33 @@
     }
   },
   "$defs": {
+    "PrintBreaks": {
+      "type": "object",
+      "required": ["at", "drop", "line", "seam"],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "DELTA-encoded character offsets into full_text for this side: the first entry is absolute, each later entry is the increment from its predecessor. Each resolved offset is where the text of the printed line that continues the word begins."
+        },
+        "drop": {
+          "type": "string",
+          "pattern": "^[01]*$",
+          "description": "One character per break, same order as `at`. '1': the printer's hyphen was removed from full_text and is restored before the break. '0': the hyphen is the word's own and is already in full_text."
+        },
+        "line": {
+          "type": "array",
+          "items": { "type": ["integer", "null"] },
+          "description": "The continuing printed line's line number, same order as `at`; null when the line is unnumbered."
+        },
+        "seam": {
+          "type": "string",
+          "pattern": "^[01]*$",
+          "description": "One character per break, same order as `at`. '1': the continuing line is the first line of the next page."
+        }
+      }
+    },
     "TreeNode": {
       "type": "object",
       "required": ["label", "level", "own_amounts", "full_text_span", "children"],

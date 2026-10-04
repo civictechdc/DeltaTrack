@@ -23,7 +23,7 @@ from deltatrack.bill_tree import BillNode, BillTree
 from deltatrack.compare.pdf import compare_pdfs
 from deltatrack.compare.xml import compare_xml, compare_xml_html
 from deltatrack.diff_bill import extract_amounts
-from deltatrack.formatters.diff_html import _build_toc_from_tree
+from deltatrack.formatters.diff_html import _build_tree_nav
 from deltatrack.parsers.pdf_anchors import Anchor
 from deltatrack.structure_tree import TreeNode, build_pdf_tree, build_xml_tree
 from tests.corpus_paths import FIXTURES_DIR, fixture_path
@@ -201,7 +201,7 @@ def test_toc_front_matter_renders_as_leaf_when_no_labeled_children() -> None:
         "full_text_span": {"start": 0, "end": 5},
         "children": [],
     }
-    html = _build_toc_from_tree([_fm_node([boilerplate])], full_text="A BILL\nmaking\n")
+    html = _build_tree_nav([_fm_node([boilerplate])], full_text="A BILL\nmaking\n")
     assert FRONT_MATTER_LABEL in html
     assert "<details" not in html, "no empty toggle — a leaf jump to the opening"
 
@@ -215,7 +215,7 @@ def test_toc_front_matter_renders_as_toggle_with_labeled_children() -> None:
         "full_text_span": {"start": 6, "end": 9},
         "children": [],
     }
-    html = _build_toc_from_tree([_fm_node([section])], full_text="A BILL\nmaking\n")
+    html = _build_tree_nav([_fm_node([section])], full_text="A BILL\nmaking\n")
     assert "<details" in html and "Definitions" in html, "a real section gives it a toggle"
 
 

@@ -30,11 +30,17 @@ def _empty(**overrides) -> dict:
         v2_version_number=2,
         summary={"added": 0, "removed": 0, "modified": 0, "moved": 0},
         changes=(),
+        title=None,
     )
     base.update(overrides)
     return {
         "schema_version": "3.0",
-        "bill": {"type": base["bill_type"], "number": base["bill_number"], "congress": base["congress"]},
+        "bill": {
+            "type": base["bill_type"],
+            "number": base["bill_number"],
+            "congress": base["congress"],
+            "title": base["title"],
+        },
         "versions": {
             "v1": {"label": base["v1_label"], "version_number": base["v1_version_number"], "source": "xml"},
             "v2": {"label": base["v2_label"], "version_number": base["v2_version_number"], "source": "xml"},
@@ -50,16 +56,21 @@ def test_returns_html_document():
     assert html.rstrip().endswith("</html>")
 
 
-def test_canonical_title_format():
-    """Title is "{BILL_TYPE} {N} — Diff" — no "Bill Comparison:" or "PDF Diff:" prefix."""
-    html = format_diff_html(_empty())
-    assert "<title>HR 1234 — Diff</title>" in html
+def test_heading_is_the_designator_and_long_title():
+    """The heading comes from the document's bill fields, with no XML/PDF qualifier."""
+    html = format_diff_html(_empty(title="Making appropriations."))
+    assert "<h1>H.R. 1234 — Making appropriations.</h1>" in html
+    assert "<title>H.R. 1234 — Making appropriations. — Diff</title>" in html
 
 
-def test_canonical_h1_format():
-    """h1 suffix is "Comparison" — no XML/PDF qualifier."""
-    html = format_diff_html(_empty())
-    assert "HR 1234 &mdash; Comparison" in html
+def test_heading_without_a_title_is_just_the_designator():
+    html = format_diff_html(_empty(bill_type="s", bill_number=12))
+    assert "<h1>S. 12</h1>" in html
+
+
+def test_heading_without_a_type_is_the_title_or_a_generic_one():
+    assert "<h1>Making appropriations.</h1>" in format_diff_html(_empty(bill_type="", title="Making appropriations."))
+    assert "<h1>Bill Comparison</h1>" in format_diff_html(_empty(bill_type=""))
 
 
 def test_versions_line_with_version_numbers():
@@ -97,17 +108,32 @@ def test_versions_line_without_version_numbers():
     assert "Engrossed in House" in versions_block
 
 
+def test_a_version_label_is_rendered_as_text_never_as_markup():
+    """An upload's filename becomes its version label (#692), so a label is attacker text.
+
+    The resolver strips path components but leaves markup alone; escaping is the
+    renderer's job, and this is the one place a label reaches the page as markup.
+    Outside the inert ``diff-data`` JSON block, the tag must not survive raw.
+    """
+    hostile = "<img src=x onerror=alert(1)>"
+    html = format_diff_html(_empty(v1_label=hostile))
+    before_data, after_data = html.split('<script type="application/json" id="diff-data">', 1)
+    page = before_data + after_data.split("</script>", 1)[1]
+    assert hostile not in page
+    assert "&lt;img src=x onerror=alert(1)&gt;" in page
+
+
 def test_summary_bar_canonical_order():
     """Summary bar order: modified, added, removed, moved.
 
     Asserts ordering by checking byte position.
     """
     html = format_diff_html(_empty(summary={"modified": 5, "added": 3, "removed": 2, "moved": 1}))
-    # Find each badge marker and confirm ascending positions.
-    pos_modified = html.find('class="badge badge-modified"')
-    pos_added = html.find('class="badge badge-added"')
-    pos_removed = html.find('class="badge badge-removed"')
-    pos_moved = html.find('class="badge badge-moved"')
+    # Find each change-type marker and confirm ascending positions.
+    pos_modified = html.find('class="change-type" data-type="modified"')
+    pos_added = html.find('class="change-type" data-type="added"')
+    pos_removed = html.find('class="change-type" data-type="removed"')
+    pos_moved = html.find('class="change-type" data-type="moved"')
     assert -1 < pos_modified < pos_added < pos_removed < pos_moved
 
 

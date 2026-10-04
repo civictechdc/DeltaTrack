@@ -19,10 +19,10 @@ from deltatrack.bill_tree import (
     amount_text,
     extract_text_content,
     find_bill_body,
-    normalize_bill,
     walk_body_sections,
 )
 from tests.conftest import assert_manifest_committed, manifest_xml_files, manifest_xml_ids
+from tests.parsed_bills import parsed_bill
 
 pytestmark = pytest.mark.slow
 
@@ -215,7 +215,7 @@ def test_every_dollar_amount_appears_in_a_node(xml_path: Path) -> None:
         pytest.skip(f"Shell bill: only {len(raw_matches)} amounts, too few for meaningful coverage")
 
     # Parse with the actual parser
-    bill_tree = normalize_bill(xml_path)
+    bill_tree = parsed_bill(xml_path)
     all_body_text = " ".join(node.body_text for node in bill_tree.nodes)
 
     # Search for the source spelling, not a re-formatted f"${value:,}" -- see
@@ -299,7 +299,7 @@ def test_no_section_sibling_is_dropped_from_every_node() -> None:
         if not sections:
             continue
 
-        tree = normalize_bill(xml_path)
+        tree = parsed_bill(xml_path)
         all_text = " ".join(f"{n.body_text} {n.display_text}" for n in tree.nodes)
 
         for section in sections:
@@ -364,7 +364,7 @@ def test_no_top_level_legis_body_is_silently_discarded() -> None:
             continue
         multi_body_files += 1
 
-        tree_text = " ".join(amount_text(node) for node in normalize_bill(xml_path).nodes)
+        tree_text = " ".join(amount_text(node) for node in parsed_bill(xml_path).nodes)
         for index, body in enumerate(bodies):
             # Amounts unique to THIS body. An amount also present in a sibling body
             # cannot show that this body was walked, since the sibling would supply it.
@@ -590,7 +590,7 @@ def test_no_duplicate_match_paths(xml_path: Path) -> None:
     """
     _skip_if_absent(xml_path)
     test_id = _xml_id(xml_path)
-    bill_tree = normalize_bill(xml_path)
+    bill_tree = parsed_bill(xml_path)
 
     if not bill_tree.nodes:
         pytest.skip("No nodes parsed")
@@ -661,7 +661,7 @@ def test_every_appropriations_element_with_text_produces_node(xml_path: Path) ->
         pytest.skip("No appropriations elements with text")
 
     # Parse and collect all node body texts (normalized)
-    bill_tree = normalize_bill(xml_path)
+    bill_tree = parsed_bill(xml_path)
     node_texts = [_normalize_ws(node.body_text) for node in bill_tree.nodes]
 
     # Check each appropriations element's text appears in some node
@@ -864,7 +864,7 @@ def test_every_section_reaches_a_node(xml_path: Path) -> None:
         )
         return
 
-    bill_tree = normalize_bill(xml_path)
+    bill_tree = parsed_bill(xml_path)
     node_ids = {node.element_id for node in bill_tree.nodes if node.element_id}
 
     # Fail CLOSED on a section the gate cannot key on. Skipping it would make a future

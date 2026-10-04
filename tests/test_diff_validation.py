@@ -16,7 +16,6 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.bill_tree import normalize_bill
 from deltatrack.diff_bill import (
     _normalize_text,
     compute_financial_change,
@@ -26,17 +25,13 @@ from deltatrack.diff_bill import (
 from deltatrack.similarity import MOVE_THRESHOLD, SIMILARITY_THRESHOLD, text_similarity
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
 from tests.division_labels import cross_division_mismatches
-
-
-@lru_cache(maxsize=None)
-def _cached_normalize(path: Path):
-    return normalize_bill(path)
+from tests.parsed_bills import parsed_bill
 
 
 @lru_cache(maxsize=None)
 def _cached_diff(old_path: Path, new_path: Path):
     """Memoize (parse + diff) per (old_path, new_path) for the corpus smoke test."""
-    return diff_bills(_cached_normalize(old_path), _cached_normalize(new_path))
+    return diff_bills(parsed_bill(old_path), parsed_bill(new_path))
 
 
 def _changes_by_type(diff, change_type):

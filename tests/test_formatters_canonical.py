@@ -31,10 +31,11 @@ from deltatrack.formatters.canonical import (
 )
 from deltatrack.parsers.pdf_anchors import Anchor
 
-# Local pin (guard against unintended bumps). 3.0 removed `amount_entries` (#671), so
+# Local pin (guard against unintended bumps). 3.1 added the optional `print_breaks`,
+# `full_text_layout` and `bill.title` (#653); 3.0 removed `amount_entries` (#671), so
 # a change object carries no money field at all; 2.0 had removed the deprecated
 # `amounts` before it (#274); 1.3 added the optional `tree` field (#108).
-SCHEMA_VERSION = "3.0"
+SCHEMA_VERSION = "3.1"
 
 
 # ---------- XML producer ------------------------------------------------------
@@ -59,7 +60,7 @@ def _xml_diff_dict(*, changes=None, **overrides) -> dict:
 def test_xml_envelope_has_versioned_metadata():
     canonical = xml_diff_to_canonical(_xml_diff_dict())
     assert canonical["schema_version"] == SCHEMA_VERSION
-    assert canonical["bill"] == {"type": "hr", "number": 4366, "congress": 118}
+    assert canonical["bill"] == {"type": "hr", "number": 4366, "congress": 118, "title": None}
     assert canonical["versions"]["v1"] == {
         "label": "Reported in House",
         "version_number": 1,
@@ -330,7 +331,7 @@ def test_pdf_envelope_marks_source_pdf_and_version_number_null():
     assert canonical["versions"]["v1"]["version_number"] is None
     assert canonical["versions"]["v2"]["source"] == "pdf"
     assert canonical["versions"]["v2"]["version_number"] is None
-    assert canonical["bill"] == {"type": "hr", "number": 4366, "congress": 118}
+    assert canonical["bill"] == {"type": "hr", "number": 4366, "congress": 118, "title": None}
 
 
 def test_pdf_modified_hunk_canonical_fields():

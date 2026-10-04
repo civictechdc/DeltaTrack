@@ -862,7 +862,7 @@ class TestCompareLegacyTwoPathForm:
         assert data["schema_version"], "the internal shape carried no version; the contract does"
         assert data["versions"]["v1"]["label"] == "reported-in-house"
         assert data["versions"]["v2"]["label"] == "enrolled-bill"
-        assert data["bill"] == {"type": "hr", "number": 4366, "congress": 118}
+        assert data["bill"] == {"type": "hr", "number": 4366, "congress": 118, "title": None}
         assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
         assert [c["path"]["v2"] for c in data["changes"]] == [
             ["TITLE I\u2014DEPARTMENT OF DEFENSE", "Military construction, army"]

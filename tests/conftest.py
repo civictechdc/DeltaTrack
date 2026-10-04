@@ -52,8 +52,9 @@ try:
             "tree, and being inside the owning checkout does not make its source this source."
         )
 
-    from deltatrack.bill_tree import BillNode, BillTree, normalize_bill
+    from deltatrack.bill_tree import BillNode, BillTree
     from deltatrack.diff_bill import NodeDiff, diff_bills
+    from tests.parsed_bills import parsed_bill
 except ModuleNotFoundError as exc:
     # ONLY the engine's own top-level name is rewritten. Every other name is re-raised
     # untouched, which is conservative rather than precise: a typo'd `deltatrack.something`
@@ -911,8 +912,8 @@ HR5895_V5_PATH = fixture_path("115-hr-5895", "5_enrolled-bill.xml")
 
 
 # --- Session-scoped cached bill trees ---
-# These avoid re-parsing the same large XML files across test classes.
-# Safe because BillTree and BillNode are frozen dataclasses.
+# Named handles on trees from `parsed_bill`, which shares one parse per file across
+# the run (see tests/parsed_bills.py for why sharing is safe).
 
 
 @pytest.fixture(scope="session")
@@ -920,7 +921,7 @@ def hr4366_v1():
     """Parsed 118-hr-4366 reported-in-house (v1)."""
     if not HR4366_V1_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR4366_V1_PATH)
+    return parsed_bill(HR4366_V1_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -928,7 +929,7 @@ def hr4366_v6():
     """Parsed 118-hr-4366 enrolled-bill (v6)."""
     if not HR4366_V6_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR4366_V6_PATH)
+    return parsed_bill(HR4366_V6_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -936,7 +937,7 @@ def hr4366_v2():
     """Parsed 118-hr-4366 engrossed-in-house (v2)."""
     if not HR4366_V2_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR4366_V2_PATH)
+    return parsed_bill(HR4366_V2_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -944,7 +945,7 @@ def hr4366_v4():
     """Parsed 118-hr-4366 engrossed-amendment-senate (v4)."""
     if not HR4366_V4_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR4366_V4_PATH)
+    return parsed_bill(HR4366_V4_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -952,7 +953,7 @@ def hr4366_v5():
     """Parsed 118-hr-4366 engrossed-amendment-house (v5)."""
     if not HR4366_V5_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR4366_V5_PATH)
+    return parsed_bill(HR4366_V5_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -978,7 +979,7 @@ def hr5895_v4():
     """Parsed 115-hr-5895 engrossed-amendment-senate (v4)."""
     if not HR5895_V4_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR5895_V4_PATH)
+    return parsed_bill(HR5895_V4_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -986,7 +987,7 @@ def hr5895_v5():
     """Parsed 115-hr-5895 enrolled-bill (v5)."""
     if not HR5895_V5_PATH.exists():
         pytest.skip("Real XML not present")
-    return normalize_bill(HR5895_V5_PATH)
+    return parsed_bill(HR5895_V5_PATH)
 
 
 @pytest.fixture(scope="session")

@@ -68,7 +68,7 @@ from pathlib import Path
 
 import pytest
 
-from deltatrack.bill_tree import BillNode, normalize_bill
+from deltatrack.bill_tree import BillNode
 from deltatrack.diff_bill import (
     GroupAssignment,
     RetrievedPopulation,
@@ -86,6 +86,7 @@ from deltatrack.diff_bill import (
 from deltatrack.matching import NEW, OLD, CandidateSet, CorrespondenceEvidence, RetrieverInvocation
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
 from tests.corpus_paths import PROJECT_ROOT
+from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
     complete_sequence_ordinals,
     pair_key,
@@ -462,7 +463,7 @@ def test_the_candidate_set_materialises_exactly_what_retrieval_considered(old_pa
     without complaint, and the provenance assertion names the candidates. Observed red, then
     restored.
     """
-    old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+    old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
     recorded, candidates = production_retrieval_populations(old_tree, new_tree)
     key = pair_key(old_path, new_path)
     assert recorded, f"{key}: retrieval emitted no population at all, so this compares two empty sets"
@@ -489,7 +490,7 @@ def test_the_candidate_population_is_non_vacuous():
     """The gate above would pass on two empty dicts; this refuses that reading."""
     total = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         total += len(match_nodes_with_retrieval(old_tree, new_tree)[1])
     assert total > 1000, f"only {total} candidates materialised over the corpus; the gate is near-vacuous"
 
@@ -669,7 +670,7 @@ def test_the_admission_boundary_fails_closed_across_the_corpus(monkeypatch):
     """
     clean_have_candidates = []
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         if len(match_nodes_with_retrieval(old_tree, new_tree)[1]):
             clean_have_candidates.append(pair_key(old_path, new_path))
     assert clean_have_candidates, "no committed pair materialises a candidate; the fault has nothing to omit"
@@ -678,7 +679,7 @@ def test_the_admission_boundary_fails_closed_across_the_corpus(monkeypatch):
 
     failed_closed = []
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         try:
             match_nodes(old_tree, new_tree)
         except ValueError as exc:
@@ -793,7 +794,7 @@ def test_the_evidence_comparison_is_non_vacuous():
     """The gate above would pass on two empty lists; this refuses that reading."""
     scored = described = unique_calls = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         for call in observed_group_evidence(old_tree, new_tree):
             if call["phase"] == "unique":
                 unique_calls += 1
@@ -911,7 +912,7 @@ def test_production_measures_exactly_the_frozen_set_of_similarities():
     )
 
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         expected = EXPECTED_SIMILARITY_CALLS[key]
         assert production_similarity_calls(old_tree, new_tree) == expected, (
@@ -954,7 +955,7 @@ def test_the_call_count_gate_can_fire(monkeypatch):
 
     inflated = []
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         if production_similarity_calls(old_tree, new_tree) != EXPECTED_SIMILARITY_CALLS[key]:
             inflated.append(key)
@@ -1260,7 +1261,7 @@ def test_every_candidate_that_reached_assignment_keeps_its_evidence_on_the_corpu
     """
     total_candidates = total_links = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         _pairs, _candidates, assignments = match_nodes_with_stage_outputs(old_tree, new_tree)
         for index, assignment in enumerate(assignments):
@@ -1298,7 +1299,7 @@ def test_the_evidence_population_is_exactly_the_materialised_candidate_set():
     """
     checked = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         _pairs, candidates, assignments = match_nodes_with_stage_outputs(old_tree, new_tree)
         described = {item.link for assignment in assignments for item in assignment.evidence}
         materialised = {(candidate.old, candidate.new) for candidate in candidates.candidates()}
@@ -1545,7 +1546,7 @@ def test_no_round_1_pairing_reaches_the_stream_without_an_assignment_selecting_i
     """
     total = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         ordinals = complete_sequence_ordinals(old_tree.nodes, new_tree.nodes)
         pairs, _candidates, assignments = match_nodes_with_stage_outputs(old_tree, new_tree)
@@ -1708,7 +1709,7 @@ def test_refusing_a_unique_pair_fails_closed_on_the_committed_corpus(monkeypatch
     real_candidate_set = db.CandidateSet
     failed_closed = 0
     for old_path, new_path in manifest_version_pairs():
-        old_tree, new_tree = normalize_bill(old_path), normalize_bill(new_path)
+        old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
 
         recorded, _candidates = production_retrieval_populations(old_tree, new_tree)
@@ -2240,7 +2241,7 @@ def test_the_corpus_cannot_see_the_two_fixture_bound_mutations():
     untouched. That is precisely why the fixtures are mandatory -- and if this test ever goes
     red, the corpus has grown a case that exercises them and the finding needs revisiting.
     """
-    trees = [(pair_key(o, n), normalize_bill(o), normalize_bill(n)) for o, n in manifest_version_pairs()]
+    trees = [(pair_key(o, n), parsed_bill(o), parsed_bill(n)) for o, n in manifest_version_pairs()]
     baselines = {
         key: stream_digest(production_stream(old_tree.nodes, new_tree.nodes)) for key, old_tree, new_tree in trees
     }
@@ -2273,7 +2274,7 @@ def test_the_1x1_shortcut_computes_no_word_overlap(monkeypatch):
     """
     from deltatrack import diff_bill as db
 
-    trees = [(normalize_bill(old_path), normalize_bill(new_path)) for old_path, new_path in manifest_version_pairs()]
+    trees = [(parsed_bill(old_path), parsed_bill(new_path)) for old_path, new_path in manifest_version_pairs()]
     assert trees, "the shortcut comparison ran over zero version pairs"
 
     shortcuts = 0

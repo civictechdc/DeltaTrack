@@ -1,4 +1,4 @@
-# Canonical Diff JSON — v3.0
+# Canonical Diff JSON — v3.1
 
 This document specifies the canonical JSON shape produced when comparing two
 versions of a bill. It is the public contract between the diff engine and any
@@ -8,9 +8,37 @@ XML inputs and a diff produced from PDF inputs share this shape.
 
 ## Versioning
 
-Top-level field: `schema_version: "3.0"`.
+Top-level field: `schema_version: "3.1"`.
 
 ## Changelog
+
+- **3.1** — Added optional top-level `print_breaks: { v1, v2 } | null` (#653): where
+  the printer broke a line inside each whole-word line of `full_text`, so a consumer
+  can lay the text out as printed. Additive, backward compatible.
+
+  It exists because the printed layout is not recoverable from the whole-word text,
+  and the PDF pipeline used to ship a second, print-faithful document beside this one
+  for its own report, with different text and offsets. The report and the exported
+  document disagreed on most change spans, so what a reader downloaded was not what
+  they were looking at. One document now serves both: `full_text` stays whole-word,
+  and the report applies `print_breaks` to show the printed page.
+
+  Whether a break hyphen belongs to the word is decided by the producer, not left to
+  the consumer. GPO breaks a hyphenated compound at its own hyphen and breaks a long
+  word at a syllable, and prints the two identically: `INTEL-` / `LIGENCE` is
+  `INTELLIGENCE`, `McKinney-` / `Vento` is `McKinney-Vento`. The producer decides it
+  from how the document spells that word elsewhere (#650). Before this field, three
+  consumers each re-derived the rule and three disagreed.
+
+  Also added optional top-level `full_text_layout`, which states how `full_text` is
+  laid out (`"numbered_lines"` or `"paragraphs"`) and writes the rule for each into
+  this contract. A renderer used to infer it from `versions.v2.source` and slice a
+  line-number column whose width only the producer defined.
+
+  Also added optional `bill.title`, the bill's long title. The report heading used to
+  travel to the renderer beside the document, so a report could not be rebuilt from a
+  saved document alone. The PDF pipeline now also fills `bill.type` and `bill.number`
+  from the printed designator, which it previously read and discarded.
 
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
@@ -105,7 +133,7 @@ Top-level field: `schema_version: "3.0"`.
 {
   "schema_version": "3.0",
   "generator": { "name": "deltatrack", "version": "0.x" },
-  "bill":      { "type": "HR", "number": 4366, "congress": 118 },
+  "bill":      { "type": "hr", "number": 4366, "congress": 118, "title": "Making appropriations…" },
   "versions": {
     "v1": { "label": "Engrossed in House", "version_number": 1,    "source": "xml" },
     "v2": { "label": "Public Law",         "version_number": 4,    "source": "xml" }
@@ -114,6 +142,10 @@ Top-level field: `schema_version: "3.0"`.
   "full_text": {                            // optional, v1.1+
     "v1": "TITLE I—…\n\nSECTION 101. …",
     "v2": "TITLE I—…\n\nSECTION 101. …"
+  },
+  "print_breaks": {                         // optional, v3.1+ (PDF only)
+    "v1": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" },
+    "v2": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" }
   },
   "changes":  [ /* ChangeObject, see below */ ]
 }
@@ -136,6 +168,58 @@ fragments in `changes[].text` — `full_text` is the document; `text.old`/
 `text.new` are the diff fragments. Consumers using `full_text` for
 rendering should compute the diff at render time over the full strings,
 not try to splice the change fragments into the document.
+
+### `full_text_layout` (optional, v3.1+)
+
+How `full_text` is laid out, so a consumer reads rows and line numbers by rule
+instead of guessing them from the pipeline. `null` (or absent) exactly when
+`full_text` is. In both layouts a side's text is a sequence of rows joined by `\n`.
+
+| Value | Producer | Rows |
+|-------|----------|------|
+| `"numbered_lines"` | PDF | One row per line: its printed line number right-aligned in 5 characters (5 spaces when the line is unnumbered), then 2 spaces, then the line's text. An empty row separates one page from the next; pages count from 1. A line row is never empty, so the separator cannot be mistaken for a line. |
+| `"paragraphs"` | XML | Plain text with no line numbers or pages. An empty row is a paragraph break. |
+
+A 3.0 document has no `full_text_layout`. Its PDF text is `"numbered_lines"` and
+its XML text `"paragraphs"`, which a reader may take from `versions.v2.source`;
+that fallback exists for those documents only.
+
+### `print_breaks` (optional, v3.1+)
+
+Per side, every place the printer broke a line inside one of `full_text`'s
+whole-word lines (`numbered_lines` layout). The PDF pipeline joins a word the printer
+broke across lines, including across a page, back onto one line; this records each
+join so a consumer can undo it and show the printed page. `null` (or absent) when the
+text was not printed: the XML pipeline always.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `at` | int[] | **Delta-encoded** character offsets into `full_text[side]`: the first entry is absolute, each later one the increment from its predecessor. Each resolved offset is where the continuing printed line's text begins. |
+| `drop` | string | One `0`/`1` per break, same order. `1`: the printer's hyphen was removed when the word was joined, so it is restored before the break. `0`: the hyphen is the word's own and is already in the text. |
+| `line` | (int \| null)[] | The continuing printed line's line number, same order; `null` when unnumbered. |
+| `seam` | string | One `0`/`1` per break, same order. `1`: the continuing line is the first line of the next page. |
+
+To lay a side out as printed, walk its breaks in order. At each resolved offset,
+insert `-` when `drop` is `1`, then a row boundary (`\n`), or a page separator (`\n\n`)
+when `seam` is `1`, then the continuing line's number column as `numbered_lines`
+defines it. A seam break moves its page boundary up to the break, so the page
+separator that follows the joined line in `full_text` becomes a single `\n`. A span
+starting at a break offset moves after the inserted text; one ending there stays
+before it.
+
+Delta-encoded, with the per-break flags as bitstrings, because one object per break
+costs several times as much.
+
+**Decided per compared pair.** A break that a version's own text cannot settle is
+settled by how the other version in the comparison spells the word: own evidence
+first, the other version's only where the own text is silent, so a version is never
+overruled about a spelling it uses itself (#650). So `drop`, and the whole-word text
+it produces, can differ for the same PDF compared against a different version. The
+same holds for the whole-word `full_text` the PDF pipeline ships.
+
+**Why the producer carries this.** Whether a break hyphen belongs to the word is not
+decidable from the break — see the 3.1 changelog entry. A consumer may apply these
+breaks; it may not re-infer them.
 
 ### `tree` (optional, v1.3+)
 
@@ -167,16 +251,17 @@ it were removed.
 
 | Field      | Type              | Notes                                                       |
 |------------|-------------------|-------------------------------------------------------------|
-| `type`     | string            | Bill type code, e.g., `"HR"`, `"S"`, `"HJRES"`. May be empty. |
+| `type`     | string            | Lowercase bill type code, e.g., `"hr"`, `"s"`, `"hjres"`. May be empty. The PDF pipeline reads it from the printed designator (`H.R.` → `"hr"`). |
 | `number`   | integer \| string | Integer for canonical bills (e.g., `4366`); string for drafts or non-numeric identifiers. |
 | `congress` | integer \| string | Congress number, e.g., `118`. May be empty string when unknown. |
+| `title`    | string \| null    | Optional (v3.1+). The bill's long title, e.g. `"Making appropriations for…"`; `null` when none was found. XML takes it from the bill's official title; PDF reads it, best-effort, from the text after "AN ACT" / "A BILL". |
 
 ### `versions.v1` and `versions.v2`
 
 | Field            | Type                | Notes                                                                                       |
 |------------------|---------------------|---------------------------------------------------------------------------------------------|
 | `label`          | string              | Human-readable label, e.g., `"Engrossed in House"`, `"Public Law"`, `"draft"`.              |
-| `version_number` | integer \| null     | Ordinal index when known (XML pipeline). `null` for PDFs.                                   |
+| `version_number` | integer \| null     | The version's per-bill ordinal, the `n` of an `n_label` input filename (ADR 0013), on either pipeline; `null` when the filename carries none. Not a GPO bill-version code (`ih`, `enr`). |
 | `source`         | `"xml"` \| `"pdf"`  | Provenance. Lets consumers reason about structural confidence.                              |
 
 ### `summary`

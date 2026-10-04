@@ -42,15 +42,16 @@ from pathlib import Path
 import pytest
 
 from deltatrack.amounts import strip_amendment_annotations
-from deltatrack.bill_tree import extract_text_content, find_bill_bodies, find_bill_body, normalize_bill
+from deltatrack.bill_tree import extract_text_content, find_bill_bodies, find_bill_body
 from deltatrack.diff_bill import extract_amounts
 from deltatrack.formatters.canonical import _pdf_tree_payload
-from deltatrack.formatters.diff_html import _build_toc_from_tree
+from deltatrack.formatters.diff_html import _build_tree_nav
 from deltatrack.formatters.text_serializer import _xml_tree_payload, serialize_tree_for_tree
 from deltatrack.parsers.pdf_anchors import extract_anchors
 from deltatrack.parsers.pdf_text import pdf_full_text
 from tests.conftest import CORPUS_SWEEP, assert_manifest_committed, manifest_pdf_files, manifest_xml_files
 from tests.corpus_paths import fixture_path
+from tests.parsed_bills import parsed_bill
 from tests.pdf_corpus import cached_pages
 
 pytestmark = pytest.mark.slow
@@ -185,7 +186,7 @@ _PDF_NO_ANCHOR_LAYOUTS: dict[str, str] = {
 def _xml_tree_payload_for(path: Path) -> tuple[list[dict], str]:
     """The contract-shaped XML tree for one version, plus its full_text — built the
     way ``build_xml_full_text`` does, without the diff (the tree is per-side)."""
-    bill = normalize_bill(path)
+    bill = parsed_bill(path)
     text, _sections, spans, heading_offsets = serialize_tree_for_tree(bill)
     return _xml_tree_payload(bill, spans, heading_offsets), text
 
@@ -193,11 +194,11 @@ def _xml_tree_payload_for(path: Path) -> tuple[list[dict], str]:
 def _pdf_tree_payload_for(path: Path) -> tuple[list[dict], str, tuple, dict]:
     """The contract-shaped PDF tree for one version, plus its full_text — built the
     way the shipped canonical does. Uses ``pdf_full_text`` (the merged whole-word
-    variant), NOT ``pdf_full_text_print``: ``compare_pdfs`` builds the contract tree
-    from the non-print text (``_build_canonical(printed=False)``); the print variant
-    is display-only, and a dollar amount broken across a printed line would extract
-    differently there — so the print variant would measure a tree the consumer never
-    sees (feedback_measure_at_consumed_output).
+    text), NOT ``pdf_full_text_print``: the canonical carries the whole-word text and
+    builds its tree there; the printed layout is derived for display only, and a
+    dollar amount broken across a printed line would extract differently in it — so
+    the print variant would measure a tree the consumer never sees
+    (feedback_measure_at_consumed_output).
 
     Also returns the anchors and the offset table: the zero-anchor gate needs them to
     tell "this layout carries no margin line numbers" (#141) apart from "anchor
@@ -256,8 +257,8 @@ def _assert_schema_and_levels(roots: list[dict]) -> None:
 def _assert_no_blank_toc_rows(roots: list[dict], full_text: str) -> None:
     """Invariant 4: the leveled TOC the tree renders has no blank clickable rows
     and no empty collapsible groups (the consumed-output blank-row check)."""
-    html = _build_toc_from_tree(roots, full_text)
-    leaves = re.findall(r'<li class="toc-child">(.*?)</li>', html, re.S)
+    html = _build_tree_nav(roots, full_text)
+    leaves = re.findall(r'<li class="tree-node"[^>]*>(.*?)</li>', html, re.S)
     blank_leaves = [leaf for leaf in leaves if not re.sub(r"<[^>]+>", "", leaf).strip()]
     assert not blank_leaves, f"{len(blank_leaves)} blank TOC leaf row(s)"
     summaries = re.findall(r"<summary[^>]*>(.*?)</summary>", html, re.S)
@@ -268,7 +269,7 @@ def _assert_no_blank_toc_rows(roots: list[dict], full_text: str) -> None:
     # blank rows — passing the checks above while rendering nothing. If the tree
     # carries any labeled node, the TOC must render at least one entry.
     if any((n["label"] or "").strip() for n in _walk(roots)):
-        assert "toc-child" in html or "toc-group" in html, "labeled tree rendered an empty TOC"
+        assert "tree-node" in html or "tree-group" in html, "labeled tree rendered an empty TOC"
 
 
 def _assert_zero_anchor_layout(path: Path, test_id: str, full_text: str, anchors: tuple, offsets: dict) -> None:
@@ -576,7 +577,7 @@ def test_split_accounts_keep_their_name_corpus_wide() -> None:
         if not pairs:
             continue
         bills.add(xml_path.parent.name)
-        by_id = {n.element_id: n for n in normalize_bill(xml_path).nodes}
+        by_id = {n.element_id: n for n in parsed_bill(xml_path).nodes}
         for element_id, name in pairs.items():
             total += 1
             node = by_id.get(element_id)
