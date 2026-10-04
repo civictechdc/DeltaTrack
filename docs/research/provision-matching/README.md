@@ -1,7 +1,7 @@
 # Provision matching across bill versions — research
 
-Research supporting epic [#175](https://github.com/AgoraDMV/DeltaTrack/issues/175) and
-issue [#170](https://github.com/AgoraDMV/DeltaTrack/issues/170): how to match the same
+Research supporting epic [#175](https://github.com/civictechdc/DeltaTrack/issues/175) and
+issue [#170](https://github.com/civictechdc/DeltaTrack/issues/170): how to match the same
 provision across two versions of a bill when text alone is not enough (stub→expansion,
 reused section numbers, shared boilerplate, deliberate consolidation).
 

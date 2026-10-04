@@ -10,7 +10,7 @@ it, which process documents from untrusted sources.
 **Please do not open a public issue for a vulnerability.** A public report
 discloses the flaw before a fix exists. Instead, use GitHub's private reporting:
 
-- [Report a vulnerability](https://github.com/AgoraDMV/DeltaTrack/security/advisories/new)
+- [Report a vulnerability](https://github.com/civictechdc/DeltaTrack/security/advisories/new)
   (also reachable via the repo's **Security** tab → "Report a vulnerability").
 
 You'll get an acknowledgment within a week. This is a small volunteer-run [Civic

@@ -69,7 +69,6 @@ fetch = [
 dev = [
     "jsonschema>=4.21",  # canonical-diff schema validation tests; importorskip silently skips without it
     "pandas>=2.0",  # research notebooks and financial-classifier coverage tests
-    "pre-commit>=4.6.1",
     "pymupdf==1.28.2",  # PINNED EXACTLY, and result-bearing: the external-validity oracle renders adjudication stimuli through it and the cross-engine control re-measures through it, so a different version can move a PDFIUM-CONDITIONED FRAME qualification. It was previously undeclared, so a clean `uv sync` did not install it and `uv run python probes/...` failed with ModuleNotFoundError while Run 1 had used an ambient 1.28.2. DEV-ONLY: the published engine must not gain a second PDF engine (#367), and x04 G7 asserts this exact version.
     "pytest>=9.1.1",
     "pytest-cov>=6.0",
@@ -121,7 +120,7 @@ extend-exclude = ["docs/research/**/probes", "docs/research/**/*.md"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 # Report unused imports (F401) but never let `ruff check --fix` auto-delete them
-# (pre-commit, manual runs, or the editor hook). Otherwise an import added in one
+# (manual runs or the editor hook). Otherwise an import added in one
 # edit is stripped before its consumer lands in the next. Still flagged at lint time.
 unfixable = ["F401"]
 

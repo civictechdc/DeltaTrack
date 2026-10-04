@@ -60,7 +60,7 @@ the published dependency set; groups are development-time only and never publish
 the web group opt-in was rejected as worse than doing nothing: two test modules guard their
 imports with `pytest.importorskip("fastapi")`, so a default sync without it would convert
 them into silent skips — the green-by-skip pattern
-[#288](https://github.com/AgoraDMV/DeltaTrack/issues/288) exists to close.
+[#288](https://github.com/civictechdc/DeltaTrack/issues/288) exists to close.
 
 Alternatives considered:
 
@@ -68,7 +68,7 @@ Alternatives considered:
   deliberately does not foreclose it.
 - **Moving the whole of `server/` out as one unit.** Rejected: it would have left the
   product CLIs importing across the very boundary being drawn. Splitting it instead removed
-  two reach-arounds that [#62](https://github.com/AgoraDMV/DeltaTrack/issues/62) tracks.
+  two reach-arounds that [#62](https://github.com/civictechdc/DeltaTrack/issues/62) tracks.
 
 ## Consequences
 
@@ -85,9 +85,9 @@ Alternatives considered:
   invoked under `tools/`, and the deployed site launches the app from `web/`. A consumer
   outside this repository that hardcoded pre-split paths has to follow the split.
 
-References: [#367](https://github.com/AgoraDMV/DeltaTrack/issues/367),
+References: [#367](https://github.com/civictechdc/DeltaTrack/issues/367),
 [ADR 0005](0005-contained-two-version-tool.md),
 [ADR 0011](0011-local-only-processing.md),
 [ADR 0017](0017-installable-engine-package.md),
-[#62](https://github.com/AgoraDMV/DeltaTrack/issues/62),
-[#112](https://github.com/AgoraDMV/DeltaTrack/issues/112).
+[#62](https://github.com/civictechdc/DeltaTrack/issues/62),
+[#112](https://github.com/civictechdc/DeltaTrack/issues/112).

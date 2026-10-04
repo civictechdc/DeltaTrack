@@ -942,7 +942,7 @@ def _run_report_script(tmp_path: Path, parity_outcome: str) -> list[list[str]]:
             "PATH": f"{stub_dir}:/usr/bin:/bin",
             "GH_CALLS": str(calls),
             "GH_TOKEN": "stub-token",
-            "GITHUB_REPOSITORY": "AgoraDMV/DeltaTrack",
+            "GITHUB_REPOSITORY": "civictechdc/DeltaTrack",
             "RUN_URL": "https://example.invalid/actions/runs/1",
             "PARITY_OUTCOME": parity_outcome,
         },
@@ -1008,7 +1008,7 @@ def test_failure_report_titles_and_explains_each_condition(
     assert _argument(create, "--title") == expected_title, (
         f"PARITY_OUTCOME={parity_outcome!r} filed the wrong report title: {create}"
     )
-    assert _argument(create, "--repo") == "AgoraDMV/DeltaTrack", f"filed against the wrong repository: {create}"
+    assert _argument(create, "--repo") == "civictechdc/DeltaTrack", f"filed against the wrong repository: {create}"
 
     body = _argument(create, "--body")
     assert "https://example.invalid/actions/runs/1" in body, (
