@@ -1,9 +1,0 @@
-# DeltaTrack public site — force HTTPS for all requests.
-# Works when Apache serves or processes this directory (ISPConfig docroot / .htaccess).
-# Also enable "Force HTTPS" in ISPConfig for the vhost when using a reverse proxy.
-
-RewriteEngine On
-
-# Redirect http → https (preserve host and path)
-RewriteCond %{HTTPS} !=on
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

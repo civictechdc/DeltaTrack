@@ -14,7 +14,7 @@ Promotion updates both at once. Neither tracks `develop`.
 
 | Surface | What it is | How it updates |
 |---|---|---|
-| The hosted comparison app | The FastAPI upload app | `.github/workflows/deploy.yml`, on push to `main`. Builds with Railpack, pushes short-SHA and `latest` tags to GHCR, and deploys the short-SHA tag to Dokku |
+| The hosted comparison app | The FastAPI upload app | `.github/workflows/deploy.yml`, on push to `main`. What it builds and where it deploys: [deployment.md](deployment.md) |
 | The example reports | Static reports linked from the README's "See it in action" | `.github/workflows/update-examples.yml`, on push to `main`. Copies the already-committed `examples/` directory into a Pages artifact and deploys it |
 
 **The workflow does not render anything.** It used to, and that is worth stating plainly
@@ -93,12 +93,9 @@ attributable.
    anyone has about them. A failure there leaves the previous Pages deploy serving, which
    is stale rather than broken.
 
-   The app deployment starts from the same `main` push; it is not sequenced behind the
-   separate CI and security workflows. Railpack builds and pushes the short-SHA and
-   `latest` image tags, then `dokku/github-action` deploys the short-SHA tag through
-   `git:from-image`. A red deploy can therefore mean build, registry, SSH, or Dokku
-   failure; inspect the failed step rather than assuming the host changed. Host
-   prerequisites are in [docs/https-redirect.md](https-redirect.md).
+   The app deploy starts from the same `main` push and is not sequenced behind the CI
+   and security workflows, so a red CI run on `main` does not stop it. Reading a failed
+   deploy run, and the host prerequisites, are in [deployment.md](deployment.md).
 
 5. **Verify both surfaces manually.** Run one real comparison on the hosted app, then
    open the README's "See it in action" links to confirm they serve the promoted reports.
