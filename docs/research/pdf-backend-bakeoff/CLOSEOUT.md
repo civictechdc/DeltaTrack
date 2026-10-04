@@ -70,8 +70,10 @@ It was meant to supply a heading-level oracle and a fresh holdout. It did not.
 ## Next product task
 
 **Make the PDF parser's PDFium import lazy, so the engine imports under Pyodide with no stub.**
-`src/deltatrack/parsers/pdf_text.py` imports `pypdfium2` at module scope, and the XML path
-reaches it only because `bill_tree.py` imports two regex helpers from `parsers/pdf_anchors.py`,
-which imports `pdf_text`. The XML path never calls PDFium. Removing that chain is the stated
-remaining blocker for the browser build, and it is the prerequisite for plugging in a WASM
-PDFium backend. Gate it with `verify_parity.py`.
+`src/deltatrack/parsers/pdf_text.py` imports `pypdfium2` at module scope. The XML path never
+calls PDFium, but it reaches that import through module-level imports of
+`parsers/pdf_anchors.py`, which imports `pdf_text`: at least `bill_tree.py` and the canonical
+JSON formatter. Because every route ends at `pdf_text.py`, making the import lazy there covers
+them all, where moving individual helpers would not. This is the remaining blocker for the
+browser build and the prerequisite for plugging in a WASM PDFium backend. Tracked in #751; gate
+it with `verify_parity.py`.
