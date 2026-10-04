@@ -162,11 +162,9 @@ def compare_xml_trees(
     """Canonical diff JSON for two already-parsed versions (see schema/canonical-diff.md).
 
     The JSON sibling of :func:`compare_xml_trees_html`, and what
-    ``diff_bill.py compare --format json`` returns. The two formats are the same
-    document rendered two ways, which is the point of routing both through here (#693):
-    the command line used to serialize the engine's internal diff dictionary instead,
-    so a consumer could reach the published contract only by downloading it from a
-    rendered report in a browser.
+    ``diff_bill.py compare --format json`` returns. Both formats route through here so
+    they stay one document rendered two ways, and the command line publishes the same
+    contract the web API does (#693).
 
     See :func:`_build_from_trees` for what the version metadata does.
     """

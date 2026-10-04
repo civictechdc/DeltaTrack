@@ -185,11 +185,9 @@ def financial_change_to_dict(fc: FinancialChange) -> dict:
     ceilings and loan guarantee commitment limitations with nothing distinguishing
     them; ADR 0018 defers the layer that could to #115.
 
-    #671 removed the paired form from both published contracts; #687 then removed the
-    unread `paired_amounts` field that kept computing it. A populated field nothing
-    reads presents as available, which made re-publishing the account claim the path of
-    least resistance. `match_amounts` is unchanged and still tested — #115 calls it
-    once it has an account model to name what each figure is.
+    The paired form is not computed at all, published or not: a populated field nothing
+    reads presents as available, and makes re-publishing the account claim the easy
+    path. `match_amounts` stays, tested and uncalled, for #115. History: #671, #687.
     """
     return {
         "old_amounts": list(fc.old_amounts),
@@ -246,7 +244,7 @@ class RetrievedPopulation:
         The full cross product, which is what the legacy scorer evaluates. No rank and no
         score: round-1 retrieval is structural, it emits membership and provenance, and ADR
         0020 is explicit that an invented score is worse than an absent field because it looks
-        comparable. The similarity ratio is *correspondence evidence* and belongs to B2.
+        comparable. The similarity ratio is *correspondence evidence*, not a retrieval score.
         """
         for old_ref in self.old_refs:
             for new_ref in self.new_refs:
@@ -510,26 +508,24 @@ def group_correspondence_evidence(
     ## Two populations, two signal sets, and why the second carries no number
 
     A multi-candidate population gets :data:`WORD_OVERLAP` for every pair: the word-level ratio
-    of the two normalized bodies, which is the quantity the fused matcher computed to decide the
-    greedy competition. It is natively evidence here -- unlike round 2, where the same name is a
-    promoted retrieval score.
+    of the two normalized bodies, and the quantity the greedy competition is decided on. It is
+    natively evidence here -- unlike round 2, where the same name is a promoted retrieval
+    score.
 
-    A 1x1 population gets **one record with no signals**, and that absence is the preserved
-    behaviour rather than an omission. The fused matcher selected a sole candidate without
-    computing a ratio, which skips 593 invocations' worth of ``text_similarity`` on the
-    committed corpus; #623 measured the equivalent tidy-up at +21% on ``diff_bills`` and
-    rejected it. So no ratio is computed and none is invented: an empty
-    :class:`~deltatrack.matching.CorrespondenceEvidence` is valid under the checked-in contract,
-    and a fabricated ``1.0`` or ``None`` would be a number a later reader could compare against
-    a real one. The record exists because the candidate reaches assignment and every such
-    candidate is described; what it says is nothing.
+    A 1x1 population gets **one record with no signals**, and that absence is deliberate. A
+    sole candidate is selected without computing a ratio, so none is computed here and none is
+    invented: an empty :class:`~deltatrack.matching.CorrespondenceEvidence` is valid under the
+    checked-in contract, and a fabricated ``1.0`` or ``None`` would be a number a later reader
+    could compare against a real one. The record exists because the candidate reaches
+    assignment and every such candidate is described; what it says is nothing.
+
+    History: #623 measured scoring these too, and rejected it.
 
     **Not :func:`_similarity_signals`.** That helper serves the later similarity revocation rule
     and deliberately computes the diff first, skipping the ratio entirely for unchanged bodies.
-    Reusing it here would change which ``text_similarity`` calls the engine makes -- the fused
-    group matcher scores every candidate of a multi-candidate population whether or not the
-    bodies happen to be identical. B2 extracts the behaviour that exists rather than making the
-    two similarity rules aesthetically uniform.
+    Reusing it here would change which ``text_similarity`` calls the engine makes: a
+    multi-candidate population scores every candidate, whether or not the bodies are
+    identical.
 
     A one-sided population forms no pair, so it is admitted to nothing, describes nothing and
     returns ``()``.
@@ -545,8 +541,8 @@ def group_correspondence_evidence(
     if len(population.old) == 1 and len(population.new) == 1:
         return (CorrespondenceEvidence(old=population.old_refs[0], new=population.new_refs[0]),)
 
-    # The legacy loop's exact shape, including re-normalizing each new body per old node.
-    # Hoisting that out is a pure-function optimisation and not this slice's to make.
+    # Re-normalizes each new body per old node. Hoisting that out is a pure-function
+    # optimisation, deliberately kept separate from any matching-policy change.
     evidence: list[CorrespondenceEvidence] = []
     for old_index, old_node in enumerate(population.old):
         old_normalized = _normalize_text(old_node.body_text)
@@ -629,18 +625,17 @@ def assign_group(
 
     ``oi`` and ``ni`` are positions in ``population.old_refs`` / ``population.new_refs``,
     reconstructed here and stored nowhere. They are **not** ADR 0019 ordinals, not
-    ``CandidateSet`` iteration positions and not positions in ``evidence``: #590 measured that
-    substituting parser ordinals for them changes the selected correspondence, and B0 measured
-    that using the candidate set's canonical order changes the selected links on 174 of 329
-    greedy invocations. The same separation ``_greedy_move_links`` keeps on the round-2 side,
-    for the same reason.
+    ``CandidateSet`` iteration positions and not positions in ``evidence``: substituting either
+    parser ordinals or the candidate set's canonical order for them changes the selected
+    correspondence, measured on the committed corpus (#590). The same separation
+    ``_greedy_move_links`` keeps on the round-2 side, for the same reason.
 
     A 1x1 population selects its sole candidate outright, without reading a signal -- which is
     what the greedy would do anyway, and what lets :func:`group_correspondence_evidence` leave
     the record empty.
 
-    Leftovers follow the selections: old first in local order, then new, which is the order the
-    fused matcher emitted them in and the order round 1b's population depends on.
+    Leftovers follow the selections: old first in local order, then new, which is the order
+    round 1b's population depends on.
 
     Malformed input raises rather than resolving itself. A population whose evidence is not
     exactly one record per retrieved candidate means the two stages disagree about what was
@@ -743,33 +738,27 @@ def _match_unique_path_group(
     do -- a 1x1 assignment leaves nothing over, and a one-sided group is not retrieved at all --
     so the cross-division round has no population to be built from and is not run.
 
-    **This is what B3 replaced, and the replacement is the point.** The pre-B3 fast path appended
-    ``(old_nodes[0], new_nodes[0])`` directly, so the great majority of round-1 correspondences
-    were selected by a tuple construction that formed no candidate, described nothing and reached
-    no assignment stage. The candidate set was collision-path-complete and a recall figure read off
-    it was wrong by the size of this population. It is now round-1-complete.
+    **This path runs the stages rather than short-circuiting them.** Appending
+    ``(old_nodes[0], new_nodes[0])`` directly would select the great majority of round-1
+    correspondences by a tuple construction that forms no candidate, describes nothing and
+    reaches no assignment stage — leaving the candidate set complete only for the collision
+    path, so a recall figure read off it would be wrong by the size of this population.
 
     **Retaining the fast path's cost profile is deliberate and is not the same as retaining the
     fast path.** The alternative -- sending every unique group through
-    :func:`_match_collision_group` -- costs 2.96x the pre-B3 traversal on the committed corpus,
-    because that path partitions by division, forms one population per division, and runs a second
-    retrieval round over the leftovers. None of that is reachable for a group holding at most one
-    observation per side. So this stays a separate orchestration over the SAME stages rather than
-    a second implementation of them: no stage is duplicated here, and the two paths cannot diverge
-    in what they admit, describe or select.
+    :func:`_match_collision_group` -- would partition by division, form one population per
+    division, and run a second retrieval round over the leftovers. None of that is reachable for a
+    group holding at most one observation per side. So this stays a separate orchestration over the
+    SAME stages rather than a second implementation of them: no stage is duplicated here, and the
+    two paths cannot diverge in what they admit, describe or select.
 
-    An early estimate priced that alternative at 1.62x against a *pre-B1* collision path, which had
-    no candidate set, no evidence records and no ``GroupAssignment``. B1 and B2 made that path cost
-    more per group, so the thing B3 declines to do got more expensive while B3 was being reached;
-    re-measured with every arm in one process it is roughly 2.9x, against roughly 2.4x for what
-    shipped. Treat those as the ordering rather than as figures to quote: they move a few percent
-    between runs, and the durable claim is that B3 sits between the two paths, nearer the cheaper
-    one. PR #632 carries the measurement.
+    History: #632 measured isolated traversal cost; the all-collision alternative was about 25%
+    slower than this path (2.96x against 2.37x, both relative to the earlier direct-append path).
 
-    **Zero ``text_similarity`` calls, preserved through the stages rather than around them.** A
-    1x1 population takes :func:`group_correspondence_evidence`'s shortcut -- one record, no signals,
-    no ratio -- which is the behaviour the fused matcher had and #623 measured the tidy-up of at
-    +21%. It is preserved here by reaching the same branch, not by skipping the stage.
+    **Zero ``text_similarity`` calls, reached through the stages rather than around them.** A
+    1x1 population takes :func:`group_correspondence_evidence`'s shortcut -- one record, no
+    signals, no ratio -- by reaching the same branch, not by skipping the stage.
+    History: #623 measured scoring these too, and rejected it.
 
     **The one-sided group is routed unclaimed, not settled.** A ``(node, None)`` here is an
     unmatched observation exactly as it is on the collision path: round 2 may still pair it with a
@@ -807,7 +796,7 @@ def _match_collision_group(
 ) -> tuple[list[tuple[BillNode | None, BillNode | None]], list[GroupAssignment]]:
     """Resolve a collision group: two retrieval rounds, each followed by evidence and assignment.
 
-    Orchestration only, and after B2 the four ADR 0020 stages are each somewhere else:
+    Orchestration only: the four ADR 0020 stages are each somewhere else,
     :func:`retrieve_within_division_populations` and :func:`retrieve_cross_division_population`
     decide what is considered, :func:`group_correspondence_evidence` describes it, and
     :func:`assign_group` decides what corresponds. What remains here is running them in order
@@ -896,8 +885,8 @@ def match_nodes_with_stage_outputs(
     see :class:`GroupAssignment`.
 
     **It is round-1-complete.** Every two-sided ``match_path`` group is resolved by an
-    assignment, whether it collides or not: B3 brought the unique path under the same four
-    stages, so no pairing reaches the stream from a tuple construction. A one-sided group
+    assignment, whether it collides or not: the unique path runs the same four stages, so no
+    pairing reaches the stream from a tuple construction. A one-sided group
     contributes no assignment because it forms no pair -- there is nothing to decide.
     ``tests/test_round1_stages.py`` binds both halves.
 
@@ -919,11 +908,9 @@ def match_nodes_with_stage_outputs(
     canonical ordinal-pair order is deliberately not the order any decision is made in, and
     assignment consumes the ordered ``RetrievedPopulation`` tuples and never this set at all.
 
-    **The set is now round-1 candidate recall, and B3 is what made it so.** Before B3 it held
-    the collision path's candidates and nothing else, so a recall figure read off it was wrong by
-    the size of the unique-path population -- 14,001 of the committed corpus's pairings against
-    the collision path's few thousand, which is not a rounding error. It is now every pair round 1
-    considered.
+    **The set is round-1 candidate recall**: every pair round 1 considered, both paths. Holding
+    only the collision path's candidates would make a recall figure read off it wrong by the size
+    of the unique-path population, which is the larger of the two.
 
     Still not *comparison-wide* recall, and the remaining gap is named rather than left implied:
     round 2 keeps its own retrieval (:func:`retrieve_move_candidates`) and its candidates do not
@@ -1089,8 +1076,7 @@ def _normalize_text(text: str) -> str:
 #: The assignment rounds this pipeline runs, in order. Round 1 is ``match_nodes`` followed by
 #: :func:`apply_similarity_assignment_rule`; both its paths now run the separated stages
 #: (:func:`group_correspondence_evidence`, :func:`assign_group`), so it holds no fused assignment
-#: act -- B3 was the slice that closed the last one. Round 2 is the
-#: move pass below. These are provenance carried on a
+#: act. Round 2 is the move pass below. These are provenance carried on a
 #: :class:`SettledCorrespondence` so classification can reproduce the legacy record order and
 #: label a move — not a ranking, and not a quality signal.
 PATH_ROUND = 1
@@ -1638,8 +1624,7 @@ def settle_correspondences(
             # The exact record the similarity rule read to keep this pairing, carried through to
             # the correspondence it selected. The contract requires exactly one evidence record
             # per selected link; a missing one is refused rather than replaced by an empty record,
-            # because the empty record is what this slice exists to remove and a silent fallback
-            # would reinstate it wherever the wiring is wrong.
+            # because a silent fallback to an empty record would hide wiring that is wrong.
             item = evidence_by_link.get((old_ref, new_ref))
             if item is None:
                 raise ValueError(
@@ -1802,17 +1787,17 @@ def diff_bills(old: BillTree, new: BillTree) -> BillDiff:
 
     The body is the ADR 0020 stage sequence, written out so stage ownership reads off the call
     graph rather than off a comment. Both retrieval rounds now run **before** classification,
-    which is the rule this slice exists to satisfy: retrieval may run in several rounds and a
-    later round may consult earlier matching state, but none of it may run after classification.
+    per ADR 0020: retrieval may run in several rounds and a later round may consult earlier
+    matching state, but none of it may run after classification.
 
     Round 2 stays after :func:`apply_similarity_assignment_rule`, and that ordering is load-bearing
     rather than incidental — 228 of the corpus's 496 selected moves touch an observation that
     exists only because the similarity rule revoked its pairing, and 145 have both sides so
-    produced. Post-#591 that is a sequencing constraint inside matching, no longer a dependency
-    on classification output.
+    produced. It is a sequencing constraint inside matching, not a dependency on
+    classification output. History: #591.
 
-    **Round 1 holds no fused assignment act, as of B3.** Both of its paths are separated the same
-    way: retrieval names the population, evidence describes every candidate it admits, and
+    **Round 1 holds no fused assignment act.** Both of its paths are separated the same way:
+    retrieval names the population, evidence describes every candidate it admits, and
     :func:`assign_group` decides which of them correspond, reading the evidence and never the
     texts. The unique path differs only in how much of that machinery a group of at most one
     observation per side can reach -- one round, no division partition, no measurement -- not in
@@ -1824,8 +1809,7 @@ def diff_bills(old: BillTree, new: BillTree) -> BillDiff:
     the only one that owns a threshold.
 
     What remains fused, said plainly: **nothing in round 1.** Whatever ADR 0020 has left to
-    separate is outside this round, and naming it is that slice's job rather than this
-    docstring's.
+    separate is outside this round.
     """
     registry = observation_registry(old, new)
     pairings = match_nodes(old, new)
@@ -2067,15 +2051,11 @@ def cmd_compare(args: argparse.Namespace) -> None:
     # It owns the whole XML → report chain (#42), so the CLI, the web app, and
     # render_examples.py cannot drift into rendering the same pair differently.
     #
-    # BOTH formats enter it (#693). `--format json` used to serialize this module's
-    # own `bill_diff_to_dict` output, which is a pipeline stage rather than a
-    # published contract: it carries no `schema_version`, is specified nowhere, and
-    # shared only two top-level keys with what `POST /api/compare?output=json`
-    # returns. So the two surfaces answered the same question in two vocabularies,
-    # and the canonical document was reachable only by rendering HTML and clicking
-    # the download button in a browser, which a script cannot do. The internal
-    # shape stays reachable as a library call (`bill_diff_to_dict`); what is gone is
-    # its appearance on a command-line surface that documents the other one.
+    # BOTH formats enter it, so `--format json` returns the published canonical
+    # document, the same one `POST /api/compare?output=json` does. Why not serialize
+    # `bill_diff_to_dict`: it is a pipeline stage with no `schema_version` and no
+    # spec, so the CLI would answer in a second vocabulary. It stays reachable as a
+    # library call. History: #693.
     from deltatrack.compare.xml import compare_xml_trees, compare_xml_trees_html
 
     old = version_identity_from_filename(old_path.name, fallback="Start version")

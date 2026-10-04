@@ -4,36 +4,28 @@ Source-neutral by construction. It imports nothing from ``deltatrack`` and must 
 way, because both pipelines depend on it and one of them depends on it for *observation
 production* rather than for reporting.
 
-**Why this is a module rather than a private helper in the differ.** ADR 0020 slice 1 moved
-PDF block formation into ``parsers.pdf_blocks`` so that an ADR 0019 parser revision could be
-derived without hashing the matcher. That left one thread uncut:
+**Why a module rather than a private helper in the differ.**
 ``pdf_blocks._is_strippable_heading_line`` calls :func:`extract_amounts`, and the call is
 **result-bearing** — an uppercase heading with no recognised amount may be stripped from a
 block body, while one carrying an amount (an all-caps ``TOTAL, …, $X`` recap line) must be
-retained, so a money change is never silently dropped.
-
-While that function lived in ``diff_bill``, a change to the regexes below could change the
-emitted PDF observation sequence **without touching any file a PDF parser revision covered**.
-That is exactly the failure ADR 0019 identity exists to prevent: identity must change
-whenever code capable of changing the emitted observations changes. Hashing all of
-``diff_bill`` would have fixed it by putting matching policy back inside observation
-identity, which is the coupling slice 1 removed. Extracting the primitive is the fix that
-does not trade one defect for the other.
+retained, so a money change is never silently dropped. Sourced from a differ instead, a change
+to the regexes below would change the emitted PDF observation sequence **without touching any
+file a PDF parser revision covers** — the failure ADR 0019 identity exists to prevent, since
+identity must change whenever code capable of changing the emitted observations changes.
+Hashing the differ would fix that only by putting matching policy back inside observation
+identity, which is the coupling ADR 0020 removes.
 
 So this module is part of the **PDF parser-revision dependency closure**:
 
     parsers/pdf_text.py + parsers/pdf_anchors.py + parsers/pdf_blocks.py
       + deltatrack/amounts.py + the pypdfium2 distribution version
 
-The precedent is ``deltatrack.similarity``, extracted for the same shape of reason (#492) and
-which records the rule this follows: a number or primitive lives beside its use until a
-second consumer appears, and that is the moment to promote it. There are now two, and one of
-them is a parser.
-
 **Scope.** Only the extraction primitive lives here. ``match_amounts`` and its word-level
-pairing stay in ``diff_bill``: they are diff machinery, only one pipeline pairs amounts
-across two texts, and moving them would have widened a dependency repair into the general
-#62 cleanup it is deliberately not.
+pairing stay in ``diff_bill``: they are diff machinery, and only one pipeline pairs amounts
+across two texts. Widening this into the general #62 cleanup is deliberately not done.
+
+History: #492 set the rule this follows — a primitive lives beside its use until a second
+consumer appears, and that is the moment to promote it.
 """
 
 from __future__ import annotations

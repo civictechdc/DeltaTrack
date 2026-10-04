@@ -1,4 +1,4 @@
-"""Word-level text similarity for diffing, and the two cutoffs that read it (#492).
+"""Word-level text similarity for diffing, and the two cutoffs that read it.
 
 Both DeltaTrack pipelines decide whether two pieces of a bill are "the same text,
 edited or moved" or "two unrelated changes" by comparing them word by word and
@@ -6,44 +6,26 @@ thresholding the ratio. Two numbers make that call:
 
 ``SIMILARITY_THRESHOLD`` (0.4)
     Below this, a pair matched by path is treated as unrelated and split into a removal
-    plus an addition. **A correspondence cutoff, and nothing else.** It used to double as
-    the renderer's legibility cutoff; that consumer now owns its own number (see below).
+    plus an addition. **A correspondence cutoff, and nothing else** — the renderer's
+    legibility cutoff is a separate number, see below.
 ``MOVE_THRESHOLD`` (0.6)
     Above this, a removed/added pair is reconciled as a move rather than left as two
     independent changes.
 
-Both lived in ``diff_bill`` and were re-declared in ``diff_pdf``, restated as bare
-literals in the tests, and written a fifth time as an unnamed default argument in
-``formatters/_text.word_diff``. Nothing checked the copies agreed. Each copy carried a
-comment asserting it matched the original, and those comments were the entire mechanism.
+**One definition each, here.** Copies kept in step by a comment asserting they agree are
+not a mechanism: a partial recalibration would leave the two pipelines disagreeing about what
+counts as a move, so the same bill diffed from its PDF would classify a section differently
+from the same bill diffed from its XML — each pipeline self-consistent, every test green.
+#368 and #170 are both open and both would retune these, so that is expected work rather
+than a hypothetical.
 
-That matters because a partial recalibration would not fail: the two pipelines would
-simply disagree about what counts as a move, so the same bill diffed from its PDF would
-classify a section differently from the same bill diffed from its XML, each pipeline
-self-consistent and every test green. The cutoffs are not settled either — #368 and #170
-are both open and both would move or reinterpret them — so a recalibration is expected
-work, not a hypothetical.
-
-The ``formatters/_text`` copy was the one worth the most care. It was a bare default, so
-grepping for the constant name did not find it, and its only caller renders without
-passing it; the site that decides how the inline word-diff reaches the reader was named
-by nothing. It was confirmed live before being rewired (a pair scoring 0.429 renders
-inline at 0.4 and stacked at 0.6), so it is a real consumer rather than dead code.
-
-**That consumer has since been given its own cutoff, and no longer reads anything here.**
-Naming the number fixed its invisibility but pointed the rendering layer at the differ's
-correspondence policy, so changing what "the same provision" means also changed what a
-reader sees, in the same edit, with no way to test the two apart. ADR 0020 names that
-coupling and requires its removal; ``formatters/_text.LEGIBILITY_THRESHOLD`` is where the
-renderer's number lives now. The two carry the same value and are free to diverge.
-Nothing asserts they are equal, deliberately: such a test would restore the coupling in
-the suite and would redden the moment this cutoff is legitimately retuned.
-
-A module rather than a constants file, for two reasons. It is cohesive around one real
-concept instead of a bag of unrelated numbers. And it fixed a layering problem: the
-rendering layer needed a cutoff, and importing one from ``diff_bill`` would have made it
-depend on the differ. That second reason has now been answered better still, by the
-renderer not needing a cutoff from the engine at all.
+**The renderer's legibility cutoff is not one of these.**
+``formatters/_text.LEGIBILITY_THRESHOLD`` owns the number deciding how an inline word-diff
+reaches the reader. Pointing the rendering layer at a correspondence cutoff would mean
+changing what "the same provision" means also changed what a reader sees, in one edit, with
+no way to test the two apart — the coupling ADR 0020 requires removed. The two carry the same
+value and are free to diverge; nothing asserts they are equal, deliberately, since such a
+test would restore that coupling in the suite.
 
 Deliberately NOT a general ``constants.py``. The other numeric constants in the codebase
 (``_SPACE_FACTOR``, ``_BASELINE_TOL_FACTOR``, ``_SIZE_EPS``, ``_COVERAGE_MIN``,
@@ -54,6 +36,9 @@ showing why it sits in an empty gap between two populations. Centralising those 
 separate each number from the reasoning that makes it defensible. The defect being fixed
 is one value written in many places, not values living near their use. If a second
 consumer appears for one of them, that is the moment to promote it.
+
+History: #492 consolidated five copies of these two numbers, one of them an unnamed default
+argument in ``formatters/_text.word_diff``.
 """
 
 from __future__ import annotations
