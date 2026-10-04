@@ -236,8 +236,7 @@ def _python_sources(root: Path = PROJECT_ROOT) -> list[Path]:
     machine: ``.claude/`` held 3348 ``.py`` in nested worktrees, each a full copy of this
     repository, and ``.venv/`` 1886 — and a conventionally named ``venv/`` or ``build/``
     carries no leading dot to catch it). It is also the source of truth the fixture
-    floors in this suite already use. No claim is made here about pre-commit, which runs
-    ruff and ruff-format and no pytest.
+    floors in this suite already use.
 
     Both failure modes are loud, because a scan that cannot enumerate its own inputs
     cannot police anything and a shrunken one passes every rule vacuously:

@@ -52,7 +52,7 @@ value renders as the whole old amount removed and the whole new amount added. On
 corpus, **27** of 327 such splits carry dollar amounts on *both* sides. That is the measured
 population in which a correspondence decision can propagate into materially different
 financial output — not a count of confirmed errors, since none of the 27 has been adjudicated.
-The mechanism itself is not in doubt — [#368](https://github.com/AgoraDMV/DeltaTrack/issues/368)
+The mechanism itself is not in doubt — [#368](https://github.com/civictechdc/DeltaTrack/issues/368)
 traces it through the code — and it is the direction of failure that matters here: where a
 split is wrong, the money layer still reports correctly on the input it was given, so a
 correspondence error surfaces one stage later as a financial one.
@@ -191,7 +191,7 @@ Money extraction is a function of the **corresponding text pair, not of the chan
 and this is already true in the code: `bill_diff_to_dict` computes it for every change
 whatever its `change_type`. So money extraction consumes the correspondence, in parallel
 with classification rather than downstream of it, and **may not participate in deciding
-correspondence**. [#368](https://github.com/AgoraDMV/DeltaTrack/issues/368) traces the
+correspondence**. [#368](https://github.com/civictechdc/DeltaTrack/issues/368) traces the
 failure mode this rule guards: when correspondence is wrong, money still reports correctly on
 the text pair it receives, so the defect originates in correspondence rather than in money
 extraction. Placing money after classification would imply the change type is an input to it,
@@ -210,7 +210,7 @@ the contents of one stage change.
 - which measure becomes the production score, and any cutoff value;
 - whether structural signals are primary, secondary or worthless. The architecture provides a
   place for a structural evidence term and to measure it; it assigns no weight.
-  ([#170](https://github.com/AgoraDMV/DeltaTrack/issues/170)'s "structure primary, text
+  ([#170](https://github.com/civictechdc/DeltaTrack/issues/170)'s "structure primary, text
   demoted to tiebreaker" framing is stronger than the research supports and is not adopted);
 - whether header equality is privileged;
 - which retrievers ship, and what bounds, K or cutoffs they use. Retrieval policy is permitted
@@ -282,8 +282,8 @@ the contents of one stage change.
 - **Evidence retention is bounded on purpose** — for candidates that reach assignment, not
   every pair ever scored. `move_candidates` already evaluates on the order of 78,000 pairs on
   one large bill, and retaining all of them would work against
-  [#356](https://github.com/AgoraDMV/DeltaTrack/issues/356) and
-  [#169](https://github.com/AgoraDMV/DeltaTrack/issues/169). Nothing requires evidence in the
+  [#356](https://github.com/civictechdc/DeltaTrack/issues/356) and
+  [#169](https://github.com/civictechdc/DeltaTrack/issues/169). Nothing requires evidence in the
   shipped output.
 
 - **More named types and one more indirection.** The honest cost. Every boundary here buys at
@@ -357,8 +357,8 @@ the change rather than ahead of it. Nothing in this record is waiting on it.
 
 Enforcement tests must themselves be shown capable of failing, which is not boilerplate here.
 Invariant 12 is a green-by-default gate of the kind that has passed while checking nothing
-before ([#299](https://github.com/AgoraDMV/DeltaTrack/issues/299),
-[#542](https://github.com/AgoraDMV/DeltaTrack/issues/542)). And invariant 1 can fail in two
+before ([#299](https://github.com/civictechdc/DeltaTrack/issues/299),
+[#542](https://github.com/civictechdc/DeltaTrack/issues/542)). And invariant 1 can fail in two
 opposite directions — deduplicating too eagerly drops a proposal's metadata, not
 deduplicating lets one pair reach assignment twice — so a test asserting only "one candidate
 reached assignment" passes in the first case.
