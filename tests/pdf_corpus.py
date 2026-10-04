@@ -17,12 +17,13 @@ import os
 import pickle
 import sys
 import tempfile
+from collections.abc import Callable
 from functools import lru_cache
 from importlib.metadata import version
 from pathlib import Path
 
 from deltatrack.parsers import pdf_text
-from deltatrack.parsers.pdf_text import Page, extract_clean_pages
+from deltatrack.parsers.pdf_text import Page, PrintPages, extract_clean_pages, extract_print_pages
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR, sweep_bill_dirs
 
 # Persistent extraction cache. The one gitignored subtree of the otherwise-committed
@@ -71,19 +72,26 @@ def _extractor_fingerprint() -> str:
     return hashlib.sha1(src + version("pypdfium2").encode() + runtime.encode()).hexdigest()[:12]
 
 
-def _cache_file(pdf_path: Path) -> Path:
+def _cache_file(pdf_path: Path, stage: str = "") -> Path:
+    """Where the entry for this PDF's content under the current extractor lives.
+
+    ``stage`` names a subdirectory for entries that hold something other than
+    ``extract_clean_pages`` output, so two kinds of entry for one PDF never share a file.
+    A stage entry is named by its key alone: its callers read temporary copies named
+    ``start.pdf`` and ``end.pdf``, so the stem would store one document twice.
+    """
     # Hashing reads the whole file, but `cached_pages` memoizes per path, so this runs once
     # per PDF per process.
     content = hashlib.sha256(pdf_path.read_bytes()).hexdigest()
     key = f"{content}::{_extractor_fingerprint()}"
     digest = hashlib.sha1(key.encode()).hexdigest()[:16]
+    if stage:
+        return CACHE_DIR / stage / f"{digest}.pkl"
     return CACHE_DIR / f"{pdf_path.stem}-{digest}.pkl"
 
 
-@lru_cache(maxsize=None)
-def cached_pages(pdf_path: Path) -> list[Page]:
-    """Extract cleaned pages, cached in memory (per session) and on disk (across runs)."""
-    cache_file = _cache_file(pdf_path)
+def _load_or_extract[T](cache_file: Path, extract: Callable[[], T]) -> T:
+    """The entry at ``cache_file``, or ``extract()`` written there for the next run."""
     if cache_file.exists():
         try:
             with cache_file.open("rb") as f:
@@ -91,22 +99,43 @@ def cached_pages(pdf_path: Path) -> list[Page]:
         except (pickle.PickleError, EOFError, ValueError):
             pass  # corrupt/partial cache — fall through and re-extract
 
-    pages = extract_clean_pages(pdf_path)
+    result = extract()
 
     # Write to a per-writer temp file, then atomically rename onto the shared
     # path. The unique temp name avoids a collision when two xdist workers
     # extract the same PDF concurrently (both produce identical content, so
     # last-rename-wins is fine).
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(dir=CACHE_DIR, prefix=cache_file.stem, suffix=".tmp")
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=cache_file.parent, prefix=cache_file.stem, suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as f:
-            pickle.dump(pages, f)
+            pickle.dump(result, f)
         os.replace(tmp_name, cache_file)
     except BaseException:
         Path(tmp_name).unlink(missing_ok=True)
         raise
-    return pages
+    return result
+
+
+@lru_cache(maxsize=None)
+def cached_pages(pdf_path: Path) -> list[Page]:
+    """Extract cleaned pages, cached in memory (per session) and on disk (across runs)."""
+    return _load_or_extract(_cache_file(pdf_path), lambda: extract_clean_pages(pdf_path))
+
+
+def cached_print_pages(pdf_path: Path) -> PrintPages:
+    """``extract_print_pages(pdf_path)``, the unmerged first half of extraction, cached on disk.
+
+    For a test that runs the PDF comparison itself (``compare.pdf.compare_pdfs``) and
+    reads the same documents every run: the read is nearly all of that comparison's
+    time, and the merge that follows it depends on which document it is paired with, so
+    only the read can be reused. Same key as ``cached_pages``, so an extractor change
+    reads afresh.
+
+    Not memoized in memory. ``PrintPages.sizes`` holds plain dicts, so a shared copy
+    would let one caller's change reach the next; each call unpickles its own.
+    """
+    return _load_or_extract(_cache_file(pdf_path, "print_pages"), lambda: extract_print_pages(pdf_path))
 
 
 def full_text(pages: list[Page]) -> str:

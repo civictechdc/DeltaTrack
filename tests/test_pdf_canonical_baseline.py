@@ -68,6 +68,13 @@ To regenerate after an INTENTIONAL canonical-output change, then review the JSON
 Regeneration is all-or-nothing: a missing fixture refuses the write rather than committing
 a baseline that silently covers fewer pairs (the shape #296 closed for the PDF extraction
 golden, and #542 for a gate that passed while checking nothing).
+
+**One stage is served from a cache.** Reading each PDF (``extract_print_pages``) is about
+nine tenths of this module's time, and the same committed documents are read on every run,
+so the read comes from ``tests.pdf_corpus.cached_print_pages``. That cache is keyed on the
+PDF's bytes and the extractor's identity, so an extractor change reads afresh and moves the
+digests exactly as an uncached read would. Everything after the read, including the pooled
+break evidence, the merge, the decline and the diff, still runs inside ``compare_pdfs``.
 """
 
 from __future__ import annotations
@@ -82,6 +89,7 @@ import pytest
 from deltatrack.compare.pdf import UnsupportedLayoutError, compare_pdfs
 from deltatrack.version_stems import version_identity_from_filename
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR
+from tests.pdf_corpus import cached_print_pages
 
 pytestmark = pytest.mark.slow
 
@@ -120,6 +128,12 @@ def baseline_pairs() -> list[tuple[str, Path, Path]]:
 
 
 _PAIRS = baseline_pairs()
+
+
+@pytest.fixture(autouse=True)
+def _cached_reads(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Serve ``compare_pdfs``'s per-document read from the extraction cache (see the module docstring)."""
+    monkeypatch.setattr("deltatrack.compare.pdf.extract_print_pages", cached_print_pages)
 
 
 def baseline_record(old_path: Path, new_path: Path) -> dict:

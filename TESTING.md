@@ -531,6 +531,12 @@ an entry survives a fresh checkout, which resets every mtime. That is what lets
 CI restore the directory between runs instead of re-extracting the corpus in
 every job (the `actions/cache` steps in `.github/workflows/ci.yml`).
 
+The same cache holds a second kind of entry, under `print_pages/`: the unmerged
+read (`extract_print_pages`) that `tests/test_pdf_canonical_baseline.py` serves to
+`compare_pdfs` through `cached_print_pages`. Only the read is cached there, because the
+merge that follows depends on which version a document is compared with. It has the
+same key, so everything above applies to it.
+
 The rule is deliberately blunt: a comment-only edit to
 `src/deltatrack/parsers/pdf_text.py` also invalidates the cache, so the next run
 pays one full re-extraction.
@@ -540,7 +546,8 @@ previous set on disk. Nothing reads them, so to reclaim the space just delete th
 directory: `rm -rf tests/data/extract_cache`. The next run re-extracts. CI does
 not carry them forward: its cache key includes the extractor fingerprint, so an
 extractor change, a pypdfium2 upgrade or a new Python patch release starts that
-cache from empty.
+cache from empty. The key also hashes `tests/pdf_corpus.py`, so a change to what
+the cache holds saves a new entry set instead of restoring an old one forever.
 
 XML has no disk cache: parsing is fast enough that only repetition costs. A test
 that reads a committed bill's tree without changing it calls

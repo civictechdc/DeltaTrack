@@ -1,7 +1,8 @@
 """What the PDF extraction cache key must distinguish (#393).
 
 `tests/pdf_corpus.cached_pages` persists extracted PDF text to disk so repeat runs
-skip extraction. A cache entry is only safe to reuse when both halves of what produced
+skip extraction, and `cached_print_pages` does the same for the unmerged read the PDF
+canonical baseline feeds to `compare_pdfs`. A cache entry is only safe to reuse when both halves of what produced
 it are unchanged: the PDF, and the extractor, which includes the Python runtime running
 it. Keying on the PDF alone (path + mtime)
 left the second half unchecked, so editing `src/deltatrack/parsers/pdf_text.py` did
@@ -176,3 +177,49 @@ def test_a_runtime_change_re_extracts_instead_of_reusing_the_entry(runtime_cache
     seeded = read((3, 12, 14, "final", 0))
     assert read(next_runtime) != seeded
     assert len(extractions) == 2
+
+
+@pytest.fixture
+def stubbed_reads(tmp_path, monkeypatch):
+    """Both cached readers over an empty cache directory, with each extraction stubbed to
+    return a value naming its kind and counting its calls."""
+    monkeypatch.setattr(pdf_corpus, "CACHE_DIR", tmp_path / "cache")
+    calls: dict[str, int] = {"clean": 0, "print": 0}
+
+    def stub(kind: str):
+        def extract(_path: Path) -> str:
+            calls[kind] += 1
+            return f"{kind} extraction {calls[kind]}"
+
+        return extract
+
+    monkeypatch.setattr(pdf_corpus, "extract_clean_pages", stub("clean"))
+    monkeypatch.setattr(pdf_corpus, "extract_print_pages", stub("print"))
+    pdf_corpus.cached_pages.cache_clear()
+    yield _touch(tmp_path), calls
+    pdf_corpus.cached_pages.cache_clear()
+
+
+def test_a_raw_read_entry_follows_the_extractor_like_a_clean_one(stubbed_reads, monkeypatch):
+    """`cached_print_pages` feeds the PDF canonical baseline, which pins every byte of
+    the comparison output. An entry served after an extractor change would let that gate
+    certify the old extractor's read, the #393 failure in the gate least able to afford
+    it. Red if the raw-read entry's name stops carrying the extractor fingerprint."""
+    pdf, calls = stubbed_reads
+    first = pdf_corpus.cached_print_pages(pdf)
+    assert pdf_corpus.cached_print_pages(pdf) == first
+    assert calls["print"] == 1
+
+    monkeypatch.setattr(pdf_corpus, "_extractor_fingerprint", lambda: "0" * 12)
+    assert pdf_corpus.cached_print_pages(pdf) != first
+    assert calls["print"] == 2
+
+
+def test_a_raw_read_and_a_clean_extraction_of_one_pdf_are_kept_apart(stubbed_reads):
+    """The two entries for one PDF share a key and hold different things: merged pages
+    for most suites, the unmerged read for the canonical baseline. Sharing a file would
+    hand one kind to a reader of the other. Red if `_cache_file` ignores `stage`."""
+    pdf, calls = stubbed_reads
+    assert pdf_corpus.cached_pages(pdf) == "clean extraction 1"
+    assert pdf_corpus.cached_print_pages(pdf) == "print extraction 1"
+    assert calls == {"clean": 1, "print": 1}
