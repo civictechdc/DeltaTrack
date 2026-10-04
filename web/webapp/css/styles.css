@@ -7,7 +7,7 @@
    colour for one (#667).
 
    The standalone report is not styled from this file. It carries its own embedded
-   stylesheet, generated in formatters/diff_html.py, so a saved report renders with
+   stylesheet, assembled by formatters/diff_html.py from src/deltatrack/styles/, so a saved report renders with
    no network at all (ADR 0011). The loading tab in js/compare.js is self-contained
    for the same reason: it is written via document.write and can resolve no URLs.
 
