@@ -2062,40 +2062,36 @@ def cmd_compare(args: argparse.Namespace) -> None:
     old_path, new_path = _compare_targets(args)
     old_tree = normalize_bill(old_path)
     new_tree = normalize_bill(new_path)
-    fmt = getattr(args, "format", "json")
+    fmt = getattr(args, "format", "html")
 
-    if fmt == "html":
-        # Imported here, not at module scope: compare.xml imports this module.
-        # It owns the whole XML → HTML chain (#42), so the CLI, the web app, and
-        # render_examples.py cannot drift into rendering the same pair differently.
-        from deltatrack.compare.xml import compare_xml_trees_html
+    # Imported here, not at module scope: compare.xml imports this module.
+    # It owns the whole XML → report chain (#42), so the CLI, the web app, and
+    # render_examples.py cannot drift into rendering the same pair differently.
+    #
+    # BOTH formats enter it (#693). `--format json` used to serialize this module's
+    # own `bill_diff_to_dict` output, which is a pipeline stage rather than a
+    # published contract: it carries no `schema_version`, is specified nowhere, and
+    # shared only two top-level keys with what `POST /api/compare?output=json`
+    # returns. So the two surfaces answered the same question in two vocabularies,
+    # and the canonical document was reachable only by rendering HTML and clicking
+    # the download button in a browser, which a script cannot do. The internal
+    # shape stays reachable as a library call (`bill_diff_to_dict`); what is gone is
+    # its appearance on a command-line surface that documents the other one.
+    from deltatrack.compare.xml import compare_xml_trees, compare_xml_trees_html
 
-        old_stem, new_stem = old_path.stem, new_path.stem
-        output = compare_xml_trees_html(
-            old_tree,
-            new_tree,
-            start_label=label_from_stem(old_stem),
-            end_label=label_from_stem(new_stem),
-            old_version_number=version_number_from_stem(old_stem),
-            new_version_number=version_number_from_stem(new_stem),
-            include_unchanged=args.include_unchanged,
-            filter_text=args.filter,
-            financial_only=args.financial,
-        )
-    else:
-        result = filter_diff(
-            diff_bills(old_tree, new_tree),
-            include_unchanged=args.include_unchanged,
-            filter_text=args.filter,
-            financial_only=args.financial,
-        )
-        diff_dict = bill_diff_to_dict(result, financial=args.financial)
-        # Extract version numbers from filenames (e.g., "1_reported-in-house.xml" -> 1)
-        for key, path in (("old_version_number", old_path), ("new_version_number", new_path)):
-            num = version_number_from_stem(path.stem)
-            if num is not None:
-                diff_dict[key] = num
-        output = json.dumps(diff_dict, indent=2)
+    old_stem, new_stem = old_path.stem, new_path.stem
+    build = compare_xml_trees_html if fmt == "html" else compare_xml_trees
+    result = build(
+        old_tree,
+        new_tree,
+        start_label=label_from_stem(old_stem),
+        end_label=label_from_stem(new_stem),
+        old_version_number=version_number_from_stem(old_stem),
+        new_version_number=version_number_from_stem(new_stem),
+        filter_text=args.filter,
+        financial_only=args.financial,
+    )
+    output = result if fmt == "html" else json.dumps(result, indent=2)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
@@ -2179,29 +2175,27 @@ def build_parser() -> argparse.ArgumentParser:
             "directory listing (compare <abs-dir>), which doesn't need this flag."
         ),
     )
-    compare.add_argument("-o", "--output", help="Output JSON file (default: stdout)")
-    compare.add_argument(
-        "--include-unchanged",
-        action="store_true",
-        help="Include unchanged nodes in output",
-    )
+    compare.add_argument("-o", "--output", help="Output file (default: stdout)")
     compare.add_argument(
         "--filter",
-        help="Only include nodes whose match_path contains this substring",
+        help=(
+            "Only include changes whose section breadcrumb contains this substring "
+            "(case-insensitive; the division is not part of the breadcrumb matched)."
+        ),
     )
     compare.add_argument(
         "--financial",
         action="store_true",
-        help=(
-            "Only show sections whose set of dollar figures differs between versions; "
-            "adds each side's amounts to the JSON output"
-        ),
+        help="Only show sections whose set of dollar figures differs between versions",
     )
     compare.add_argument(
         "--format",
         choices=["json", "html"],
         default="html",
-        help="Output format (default: html)",
+        help=(
+            "Output format: an HTML report, or the canonical diff JSON the web endpoint "
+            "returns (schema/canonical-diff.md). Default: html."
+        ),
     )
 
     return parser

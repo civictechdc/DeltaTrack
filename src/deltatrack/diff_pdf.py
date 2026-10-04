@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import json
 import sys
 from collections import Counter
 from collections.abc import Mapping
@@ -1336,32 +1337,70 @@ def render_pdf_diff_html(
     )
 
 
+def render_pdf_diff_json(
+    v1_pdf: Path,
+    v2_pdf: Path,
+    *,
+    v1_label: str | None = None,
+    v2_label: str | None = None,
+) -> dict:
+    """Canonical diff JSON for two PDF paths (see schema/canonical-diff.md).
+
+    The JSON sibling of :func:`render_pdf_diff_html`, delegating to the same
+    `compare.pdf` entry point the web app calls, so one bill pair produces one document
+    whichever surface asked for it.
+
+    This command had no JSON output at all before #693, which is a consequence of how
+    the two pipelines are shaped rather than a decision: the XML branch built an
+    intermediate dictionary on the way to canonical and the command line serialized it,
+    while the PDF branch goes from `PdfDiff` straight to canonical and had nothing lying
+    around to serialize. Once `diff_bill.py compare --format json` returns the contract
+    rather than that intermediate, the same flag means the same thing on both commands.
+    """
+    from deltatrack.compare.pdf import compare_pdfs
+
+    return compare_pdfs(
+        v1_pdf.read_bytes(),
+        v2_pdf.read_bytes(),
+        start_label=v1_label if v1_label is not None else label_from_stem(v1_pdf.stem),
+        end_label=v2_label if v2_label is not None else label_from_stem(v2_pdf.stem),
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Diff two PDF bill versions and produce an HTML diff page "
-        "(full-bill view, search, and export included).",
+        "(full-bill view, search, and export included) or the canonical diff JSON.",
     )
     parser.add_argument("v1_pdf", type=Path, help="Path to the older PDF")
     parser.add_argument("v2_pdf", type=Path, help="Path to the newer PDF")
-    parser.add_argument("-o", "--output", type=Path, help="Output HTML file (default: stdout)")
+    parser.add_argument("-o", "--output", type=Path, help="Output file (default: stdout)")
     parser.add_argument("--v1-label", help="Label for the older version (default: filename stem)")
     parser.add_argument("--v2-label", help="Label for the newer version (default: filename stem)")
+    parser.add_argument(
+        "--format",
+        choices=["json", "html"],
+        default="html",
+        help=(
+            "Output format: an HTML report, or the canonical diff JSON the web endpoint "
+            "returns (schema/canonical-diff.md). Default: html."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
-    html = render_pdf_diff_html(
-        args.v1_pdf,
-        args.v2_pdf,
-        v1_label=args.v1_label,
-        v2_label=args.v2_label,
-    )
+    labels = {"v1_label": args.v1_label, "v2_label": args.v2_label}
+    if args.format == "html":
+        output = render_pdf_diff_html(args.v1_pdf, args.v2_pdf, **labels)
+    else:
+        output = json.dumps(render_pdf_diff_json(args.v1_pdf, args.v2_pdf, **labels), indent=2)
     if args.output:
-        args.output.write_text(html, encoding="utf-8")
+        args.output.write_text(output, encoding="utf-8")
         print(f"Wrote {args.output}", file=sys.stderr)
     else:
-        print(html)
+        print(output)
 
 
 if __name__ == "__main__":
