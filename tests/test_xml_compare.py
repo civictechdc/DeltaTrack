@@ -65,18 +65,18 @@ def test_compare_xml_html_gutterless_fullbill():
     )
 
     assert html.lstrip().startswith("<!DOCTYPE html>")
-    assert "change-card" in html
-    # XML full-bill view is gutterless: no PDF line-number column, no page markers.
-    assert "full-bill--no-gutter" in html
-    assert '<span class="fb-gutter">' not in html
+    assert 'id="change-0"' in html
+    # XML full-text view is gutterless: no PDF line-number column, no page markers.
+    assert "full-text--no-line-numbers" in html
+    assert '<span class="full-text-line__number">' not in html
     # Full bill text survives intact (the 7-char-gutter truncation bug is gone).
     assert "DEPARTMENT OF DEFENSE" in html
     assert '">ENT OF DEFENSE' not in html
     # Parity with the PDF report: a leveled section TOC (#108 — built from the
     # canonical structure tree) and a long-title heading. The TOC links to
-    # offset-based row anchors (fb-off-N), each resolving to a full-bill row id.
-    assert 'class="sidebar-toc"' in html
-    assert "toc-group" in html
+    # offset-based row anchors (fb-off-N), each resolving to a full-text row id.
+    assert 'class="sidebar-tree"' in html
+    assert "tree-group" in html
     assert 'href="#fb-off-' in html
     assert 'id="fb-off-' in html
     assert "Making appropriations" in html  # official-title in the heading
