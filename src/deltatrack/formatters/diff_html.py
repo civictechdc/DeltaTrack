@@ -314,29 +314,16 @@ def _build_tree_nav(tree_nodes: list[dict], full_text: str) -> str:
         return f'<a href="#fb-off-{off}">{label}</a>' if off is not None else f"<span>{label}</span>"
 
     def level_attr(node: dict) -> str:
-        """The node's own level, verbatim, so an entry says what part of the bill it is.
+        """The node's `tree.level` from the canonical contract, verbatim, as `data-level`.
 
-        The value is the canonical contract's `tree.level`, which that schema records as
-        shared GPO vocabulary (`division`, `title`, `agency`, `account`, `section` and
-        the rest). It already reached this renderer and was being discarded, so the nav
-        could not say whether an entry was a title or an account without reading its
-        label text.
+        An attribute rather than a class, like `data-type` on a change: a contract value
+        is carried under the contract's field name, with the contract's value. Styling it
+        after GPO means the inline stylesheet distilled in `docs/gpo-render-conventions.md`;
+        `bills.css` is a drifted copy that GPO's render chain never links.
 
-        Carried as `data-level` rather than a class, matching `data-type` on a change
-        card: a contract value belongs in an attribute under the contract's own field
-        name, with the contract's own value, so a reader or a model sees the pair the
-        schema defines rather than a name mangled into one token. It also leaves the
-        class namespace free, which matters because GPO's own stylesheet uses bare
-        `.title` and `.division`; `[data-level="title"]` can adopt those rules without
-        colliding with them.
-
-        Escaped, like the label above it. Today's producers draw the value from this
-        repository's own literals (`structure_tree._LEAF_LEVEL`, `_interior_level`), so
-        no upload can reach it, but that is a fact about the current writers rather than
-        a property of this function. `format_diff_html` takes a canonical document, and
-        that contract is published and versioned precisely so documents can arrive from
-        elsewhere. A value carrying a quote would otherwise close the attribute and let
-        the rest become markup.
+        Escaped although today's levels are this repository's own literals:
+        `format_diff_html` accepts any canonical document, and a level carrying a quote
+        would otherwise close the attribute.
         """
         level = escape((node.get("level") or "").strip(), quote=True)
         return f' data-level="{level}"' if level else ""
@@ -391,11 +378,9 @@ def _build_sidebar(
         order_map = _node_order_map(tree_v2)
     full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
     # A pane is paired with a view only when there is a second view to switch to.
-    tree_v2_has_full_text = bool(full_text_v2)
+    has_full_text = bool(full_text_v2)
     changes_pane_open = (
-        '<div class="sidebar-changes" data-view="changes">\n'
-        if tree_v2_has_full_text
-        else '<div class="sidebar-changes">\n'
+        '<div class="sidebar-changes" data-view="changes">\n' if has_full_text else '<div class="sidebar-changes">\n'
     )
     changes_pane = (
         f"{changes_pane_open}"
@@ -824,7 +809,7 @@ _LLM_PROMPTS = (
 
 def _export_button_html(canonical: dict | None) -> str:
     """The Export button that opens the download/prompts modal. Rendered whenever
-    the canonical carries full-text text (`_has_full_bill`), so it appears for any
+    the canonical carries full text (`_has_full_bill`), so it appears for any
     pipeline that supplies it — XML and PDF alike, not PDF-only."""
     if not _has_full_bill(canonical):
         return ""
@@ -832,7 +817,7 @@ def _export_button_html(canonical: dict | None) -> str:
 
 
 def _nav_controls_html(canonical: dict | None) -> str:
-    """Prev / counter / Next change navigation. Gated on full-text text
+    """Prev / counter / Next change navigation. Gated on full text
     (`_has_full_bill`), the same gate as the view toggle and export, so it appears
     for any pipeline that supplies full text — XML and PDF alike. JS wires the
     buttons, the counter, and the active target set per view; see the navigation
@@ -850,7 +835,7 @@ def _nav_controls_html(canonical: dict | None) -> str:
 
 def _find_bar_html(canonical: dict | None) -> str:
     """In-page find: highlights matches in the active view and steps through them
-    (Ctrl+F style). Gated on full-text text (`_has_full_bill`), so it appears for
+    (Ctrl+F style). Gated on full text (`_has_full_bill`), so it appears for
     any pipeline that supplies full text — XML and PDF alike. JS wires the input,
     counter, and stepping; see the find block in `_JS`."""
     if not _has_full_bill(canonical):
