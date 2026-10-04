@@ -137,7 +137,7 @@ def test_csp_header_on_generated_report():
 
     fake_html = "<!DOCTYPE html><html>" + ("report " * 20_000) + "</html>"
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setitem(app_module._COMPARE, "pdf", (".pdf", lambda *a, **kw: fake_html, lambda *a, **kw: {}))
+    monkeypatch.setitem(app_module._COMPARE, "pdf", (lambda *a, **kw: fake_html, lambda *a, **kw: {}))
     try:
         resp = _client().post(
             "/api/compare",
@@ -207,7 +207,7 @@ def test_generated_report_response_is_gzipped(monkeypatch):
     import web.app as app_module
 
     fake_html = "<!DOCTYPE html><html>" + ("report " * 20_000) + "</html>"
-    monkeypatch.setitem(app_module._COMPARE, "pdf", (".pdf", lambda *a, **kw: fake_html, lambda *a, **kw: {}))
+    monkeypatch.setitem(app_module._COMPARE, "pdf", (lambda *a, **kw: fake_html, lambda *a, **kw: {}))
     resp = _client().post(
         "/api/compare",
         files={

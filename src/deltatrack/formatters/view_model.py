@@ -82,7 +82,7 @@ class DiffView:
     v2_label: str
     v1_version_number: int | None
     """Version index (1, 2, ...) when known. Drives the "v1: " prefix in the
-    rendered versions line. None for PDFs (no version index available)."""
+    rendered versions line. None when the input filename carries no ordinal."""
     v2_version_number: int | None
     summary: dict[str, int]
     changes: tuple[ChangeView, ...] = field(default_factory=tuple)
