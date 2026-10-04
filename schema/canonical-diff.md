@@ -28,6 +28,11 @@ Top-level field: `schema_version: "3.1"`.
   none, and the PDF pipeline's reflowed rendering has already applied them, so both
   ship `null`.
 
+  Also added optional top-level `full_text_layout`, which states how `full_text` is
+  laid out (`"numbered_lines"` or `"paragraphs"`) and writes the rule for each into
+  this contract. A renderer used to infer it from `versions.v2.source` and slice a
+  line-number column whose width only the producer defined.
+
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
   money at all. The field paired a dollar figure on one side with a figure on the
@@ -156,6 +161,21 @@ fragments in `changes[].text` — `full_text` is the document; `text.old`/
 `text.new` are the diff fragments. Consumers using `full_text` for
 rendering should compute the diff at render time over the full strings,
 not try to splice the change fragments into the document.
+
+### `full_text_layout` (optional, v3.1+)
+
+How `full_text` is laid out, so a consumer reads rows and line numbers by rule
+instead of guessing them from the pipeline. `null` (or absent) exactly when
+`full_text` is. In both layouts a side's text is a sequence of rows joined by `\n`.
+
+| Value | Producer | Rows |
+|-------|----------|------|
+| `"numbered_lines"` | PDF | One row per line: its printed line number right-aligned in 5 characters (5 spaces when the line is unnumbered), then 2 spaces, then the line's text. An empty row separates one page from the next; pages count from 1. A line row is never empty, so the separator cannot be mistaken for a line. |
+| `"paragraphs"` | XML | Plain text with no line numbers or pages. An empty row is a paragraph break. |
+
+A 3.0 document has no `full_text_layout`. Its PDF text is `"numbered_lines"` and
+its XML text `"paragraphs"`, which a reader may take from `versions.v2.source`;
+that fallback exists for those documents only.
 
 ### `join_points` (optional, v3.1+)
 

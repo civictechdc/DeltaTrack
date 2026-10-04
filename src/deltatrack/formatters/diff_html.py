@@ -495,13 +495,14 @@ def _join_dispositions(side: dict | None) -> dict[int, bool]:
 
 
 def _full_text_is_guttered(canonical: dict) -> bool:
-    """Whether full_text lines carry the PDF line-number gutter.
+    """Whether full_text is ``numbered_lines`` (see schema/canonical-diff.md).
 
-    ``pdf_full_text`` emits each line as a fixed 7-char gutter (``{num:>5}  ``)
-    plus content; the XML pipeline serialises plain paragraph text with no gutter.
-    Default to guttered (the PDF path that built this view); only an explicit
-    ``xml`` v2 source switches the parser to gutterless paragraph flow.
+    Read from the document's ``full_text_layout``. A 3.0 document predates the field,
+    and only for it is the layout taken from the v2 source.
     """
+    layout = canonical.get("full_text_layout")
+    if layout is not None:
+        return layout == "numbered_lines"
     src = ((canonical.get("versions") or {}).get("v2") or {}).get("source")
     return src != "xml"
 
@@ -559,7 +560,8 @@ def _wrap_mark(change: dict, slice_text: str, emitted_ids: set[str]) -> str:
 
 
 def _parse_full_bill_lines(text: str, *, guttered: bool = True) -> list[dict]:
-    """Split full_text into per-source-line display rows.
+    """Split full_text into per-source-line display rows, by the layout rule
+    schema/canonical-diff.md states for ``full_text_layout``.
 
     PDF path (``guttered=True``): each rendered line is ``{number:>5}  {content}``
     (five spaces of padding when the source line was unnumbered) and pages are

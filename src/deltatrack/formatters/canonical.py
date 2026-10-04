@@ -186,6 +186,7 @@ def xml_diff_to_canonical(
         },
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
+        "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
         "join_points": None,  # XML has no printed line breaks to reflow (#650)
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
@@ -447,6 +448,7 @@ def pdf_diff_to_canonical(
         },
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
+        "full_text_layout": "numbered_lines" if normalized_full_text is not None else None,
         "join_points": join_points if normalized_full_text is not None else None,
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [

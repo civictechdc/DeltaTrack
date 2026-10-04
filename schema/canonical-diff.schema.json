@@ -27,6 +27,10 @@
       ],
       "description": "Optional (v1.1+) full bill text per side, for full-document tracked-changes rendering."
     },
+    "full_text_layout": {
+      "anyOf": [{ "type": "null" }, { "enum": ["numbered_lines", "paragraphs"] }],
+      "description": "Optional (v3.1+) how full_text is laid out. numbered_lines: each row is a 5-character right-aligned line number (5 spaces when unnumbered), 2 spaces, then the text; an empty row separates pages. paragraphs: plain text, an empty row is a paragraph break. Null exactly when full_text is."
+    },
     "join_points": {
       "anyOf": [
         { "type": "null" },
