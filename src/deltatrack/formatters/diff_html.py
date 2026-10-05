@@ -649,8 +649,10 @@ def _cards_section_html(
     change-order index, so grouping may reorder the DOM but never renumber. Sibling groups follow v2 document order when
     ``order_map`` is given. Changes without a node_path trail in flat
     ``group_label`` groups, then removed changes in their own section
-    (``_removed_cards_html``); when NO change has a node_path or a removed_path
-    (no tree and no earlier paths in the canonical) the section renders flat.
+    (``_removed_cards_html``). Only when NO change has a node_path and nothing was
+    removed does the section render flat: a removal always goes in the removed
+    section, under "(no heading path recorded)" when it has no earlier path, so the
+    cards and the sidebar list it in the same place.
 
     A later-version group whose label path exactly matches removals' earlier
     parent path carries a pointer to that heading in the removed section
@@ -659,7 +661,7 @@ def _cards_section_html(
     """
     if not view.changes:
         return '<p class="no-changes">No changes found between these versions.</p>'
-    if all(not c.node_path and not c.removed_path for c in view.changes):
+    if not any(c.node_path or c.change_type == "removed" for c in view.changes):
         return "\n".join(_build_card(c, i) for i, c in enumerate(view.changes))
     root, fallback = _group_changes_by_node(view)
     removed_section, removed_ids = _removed_cards_html(view, removed_order)
@@ -1466,12 +1468,19 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     // A removed-changes pointer (#784) targets a heading group in the removed
-    // section: open it and its ancestors, then resume Prev/Next from its first card.
+    // section. Its removals sit in child groups the reader may have collapsed, so
+    // reveal the first card beneath the heading (opening every group between) and
+    // resume Prev/Next from that card, not from whatever visible card follows.
     var pointer = e.target.closest('a[href^="#removed-group-"]');
     if (pointer) {
       var group = document.getElementById(pointer.getAttribute('href').slice(1));
-      if (group) { revealCard(group); group.open = true; }
-      syncCurrentFrom(group);
+      if (group) {
+        group.open = true;
+        revealCard(group);
+        var first = group.querySelector('.change');
+        if (first) revealCard(first);
+        syncCurrentFrom(group);
+      }
       return;
     }
     var link = e.target.closest('a[href^="#change-"]');

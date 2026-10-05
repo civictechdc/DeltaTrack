@@ -446,8 +446,9 @@ def test_prev_next_steps_into_nested_groups_and_reveals_collapsed(chromium, tmp_
 
 
 def test_removed_pointer_reveals_its_heading_clear_of_the_action_bar(chromium, tmp_path):
-    """A removed-changes pointer (#784) re-opens a user-collapsed removed section and
-    lands on the same-name heading below the sticky action bar. Cards keep the shared
+    """A removed-changes pointer (#784) re-opens a user-collapsed removed section, and
+    any collapsed group between the heading and its first removal, and lands on the
+    same-name heading below the sticky action bar. Cards keep the shared
     scroll offset too: rewriting that selector list once dropped it for every target."""
     from deltatrack.formatters.diff_html import format_diff_html
     from tests.removed_changes_report import canonical
@@ -473,6 +474,17 @@ def test_removed_pointer_reveals_its_heading_clear_of_the_action_bar(chromium, t
     assert target.evaluate("el => el.getBoundingClientRect().top") >= bar_bottom - 1
     for selector in ("#change-0", pointer.get_attribute("href")):
         assert page.locator(selector).evaluate("el => getComputedStyle(el).scrollMarginTop") == "64px"
+
+    # The removals under a heading sit in child groups. With the child "(a)" group
+    # collapsed, following TITLE I > KEPT ACCOUNT's pointer must open it and resume
+    # Prev/Next at its card (4th), not skip ahead to the no-path removal (5th).
+    pointer = page.locator(".removed-pointer a").nth(1)
+    child = page.locator(pointer.get_attribute("href")).locator("> details.change-group").first
+    child.evaluate("el => el.open = false")
+    pointer.click()
+    assert child.evaluate("el => el.open") is True
+    assert page.locator("#change-2").is_visible()
+    assert page.locator("#nav-counter").inner_text() == "4 / 5"
     page.close()
 
 

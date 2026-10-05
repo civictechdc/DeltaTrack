@@ -119,3 +119,22 @@ def test_tree_less_document_still_lists_removals_by_earlier_path():
     ctx = changes_view(format_diff_html(doc))
     assert ctx.cards[2]["in_removed"] and ctx.cards[2]["path"] == ("TITLE I", "KEPT ACCOUNT", "(a)")
     assert not ctx.cards[0]["in_removed"] and ctx.cards[0]["path"] == ("TITLE I",)
+
+
+def test_pathless_removals_keep_the_removed_section_when_nothing_else_groups():
+    # 114-hr-2029 4->5 with --filter "front matter" yields only removals with no
+    # earlier path and no other placed change. The cards must not fall back to a flat
+    # list there: they list the removals where the sidebar does.
+    doc = canonical([change("c-0001", "removed"), change("c-0002", "removed")])
+    del doc["tree"]
+    html = format_diff_html(doc)
+    ctx = changes_view(html)
+    for i in (0, 1):
+        assert ctx.cards[i]["in_removed"] and ctx.cards[i]["path"] == ("(no heading path recorded)",)
+
+
+def test_flat_cards_only_when_nothing_is_placed_and_nothing_was_removed():
+    doc = canonical([change("c-0001", "modified")])
+    del doc["tree"]
+    html = format_diff_html(doc)
+    assert 'class="change-group' not in html.split('<nav class="sidebar">')[0] + html.split("</nav>", 1)[1]

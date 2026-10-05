@@ -841,12 +841,19 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     // A removed-changes pointer (#784) targets a heading group in the removed
-    // section: open it and its ancestors, then resume Prev/Next from its first card.
+    // section. Its removals sit in child groups the reader may have collapsed, so
+    // reveal the first card beneath the heading (opening every group between) and
+    // resume Prev/Next from that card, not from whatever visible card follows.
     var pointer = e.target.closest('a[href^="#removed-group-"]');
     if (pointer) {
       var group = document.getElementById(pointer.getAttribute('href').slice(1));
-      if (group) { revealCard(group); group.open = true; }
-      syncCurrentFrom(group);
+      if (group) {
+        group.open = true;
+        revealCard(group);
+        var first = group.querySelector('.change');
+        if (first) revealCard(first);
+        syncCurrentFrom(group);
+      }
       return;
     }
     var link = e.target.closest('a[href^="#change-"]');
