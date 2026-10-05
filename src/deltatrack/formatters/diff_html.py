@@ -1047,7 +1047,7 @@ def format_diff_html(
 # applied, so both pipelines share one stylesheet.
 # ---------------------------------------------------------------------------
 
-# The palette is `deltatrack.palette`, not this file. Every report embeds it at render
+# The palette is `styles/tokens.css`, read by `deltatrack.palette`. Every report embeds it at render
 # time, which is what keeps a report zero-egress (ADR 0011): nothing is fetched when one
 # is opened. Gated by `test_the_report_palette_declares_exactly_what_it_uses`, which
 # reads a rendered report and fails on a token this stylesheet does not use.

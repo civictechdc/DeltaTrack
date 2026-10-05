@@ -1,11 +1,11 @@
 """The palette for DeltaTrack's report and its examples landing page.
 
-Two surfaces take their values from here: the report (`formatters/diff_html.py`), and the
-published examples landing page (`scripts/render_examples.py`), which embeds a subset.
+The values live in `styles/tokens.css`; this module reads them so the renderers can emit
+them. Two surfaces take their values from here: the report (`formatters/diff_html.py`), and
+the published examples landing page (`scripts/render_examples.py`), which embeds a subset.
 Nothing else does yet. The web app declares its own values in `webapp/css/styles.css`,
-and the loading tab in `webapp/js/compare.js` hardcodes four of them, so editing this
-module reaches neither and no test would report the divergence. Consolidating those is
-separate, later work.
+and the loading tab in `webapp/js/compare.js` hardcodes four of them, so editing the
+tokens reaches neither and no test would report the divergence (#773).
 
 Both surfaces *embed* rather than link, and any surface wired up later will have to as
 well. A report has to render with no network at all (ADR 0011), so it cannot fetch a
@@ -26,42 +26,25 @@ its own.
 
 from __future__ import annotations
 
-# Ordered by role, and the order is what a reader sees in the emitted `:root`.
-PALETTE: dict[str, str] = {
-    # Surfaces and text
-    "--background": "#f9f7f5",
-    "--foreground": "#1c1c3a",
-    "--card": "#ffffff",
-    "--border": "#e3ddd7",
-    # Brand
-    "--primary": "#2c2c5c",
-    "--primary-foreground": "#f9f7f5",
-    "--secondary": "#eef0f8",
-    "--muted": "#f2f0ed",
-    "--muted-foreground": "#686881",
-    "--accent": "#ede8df",
-    "--gold": "#c9944e",
-    # Status
-    "--destructive": "#c04040",
-    "--success": "#3d9b6d",
-    # Diff states, one background/foreground pair each
-    "--diff-add": "#d3f0e2",
-    "--diff-add-foreground": "#1a6647",
-    "--diff-remove": "#f5ddd8",
-    "--diff-remove-foreground": "#8a2828",
-    "--diff-modified": "#f1e6d2",
-    "--diff-modified-foreground": "#8a6320",
-    "--diff-moved": "#eef0f8",
-    "--diff-moved-foreground": "#2c2c5c",
-    # Geometry
-    "--radius": "0.625rem",
-    # Typography. System stacks, never a webfont: a report fetches nothing when opened.
-    "--font-sans": ("ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"),
-    "--font-serif": "ui-serif, Georgia, 'Times New Roman', serif",
-    "--font-mono": "ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
-    # Depth
-    "--shadow-soft": "0 1px 2px 0 rgba(28,28,58,0.04), 0 1px 3px 0 rgba(28,28,58,0.06)",
-}
+import re
+from importlib.resources import files
+
+_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+_DECLARATION = re.compile(r"(--[\w-]+)\s*:\s*([^;]+);")
+
+
+def _read_tokens() -> dict[str, str]:
+    css = _COMMENT.sub("", files("deltatrack").joinpath("styles", "tokens.css").read_text(encoding="utf-8"))
+    pairs = _DECLARATION.findall(css)
+    tokens = dict(pairs)
+    if len(tokens) != len(pairs):
+        # A repeated name would silently keep its last value, so one of two edits is lost.
+        raise ValueError("styles/tokens.css declares a token more than once")
+    return tokens
+
+
+# In file order, which is what a reader sees in the emitted `:root`.
+PALETTE: dict[str, str] = _read_tokens()
 
 #: The tokens the examples landing page uses. A subset rather than the whole palette
 #: because that page is a plain index of links, with no diff states to colour. Naming
