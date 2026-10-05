@@ -103,7 +103,7 @@ match key, and it is not the identity a stored artifact records
 ([0019](0019-observation-identity.md)). Which
 node in one version corresponds to which node in the other remains the diff engine's
 output; carrying that correspondence in the document is a separate decision, not made
-here. Field shapes are the schema's. Tracking: TRACKING-ISSUE-NODE-IDENTITY.
+here. Field shapes are the schema's. Tracking: [DeltaTrack#785](https://github.com/civictechdc/DeltaTrack/issues/785).
 
 Producers are expected to emit schema-valid documents and are tested against the
 schema. The schema defines validity; the DeltaTrack reader carries explicit

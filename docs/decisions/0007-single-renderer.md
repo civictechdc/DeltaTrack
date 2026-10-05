@@ -114,4 +114,4 @@ Alternatives:
   heading that moved under a new wrapper (an added division, for example) gets no
   pointer. That is the honest picture until the document itself carries where a
   removed change's surroundings went. The removed-changes section is tracked in
-  TRACKING-ISSUE-REMOVED-SECTION.
+  [DeltaTrack#784](https://github.com/civictechdc/DeltaTrack/issues/784).
