@@ -232,8 +232,8 @@ tf-idf-weighted overlap coefficient, normalised by the lighter side's rare-token
 separates that case on the 12-pair hand-labelled answer key in
 `tests/data/similarity_labels.json`, and the separation survives five
 different definitions of rarity. Its cutoffs are uncalibrated: they were fitted to those 12
-pairs, do not transfer when one bill is held out, and move by up to 0.24 across the rarity
-definitions. The 12 pairs also cannot say which signal carries the gain, since a
+pairs and do not reliably transfer when one bill is held out. Scores vary by up to 0.24
+across the rarity definitions. The 12 pairs also cannot say which signal carries the gain, since a
 structural-only rule scores 12 of 12 on them too, and three of them no longer resolve to a
 node the current parser emits. Containment has a known false-keep risk that the answer key
 holds no example of: a short provision that shares a statute citation with an unrelated large
