@@ -52,7 +52,7 @@ re-deciding what another settled.
 
 1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Opened as #800** (2026-10-05); as-built deviations recorded in the plan. Awaiting review/CI.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
-   - Schema `3.1` → `3.2` (develop is still 3.1). Open #736 also wants a minor; whichever lands second takes the next.
+   - Schema stays `3.1` (unreleased; versioning rule in `schema/canonical-diff.md`), not 3.2 as first planned.
    - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
    - XML refs via `ObservationRef` ordinals from `diff_bill._classified` → `NodeDiff.ordinal_old/new` → `bill_diff_to_dict` → `xml_diff_to_canonical`; never `element_id`. Ids assigned in `text_serializer._xml_tree_payload`.
    - XML heading spans from `_serialize`'s per-node `heading_markers` at emission time, not the first-occurrence `heading_offsets` (63 wrong).
