@@ -258,8 +258,9 @@ def test_canonical_output_matches_baseline(key: str, old_path: Path, new_path: P
 # leaving the move count level.
 AUDITED_PAIR = "119-hr-1/1_reported-in-house->2_engrossed-in-house"
 
-#: Measured on this pair, and the same figures #673 quotes. Not regenerable.
-AUDITED_SUMMARY = {"added": 50, "modified": 148, "moved": 163, "removed": 136, "unchanged": 0}
+#: Measured on this pair, and the same figures #673 quotes; `unchanged` dropped from
+#: the shipped shape per #706 (it counted entries the document does not carry). Not regenerable.
+AUDITED_SUMMARY = {"added": 50, "modified": 148, "moved": 163, "removed": 136}
 
 
 def test_the_audited_pair_keeps_its_classification_split():
