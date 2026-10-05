@@ -25,8 +25,9 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 13. [Design draft](#design-draft)
 14. [Open PRs vs. the node-identity gap](#open-prs-vs-the-node-identity-gap)
 15. [Ideal design: nodes, correspondence, ledger](#ideal-design-nodes-correspondence-and-the-ledger-as-a-consumer)
-16. [Work log](#work-log)
-17. [Open questions](#open-questions)
+16. [External review of the brief](#external-review-of-the-brief-2026-10-05)
+17. [Work log](#work-log)
+18. [Open questions](#open-questions)
 
 ---
 
@@ -1662,6 +1663,9 @@ re-running the F4b measurement on it. The three PRs are stacked: #739 on #736 on
 
 ## Ideal design: nodes, correspondence, and the ledger as a consumer
 
+> **Revised after external review (2026-10-05):** container correspondence (3.4) is withdrawn
+> pending controls; steps 1–2 are narrowed. See [External review of the brief](#external-review-of-the-brief-2026-10-05).
+
 **Status: proposal, 2026-10-04.** #736 is not fixed in place; it gets rebased onto this. This
 section supersedes D1 and D2 of the design draft above. D3–D6 stand.
 
@@ -1823,6 +1827,94 @@ reopening the decision to keep the gutter. Only the producer side (`_render_line
 
 ---
 
+## External review of the brief (2026-10-05)
+
+An external reviewer (GPT, extra-high effort) reviewed `review-brief.md` at commit `4666517`.
+It reproduced the XML census and ran its own counterexamples.
+
+**Verdict:** adopt the node references now. Treat container correspondence as a separate,
+unresolved matching-policy decision.
+
+### What it reproduced
+
+- 27 XML pairs, 17,873 changes.
+- 1,677 unjoined changes; 1,676 (not all) have empty text.
+- 93 removals misfiled, 48 across top-level groups.
+- 46,942 references mapping to one node.
+
+**Correction to the brief:** the 46,942 count covers **all** settled observations, matched or
+not. Matched observations contribute 30,406. So it establishes addressability, not
+correspondence. The brief called these "settled matches", which was wrong.
+
+### What it found, and what I verified
+
+| # | Point | Verified here | Consequence |
+|---|---|---|---|
+| 1 | "Votes override the container's own match" makes published correspondence contradict the classified change, unless assignment itself changes. The MilCon `GENERAL PROVISIONS` node is **not** heading-only: its body is the short-title sentence | **Yes.** Body: "This Act may be cited as the Military Construction, Veterans Affairs, and Related Agencies Appropriations Act, 2024." The brief's "heading-only" wording was wrong | Overriding is a matching-policy change under ADR 0020, not exposure of existing facts. Assignment, classification and correspondence must stay consistent |
+| 2 | The majority rule isn't conservative. 2 votes can decide a 100-descendant container; the winner depends on parser granularity (segmentation); two old containers can pick the same new one (no one-to-one) | Holds by construction of the rule as written | Coverage, voting units and split/merge semantics are unspecified |
+| 3 | "Round 1 = in place" is false for PDF: round 1 can classify a move (`move_basis: round1_anchor_similarity`) | **Yes.** `diff_pdf.pdf_round1_move_basis`, `ROUND1_ANCHOR_SIMILARITY` | "Moves don't vote" needs an explicit, pipeline-neutral eligibility definition, not the round number |
+| 4 | "Corresponded but not in changes = untouched" fails under filters: a filtered document keeps full trees while dropping changes (118-hr-8752 1→2: 39 changes, 0 after a no-match filter) | Consistent with F9 | Correspondence needs explicit per-pair status and a document-level completeness flag. "Unchanged own content" and "unchanged subtree" are different. Missing correspondence means *unresolved*, not *deleted* |
+| 5 | Moving the tree earlier doesn't remove label dependence: `_build_tree` nests by `display_path` strings | **Yes.** Relabelling Title III as "TITLE II" collapsed 6 roots to 5 on 118-hr-8752 v1, with conservation still perfect | Display invariance needs parent identity from the parser's actual nesting (#552, #471, #557), not just an earlier build |
+
+**Also accepted:**
+- **98.9% is not a correctness estimate.** It measures label agreement, and repeated labels
+  under different divisions can satisfy it wrongly. My plain-English summary ("98.9% landed
+  under the right heading") overstated it.
+- **The ledger as a consumer is packaging, not validation.** ADR 0006's money line is about
+  *unsupported financial* interpretation, not inference in general, and container
+  correspondence is itself inference. My argument from ADR 0006 was overstated.
+- **The prototype was uncommitted**, so the 630-placement figure could not be reproduced
+  independently.
+
+### What withstood
+
+- Document-local node IDs.
+- Direct change → node references.
+- Producer-owned `heading_span` and `body_span`.
+- A shared text-layout reader.
+- Moving structural ownership upstream, *provided it separates structure from labels*.
+- Publishing the engine's existing settled correspondences, with explicit status.
+- An additive minor schema version, if additions are optional and existing meanings are
+  unchanged.
+
+### Revised plan
+
+| Step | Scope | Status |
+|---|---|---|
+| **1** | Node IDs on the existing tree; `changes[].node`; `heading_span` and `body_span`; shared text reader; viewer groups by node | **Proceed.** Withstood review |
+| **2** | Publish **settled** leaf correspondences only (what assignment already decided), each with explicit status (unchanged-content / modified / moved), plus a document-level completeness flag (filtered or not). No inference by absence | Proceed after step 1; needs a schema-semantics write-up |
+| **3** | Parent identity from the parser's nesting, not `display_path` (#552). Display-invariance gate (#557) | Its own epic; prerequisite for any structure-from-labels-free claim |
+| **4** | Container correspondence | **Separate decision, not adopted.** Needs executable controls first (below) |
+| **5** | Ledger rebased (#736) on steps 1–2 as a consumer | After step 1. Packaging choice; financial validity is a separate question |
+
+**Controls container correspondence must pass before adoption:**
+- **Assignment consistency:** no published link contradicts a classified change; any override
+  flows through assignment.
+- **Sparse-evidence behaviour:** coverage thresholds as a share of descendants, not a raw vote
+  count.
+- **Segmentation invariance:** subdividing a branch must not flip the winner.
+- **Split and merge semantics:** one-to-one enforced, or N:1 represented explicitly.
+- **PDF move eligibility:** defined without relying on the round number.
+- **Filtered-document completeness.**
+
+**F4b in the meantime.** Without container correspondence, the honest options are:
+- (a) the viewer files removals under their **own v1 node path**, in a "no longer present"
+  grouping, with no cross-version inference; or
+- (b) the narrow root-prefix label fix, which is still a viewer inference but strictly better
+  than deepest-label-first.
+
+**Engine issue still worth filing, described accurately.** In 118-hr-4366 3→4 (single bill →
+minibus), round 1 pairs MilCon's Title IV `GENERAL PROVISIONS` node, whose body is the
+MilCon-VA short-title sentence, with Agriculture's Title VII `GENERAL PROVISIONS` node. Its
+match key is `('general provisions',)` in every division, and its six round-1 matched sections
+went to Division A (MilCon-VA). Verify the Agriculture node's body before filing.
+
+**ADRs.** Step 1 needs only an ADR 0006 edit (contract carries node IDs and references) and a
+note in ADR 0019 (its ordinals become contract-visible, per document). Container
+correspondence gets its own ADR only if and when it is adopted.
+
+---
+
 ## Work log
 
 | Date | What | Findings touched |
@@ -1835,6 +1927,7 @@ reopening the decision to keep the gutter. Only the producer side (`_render_line
 | 2026-10-04 | Review round 4 (final): two verbatim verifiers + third blind audit. **Converged** under the user's rule (no verdict changes, no new findings). Precision and ownership corrections folded in; F4d resolved by decision on develop (#769, #653 closed); F5 downgraded. No code changes. | all |
 | 2026-10-04 | Design draft (root causes, target shape, D1–D6, phases). Compared open PRs #734/#736/#739: #739 and #736 driven by missing node identity (measured F4b 93→95 on #739); #734 mostly independent. Root cause agreed with user; D1 minimal slice to settle before #736 merges. No code changes. | F4a–c, F6, F11, F16, D1 |
 | 2026-10-04 | Ideal design: tree to parse stage, node ids = parser addresses, diff-stage correspondence (prototyped on XML: 46,942/46,942 refs map to one node; 630/711 removals placed, 98.9% same-label container; 81 fail closed), ledger as a contract consumer; #736 to be rebased onto it. Found an engine mispairing of heading-only nodes across divisions. No code changes. | F4a, F4b, F4c, F5, D1, D2 |
+| 2026-10-05 | External review (GPT) of the brief: node ids/references/spans/reader withstand; container correspondence withdrawn pending controls; corrections recorded (46,942 = all observations; GP node is not heading-only; 98.9% is label agreement, not correctness). Verified points 1, 3, 5 here. Revised plan recorded. | D1, D2, F4b |
 
 ## Open questions
 
