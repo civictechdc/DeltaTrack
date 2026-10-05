@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import pytest
 
-from deltatrack.compare.pdf import compare_pdfs
+from deltatrack.compare.pdf import UnsupportedLayoutError, compare_pdfs
 from deltatrack.compare.xml import compare_xml
 from deltatrack.formatters.canonical import xml_diff_to_canonical
 from tests.corpus_paths import FIXTURES_DIR
@@ -52,8 +52,19 @@ _CANONICAL_PAIRS_MARK = pytest.mark.slow
 #: any of them — but no producer may emit a key outside this set, or a zero value.
 CANONICAL_SUMMARY_KEYS = frozenset({"added", "removed", "modified", "moved"})
 
-#: Committed bills carrying both XML and PDF versions — the shape-conformance set.
-_DUAL_FORMAT_BILLS = ("113-hr-3547", "118-hr-8752")
+
+def _dual_format_bills() -> tuple[str, ...]:
+    """Every committed bill directory carrying both formats, derived from the corpus.
+
+    Hardcoding two bills here made the module docstring's "every committed
+    dual-format bill pair" claim false the moment a third dual-format bill landed.
+    Derived instead: a bill enters the set exactly when its fixture directory holds
+    at least one ``.xml`` and one ``.pdf``. Pairs missing one format on a side are
+    skipped by the per-side existence check inside the test.
+    """
+    return tuple(
+        sorted(d.name for d in FIXTURES_DIR.iterdir() if d.is_dir() and any(d.glob("*.xml")) and any(d.glob("*.pdf")))
+    )
 
 
 def _pairs() -> list[tuple[str, str, str]]:
@@ -64,7 +75,7 @@ def _pairs() -> list[tuple[str, str, str]]:
     is the fail-safe for a partially committed bill).
     """
     pairs: list[tuple[str, str, str]] = []
-    for bill in _DUAL_FORMAT_BILLS:
+    for bill in _dual_format_bills():
         d = FIXTURES_DIR / bill
         if not d.exists():
             continue
@@ -118,9 +129,16 @@ def test_summary_conforms_to_the_contract_from_both_pipelines(bill: str, old_ste
 
     label = f"{bill}/{old_stem}->{new_stem}"
     xml_doc = compare_xml(old_xml.read_bytes(), new_xml.read_bytes())
-    pdf_doc = compare_pdfs(old_pdf.read_bytes(), new_pdf.read_bytes())
-
     _assert_summary_conforms(xml_doc["summary"], xml_doc["changes"], "XML", label)
+
+    try:
+        pdf_doc = compare_pdfs(old_pdf.read_bytes(), new_pdf.read_bytes())
+    except UnsupportedLayoutError:
+        # The PDF pipeline's documented decline: enrolled/public-law prints carry no
+        # printed line numbers, so it refuses the pair outright (its message says to
+        # use the XML). No PDF document ships for such a pair, so there is no PDF
+        # summary to check — the XML document is the shipped one.
+        return
     _assert_summary_conforms(pdf_doc["summary"], pdf_doc["changes"], "PDF", label)
 
 
