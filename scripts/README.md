@@ -164,6 +164,7 @@ and open both reports ([TESTING.md](../TESTING.md#comparing-the-two-pipelines-by
 | `ugly_money_table.py <old.xml> <new.xml> -o <out>` | Emit a deliberately unstyled money-diff table for staffer validation (fidelity stripped so only the money diff is under test). |
 | `render_examples.py` | Regenerate the committed example HTML diffs and landing page under `examples/`. The only renderer of the published examples; CI deploys what it wrote, and `tests/test_committed_examples.py` fails if they're stale. |
 | `pyodide_parity.py --node-dir <dir>` | Run the XML comparison on three committed bill pairs under native CPython and under Pyodide, and fail unless the canonical JSON and HTML are byte-identical. This is the check that the engine still runs in a web page (#112, #751). Needs Node and `npm install pyodide` in `<dir>`, kept outside the checkout; `pyodide_parity.mjs` is its Pyodide half. Run `--mutate` once first: it corrupts the native HTML, so every HTML row must read MISMATCH (exit 0); a pass under `--mutate` means the check is broken (exit 1). Not in CI. |
+| `make_scan_fixture.py --out <dir>` | Reproduce [#550](https://github.com/civictechdc/DeltaTrack/issues/550): rasterize two disjoint 20-page windows of a committed bill into image-only PDFs, compare them, and print whether the comparison still answers "no changes" instead of declining. Synthetic stand-in for a scanned draft. macOS only (`qlmanage`, `sips`); run with `uv run --with pypdf`, since `pypdf` is not a project dependency. Delete it once a test owns #550. |
 
 ## Smoke test
 

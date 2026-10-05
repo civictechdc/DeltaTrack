@@ -1,8 +1,7 @@
 """Build image-only (scanned) PDF fixtures from a committed corpus bill.
 
-Regenerates the reproduction for civictechdc/DeltaTrack#550 -- "Two different scanned PDFs
-compare as 'no changes' instead of being declined" -- so the issue's evidence does not
-depend on a scratch directory that no longer exists.
+Reproduces civictechdc/DeltaTrack#550 -- "Two different scanned PDFs compare as 'no
+changes' instead of being declined" -- and reports whether the defect still occurs.
 
 Each output is a real bill's pages rasterized and re-wrapped as images, so no text layer
 survives. That is what makes it a stand-in for a scanned or photocopied draft. It is a
@@ -10,9 +9,10 @@ SYNTHETIC proxy: a real scan may carry a partial OCR text layer, which this does
 model, and the issue says so.
 
 Rendering is pypdf page-split plus macOS `qlmanage` (QuickLook/CoreGraphics) plus `sips`
-to re-wrap the raster as a PDF. None of those is a text extractor.
+to re-wrap the raster as a PDF. None of those is a text extractor. `pypdf` is not a
+project dependency, so supply it for the run:
 
-    .venv/bin/python docs/research/pdf-backend-bakeoff/probes/make_scan_fixture.py --out /tmp/scans
+    uv run --with pypdf python scripts/make_scan_fixture.py --out /tmp/scans
 
 Then, to reproduce the defect:
 
@@ -30,8 +30,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-PROBES = Path(__file__).resolve().parent
-REPO = PROBES.parents[3]
+REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / "tests/corpus/118-hr-4366/1_reported-in-house.pdf"
 
 # Two disjoint 20-page windows of one bill. Disjoint is the point: the two fixtures share
@@ -89,7 +88,6 @@ def main() -> None:
         for name, pages in WINDOWS.items():
             rasterize(SOURCE, pages, args.out / name, Path(tmp) / name)
 
-    sys.path.insert(0, str(REPO / "src"))
     from deltatrack.compare.pdf import _MIN_LINES_FOR_GUARD, _is_unnumbered_layout, compare_pdfs
     from deltatrack.parsers.pdf_text import extract_clean_pages
 
