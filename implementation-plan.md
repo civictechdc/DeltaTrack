@@ -136,7 +136,7 @@ producer does not have the fact.** A present span is never empty and never a sub
 
 | | XML | PDF |
 |---|---|---|
-| `heading_span` | The heading row the serializer emitted **for this node**: per node, from `_serialize`'s `heading_markers`, not the first-occurrence `heading_offsets` map, which mis-assigns 63 nodes. `null` when the serializer emitted no row for it | The anchor's row, from `pdf_full_text`'s line-offset table. `null` for synthesized nodes (66 in the corpus), the preamble, and anchors on lines outside the table (8) |
+| `heading_span` | The heading row the serializer emitted **for this node**: per node, from `_serialize`'s `heading_markers`, recorded at emission time, not the first-occurrence `heading_offsets` map, which mis-assigns 63 nodes. Containers synthesized from heading paths (titles, agencies) record the row the serializer emitted for them. `null` only where no row was emitted: the navigation-only Front Matter group | The anchor's row, from `pdf_full_text`'s line-offset table. `null` where no anchor backs the node: 66 corpus nodes, all real department or division headings the reader reconstructs from breadcrumbs without detecting their row (24 have label text that is printed; recovering their rows is parser work, #551, never a text search here). Also `null` for the preamble's Front Matter and for anchors on lines outside the table (8) |
 | `body_span` | The node's own body slice, keyed by node, not `element_id`. `null` for a node with no text of its own (the 1,676 empty-body sections) | The block's rows after `_strip_heading_lines`, from the first to the last row. `null` when nothing remains |
 
 - `full_text_span` keeps its current meaning, unchanged, for compatibility.
@@ -168,7 +168,7 @@ minor.
 | **Determinism** | Two documents built in separate processes from the same inputs are byte-identical | 2 XML + 2 PDF pairs |
 | **Identifiers ignore labels** | Relabelling a container to a non-colliding label leaves every identifier unchanged | Synthetic |
 | **Absent spans** | Every present span has `end > start`. A heading span's text is one full row. Counts of `null` heading and body spans per pipeline are pinned. No consumer raises on `null` | XML + PDF |
-| **No manufactured spans** | Empty-body sections have `body_span: null` (XML 1,676) | XML |
+| **No manufactured spans** | Empty-body sections have `body_span: null` (XML 1,676). No producer code path derives a span by searching `full_text` for label text (checked by a source scan of the span producers) | XML + PDF |
 
 **Not a gate, recorded as a limitation:** two containers whose display paths collide still
 merge into one node (#552, #557). Identifiers are assigned to the merged tree as it is.
