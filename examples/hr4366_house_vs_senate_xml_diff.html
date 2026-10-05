@@ -6,32 +6,31 @@
 <title>H.R. 4366 — Diff</title>
 <style>
 :root {
-  --background: #f9f7f5;
-  --foreground: #1c1c3a;
+  --background: #f5f6f8;
+  --foreground: #1c1f23;
   --card: #ffffff;
-  --border: #e3ddd7;
-  --primary: #2c2c5c;
-  --primary-foreground: #f9f7f5;
-  --secondary: #eef0f8;
-  --muted: #f2f0ed;
-  --muted-foreground: #686881;
-  --accent: #ede8df;
-  --gold: #c9944e;
-  --destructive: #c04040;
-  --success: #3d9b6d;
-  --diff-add: #d3f0e2;
-  --diff-add-foreground: #1a6647;
-  --diff-remove: #f5ddd8;
-  --diff-remove-foreground: #8a2828;
-  --diff-modified: #f1e6d2;
-  --diff-modified-foreground: #8a6320;
-  --diff-moved: #eef0f8;
-  --diff-moved-foreground: #2c2c5c;
-  --radius: 0.625rem;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --border: #d6dbe1;
+  --primary: #1f4f8b;
+  --primary-foreground: #ffffff;
+  --secondary: #e6edf6;
+  --muted: #f0f2f5;
+  --muted-foreground: #5a626d;
+  --accent: #fde68a;
+  --destructive: #a3261c;
+  --success: #1c6e3a;
+  --diff-add: #e3f4e9;
+  --diff-add-foreground: #1c6e3a;
+  --diff-remove: #fbe4e1;
+  --diff-remove-foreground: #a3261c;
+  --diff-modified: #fff3d6;
+  --diff-modified-foreground: #8a5b00;
+  --diff-moved: #e6edf6;
+  --diff-moved-foreground: #1f4f8b;
+  --radius: 6px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --shadow-soft: 0 1px 2px 0 rgba(28,28,58,0.04), 0 1px 3px 0 rgba(28,28,58,0.06);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-soft: 0 1px 2px rgba(20, 30, 50, 0.08);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--font-sans); color: var(--foreground); background: var(--background); line-height: 1.6;
@@ -120,7 +119,7 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
   padding: 16px 18px; background: var(--card); box-shadow: var(--shadow-soft); }
 .change[data-type="added"] { border-left: 3px solid var(--success); }
 .change[data-type="removed"] { border-left: 3px solid var(--destructive); }
-.change[data-type="modified"] { border-left: 3px solid var(--gold); }
+.change[data-type="modified"] { border-left: 3px solid var(--diff-modified-foreground); }
 .change[data-type="moved"] { border-left: 3px solid var(--primary); }
 .change.unanchored { border-left: 3px solid var(--muted-foreground); background: var(--muted); }
 .change.unanchored .change__header h3 {
@@ -174,7 +173,7 @@ ins { background: var(--diff-add); text-decoration: none; color: var(--diff-add-
 .find-counter { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted-foreground);
   min-width: 3.5em; text-align: center; }
 mark.find-hit { background: var(--accent); color: inherit; border-radius: 2px; scroll-margin-top: 64px; }
-mark.find-hit--current { background: var(--gold); color: #fff; }
+mark.find-hit--current { background: var(--primary); color: var(--primary-foreground); }
 .nav-controls { display: inline-flex; align-items: center; gap: 4px; }
 .nav-controls button { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 14px;
@@ -202,7 +201,7 @@ mark.find-hit--current { background: var(--gold); color: #fff; }
 /* XML full_text has no line-number gutter: plain paragraph flow. */
 .full-text--no-line-numbers .full-text-line { display: block; }
 .full-text--no-line-numbers .full-text-line--paragraph { margin-top: 0.9em; }
-.full-text .diff-modified { background: var(--diff-modified); border-bottom: 2px solid var(--gold); }
+.full-text .diff-modified { background: var(--diff-modified); border-bottom: 2px solid var(--diff-modified-foreground); }
 .full-text-page { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--muted-foreground);
   margin: 18px 0 6px; border-top: 1px dashed var(--border); padding-top: 6px; user-select: none; }
 .full-text > .full-text-page:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
