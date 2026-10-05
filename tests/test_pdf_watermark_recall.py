@@ -1,4 +1,4 @@
-"""Watermark-robustness of PDF text extraction (#515) — spec + benign-case proof.
+"""Watermark-robustness of PDF text extraction (#527) — spec + benign-case proof.
 
 Draft bills circulate as watermarked PDFs and are the actual product input, but we
 cannot obtain or store a real one (sensitive, and this is a public repo). A watermark
@@ -16,8 +16,9 @@ fit to a guessed example — and a rotation-based attempt was found to collide w
 production watermark and risk over-stripping landscape tables. The bucket-2 tests below
 are therefore `xfail`: they pin the failure mode as an executable spec and will flip to
 XPASS if stripping is ever implemented (revisit with a real draft sample). The decision
-and its blocker live in #515 (text-layer watermark stripping unimplemented, waiting on a
-real watermarked draft sample).
+and its blocker live in #527 (no real pre-publication draft pair has been sourced; when one
+is, check whether its watermark is in the text layer). #515 tracked this until it was
+folded into #527.
 
 History on the reference: these citations read `#54` until #515. That was the
 pre-migration repository's number for what is now #6 (real draft-PDF extraction recall is
@@ -43,7 +44,7 @@ from reportlab.pdfgen import canvas  # noqa: E402
 
 # Bucket 2 (text-layer watermark) is an unimplemented, intentionally-scoped-out gap.
 _TEXT_WATERMARK_UNHANDLED = pytest.mark.xfail(
-    reason="text-layer watermark stripping intentionally not implemented (#515); revisit with a real draft sample",
+    reason="text-layer watermark stripping intentionally not implemented (#527); revisit with a real draft sample",
     strict=False,
 )
 
