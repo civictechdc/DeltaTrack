@@ -18,6 +18,7 @@ import json
 from bisect import bisect_right
 from html import escape
 from importlib.resources import files
+from itertools import islice
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
@@ -683,20 +684,32 @@ def _parse_full_bill_lines(text: str, *, guttered: bool = True) -> list[dict]:
     return rows
 
 
-def _render_fb_row_body(text: str, row: dict, marks: list[dict], emitted_ids: set[str]) -> str:
+def _render_fb_row_body(
+    text: str, row: dict, marks: list[dict], emitted_ids: set[str], mark_ends: list[int] | None = None
+) -> str:
     """Render one row's content, wrapping any change spans that overlap it.
 
     ``marks`` is sorted by start and non-overlapping, so a single forward scan
     over the row's content range produces correctly ordered output. A change that
     spans multiple rows is clamped to this row's range here and re-wrapped on each
     row it covers.
+
+    ``mark_ends``, when given, is each mark's end in the same order and never
+    decreasing. The scan then starts at the first mark that ends after the row starts,
+    found by bisection, instead of at the first mark of the document. Every mark
+    before it ends at or before the row, so it would contribute nothing. A report
+    renders thousands of rows against thousands of marks, so scanning from the
+    first mark on every row made the full-text view quadratic.
     """
     cs, ce = row["start"], row["end"]
     out: list[str] = []
     p = cs
-    for mark in marks:
+    first = bisect_right(mark_ends, cs) if mark_ends is not None else 0
+    for mark in islice(marks, first, None):
         s, e = mark["start"], mark["end"]
-        if e <= cs or s >= ce:
+        if s >= ce:
+            break  # marks are sorted by start, so none after this one reaches the row
+        if e <= cs:
             continue
         a, b = max(s, cs), min(e, ce)
         if a > p:
@@ -777,6 +790,12 @@ def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> st
         marks.append({"start": start, "end": end, "change": change})
         cursor = end
     placed = len(marks)
+    # Each mark starts at or after the previous one's end, so the ends never decrease as
+    # long as no span ends before it starts. Bisecting on them needs that, so a document
+    # carrying such a span renders with the full scan instead.
+    mark_ends: list[int] | None = [mark["end"] for mark in marks]
+    if any(mark["end"] < mark["start"] for mark in marks):
+        mark_ends = None
 
     # Heading row char offset -> its DOM id, so the sidebar TOC can jump to it.
     # The canonical structure tree is the only source (leveled, #155-correct anchors).
@@ -804,7 +823,7 @@ def _full_bill_html(canonical: dict, joins: dict[int, bool] | None = None) -> st
         if guttered and row["page"] != seen_page:
             seen_page = row["page"]
             parts.append(f'<div class="full-text-page">p. {seen_page}</div>')
-        body = _render_fb_row_body(v2_text, row, marks, emitted_ids)
+        body = _render_fb_row_body(v2_text, row, marks, emitted_ids, mark_ends)
         anchor = row_ids.get(row["raw_start"])
         row_id = f' id="{anchor}"' if anchor else ""
         # `end` is exclusive, so the row's final character sits at end - 1.
