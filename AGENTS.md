@@ -96,7 +96,7 @@ Apply that strictly: "useful history", "might be interesting later", "shows how 
 
 When deleting research, **remove or update live references to it**, and move any durable conclusion into its authoritative current home: an ADR, the architecture documentation, an executable test, or a frozen fixture. Do not write an archival summary, a tombstone map or a closure document whose only job is to record what was deleted — that is a new artifact with the same problem, and a pointer into history is one more thing that can be wrong.
 
-The failure this prevents is subtler than rot. A probe that no longer runs at least announces itself; a probe that still runs can publish a quantity the project has since disowned, and passing a check makes it look current. So the question at closure is not "does it work?" but "does it still answer a live question?" `tests/test_research_probes.py` runs the probes it declares runnable against a closed manifest, so a probe added later is either run or the gate fails.
+The failure this prevents is subtler than rot. A probe that no longer runs at least announces itself; a probe that still runs can publish a quantity the project has since disowned, and passing a check makes it look current. So the question at closure is not "does it work?" but "does it still answer a live question?"
 
 Two rules that decide the ambiguous cases:
 

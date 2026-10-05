@@ -1,8 +1,8 @@
 """The `browser` tier fails closed under `--run-browser` (#599).
 
 CI's dedicated browser step exists to run the Playwright tests with Chromium
-present. Its launch helper — the module-scoped `chromium` fixture in both browser
-modules — skips when the browser can't start: the right behavior for the default
+present. Its launch helper — the module-scoped `chromium` fixture in each browser
+module — skips when the browser can't start: the right behavior for the default
 `-m "not slow and not browser"` tier, where a contributor's machine may lack
 Playwright, but a silent no-op under that CI step, where every test "passes" by
 skipping and the step reports green while asserting nothing.
@@ -22,9 +22,8 @@ step would already fail loudly on if missing (#599).
 import pytest
 
 from tests import test_frontend_browser as frontend
-from tests import test_labeling_form_browser as labeling
 
-_BROWSER_MODULES = (frontend, labeling)
+_BROWSER_MODULES = (frontend,)
 
 
 class _Config:

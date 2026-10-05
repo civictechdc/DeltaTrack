@@ -60,9 +60,10 @@ correspondence error surfaces one stage later as a financial one.
 **The result type cannot express a real legislative shape.** `match_nodes` returns
 `list[tuple[BillNode | None, BillNode | None]]` — two sides, one node each — so a provision
 absorbed into a larger one, or split across several, degrades to unrelated removals and
-additions. The provision-matching study documents consolidation as a deliberate drafting act,
-and the probe finds 7 match paths on the committed corpus whose output already carries a
-multi-node removal-plus-addition group. Nobody has ruled those 7, so they establish that the
+additions. Congress consolidates provisions deliberately: the Senate rewrite of the 2025
+reconciliation act (119-hr-1) renumbers and merges sections throughout. The probe finds 7
+match paths on the committed corpus whose output already carries a multi-node
+removal-plus-addition group. Nobody has ruled those 7, so they establish that the
 shape occurs, not how often it is genuine.
 
 ## Decision
@@ -203,9 +204,9 @@ engine does today. Reading what a dollar change *means* is the separate, later l
 
 ### What this record does not decide
 
-Deliberately, and this list is the point of the record rather than a caveat on it. If Study 2
-later shows the leading candidate measure is a poor one, **nothing here becomes wrong** — only
-the contents of one stage change.
+Deliberately, and this list is the point of the record rather than a caveat on it. If the
+leading candidate measure, described below, turns out to be a poor one, **nothing here becomes
+wrong**. Only the contents of one stage change.
 
 - which measure becomes the production score, and any cutoff value;
 - whether structural signals are primary, secondary or worthless. The architecture provides a
@@ -224,13 +225,38 @@ the contents of one stage change.
   correspondence fixture and the PDF seam study's external-validity holdout is frozen and
   unscored. Separate decision, not made here.
 
+**The evidence on the measure is thin.** Word overlap misses the stub-to-expansion case, where
+a short placeholder provision is filled in at a later stage and its true counterpart's overlap
+falls below every cutoff that still rejects false matches. A rare-token containment measure (a
+tf-idf-weighted overlap coefficient, normalised by the lighter side's rare-token mass)
+separates that case on the 12-pair hand-labelled answer key in
+`tests/data/similarity_labels.json`, and the separation survives five
+different definitions of rarity. Its cutoffs are uncalibrated: they were fitted to those 12
+pairs, do not transfer when one bill is held out, and move by up to 0.24 across the rarity
+definitions. The 12 pairs also cannot say which signal carries the gain, since a
+structural-only rule scores 12 of 12 on them too, and three of them no longer resolve to a
+node the current parser emits. Containment has a known false-keep risk that the answer key
+holds no example of: a short provision that shares a statute citation with an unrelated large
+one scores as contained in it.
+
+Calibrating that measure was the job of Study 2, which is retired
+([#203](https://github.com/civictechdc/DeltaTrack/issues/203)). The stage separation does not
+depend on it, and since [#671](https://github.com/civictechdc/DeltaTrack/issues/671) took money
+out of the report, a wrong split shows as a removed card plus an added card rather than as
+wrong money. What remains is [#368](https://github.com/civictechdc/DeltaTrack/issues/368)'s
+bounded check: rule on the 27 two-sided-money splits and the 7 multi-node groups measured
+above. A calibration study reopens if financial data returns to the report in a form that
+pairs amounts across a change (as [#736](https://github.com/civictechdc/DeltaTrack/pull/736)'s
+comparison view does), if the project moves into bill kinds where consolidation is common, or
+if #368 finds a high split error rate.
+
 ### Alternatives rejected
 
 - **Keep the stages fused and tune the thresholds.** Tuning does not touch the coupling: one
   number still decides correspondence, classification and render form together, so a change
   to it is untestable in isolation whatever its value. It is also not established that a
-  better cutoff exists — the provision-matching research finds heavily rewritten true
-  counterparts and genuine false matches poorly separated by a single fixed overlap measure.
+  better cutoff exists: heavily rewritten true counterparts and genuine false matches are
+  poorly separated by a single fixed overlap measure (see the evidence on the measure above).
   The separation this record makes holds whichever measure later wins.
 - **Add tracing instead of materialising a `CandidateSet`.** The closest alternative.
   Instrumentation would let ranking be measured over the pairs that *are* scored, but it

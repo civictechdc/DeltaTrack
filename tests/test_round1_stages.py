@@ -75,15 +75,12 @@ from deltatrack.diff_bill import (
 )
 from deltatrack.matching import NEW, OLD, CandidateSet, CorrespondenceEvidence, RetrieverInvocation
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
-from tests.corpus_paths import PROJECT_ROOT
 from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
     complete_sequence_ordinals,
     pair_key,
     stream_digest,
 )
-
-_PROBES = PROJECT_ROOT / "docs" / "research" / "provision-matching" / "probes"
 
 
 def test_manifest_fixtures_committed():

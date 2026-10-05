@@ -80,29 +80,9 @@ tests/data/*.xlsx
 # LEADING slash (#319): unanchored, this matched a `reference` component at ANY depth, so a
 # future docs/reference/ or src/deltatrack/reference/ would have been ignored with no error.
 /reference
-# govinfo-derived test corpus for provision-matching research (#170); large, re-derivable.
+# govinfo-derived local bill corpus for research sweeps; large, re-derivable.
 # No trailing slash: it is commonly symlinked into a worktree root (see #319 above).
 bills_corpus
-
-# Generated research render (regenerate via probes/build_artifact.py)
-docs/research/provision-matching/paper.html
-
-# Pass 2 (#203) derived mining artifacts — large, re-derivable from bills_corpus/ via the mine_*.py
-# probes; they also embed gitignored corpus text. The miners are committed; these regenerate.
-docs/research/provision-matching/probes/idf_cache.json
-docs/research/provision-matching/probes/candidates_*.json
-docs/research/provision-matching/probes/split_assignment.json
-
-# Pass 2 (#203) labeling artifacts — generated per run from the mined candidate pools; they carry
-# stratum/split (worklist) or in-progress labels, so they are re-derivable and not committed. The
-# self-contained HTML form TEMPLATE is committed; the per-reviewer forms are not.
-docs/research/provision-matching/probes/worklist.json
-docs/research/provision-matching/probes/worklist_sample.md
-docs/research/provision-matching/probes/assignments.json
-docs/research/provision-matching/probes/form_*.html
-!docs/research/provision-matching/probes/form_template.html
-docs/research/provision-matching/probes/labels/
-docs/research/provision-matching/probes/merged_labels.json
 
 # The PDF bake-off's P2 holdout corpus: 88 govinfo documents, 16.4 MB, downloaded by
 # probes/fetch_holdout.py. Same reasoning as /bills and bills_corpus above — bill source
