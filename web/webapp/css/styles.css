@@ -12,8 +12,9 @@
 
    The standalone report is not styled from this file. It carries its own embedded
    stylesheet, assembled by formatters/diff_html.py from src/deltatrack/styles/, so a saved report renders with
-   no network at all (ADR 0011). The loading tab in js/compare.js is self-contained
-   for the same reason: it is written via document.write and can resolve no URLs.
+   no network at all (ADR 0011). The processing tab in js/compare.js carries its own
+   inline CSS, so it paints with no request to wait on; its colours are copied from
+   this page's tokens when Compare is clicked.
 
    History: #194 removed the browser-side renderer; #291 removed the rules it had
    styled, which nothing emitted after it went.

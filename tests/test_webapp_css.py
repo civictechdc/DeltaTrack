@@ -9,6 +9,9 @@ file with what the generator would write, and never write it themselves.
 
 from __future__ import annotations
 
+import difflib
+from itertools import islice
+
 import pytest
 
 from scripts.render_webapp_css import BEGIN, END, PROCESSING_TAB, STYLESHEET, render
@@ -20,13 +23,9 @@ def test_the_committed_token_block_is_what_the_generator_writes():
     committed = STYLESHEET.read_text()
     fresh = render(committed, PROCESSING_TAB.read_text())
 
-    stale = [
-        f"  committed: {old}\n  generated: {new}"
-        for old, new in zip(committed.splitlines(), fresh.splitlines(), strict=False)
-        if old != new
-    ]
-    assert committed == fresh, f"web/webapp/css/styles.css's token block is stale. {REGENERATE}\n" + "\n".join(
-        stale[:5]
+    diff = difflib.unified_diff(committed.splitlines(True), fresh.splitlines(True), "committed", "generated", n=0)
+    assert committed == fresh, f"web/webapp/css/styles.css's token block is stale. {REGENERATE}\n" + "".join(
+        islice(diff, 12)
     )
 
 

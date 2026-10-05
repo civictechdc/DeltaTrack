@@ -5,7 +5,7 @@ them. The report (`formatters/diff_html.py`) and the published examples landing 
 (`scripts/render_examples.py`) embed them when rendered. The upload pages get a
 generated block in `web/webapp/css/styles.css` (`scripts/render_webapp_css.py`),
 committed because those pages are served as static files. The processing tab in
-`web/webapp/js/compare.js` still hardcodes its colours (#773).
+`web/webapp/js/compare.js` copies the upload page's tokens when it opens (#773).
 
 Each surface *embeds* its tokens rather than linking one shared file. A report has to
 render with no network at all (ADR 0011), so it cannot fetch a stylesheet. "One palette"
