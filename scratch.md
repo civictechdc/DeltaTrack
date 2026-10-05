@@ -1995,6 +1995,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | Second and third external reviews of #782: determinism and absent-position wording tightened (`b52ea68`); absent-position example narrowed to navigation-only groupings (`10840bb`). Implementation plan written and reviewed. | D1, F4b |
 | 2026-10-05 | Checked for duplicates (none; related: #701, #766, #552/#557, #648, #778) and filed #784 (removed provisions misfiled by label) and #785 (node identity in the document). Replaced the ADR placeholders with links; #782 body now says "Refs #784, #785". | F4b, D1 |
 | 2026-10-05 | PR A (#784) on `claude/removed-changes-section`: removed section + exact-path pointers; `_remap_removed_path` / `_v2_label_lookup` deleted. Measured on the corpus: XML 711/711 and PDF 202/202 removals in the removed section, 0 inside a later group; pointers on 279 XML and 72 PDF removals. Plan corrections below. | F4b |
+| 2026-10-05 | Independent review of PR A before opening. Fixed: dropped scroll-margin selectors (blocking, mine); PDF front-matter removals sorted after divisions (now ordered by earlier offset); "outside the outline" label renamed "(no heading path recorded)"; lost all-changes corpus check restored; pointer links now reveal and sync Prev/Next. Opened civictechdc/DeltaTrack#791 (Closes #784). | F4b |
 
 ## Open questions
 

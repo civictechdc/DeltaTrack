@@ -95,6 +95,14 @@ removals the view places today.
   changes. It now uses 118-hr-2882 1→4, which has no account levels and later-version changes the
   join places.
 - **The sidebar has no pointers**; it lists the removed section as its own group.
+- **Sibling order in the removed section** is by earliest earlier-text offset when every sibling has
+  one, else the earlier tree's order. PDF breadcrumbs omit the tree's synthesized Front Matter, so
+  tree order alone sorted 118-hr-4366 4→5's removed SEC. 3–5 after Division C.
+- **The no-path group is "(no heading path recorded)"**, not "(outside the earlier version's
+  outline)": some front-matter removals carry no `path.v1` although their text is in the tree.
+- **The pointer says "directly under"**, because it counts removals whose parent is the heading,
+  while the linked group also shows deeper ones.
+- Opened as civictechdc/DeltaTrack#791.
 
 ---
 
