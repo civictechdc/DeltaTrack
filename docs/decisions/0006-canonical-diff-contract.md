@@ -78,6 +78,20 @@ applying them rather than re-guessing them. Glyph geometry and font metrics are 
 source and stay out. This is what keeps the contract presentation-free while letting a
 view be a pure consumer of it.
 
+**The document names the structure its changes sit in.** Each version's outline
+(`tree`) gives every node an identifier, each change names the node it concerns on each
+side, and each node records where its heading row and its own body text sit in
+`full_text`. The producer derives all three while building the document; without them a
+consumer reattaches changes to the outline by character offsets and finds heading rows
+by searching for label text, which is the re-inference the rule above forbids.
+
+A node identifier is an address within one document. It is not stable across versions,
+parser revisions or regenerations, it is not a cross-version match key, and it is not
+the identity a stored artifact records ([0019](0019-observation-identity.md)). Which
+node in one version corresponds to which node in the other remains the diff engine's
+output; carrying that correspondence in the document is a separate decision, not made
+here. Field shapes are the schema's. Tracking: TRACKING-ISSUE-NODE-IDENTITY.
+
 Producers are expected to emit schema-valid documents and are tested against the
 schema. The schema defines validity; the DeltaTrack reader carries explicit
 compatibility guards but is not a general schema validator, so "invalid" is a

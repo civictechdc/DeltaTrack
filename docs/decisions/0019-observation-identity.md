@@ -76,7 +76,14 @@ markup omits or repeats an id degrades traceability rather than breaking identit
 
 **Scope.** This governs *stored artifacts that record a judgment about a parsed node* — test
 fixtures, goldens, labeled datasets, research probe output. It does not change the engine's
-runtime behaviour and adds no field to the canonical diff contract.
+runtime behaviour.
+
+**The canonical diff's node identifiers are not this identity.** The diff document gives each
+outline node an identifier so a consumer can tell which node a change concerns
+([0006](0006-canonical-diff-contract.md)). That identifier addresses a node within one
+document and carries no source digest or parser revision, so a stored artifact never records
+it as an observation's identity; it records the triple above. The two meet at a content node,
+which the producer can map to its ordinal within the same run.
 
 **This is identity within one parse, not across versions.** Neither an ordinal nor an element
 id is a cross-version match key. Cross-version correspondence stays the matcher's or the

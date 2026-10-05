@@ -43,6 +43,23 @@ branches fire on **the presence of data**, not on pipeline identity. The shared
 stylesheet is inert by default, so classes that only apply to one pipeline do
 nothing when their data is absent and both pipelines share one set of styles.
 
+**The view faithfully represents the diff.** It shows what the canonical document
+states and decides nothing the document leaves open: not which provisions or headings
+correspond across the two versions, not where a change belongs in the outline, not
+the outline's structure. Where the document is silent, the view shows what it does
+know and says no more. This is the view-side half of the contract rule in
+[0006](0006-canonical-diff-contract.md), that a consumer applies facts the document
+carries and never re-infers facts it omits. A view that needs such a fact asks the
+producer to carry it rather than reconstructing it.
+
+A removed change is the standing example. It exists only in the earlier version, so
+the document places it in the earlier version's outline and nowhere else. The view
+lists it under that earlier location, in a section for changes removed from the
+earlier version, and does not file it inside the later version's outline. Where a
+heading in the later version has exactly the same full heading path as a removed
+change's earlier parent, the view may point from that heading to the removal, worded
+as what it is: a heading with the same name, not a claim that it is the same place.
+
 The reason this is the right structure, and not an overfit to one past bug: the
 product *requires* the two outputs to converge on one appearance. We intend for
 the source material to be irrelevant to the reader. Two renderers means two
@@ -61,6 +78,11 @@ Alternatives:
   trap: that is two tangled renderers wearing one file, and worse than an honest
   split. The canonical contract is what avoids it, by moving pipeline-specific work
   out of the renderer and leaving it reading a neutral shape.
+- **File each removed change inside the later version's outline by matching heading
+  labels.** Rejected. It makes the view decide a cross-version correspondence the
+  document does not state. Labels such as `(a)` or `General provisions` repeat across
+  sections, titles and divisions, so a label match files a removal under an unrelated
+  heading, and the result looks plausible, so a reader cannot tell it is wrong.
 
 ## Consequences
 
@@ -87,3 +109,9 @@ Alternatives:
   pipelines is pushed up into the canonical document or the view it builds, not
   added as a branch in the renderer. Keeping the renderer source-agnostic is the
   invariant this record protects.
+- Faithful representation has a visible cost: a removed change appears under its
+  earlier location rather than beside the later version's related changes, and a
+  heading that moved under a new wrapper (an added division, for example) gets no
+  pointer. That is the honest picture until the document itself carries where a
+  removed change's surroundings went. The removed-changes section is tracked in
+  TRACKING-ISSUE-REMOVED-SECTION.
