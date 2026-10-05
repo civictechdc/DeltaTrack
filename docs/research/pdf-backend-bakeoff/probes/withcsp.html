@@ -1,6 +1,0 @@
-<!doctype html><meta charset="utf-8"><title>strict CSP</title>
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
-<body><pre id="o">running</pre>
-<script src="vectors.js"></script>
-<script>window.__tryAll("withcsp").then(r=>document.getElementById("o").textContent=r+"\nDONE");</script>

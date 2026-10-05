@@ -44,6 +44,14 @@ shipped in PRs #38 and #40.
   point of extraction quality for this tool.
 - One engine instead of two means one set of text quirks to understand and one
   cleaning path to maintain, at the cost of that path being PDFium-specific.
+- PDFium is the engine for the anchoring and chrome behaviour above, not for a
+  measured accuracy lead, and no backend has one. Six backends read through one
+  per-glyph contract, on published GPO bills of effectively one typesetting class,
+  showed no winner: pdfminer.six agreed best with the XML on text and headings, while
+  PDFium compiled to WebAssembly reproduced current output exactly and ran about 8×
+  faster in the browser. No design for plugging a second backend into the extractor
+  was selected; a hybrid of engines and an extended per-glyph contract were both
+  prototyped and neither was validated ([evidence](https://github.com/civictechdc/DeltaTrack/blob/4171e32d93e869725a86ae72eab70fa355a9919f/docs/research/pdf-backend-bakeoff/CLOSEOUT.md)).
 - The engine-vs-engine parity check could not survive pdfplumber's removal, so the
   regression guard is now a golden snapshot: five curated pages, each exercising
   one cleaner path (soft-hyphen reconstruction, VerDate-glue, watermark-glue,

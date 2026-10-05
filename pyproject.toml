@@ -111,10 +111,8 @@ src = ["src", ".", "tools"]
 # The `.md` rule is the same principle one level up: `ruff format` reformats Python inside
 # fenced code blocks, and a study's write-up quotes its own probes verbatim. Formatting
 # those quotes edits a finished research document to satisfy a style rule it was never written
-# against, and several of these files are hashed into a frozen preservation manifest, so a
-# whitespace change there reads as tampering. Scoped to markdown deliberately: the probes
-# are excluded wholesale, but `validation/*.py` and any future maintained research module
-# stay linted.
+# against. Scoped to markdown deliberately: the probes are excluded wholesale, but a
+# maintained research module outside `probes/` stays linted.
 extend-exclude = ["docs/research/**/probes", "docs/research/**/*.md"]
 
 [tool.ruff.lint]

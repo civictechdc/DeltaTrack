@@ -99,3 +99,14 @@ Alternatives:
 - Telemetry, crash reporting, or "send us the file that failed" diagnostics that would
   carry bill content off-device are foreclosed by this rule. Diagnostics must be local
   or content-free.
+- **A browser channel cannot guarantee zero egress with Content Security Policy
+  alone.** Tested against script deliberately trying to exfiltrate, a strict policy
+  (`connect-src 'none'`, and no `'unsafe-inline'` in `script-src`, which Speculation
+  Rules prefetching otherwise gets through) blocked every subresource mechanism tried.
+  Two mechanisms are outside CSP entirely: `window.open` opens a new browsing context
+  that can carry content in its URL and leaves the page in place, and WebRTC reaches a
+  STUN server under any page-level policy, a covert signal rather than a content
+  channel. Closing them needs a browser- or device-level control such as enterprise
+  policy. A browser channel's no-egress claim must name that dependency and be
+  verified at the network layer against a control shown to observe egress
+  ([evidence](https://github.com/civictechdc/DeltaTrack/blob/4171e32d93e869725a86ae72eab70fa355a9919f/docs/research/pdf-backend-bakeoff/CLOSEOUT.md)).
