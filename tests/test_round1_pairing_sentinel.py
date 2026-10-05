@@ -45,15 +45,17 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 
 import pytest
 
 from deltatrack.diff_bill import match_nodes
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
-from tests.corpus_paths import DATA_DIR
+from tests.corpus_paths import DATA_DIR, PROJECT_ROOT
 from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
+    _revision_over,
     complete_sequence_ordinals,
     pair_key,
     parser_revision,
@@ -187,6 +189,37 @@ def test_the_provenance_gate_can_fire(field: str, monkeypatch):
 
     with pytest.raises(AssertionError, match="source bytes changed|parser revision changed"):
         test_the_pinned_correspondence_names_the_parse_it_was_made_about(old_path, new_path)
+
+
+def test_editing_the_parser_moves_the_revision(tmp_path):
+    """The live half of the provenance gate: the revision must actually move when the parser does.
+
+    ``test_the_provenance_gate_can_fire`` proves the gate refuses a stored value that differs.
+    This proves the live value differs when it should. Without it, a revision that hashed module
+    names but not their bytes would stay constant across every parser edit, and the gate would
+    keep certifying ordinals minted by code that no longer exists.
+
+    The mutation runs against a COPY of ``src/``, never the checkout itself (#686): the suite runs
+    under ``-n auto``, so another worker can read the tree mid-write, and a worker killed between
+    the write and the restore would leave the edit in tracked source. The copy is proved faithful
+    BEFORE it is mutated, so the control cannot pass by measuring a different tree.
+    """
+    rev = parser_revision()
+    assert len(rev) == 64, "must be a SHA-256 hex digest"
+
+    src = tmp_path / "src"
+    shutil.copytree(PROJECT_ROOT / "src", src, ignore=shutil.ignore_patterns("__pycache__"))
+    assert _revision_over(src) == rev, (
+        "the copied tree does not reproduce the checkout's revision, so the assertions below "
+        "would be measuring a different parser than the one under evaluation"
+    )
+
+    parser = src / "deltatrack" / "bill_tree.py"
+    original = parser.read_bytes()
+    parser.write_bytes(original + b"\n# provenance probe\n")
+    assert _revision_over(src) != rev, "editing the parser must change the revision"
+    parser.write_bytes(original)
+    assert _revision_over(src) == rev, "restoring the parser must restore the revision"
 
 
 @pytest.mark.slow

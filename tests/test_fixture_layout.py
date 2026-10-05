@@ -89,13 +89,11 @@ _DOWNLOAD_ROOT_NAMERS = frozenset(
 #
 # Research artifacts are a separate policy domain. AGENTS.md treats them as working
 # material; ``pyproject.toml`` holds the probes out of lint and format so they stay
-# verbatim as the artifacts of a study; and they read a two-root merged corpus through
-# ``docs/research/provision-matching/probes/corpus_roots.py``, whose ``ROOTS`` is
-# ``(tests/corpus, bills)`` in committed-first precedence — which is the very thing these
-# rules forbid the product to do. So the exclusion is a judgement about OWNERSHIP, not a
-# claim that the tree is equally policed elsewhere: ``tests/test_research_probes.py``
-# reaches one study's probes (39 of the 179 tracked ``.py`` under ``docs/`` when
-# measured), and the ownership of the rest was not audited here.
+# verbatim as the artifacts of a study; and several of them read the gitignored download
+# tree directly (the financial-semantics stress tests) —
+# which is the very thing these rules forbid the product to do. So the exclusion is a
+# judgement about OWNERSHIP, not a claim that the tree is equally policed elsewhere: the
+# only test that reaches into it is ``tests/test_classify_bill.py``, for one module.
 #
 # Spelled ``docs/research/`` rather than ``docs/`` deliberately. ``docs/`` would exempt a
 # future ``docs/tooling/build_docs.py`` the day it was created, silently — the exact

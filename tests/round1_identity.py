@@ -14,16 +14,14 @@ Nothing here decides anything about matching. These are the address space
 
 from __future__ import annotations
 
+import ast
 import hashlib
-import importlib.util
 import json
 from functools import lru_cache
 from pathlib import Path
 
 from deltatrack.bill_tree import BillNode
 from tests.corpus_paths import PROJECT_ROOT
-
-_PROBES = PROJECT_ROOT / "docs" / "research" / "provision-matching" / "probes"
 
 
 def complete_sequence_ordinals(old_nodes: list[BillNode], new_nodes: list[BillNode]) -> dict[int, int]:
@@ -89,22 +87,50 @@ def parser_revision() -> str:
 
     ADR 0019 requires a revision that "changes whenever code capable of changing the emitted
     observations changes", and accepts a content hash over the parser entry module and its
-    transitive ``deltatrack`` imports. That mechanism already exists in this repository, in
-    ``docs/research/provision-matching/probes/study2_frame.py``, and is reused rather than
-    reimplemented -- a second copy of an identity rule is how two artifacts come to disagree
-    about what parse they describe.
-
-    Loaded the same way ``tests/test_pass2_eval_contract.py`` loads it. Its transitive set is
-    ``bill_tree`` plus the two PDF parser modules ``bill_tree`` imports, and notably NOT
-    ``diff_bill``: a matching change does not move the revision, so the two failure modes stay
-    distinguishable. A matcher regression reddens the digests; a parser change reddens
-    provenance and says the stored judgment is about a different emitted sequence.
+    transitive ``deltatrack`` imports. Its transitive set is ``bill_tree`` plus the two PDF
+    parser modules ``bill_tree`` imports, and notably NOT ``diff_bill``: a matching change does
+    not move the revision, so the two failure modes stay distinguishable. A matcher regression
+    reddens the digests; a parser change reddens provenance and says the stored judgment is
+    about a different emitted sequence.
     """
-    spec = importlib.util.spec_from_file_location("_probe_study2_frame", _PROBES / "study2_frame.py")
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.parser_revision()
+    return _revision_over(PROJECT_ROOT / "src")
+
+
+def _revision_over(src_root: Path) -> str:
+    """SHA-256 over ``deltatrack.bill_tree`` and every ``deltatrack`` module it transitively imports.
+
+    Derived from the code rather than a git commit, which would be worse on both sides: it moves
+    when documentation changes, and it does not move for an uncommitted edit to the parser.
+    Deliberately over-broad: the set may include a module whose change cannot alter node
+    emission, which costs a re-derivation, where the other direction silently certifies ordinals
+    minted by different code.
+
+    Takes the source root so the mutation control can run this exact walk over a copy of the
+    tree instead of editing tracked source under ``-n auto`` (#686).
+    """
+    seen: set[str] = set()
+    queue = ["deltatrack.bill_tree"]
+    files: list[tuple[str, bytes]] = []
+    while queue:
+        mod_name = queue.pop()
+        if mod_name in seen:
+            continue
+        seen.add(mod_name)
+        path = src_root / (mod_name.replace(".", "/") + ".py")
+        if not path.exists():
+            continue
+        src = path.read_bytes()
+        files.append((mod_name, src))
+        for node in ast.walk(ast.parse(src)):
+            if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("deltatrack"):
+                queue.append(node.module)
+            elif isinstance(node, ast.Import):
+                queue.extend(a.name for a in node.names if a.name.startswith("deltatrack"))
+    h = hashlib.sha256()
+    for mod_name, src in sorted(files):
+        h.update(mod_name.encode())
+        h.update(hashlib.sha256(src).digest())
+    return h.hexdigest()
 
 
 def pair_key(old_path: Path, new_path: Path) -> str:

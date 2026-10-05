@@ -182,15 +182,12 @@ def test_the_browser_tier_is_exempt_and_the_exemption_is_narrow() -> None:
     """The browser tier stays outside the ceiling, and nothing else rides along.
 
     #599 makes a Chromium-unavailable skip correct for the default tier, and CI's
-    ``--run-browser`` turns the same condition into a failure. The exemption is two named
-    modules rather than the marker or a prefix, so a non-browser module skipping for a
+    ``--run-browser`` turns the same condition into a failure. The exemption is one named
+    module rather than the marker or a prefix, so a non-browser module skipping for a
     browser-shaped reason is still reported.
     """
     browser_skip = {
         "tests/test_frontend_browser.py::test_landing_renders": (
-            "Chromium unavailable (run 'playwright install chromium'): boom"
-        ),
-        "tests/test_labeling_form_browser.py::test_form_loads": (
             "Chromium unavailable (run 'playwright install chromium'): boom"
         ),
     }
@@ -201,7 +198,7 @@ def test_the_browser_tier_is_exempt_and_the_exemption_is_narrow() -> None:
 
     elsewhere = {"tests/test_classify_bill.py::test_x": "Chromium unavailable: boom"}
     assert conftest.classify_corpus_skips(elsewhere) == elsewhere, (
-        "the browser exemption is matching more than the two modules it names"
+        "the browser exemption is matching more than the module it names"
     )
 
 

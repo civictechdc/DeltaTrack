@@ -606,20 +606,6 @@ ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
     "tests/test_fetch_govinfo.py::test_govinfo_bytes_identical_to_curated_corpus": (
         "local-only: freshly-downloaded bulk ZIP + curated corpus (both gitignored)"
     ),
-    # Needs a bill present in BOTH corpus roots to have anything to compare, which is a
-    # property of what a machine has fetched rather than of the committed set.
-    "tests/test_research_probes.py::test_collisions_between_the_two_roots_are_byte_identical": (
-        "no bill+version is present in more than one corpus root on this machine"
-    ),
-    # These read the union of both corpus roots and are gated on `CI == "true"` directly
-    # rather than on the tree being absent, so removing bills/ locally does not reproduce
-    # their skip.
-    "tests/test_research_probes.py::test_adjacent_pairs_are_consecutive": (
-        "the union corpus needs the gitignored bills/ tree, which CI does not have"
-    ),
-    "tests/test_research_probes.py::test_body_less_target_nodes_are_always_containers": (
-        "the union corpus needs the gitignored bills/ tree, which CI does not have"
-    ),
 }
 
 # The browser tier is deliberately not watched. Its `chromium` fixture skips when the
@@ -627,10 +613,7 @@ ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
 # browser step passes `--run-browser` to make the same condition a failure. An allowlist
 # could not express it anyway: the skip reason interpolates the launch exception, so no
 # entry could match.
-_UNWATCHED_MODULES = (
-    "tests/test_frontend_browser.py",
-    "tests/test_labeling_form_browser.py",
-)
+_UNWATCHED_MODULES = ("tests/test_frontend_browser.py",)
 
 # (label, modules, allowlist) — each group's skips are watched and must be declared.
 # Order is significant: the first matching group owns the case, so the specific tiers come
@@ -859,7 +842,7 @@ def pytest_sessionfinish(session, exitstatus) -> None:
 
 # --- Browser-tier strictness (#599) --------------------------------------------
 # CI runs the `browser` tier on dedicated hardware with Chromium guaranteed. Its
-# launch helper (the module-scoped `chromium` fixture in both browser modules) skips
+# launch helper (the module-scoped `chromium` fixture in the browser module) skips
 # when the browser cannot start — the right behavior for the default tier, where a
 # contributor's machine may lack Playwright, but under that CI step a skip is a
 # silent no-op: every test "passes" by skipping and the step reports green while
