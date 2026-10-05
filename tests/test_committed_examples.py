@@ -21,11 +21,13 @@ from pathlib import Path
 
 import pytest
 
+from deltatrack.palette import LANDING_SUBSET, PALETTE
 from scripts import render_examples
 from tests.corpus_paths import FIXTURES_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "examples"
+WEBAPP_STYLESHEET = ROOT / "web" / "webapp" / "css" / "styles.css"
 SERVED_SAMPLE = ROOT / "web" / "webapp" / "sample" / "example.html"
 PDF_EXAMPLE = EXAMPLES / "hr8752_pdf_diff.html"
 
@@ -194,11 +196,13 @@ def test_index_page_tokens_match_the_report_tokens():
 def test_the_report_palette_declares_exactly_what_it_uses():
     """No token a report declares is unused, and no `var()` it uses is undeclared (#667).
 
-    The palette is DeltaTrack's own and ships in full inside every report, so a token
-    nothing references is weight carried by every reader for no effect. Eleven had
-    accumulated while the block was held identical to another product's, which is the
-    pressure this pins against: the cheapest way to satisfy a copy is to take the whole
-    source, and nothing then objects to the parts that style nothing here.
+    A token a report declares but nothing references is weight carried by every reader
+    for no effect. Eleven had accumulated while the block was held identical to another
+    product's, which is the pressure this pins against: the cheapest way to satisfy a
+    copy is to take the whole source, and nothing then objects to the parts that style
+    nothing here. The renderer now emits only the tokens its rules use (#773), so this
+    half fails if that selection is bypassed, for example by embedding the whole tokens
+    file again, which also holds tokens other surfaces need.
 
     Read from a *rendered report* rather than `_DESIGN_TOKENS_CSS`, for the same reason
     as the token comparison above — the report is what ships, so the check covers
@@ -221,8 +225,8 @@ def test_the_report_palette_declares_exactly_what_it_uses():
     unused = sorted(declared - used)
     assert not unused, (
         f"the report stylesheet declares tokens nothing references: {unused}. They ship "
-        "in every report and style nothing. Either use them or drop them from "
-        "`_DESIGN_TOKENS_CSS`."
+        "in every report and style nothing. `_DESIGN_TOKENS_CSS` should emit only "
+        "`palette.referenced(...)` of the report's rules."
     )
 
     undeclared = sorted(used - declared)
@@ -230,6 +234,32 @@ def test_the_report_palette_declares_exactly_what_it_uses():
         f"the report stylesheet uses var() names it never declares: {undeclared}. Each "
         "resolves to nothing when the report is opened, so whatever they style falls "
         "back silently rather than failing here."
+    )
+
+
+def test_every_token_is_used_by_some_surface():
+    """No token in `styles/tokens.css` is dead on every surface (#667, #773).
+
+    Each surface embeds only the tokens it uses, so the check above can no longer see a
+    dead token: one nothing references is simply never emitted into a report. It still
+    sits in the tokens file, though, read as if it meant something, and the next
+    surface to embed the whole file would ship it. This is the census that replaces
+    what the report check used to catch on the way past.
+
+    Uses are read from what each surface ships, comment-free, for the reason
+    `_live_stylesheet` gives: a token mentioned only in prose is not used. For the upload
+    pages that is the generated block, which holds exactly what their rules and the
+    processing tab use; `tests/test_webapp_css.py` keeps it current.
+    """
+    report_css = _live_stylesheet((EXAMPLES / "hr8752_pdf_diff.html").read_text())
+    webapp_css = _CSS_COMMENT.sub("", WEBAPP_STYLESHEET.read_text())
+    used = set(_VAR_REFERENCE.findall(report_css)) | set(LANDING_SUBSET) | set(_css_tokens(_root_block(webapp_css)))
+
+    assert used, "no token uses found on any surface; this check would vacuously pass"
+
+    dead = sorted(set(PALETTE) - used)
+    assert not dead, (
+        f"styles/tokens.css declares tokens no surface uses: {dead}. Either use them or drop them from the tokens file."
     )
 
 

@@ -1,11 +1,13 @@
-/* DeltaTrack's design tokens: every color, font stack, radius and shadow the report's
-   stylesheets use, as custom properties. `deltatrack.palette` reads this file and each
-   report embeds the declarations in its own `:root` (ADR 0011, reports are zero-egress).
-   Ordered by role; the order is what a reader sees in a report's `:root`. One
-   declaration per line, so a value change is a one-line diff in the committed examples.
+/* DeltaTrack's design tokens: every color, font stack, radius and shadow its surfaces
+   use, as custom properties. `deltatrack.palette` reads this file. Each surface embeds
+   the declarations its own rules use: a report in its own `:root` (ADR 0011, reports
+   are zero-egress), the upload pages in the generated block of
+   `web/webapp/css/styles.css` (#773). Ordered by role; the order is what a reader sees
+   in each `:root`. One declaration per line, so a value change is a one-line diff in
+   the committed examples and stylesheet.
 
-   Values are the web app's (`web/webapp/css/styles.css`), so the upload pages and the
-   report they open look like one product (#772). Where the app has no counterpart the
+   Values were the web app's when the report adopted them (#772), so the upload pages
+   and the report they open look like one product. Where the app had no counterpart the
    value is chosen here: --accent, the find-in-page highlight, must stay distinct from
    all four diff-state backgrounds, and the app sets no serif. */
 :root {
@@ -14,6 +16,7 @@
   --foreground: #1c1f23;
   --card: #ffffff;
   --border: #d6dbe1;
+  --border-strong: #848e9a;
   /* Brand */
   --primary: #1f4f8b;
   --primary-foreground: #ffffff;
