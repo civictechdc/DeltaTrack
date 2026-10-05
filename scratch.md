@@ -154,6 +154,7 @@ and the v1 branch of `_node_path_for_change`.
   move inline using that data instead of labels.
 
 **Relation to issues:**
+- Records and issue draft: draft PR civictechdc/DeltaTrack#782.
 - Replaces the earlier F4b fix-task idea.
 - Partly overlaps #701: trailing groups for unplaced changes.
 
@@ -1990,6 +1991,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-04 | Ideal design: tree to parse stage, node ids = parser addresses, diff-stage correspondence (prototyped on XML: 46,942/46,942 refs map to one node; 630/711 removals placed, 98.9% same-label container; 81 fail closed), ledger as a contract consumer; #736 to be rebased onto it. Found an engine mispairing of heading-only nodes across divisions. No code changes. | F4a, F4b, F4c, F5, D1, D2 |
 | 2026-10-05 | External review (GPT) of the brief: node ids/references/spans/reader withstand; container correspondence withdrawn pending controls; corrections recorded (46,942 = all observations; GP node is not heading-only; 98.9% is label agreement, not correctness). Verified points 1, 3, 5 here. Revised plan recorded. | D1, D2, F4b |
 | 2026-10-05 | Decision: "the viewer faithfully represents the diff". F4b resolved as a Removed section with exact-match pointers (option c), buildable now from `path.v1`. | F4b |
+| 2026-10-05 | Opened draft PR civictechdc/DeltaTrack#782 (branch `claude/adr-viewer-fidelity-node-identity`): ADR 0007 fidelity principle + removed-changes rule, ADR 0006 node identity, ADR 0019 scope; two issue drafts in the PR body, not yet filed. For external review before the step 1 spec. | F4b, D1 |
 
 ## Open questions
 
