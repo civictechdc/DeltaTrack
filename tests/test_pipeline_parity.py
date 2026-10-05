@@ -36,8 +36,8 @@ Every input is committed: all four evidence bills carry v1/v2 in both formats un
 ``tests/corpus/``, and the Senate pair is ``tests/corpus/118-s-4795`` XML plus
 ``tests/data/BILLS-118s4795rs.pdf``. So every case runs on any checkout, and absence is
 a hard failure on ``test_evidence_fixtures_committed`` rather than a skip (#326).
-CI runs this module: it is named in the ``Run remaining slow suites (committed
-fixtures)`` step of ``.github/workflows/ci.yml``. Committing a fixture makes a gate
+CI runs this module: it is named in one of the ``Run remaining slow suites`` shard steps
+of ``.github/workflows/ci.yml``. Committing a fixture makes a gate
 runnable; naming its module is what makes it run (#220). So a case added here is
 watched by CI, not local runs alone.
 """

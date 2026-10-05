@@ -178,6 +178,15 @@ jobs:
   # Corpus correctness gates: parametrize over committed manifest.
   corpus-gates:
     runs-on: ubuntu-latest
+    # Split across two runners, each running half the modules. The halves are balanced by
+    # measured wall-clock, not by module count: one half can hold a single heavy module.
+    # Each module is named in exactly one shard's step, which test_ci_workflow.py checks
+    # (no module run twice, every slow module run somewhere). A shard's extraction cache
+    # is its own, because the two halves read different PDFs.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     permissions:
       contents: read
     steps:
@@ -200,17 +209,26 @@ jobs:
         uses: actions/cache@v6
         with:
           path: tests/data/extract_cache
-          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
-          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
+          key: pdf-extract-${{ github.job }}-${{ matrix.shard }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ matrix.shard }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
-      - name: Run corpus correctness gates (committed manifest)
-        if: ${{ !cancelled() }}
+      - name: Run corpus correctness gates (shard 1 of 2)
+        if: ${{ !cancelled() && matrix.shard == 1 }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
+        run: >
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_corpus_tree_properties.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_observation_emission.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_observation_identity.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_round2_stages.py"
+          "$GITHUB_WORKSPACE/tests/test_assignment_classification_boundary.py"
+      - name: Run corpus correctness gates (shard 2 of 2)
+        if: ${{ !cancelled() && matrix.shard == 2 }}
         working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
           uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
           "$GITHUB_WORKSPACE/tests/test_corpus_properties.py"
-          "$GITHUB_WORKSPACE/tests/test_corpus_tree_properties.py"
           "$GITHUB_WORKSPACE/tests/test_diff_validation.py"
           "$GITHUB_WORKSPACE/tests/test_node_join_corpus.py"
           "$GITHUB_WORKSPACE/tests/test_xml_subsection_nodes.py"
@@ -218,13 +236,9 @@ jobs:
           "$GITHUB_WORKSPACE/tests/test_canonical_baseline.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_canonical_baseline.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_matching_boundary.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_observation_emission.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_observation_identity.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_round1_retrieval.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_round1_revocation.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_round2_stages.py"
           "$GITHUB_WORKSPACE/tests/test_matching_contracts.py"
-          "$GITHUB_WORKSPACE/tests/test_assignment_classification_boundary.py"
           "$GITHUB_WORKSPACE/tests/test_round1_stages.py"
           "$GITHUB_WORKSPACE/tests/test_round1_pairing_sentinel.py"
 
@@ -253,6 +267,15 @@ jobs:
   # Remaining slow suites: all other @slow modules against committed fixtures.
   remaining-slow:
     runs-on: ubuntu-latest
+    # Split across two runners, each running half the modules. The halves are balanced by
+    # measured wall-clock, not by module count: one half can hold a single heavy module.
+    # Each module is named in exactly one shard's step, which test_ci_workflow.py checks
+    # (no module run twice, every slow module run somewhere). A shard's extraction cache
+    # is its own, because the two halves read different PDFs.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     permissions:
       contents: read
     steps:
@@ -275,39 +298,44 @@ jobs:
         uses: actions/cache@v6
         with:
           path: tests/data/extract_cache
-          key: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
-          restore-keys: pdf-extract-${{ github.job }}-${{ steps.extractor.outputs.fingerprint }}-
+          key: pdf-extract-${{ github.job }}-${{ matrix.shard }}-${{ steps.extractor.outputs.fingerprint }}-${{ hashFiles('tests/**/*.pdf', 'tests/pdf_corpus.py') }}
+          restore-keys: pdf-extract-${{ github.job }}-${{ matrix.shard }}-${{ steps.extractor.outputs.fingerprint }}-
       - name: Make a working directory outside the checkout
         run: mkdir -p "${{ runner.temp }}/not-the-repo-root"
-      - name: Run remaining slow suites (committed fixtures)
-        if: ${{ !cancelled() }}
+      - name: Run remaining slow suites (shard 1 of 2)
+        if: ${{ !cancelled() && matrix.shard == 1 }}
+        working-directory: ${{ runner.temp }}/not-the-repo-root
+        run: >
+          uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
+          "$GITHUB_WORKSPACE/tests/test_structure_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_diff_bill.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_xml_prose_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_report_from_document.py"
+          "$GITHUB_WORKSPACE/tests/test_xml_compare.py"
+          "$GITHUB_WORKSPACE/tests/test_toc_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_format_html.py"
+          "$GITHUB_WORKSPACE/tests/test_manifest_report_fixtures.py"
+          "$GITHUB_WORKSPACE/tests/test_canonical_tree.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_watermark_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_formatters_text_serializer.py"
+          "$GITHUB_WORKSPACE/tests/test_pdf_xml_withheld_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_cli_api_parity.py"
+      - name: Run remaining slow suites (shard 2 of 2)
+        if: ${{ !cancelled() && matrix.shard == 2 }}
         working-directory: ${{ runner.temp }}/not-the-repo-root
         run: >
           uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
           "$GITHUB_WORKSPACE/tests/test_classify_bill.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_corpus_smoke.py"
           "$GITHUB_WORKSPACE/tests/test_bill_tree.py"
-          "$GITHUB_WORKSPACE/tests/test_structure_tree.py"
-          "$GITHUB_WORKSPACE/tests/test_diff_bill.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_compare.py"
           "$GITHUB_WORKSPACE/tests/test_financial_diff.py"
           "$GITHUB_WORKSPACE/tests/test_pipeline_parity.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_xml_amount_recall.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_xml_prose_recall.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_word_break_recall.py"
           "$GITHUB_WORKSPACE/tests/test_full_text_layout.py"
-          "$GITHUB_WORKSPACE/tests/test_report_from_document.py"
           "$GITHUB_WORKSPACE/tests/test_front_matter_parity.py"
-          "$GITHUB_WORKSPACE/tests/test_xml_compare.py"
-          "$GITHUB_WORKSPACE/tests/test_toc_tree.py"
-          "$GITHUB_WORKSPACE/tests/test_format_html.py"
-          "$GITHUB_WORKSPACE/tests/test_manifest_report_fixtures.py"
-          "$GITHUB_WORKSPACE/tests/test_canonical_tree.py"
           "$GITHUB_WORKSPACE/tests/test_reconcile.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_watermark_recall.py"
-          "$GITHUB_WORKSPACE/tests/test_formatters_text_serializer.py"
-          "$GITHUB_WORKSPACE/tests/test_pdf_xml_withheld_recall.py"
-          "$GITHUB_WORKSPACE/tests/test_cli_api_parity.py"
 
   # The required status check on `develop` and `main` is a context named exactly
   # `test`. Each job above reports its own context under its own name, so without this

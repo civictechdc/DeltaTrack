@@ -237,26 +237,20 @@ def test_required_test_context_is_an_aggregator_over_all_jobs() -> None:
     )
 
 
-def test_ci_runs_only_the_pinned_interpreter() -> None:
-    """Every ci.yml job runs the interpreter `.python-version` pins, and nothing else.
+#: The one matrix dimension ci.yml may declare. It splits a job's modules across runners;
+#: every leg runs the same pinned interpreter. Any other dimension is how an interpreter
+#: matrix would come back, so it is refused rather than inspected.
+_SHARD_DIMENSION = "shard"
 
-    The project supports one interpreter, the one contributors and the deployment use, and
-    moves to a newer one by editing the pin. A job that installs a different version tests
-    something nobody runs while the pinned version goes untested in that job, and it looks
-    exactly like extra coverage.
 
-    It also guards the hazard a matrix brings back. Under one, a bare ``uv run`` falls back
-    to `.python-version`, removes ``.venv`` and rebuilds it on 3.12, so a "3.14" leg reports
-    its own label while testing 3.12 (measured when 3.13/3.14 were first added). Restoring a
-    matrix therefore means restoring the per-leg ``UV_PYTHON`` pin and ``fail-fast: false``
-    with it. History: a four-interpreter matrix ran until the move to one interpreter;
-    cf89bd9 for the ``UV_PYTHON`` defect.
-    """
-    workflow = _workflow()
+def _interpreter_failures(workflow: dict) -> list[str]:
+    """Why `workflow` would run an interpreter other than the pin; empty when it would not."""
     failures = []
-    for job_id, job in workflow["jobs"].items():
-        if (job.get("strategy") or {}).get("matrix"):
-            failures.append(f"{job_id}: declares a strategy.matrix")
+    for job_id, job in (workflow.get("jobs") or {}).items():
+        matrix = (job.get("strategy") or {}).get("matrix") or {}
+        extra = sorted(key for key in matrix if key != _SHARD_DIMENSION)
+        if extra:
+            failures.append(f"{job_id}: declares a strategy.matrix over {extra}")
         if "UV_PYTHON" in (job.get("env") or {}):
             failures.append(f"{job_id}: sets UV_PYTHON")
         for step in job.get("steps") or []:
@@ -267,11 +261,54 @@ def test_ci_runs_only_the_pinned_interpreter() -> None:
                 words = command.split()
                 if words[:3] == ["uv", "python", "install"] and len(words) > 3:
                     failures.append(f"{job_id}: `{command.strip()}` installs a version other than the pin")
+    return failures
+
+
+def test_ci_runs_only_the_pinned_interpreter() -> None:
+    """Every ci.yml job runs the interpreter `.python-version` pins, and nothing else.
+
+    The project supports one interpreter, the one contributors and the deployment use, and
+    moves to a newer one by editing the pin. A job that installs a different version tests
+    something nobody runs while the pinned version goes untested in that job, and it looks
+    exactly like extra coverage.
+
+    It also guards the hazard an interpreter matrix brings back. Under one, a bare ``uv run``
+    falls back to `.python-version`, removes ``.venv`` and rebuilds it on 3.12, so a "3.14"
+    leg reports its own label while testing 3.12 (measured when 3.13/3.14 were first added).
+    Restoring one therefore means restoring the per-leg ``UV_PYTHON`` pin and
+    ``fail-fast: false`` with it. History: a four-interpreter matrix ran until the move to
+    one interpreter; cf89bd9 for the ``UV_PYTHON`` defect.
+
+    A matrix over ``shard`` alone is allowed: it splits a job's modules across runners, and
+    every leg runs the pin. Any other dimension is refused.
+    """
+    failures = _interpreter_failures(_workflow())
     assert not failures, (
         "ci.yml must run only the interpreter `.python-version` pins. To change the version, "
-        "edit the pin. To add a matrix, also restore the UV_PYTHON and fail-fast guards this "
-        "replaced:\n  " + "\n  ".join(failures)
+        "edit the pin. To add an interpreter matrix, also restore the UV_PYTHON and fail-fast "
+        "guards this replaced:\n  " + "\n  ".join(failures)
     )
+
+
+@pytest.mark.parametrize(
+    ("matrix", "refused"),
+    [
+        ({"python-version": ["3.12", "3.14"]}, True),
+        ({"python": ["3.12"]}, True),
+        ({"shard": [1, 2], "python-version": ["3.14"]}, True),
+        ({"shard": [1, 2]}, False),
+    ],
+    ids=["python-version", "python", "shard-plus-interpreter", "shard-only"],
+)
+def test_the_interpreter_guard_refuses_any_matrix_but_a_shard_split(matrix: dict, refused: bool) -> None:
+    """Negative controls for the guard above, which reads only the live workflow.
+
+    The live workflow happens to declare only shard matrices, so if the guard stopped
+    reading matrices at all it would still pass. These synthetic jobs make it say which
+    matrices it refuses. Red if the guard accepts any matrix, or refuses a shard split.
+    """
+    workflow = {"jobs": {"job": {"strategy": {"matrix": matrix}, "steps": []}}}
+    assert bool(_interpreter_failures(workflow)) is refused
 
 
 def test_non_browser_test_steps_run_from_outside_the_checkout() -> None:
