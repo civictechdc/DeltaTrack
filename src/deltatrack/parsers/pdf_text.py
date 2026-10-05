@@ -467,24 +467,17 @@ def page_range_text(pages: list[Page], start_page: int, end_page: int) -> str:
 #      reason the sampled value is rechecked per page rather than assumed once per
 #      doc. When the sample differs from 1.0 the whole page falls back to the
 #      original per-glyph GetFontSize × √(a²+b²).
+#
+#   C) Out-parameters: the four `c_double`s GetCharBox writes into and the
+#      `FS_MATRIX` GetMatrix fills are allocated once per page, with their `byref`
+#      pointers, and reused for every glyph. Allocating fresh ctypes objects per
+#      glyph cost about a third of the loop on an omnibus print, which runs to
+#      millions of glyphs.
 
 _SIZE_FLOOR = 1.0  # points; drop degenerate/zero-scale glyphs (clip/invisible)
 _SPACE_FACTOR = 0.25  # x-gap > factor × glyph size ⇒ insert a word space
 _BASELINE_TOL_FACTOR = 0.5  # baseline cluster tolerance as a fraction of glyph size
 _FONTSIZE_EPS = 1e-6  # tolerance for "is font size exactly 1.0?"
-
-
-def _char_box(raw, i: int) -> tuple[float, float, float, float] | None:
-    """(left, right, bottom, top) for char i, or None on FFI failure."""
-    left = ctypes.c_double()
-    right = ctypes.c_double()
-    bottom = ctypes.c_double()
-    top = ctypes.c_double()
-    if not pdfium_raw.FPDFText_GetCharBox(
-        raw, i, ctypes.byref(left), ctypes.byref(right), ctypes.byref(bottom), ctypes.byref(top)
-    ):
-        return None
-    return (left.value, right.value, bottom.value, top.value)
 
 
 def _cluster_baselines(chars: list[tuple[float, float, float, int, float]]) -> list[list]:
@@ -599,19 +592,23 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
     # A sample, not a page-wide proof — see the module comment (B).
     fast_fs: bool | None = None  # None = not yet sampled
 
+    # C) One set of out-parameters for the whole page, written by each call below.
+    left, right, bottom, top = ctypes.c_double(), ctypes.c_double(), ctypes.c_double(), ctypes.c_double()
+    box_out = (ctypes.byref(left), ctypes.byref(right), ctypes.byref(bottom), ctypes.byref(top))
+    mat = pdfium_raw.FS_MATRIX()
+    mat_out = ctypes.byref(mat)
+
     chars: list[tuple[float, float, float, int, float]] = []
     for i in range(n):
         # Codepoint: bulk (fast) or per-glyph FFI (fallback)
         cp = ord(page_text[i]) if use_bulk_cp else pdfium_raw.FPDFText_GetUnicode(raw, i)
         if cp < 0x20:  # NUL / control glyphs (undecodable, newlines)
             continue
-        box = _char_box(raw, i)
-        if box is None:
+        if not pdfium_raw.FPDFText_GetCharBox(raw, i, *box_out):
             continue
 
         # Size: matrix is always needed; GetFontSize only if not already sampled fast.
-        mat = pdfium_raw.FS_MATRIX()
-        if not pdfium_raw.FPDFText_GetMatrix(raw, i, ctypes.byref(mat)):
+        if not pdfium_raw.FPDFText_GetMatrix(raw, i, mat_out):
             continue
         if fast_fs is None:
             # First valid glyph on this page: sample the font size.
@@ -623,8 +620,7 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
         size = scale if scale > _SIZE_FLOOR else None
         if size is None:
             continue
-        left, right, bottom, _top = box
-        chars.append((bottom, left, right, cp, size))
+        chars.append((bottom.value, left.value, right.value, cp, size))
     if not chars:
         return {}
     sizes: dict[int, tuple[float, LineGeom]] = {}
