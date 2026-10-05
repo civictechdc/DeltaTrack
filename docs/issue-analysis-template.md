@@ -104,3 +104,79 @@ self-describing references in all cases; those are what make an issue readable.
 Don't add acceptance criteria, scope, priority, or sizing. Those get set during grooming
 (see "Grooming an issue for pickup" in [CONTRIBUTING.md](../CONTRIBUTING.md)), and a filer
 who guesses at them creates work to undo.
+
+## Grooming: rewriting an issue for pickup
+
+Grooming turns a filed issue into one a newcomer can start on (see "Grooming an issue
+for pickup" in [CONTRIBUTING.md](../CONTRIBUTING.md)). When the body needs more than a
+line or two added, rewrite it in this shape. Keep every substantive finding and
+decision from the old body; restructure and clarify, don't redesign.
+
+```markdown
+**What's wrong**   <!-- or **What needs doing** for a task, **What needs deciding** for a decision -->
+
+<!-- The first-sentence rule still applies: the observable problem, in plain words. -->
+
+Some background, for anyone new to this:
+
+- **<Term>.** <One or two sentences. Only the terms this issue actually needs:
+  e.g. the XML vs PDF pipeline, change cards, breadcrumb, anchors, enrolled bill.>
+
+**Example** / **How it shows up** (checked <YYYY-MM-DD> on `develop`, `<short sha>`)
+
+<!-- A real, concrete case: bill, versions, what the report shows vs what's printed.
+     Paste output you ran. -->
+
+**Why it matters**
+
+**Cause**   <!-- if known; file:line references belong here, after the plain explanation -->
+
+**Done when**
+
+- [ ] <Observable acceptance criteria. Name the known-bad case the fix must be shown
+      to catch, and say "fails on develop" where a passing suite proves nothing.>
+
+**Scope**
+
+- **In scope:** …
+- **Out of scope:** … <!-- with the issue number that owns each excluded piece -->
+
+**Where to start**
+
+- <Entry files and functions, the test file to extend, a repro command or snippet,
+  docs or ADRs to read. Name any open PR that overlaps, with its state.>
+
+**Unverified**   <!-- optional -->
+
+**History**   <!-- optional: only what helps, e.g. why an earlier number changed -->
+```
+
+Conventions that came out of rewriting the backlog in October 2026:
+
+- **Date-stamp and commit-stamp every measurement.** "Checked 2026-10-05 on `develop`
+  (`48082b2`)". Older numbers may stay, with their date and source, in History.
+- **Check an open PR's base before attributing behaviour to it.** Many PRs sit 100+
+  commits behind `develop`. A difference between a PR and `develop` can come from what
+  `develop` gained since the PR branched. Run the PR's merge base too, or a trial merge
+  in a scratch worktree, before blaming the PR. (A whole "regression" in #738's first
+  rewrite turned out to be branch age.)
+- **When an open PR fixes the issue, say so in Where to start.** "Don't start a fresh
+  fix; help land #NNN", with the PR's review and conflict state.
+- **Describe decisions as options with tradeoffs,** and record whose call it is. Once
+  the maintainer decides, write the decision and its date into the body.
+- **Length.** About 300–700 words for most issues; 200–450 for Low priority; epics can
+  run longer for their decomposition table (issue, what it covers, status).
+- **No priority or effort in the body.** Those live in the org-level fields.
+
+## Closing or merging an issue
+
+A close needs a comment a stranger can follow later. Two to six sentences:
+
+- **Why**, with evidence: the PR that fixed it, a measurement, or the product decision
+  that retired it.
+- **The state reason:** `completed` (done), `not_planned` (won't do, or no longer
+  applies), or `duplicate` of the issue that absorbs it.
+- **For a merge, what carries over.** Put any regression case or acceptance item into
+  the surviving issue (edit its body, or comment there), so it isn't lost with the
+  closed one.
+- **When to reopen,** if there's a clear trigger.
