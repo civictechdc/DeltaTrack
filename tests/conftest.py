@@ -595,6 +595,7 @@ ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
     "tests/test_canonical_baseline.py::test_regenerate_baseline": "not in baseline-update mode",
     "tests/test_pdf_canonical_baseline.py::test_regenerate_baseline": "not in baseline-update mode",
     "tests/test_pdf_extraction_golden.py::test_regenerate_golden": "not in golden-update mode",
+    "tests/test_pdf_glyph_sidecar_golden.py::test_regenerate_golden": "not in golden-update mode",
     "tests/test_round1_pairing_sentinel.py::test_regenerate_the_pairing_sentinel": "not in sentinel-update mode",
     # Live network by design (#278), kept out of the PR gates so a third-party outage cannot
     # redden a contributor's branch; #342 runs it weekly. `--run-network` opts in.
