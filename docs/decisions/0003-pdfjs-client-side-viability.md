@@ -56,6 +56,16 @@ server-side engine choice in ADR 2.
 - Two engines across two channels (PDFium server-side, PDF.js client-side) means
   two extraction paths that must be kept in agreement; divergence on edge cases is
   a maintenance cost if both channels ship.
+- Porting to TypeScript is not the only browser route. The Python engine itself runs
+  in a page under Pyodide: the XML comparison produces byte-identical canonical JSON
+  and HTML there, checked by `scripts/pyodide_parity.py`. Its one obstacle is the
+  module-scope `pypdfium2` import in `parsers/pdf_text.py`, which the XML comparison
+  reaches through module-level imports and which the check stubs out until
+  [#751](https://github.com/civictechdc/DeltaTrack/issues/751) makes it lazy. For PDFs
+  on that route, PDFium compiled to WebAssembly (`@embedpdf/pdfium`) exposes the
+  per-glyph data the extractor uses and reproduced current output on the published
+  bills tested, which would keep one PDF engine across channels rather than two. The
+  PDF path has not yet run end to end in a browser ([evidence](https://github.com/civictechdc/DeltaTrack/blob/4171e32d93e869725a86ae72eab70fa355a9919f/docs/research/pdf-backend-bakeoff/CLOSEOUT.md)).
 - **Open risk:** the spike covered only published GPO bills, which have clean text
   layers. Draft and pre-introduction PDFs (watermarked, possibly image-only) were
   not tested and are the documents where extraction is hardest and most
