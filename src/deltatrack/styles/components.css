@@ -21,3 +21,13 @@
 .button--segment.is-active, .button--segment.is-active:hover { background: var(--muted-foreground); color: var(--card); }
 /* Inline with running text, such as the report's Copy buttons. */
 .button--small { padding: 2px 10px; font-size: 12px; }
+
+/* Badges: a short uppercase label. A change's type is carried in data-type, under the
+   canonical contract's own value, as everywhere else in the report (#703). */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 600; line-height: 1.5;
+  text-transform: uppercase; letter-spacing: 0.04em; }
+.badge[data-type="added"] { background: var(--diff-add); color: var(--diff-add-foreground); }
+.badge[data-type="removed"] { background: var(--diff-remove); color: var(--diff-remove-foreground); }
+.badge[data-type="modified"] { background: var(--diff-modified); color: var(--diff-modified-foreground); }
+.badge[data-type="moved"] { background: var(--diff-moved); color: var(--diff-moved-foreground); }

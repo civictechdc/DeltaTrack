@@ -63,7 +63,7 @@ def _build_card(change: ChangeView, index: int) -> str:
 
     parts = [f'<div class="change{extra_card_class}" id="change-{index}" data-type="{ct}">']
     parts.append('<div class="change__header">')
-    parts.append(f'<span class="change-type" data-type="{ct}">{ct}</span>')
+    parts.append(f'<span class="badge" data-type="{ct}">{ct}</span>')
     parts.append(f"<h3{h3_class}>{change.heading_html}</h3>")
     if change.section_number:
         parts.append(f'<span class="section-number">{escape(change.section_number)}</span>')
@@ -141,7 +141,7 @@ def _build_nav_item(change: ChangeView, index: int) -> str:
     return (
         f'<li class="{nav_class}" data-type="{ct}">'
         f'<a href="#change-{index}">'
-        f'<span class="change-type" data-type="{ct}">{ct}</span> '
+        f'<span class="badge" data-type="{ct}">{ct}</span> '
         f"{label}"
         f"</a></li>"
     )
@@ -600,7 +600,7 @@ def _summary_bar_html(summary: dict[str, int]) -> str:
         if count > 0:
             items.append(
                 f'<span class="summary-item">'
-                f'<span class="change-type" data-type="{key}">{key}</span> '
+                f'<span class="badge" data-type="{key}">{key}</span> '
                 f"<strong>{count}</strong>"
                 f"</span>"
             )

@@ -59,14 +59,6 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
   border-radius: 999px; font-size: 13px; background: var(--secondary); }
 .summary-item strong { font-size: 14px; }
 
-/* Badges */
-.change-type { display: inline-block; padding: 2px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.change-type[data-type="modified"] { background: var(--diff-modified); color: var(--diff-modified-foreground); }
-.change-type[data-type="added"] { background: var(--diff-add); color: var(--diff-add-foreground); }
-.change-type[data-type="removed"] { background: var(--diff-remove); color: var(--diff-remove-foreground); }
-.change-type[data-type="moved"] { background: var(--diff-moved); color: var(--diff-moved-foreground); }
-
 /* Card groups: cards nested under their tree-node headings (#172) */
 .change-group { margin: 6px 0 14px; }
 .change-group > summary { cursor: pointer; font-weight: 600; padding: 6px 8px;
