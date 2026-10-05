@@ -207,6 +207,24 @@ merge into one node (#552, #557). Identifiers are assigned to the merged tree as
   Committed examples change only inside the embedded `diff-data` JSON. A test compares their
   rendered HTML with that block removed.
 
+**As built (PR B), where it differs from the above:**
+- **Schema stays "3.1".** The contract's versioning rule: unreleased changes share one version
+  (`main` is at 2.0), so this joins the 3.1 changelog entry. Also removes the #736 collision.
+- **Heading rows are whole rows on both pipelines.** A run-in XML `SEC.`/`(a)` row is the heading
+  row and also starts the body, matching the PDF anchor row.
+- **XML heading rule:** each emitted heading row is given to the node written under its own full
+  path, else to the first node registered for the shorter path; run-in and header rows to their
+  node. A node takes the earliest row it was given. Null for more than Front Matter: pathless
+  boilerplate without a header, and a node whose whole path was already in the previous heading run
+  (XML 443 nulls over both sides of 27 pairs; PDF 100).
+- **PDF bodies:** `PdfDiff` gained `v1_bodies`/`v2_bodies` (anchor, trimmed page range).
+- **`build_xml_full_text` returns a 4-tuple** with the ordinal → id maps.
+- **Gates pin, per pair, null heading/body counts and the number of references checked for
+  containment** (a few PDF changes end on unnumbered rows and have no span).
+- **The printed PDF document moves all three node spans.**
+- "Receipts collected" (116-hr-1865 enrolled) gets heading 904730, as #785 expects.
+- Opened as civictechdc/DeltaTrack#800.
+
 ---
 
 ## PR C: the view applies the facts

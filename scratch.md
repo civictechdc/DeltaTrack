@@ -50,7 +50,7 @@ re-deciding what another settled.
 
 ### Next, in order (agreed with the user)
 
-1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md).
+1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Opened as #800** (2026-10-05); as-built deviations recorded in the plan. Awaiting review/CI.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
    - Schema `3.1` → `3.2` (develop is still 3.1). Open #736 also wants a minor; whichever lands second takes the next.
    - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
@@ -2056,6 +2056,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | Independent review of PR A before opening. Fixed: dropped scroll-margin selectors (blocking, mine); PDF front-matter removals sorted after divisions (now ordered by earlier offset); "outside the outline" label renamed "(no heading path recorded)"; lost all-changes corpus check restored; pointer links now reveal and sync Prev/Next. Opened civictechdc/DeltaTrack#791 (Closes #784). | F4b |
 | 2026-10-05 | External review of #791 at `874e696`: two P2s outside corpus coverage, both fixed in `00ef51d` with tests that fail on `874e696`. (1) Pathless-only removals fell back to flat cards while the sidebar showed the removed section; the cards now render flat only when nothing is placed and nothing was removed. (2) A pointer left collapsed child groups closed, so Prev/Next could skip ahead; it now reveals the first card beneath the heading. Merged develop (#782 has merged). | F4b |
 | 2026-10-05 | #791 merged (`e89e8b1`); #782 merged earlier. F4b moved to resolved. Next: #785 (PR B/C), and the F1 + F15 boundary split. | F4b, F6 |
+| 2026-10-05 | PR B opened as #800: node ids, `changes[].node`, heading/body spans; schema stays 3.1 (unreleased). 0 unresolved refs both pipelines; 10 mutations fire. Next: PR C, F1 + F15 split. | F4a, F4c, F6 |
 
 ## Open questions
 
