@@ -1,4 +1,4 @@
-/* Pyodide half of the parity harness. Driven by verify_parity.py -- not run directly.
+/* Pyodide half of scripts/pyodide_parity.py, which drives it -- not run directly.
  *
  * Runs the DeltaTrack XML pipeline under Pyodide over the fixtures named on argv and
  * prints ONE line of JSON: environment facts plus a SHA-256 of the canonical JSON and of
@@ -18,8 +18,8 @@ const [NODE_DIR, ROOT, ...SPECS] = process.argv.slice(2);
 // Resolve Pyodide by ABSOLUTE path rather than as a bare specifier. Node resolves bare
 // specifiers by walking up from the importing FILE's directory, not the working
 // directory, so `import { loadPyodide } from "pyodide"` only works when node_modules
-// happens to sit above this probe -- which it does not, since the probe lives in the
-// repo's docs tree. That made --node-dir silently inert.
+// happens to sit above this script -- which it does not, since node_modules lives outside
+// the checkout. That made --node-dir silently inert.
 const PYODIDE_ENTRY = path.join(NODE_DIR, "node_modules", "pyodide", "pyodide.mjs");
 const { loadPyodide } = await import(pathToFileURL(PYODIDE_ENTRY).href);
 

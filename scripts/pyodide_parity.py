@@ -1,27 +1,30 @@
-#!/usr/bin/env python3
-"""Prove, in one command, that native CPython and Pyodide produce identical DeltaTrack output.
+"""Check that the XML comparison produces byte-identical output under native CPython and Pyodide.
 
-The delivery memo's strongest claim is that the engine emits byte-identical canonical JSON
-and HTML under Pyodide. That claim was originally verified by hand, which makes it an
-assertion rather than evidence. This harness makes it reproducible: it runs both runtimes
-over the same committed fixtures, hashes each output with SHA-256, compares, prints the
-environment that produced each result, and **exits non-zero on any mismatch**.
+Running the real engine inside a web page (#112) depends on the XML pipeline behaving the
+same in Pyodide as natively. This runs both runtimes over the same committed fixtures,
+hashes the canonical JSON and the standalone HTML with SHA-256 inside each runtime, prints
+the environment behind each column, and **exits non-zero on any mismatch**.
 
-    uv run python docs/research/staffer-delivery/probes/verify_parity.py
+    uv run python scripts/pyodide_parity.py --node-dir <dir>
 
-Prerequisite: a Node install with the `pyodide` package. Point at it with
-``--node-dir`` (default: ./node_modules beside this file, then $DT_PYODIDE_DIR).
+Prerequisite: Node, and a directory holding the `pyodide` npm package. Pass it with
+``--node-dir`` or set $DT_PYODIDE_DIR. Keep it outside the checkout.
 
     npm install pyodide          # inside the chosen directory
 
-Proving the harness can fail
-----------------------------
-A comparison that has only ever passed cannot distinguish "the runtimes agree" from
-"the comparison is broken". ``--mutate`` perturbs the native side by one character
-before hashing, so the harness must report a mismatch and exit non-zero. Run it once
-that way before trusting a green result.
+The Pyodide side replaces `pypdfium2` with a stub that raises if any PDFium call is
+reached, because the engine imports it at module scope (#751). A mismatch or a tripwire
+error therefore means the XML path changed behaviour or started depending on PDFium.
 
-    uv run python .../verify_parity.py --mutate    # expected: FAIL, exit 1
+Proving the check can fail
+--------------------------
+A comparison that has only ever passed cannot distinguish "the runtimes agree" from
+"the comparison is broken". ``--mutate`` corrupts the native HTML by one character
+before hashing, so every HTML row must report MISMATCH while the canonical rows stay
+IDENTICAL. Detecting that is the expected result and exits 0; if nothing differs, the
+check is broken and it exits 1. Run it once before trusting a green result.
+
+    uv run python scripts/pyodide_parity.py --mutate --node-dir <dir>
 """
 
 from __future__ import annotations
@@ -37,7 +40,7 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[3]  # probes/ -> staffer-delivery/ -> research/ -> docs/ -> repo root
+ROOT = HERE.parent
 
 # (tag, bill, old, new). Committed corpus fixtures, so this needs no download. Chosen to
 # span the range: a small step, the large Senate rewrite, and a 1.8 MB-per-side enrolled
@@ -91,7 +94,7 @@ def run_native(mutate: bool) -> dict:
 def run_pyodide(node_dir: Path) -> dict:
     specs = [f"{tag}:{bill}:{a}:{b}" for tag, bill, a, b in FIXTURES]
     proc = subprocess.run(
-        ["node", str(HERE / "parity_pyodide.mjs"), str(node_dir), str(ROOT), *specs],
+        ["node", str(HERE / "pyodide_parity.mjs"), str(node_dir), str(ROOT), *specs],
         capture_output=True,
         text=True,
     )
@@ -108,11 +111,11 @@ def main() -> int:
     ap.add_argument("--mutate", action="store_true", help="corrupt the native output to prove this check can fail")
     args = ap.parse_args()
 
-    node_dir = args.node_dir or (Path(os.environ["DT_PYODIDE_DIR"]) if os.environ.get("DT_PYODIDE_DIR") else HERE)
-    if not (node_dir / "node_modules" / "pyodide").is_dir():
-        print(f"Pyodide not found under {node_dir}/node_modules.", file=sys.stderr)
-        print(f"  cd {node_dir} && npm install pyodide", file=sys.stderr)
-        print("  or pass --node-dir / set DT_PYODIDE_DIR to a directory that has it.", file=sys.stderr)
+    node_dir = args.node_dir or (Path(os.environ["DT_PYODIDE_DIR"]) if os.environ.get("DT_PYODIDE_DIR") else None)
+    if node_dir is None or not (node_dir / "node_modules" / "pyodide").is_dir():
+        print(f"Pyodide not found under {node_dir or '<no --node-dir>'}/node_modules.", file=sys.stderr)
+        print("  npm install pyodide in a directory outside the checkout, then pass it", file=sys.stderr)
+        print("  with --node-dir or set DT_PYODIDE_DIR.", file=sys.stderr)
         return 2
 
     if args.mutate:
