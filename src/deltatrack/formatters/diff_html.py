@@ -18,7 +18,6 @@ import json
 from bisect import bisect_right
 from html import escape
 from importlib.resources import files
-from itertools import islice
 
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
@@ -705,7 +704,10 @@ def _render_fb_row_body(
     out: list[str] = []
     p = cs
     first = bisect_right(mark_ends, cs) if mark_ends is not None else 0
-    for mark in islice(marks, first, None):
+    # Indexed from `first`, not `islice(marks, first, None)`: islice steps past every earlier
+    # mark one at a time to reach `first`, which would keep each row linear in the marks.
+    for i in range(first, len(marks)):
+        mark = marks[i]
         s, e = mark["start"], mark["end"]
         if s >= ce:
             break  # marks are sorted by start, so none after this one reaches the row
