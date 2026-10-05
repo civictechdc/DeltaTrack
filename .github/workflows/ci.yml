@@ -231,6 +231,7 @@ jobs:
           "$GITHUB_WORKSPACE/tests/test_corpus_properties.py"
           "$GITHUB_WORKSPACE/tests/test_diff_validation.py"
           "$GITHUB_WORKSPACE/tests/test_node_join_corpus.py"
+          "$GITHUB_WORKSPACE/tests/test_node_identity_corpus.py"
           "$GITHUB_WORKSPACE/tests/test_xml_subsection_nodes.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_subsection_recall.py"
           "$GITHUB_WORKSPACE/tests/test_canonical_baseline.py"

@@ -11,6 +11,8 @@ Sibling nodes under a shared parent path share that parent's heading.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from deltatrack.bill_tree import BillTree
 from deltatrack.structure_tree import TreeNode, build_xml_tree
 
@@ -48,34 +50,42 @@ def serialize_tree_for_diff(tree: BillTree) -> tuple[str, list[dict], dict[str, 
 
 def build_xml_full_text(
     old_tree: BillTree, new_tree: BillTree
-) -> tuple[dict[str, str], dict[str, dict], dict[str, list[dict]]]:
+) -> tuple[dict[str, str], dict[str, dict], dict[str, list[dict]], dict[str, dict[int, str]]]:
     """Build the inputs the XML pipeline feeds to ``xml_diff_to_canonical`` (#51, #108).
 
-    Returns ``(full_text, full_text_spans, tree)`` where ``full_text`` is the
+    Returns ``(full_text, full_text_spans, tree, node_ids)`` where ``full_text`` is the
     readable per-side text, ``full_text_spans`` is the per-side ``{element_id:
-    (start, end)}`` index for structural change anchoring, and ``tree`` is the per-side
+    (start, end)}`` index for structural change anchoring, ``tree`` is the per-side
     leveled structure tree (#108) as canonical JSON nodes, with each node's
-    ``full_text_span`` into ``full_text``.
+    ``full_text_span`` into ``full_text``, and ``node_ids`` maps each side's node
+    ordinal in ``BillTree.nodes`` to the identifier of the tree node holding it (#785).
     Centralizes the idiom shared by the CLI, examples, and servers.
     """
-    v1_text, _v1_sections, v1_spans, v1_ho = serialize_tree_for_tree(old_tree)
-    v2_text, _v2_sections, v2_spans, v2_ho = serialize_tree_for_tree(new_tree)
-    tree = {
-        "v1": _xml_tree_payload(old_tree, v1_spans, v1_ho),
-        "v2": _xml_tree_payload(new_tree, v2_spans, v2_ho),
-    }
+    v1 = _serialize_layout(old_tree)
+    v2 = _serialize_layout(new_tree)
+    v1_nodes, v1_ids = _xml_tree_payload(old_tree, v1, "v1")
+    v2_nodes, v2_ids = _xml_tree_payload(new_tree, v2, "v2")
     return (
-        {"v1": v1_text, "v2": v2_text},
-        {"v1": v1_spans, "v2": v2_spans},
-        tree,
+        {"v1": v1.text, "v2": v2.text},
+        {"v1": v1.spans, "v2": v2.spans},
+        {"v1": v1_nodes, "v2": v2_nodes},
+        {"v1": v1_ids, "v2": v2_ids},
     )
 
 
-def _xml_tree_payload(
-    bill: BillTree,
-    body_spans: dict[str, tuple[int, int]],
-    heading_offsets: dict[tuple[str, ...], int],
-) -> list[dict]:
+def _preorder(nodes: list[TreeNode]):
+    for n in nodes:
+        yield n
+        yield from _preorder(n.children)
+
+
+def _row(text: str, start: int) -> dict:
+    """The whole row of ``text`` that starts at ``start``."""
+    end = text.find("\n", start)
+    return {"start": start, "end": len(text) if end < 0 else end}
+
+
+def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[dict], dict[int, str]]:
     """Serialize one version's structure tree to canonical JSON nodes (#108).
 
     A content node takes its body span (by element_id — the exact slice its text
@@ -83,31 +93,72 @@ def _xml_tree_payload(
     offset. A container with neither (the synthesized "Front Matter" group, whose
     label is printed nowhere in the bill) spans its children, so the bill's opening
     stays navigable; a node with none of the three gets a null span.
+
+    Each node also carries (#785):
+
+    - ``id``: ``"<side>.<n>"``, its 0-based preorder position in the final tree.
+    - ``heading_span``: the row the serializer emitted as this node's heading. A
+      content node's own row comes first: the heading line printed for its path while
+      the node itself was being written, or its run-in ``SEC.``/``(a)`` row, or the
+      header row of a pathless node. A container that has no row of its own takes the
+      first heading row printed for its path. ``null`` where no row was printed for the
+      node, as for the synthesized Front Matter group.
+    - ``body_span``: the node's own body, ``null`` when it has no text of its own.
+
+    Spans come from what the serializer recorded while emitting the text, never from
+    searching the text for a label.
+
+    Returns the nodes and a map from each ``bill.nodes`` ordinal to its node's id.
     """
+    roots = build_xml_tree(bill)
+    order = list(_preorder(roots))
+    node_id = {id(n): f"{side}.{i}" for i, n in enumerate(order)}
+    ordinal_of = {id(n): i for i, n in enumerate(bill.nodes)}
+    by_ordinal = {ordinal_of[id(n.source)]: n for n in order if n.source is not None}
+    # The node each heading path names: content nodes by the path they were emitted
+    # under (the Front Matter regrouping relabels display_path afterwards), first in
+    # preorder, which is the first one registered for that path.
+    owners: dict[tuple[str, ...], TreeNode] = {}
+    for n in order:
+        owners.setdefault(tuple(n.source.display_path) if n.source is not None else n.display_path, n)
+    heading: dict[int, int] = {}
+    for start, ordinal, path in layout.heading_rows:
+        if path == tuple(bill.nodes[ordinal].display_path):
+            heading.setdefault(id(by_ordinal[ordinal]), start)
+    for start, ordinal in layout.run_in_rows:
+        heading.setdefault(id(by_ordinal[ordinal]), start)
+    for start, ordinal, path in layout.heading_rows:
+        if path != tuple(bill.nodes[ordinal].display_path) and path in owners:
+            heading.setdefault(id(owners[path]), start)
 
     def node_json(n: TreeNode) -> dict:
         children = [node_json(c) for c in n.children]
         span = None
         element_id = getattr(n.source, "element_id", "") if n.source is not None else ""
-        if element_id and element_id in body_spans:
-            start, end = body_spans[element_id]
+        if element_id and element_id in layout.spans:
+            start, end = layout.spans[element_id]
             span = {"start": start, "end": end}
-        elif n.display_path in heading_offsets:
-            start = heading_offsets[n.display_path]
+        elif n.display_path in layout.heading_offsets:
+            start = layout.heading_offsets[n.display_path]
             span = {"start": start, "end": start + len(n.label)}
         else:
             child_spans = [c["full_text_span"] for c in children if c["full_text_span"]]
             if child_spans:
                 span = {"start": min(s["start"] for s in child_spans), "end": max(s["end"] for s in child_spans)}
+        body = layout.bodies.get(ordinal_of[id(n.source)]) if n.source is not None else None
         return {
+            "id": node_id[id(n)],
             "label": n.label,
             "level": n.level,
             "own_amounts": list(n.own_amounts),
             "full_text_span": span,
+            "heading_span": _row(layout.text, heading[id(n)]) if id(n) in heading else None,
+            "body_span": {"start": body[0], "end": body[1]} if body else None,
             "children": children,
         }
 
-    return [node_json(r) for r in build_xml_tree(bill)]
+    nodes = [node_json(r) for r in roots]
+    return nodes, {ordinal: node_id[id(n)] for ordinal, n in by_ordinal.items()}
 
 
 def serialize_tree_with_offsets(tree: BillTree) -> tuple[str, list[dict]]:
@@ -120,9 +171,35 @@ def serialize_tree_with_offsets(tree: BillTree) -> tuple[str, list[dict]]:
     return text, sections
 
 
+@dataclass
+class _Layout:
+    """Everything one serializer walk records about the text it emits."""
+
+    text: str
+    sections: list[dict]
+    spans: dict[str, tuple[int, int]]
+    """``element_id -> (start, end)`` of each node's body (#51)."""
+    heading_offsets: dict[tuple[str, ...], int]
+    """First heading row emitted for each display_path prefix."""
+    heading_rows: list[tuple[int, int, tuple[str, ...]]] = field(default_factory=list)
+    """``(row start, node ordinal, path)`` for every heading row, in emission order,
+    with the ordinal of the node whose emission printed it (#785)."""
+    run_in_rows: list[tuple[int, int]] = field(default_factory=list)
+    """``(row start, node ordinal)`` of each node's own heading printed on its first
+    line: a ``SEC. NN.`` or ``(a)`` run-in, or a pathless node's header line (#785)."""
+    bodies: dict[int, tuple[int, int]] = field(default_factory=dict)
+    """``node ordinal -> (start, end)`` of each non-empty body, every node included,
+    not only those with an element_id (#785)."""
+
+
 def _serialize(
     tree: BillTree,
 ) -> tuple[str, list[dict], dict[str, tuple[int, int]], dict[tuple[str, ...], int]]:
+    layout = _serialize_layout(tree)
+    return layout.text, layout.sections, layout.spans, layout.heading_offsets
+
+
+def _serialize_layout(tree: BillTree) -> _Layout:
     """Serialize a BillTree to plaintext, a section jump-list, a body-span index,
     and a per-display_path heading-offset map.
 
@@ -149,11 +226,14 @@ def _serialize(
     # (out-index, full display_path prefix) for each heading line — lets the
     # structure tree attach a full_text_span to its synthesized interior nodes,
     # keyed by display_path. First occurrence wins (mirrors the tree's nesting).
-    heading_markers: list[tuple[int, tuple[str, ...]]] = []
-    # (out-index, element_id, prefix_len, body_len) for each body block.
-    body_markers: list[tuple[int, str, int, int]] = []
+    # Also records the ordinal of the node being written (#785).
+    heading_markers: list[tuple[int, int, tuple[str, ...]]] = []
+    # (out-index, node ordinal) of each node's own run-in or header line (#785).
+    run_in_markers: list[tuple[int, int]] = []
+    # (out-index, node ordinal, element_id, prefix_len, body_len) for each body block.
+    body_markers: list[tuple[int, int, str, int, int]] = []
     prev_path: tuple[str, ...] = ()
-    for node in tree.nodes:
+    for ordinal, node in enumerate(tree.nodes):
         new_path = tuple(node.display_path)
         # For section nodes, the trailing display_path segment is a lowercased
         # copy of section_number ("sec. 101"). Drop it from the heading run so
@@ -179,11 +259,12 @@ def _serialize(
             abs_index = common + offset
             kind = "title" if abs_index == 0 or seg.upper().startswith("TITLE ") else "account"
             markers.append((len(out), seg, kind))
-            heading_markers.append((len(out), tuple(heading_path[: abs_index + 1])))
+            heading_markers.append((len(out), ordinal, tuple(heading_path[: abs_index + 1])))
             out.append(seg)
         # Some nodes carry a header_text that isn't already the last path
         # segment (e.g., enacting clause has empty path but a header).
         if not new_path and node.header_text:
+            run_in_markers.append((len(out), ordinal))
             out.append(node.header_text)
         # Body: section nodes get "SEC. NN." prefixed as a run-in heading;
         # everything else just emits body_text on its own. An empty-body section
@@ -198,10 +279,12 @@ def _serialize(
                 # The body opens with its own "(a) Catchline" run-in — no prefix.
                 # Jump-list entry mirrors PDF _section_nav's subsection anchors.
                 markers.append((idx, new_path[-1] if new_path else node.header_text, "subsection"))
+                run_in_markers.append((idx, ordinal))
                 out.append(display)
                 prefix_len = 0
             elif node.section_number:
                 markers.append((idx, node.section_number, "section"))
+                run_in_markers.append((idx, ordinal))
                 prefix = f"{node.section_number.upper()}.  "
                 line = f"{prefix}{display}" if display else f"{node.section_number.upper()}."
                 out.append(line)
@@ -209,8 +292,7 @@ def _serialize(
             else:
                 out.append(display)
                 prefix_len = 0
-            if node.element_id:
-                body_markers.append((idx, node.element_id, prefix_len, len(display)))
+            body_markers.append((idx, ordinal, node.element_id, prefix_len, len(display)))
             out.append("")
         prev_path = heading_path
     # Trim trailing blank lines.
@@ -232,14 +314,26 @@ def _serialize(
     # Heading offsets: each interior path's heading line start (first occurrence),
     # so the structure tree can locate its synthesized nodes in full_text.
     heading_offsets: dict[tuple[str, ...], int] = {}
-    for idx, path in heading_markers:
+    for idx, _ordinal, path in heading_markers:
         if idx < len(out) and path not in heading_offsets:
             heading_offsets[path] = line_starts[idx]
     # Body spans: the readable body sits at line_starts[idx] + prefix_len and runs
     # body_len chars (display may span several lines; len() counts the newlines).
     spans: dict[str, tuple[int, int]] = {}
-    for idx, element_id, prefix_len, body_len in body_markers:
+    bodies: dict[int, tuple[int, int]] = {}
+    for idx, ordinal, element_id, prefix_len, body_len in body_markers:
         if idx < len(out):
             start = line_starts[idx] + prefix_len
-            spans[element_id] = (start, start + body_len)
-    return text, sections, spans, heading_offsets
+            if element_id:
+                spans[element_id] = (start, start + body_len)
+            if body_len:
+                bodies[ordinal] = (start, start + body_len)
+    return _Layout(
+        text=text,
+        sections=sections,
+        spans=spans,
+        heading_offsets=heading_offsets,
+        heading_rows=[(line_starts[idx], ordinal, path) for idx, ordinal, path in heading_markers if idx < len(out)],
+        run_in_rows=[(line_starts[idx], ordinal) for idx, ordinal in run_in_markers if idx < len(out)],
+        bodies=bodies,
+    )

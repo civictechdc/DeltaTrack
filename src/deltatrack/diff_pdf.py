@@ -107,6 +107,11 @@ class PdfDiff:
     hunks: tuple[PdfHunk, ...]
     v1_anchors: tuple[Anchor, ...] = ()
     v2_anchors: tuple[Anchor, ...] = ()
+    # Each block's anchor and the page-line range of its body after heading chrome is
+    # trimmed (`_strip_heading_lines`), the same range a hunk on that block carries (#785).
+    # An anchor whose block was dropped as empty has no entry.
+    v1_bodies: tuple[tuple[Anchor, PageLineRange | None], ...] = ()
+    v2_bodies: tuple[tuple[Anchor, PageLineRange | None], ...] = ()
 
     @property
     def summary(self) -> dict[str, int]:
@@ -1275,6 +1280,8 @@ def diff_pdfs(v1_pages: list[Page], v2_pages: list[Page]) -> PdfDiff:
         hunks=tuple(hunks),
         v1_anchors=tuple(v1_anchors),
         v2_anchors=tuple(v2_anchors),
+        v1_bodies=tuple((b.anchor, b.page_range) for b in v1_blocks if b.anchor is not None),
+        v2_bodies=tuple((b.anchor, b.page_range) for b in v2_blocks if b.anchor is not None),
     )
 
 
