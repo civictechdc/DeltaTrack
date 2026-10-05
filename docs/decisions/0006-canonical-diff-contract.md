@@ -86,10 +86,13 @@ consumer reattaches changes to the outline by character offsets and finds headin
 by searching for label text, which is the re-inference the rule above forbids.
 
 Where the producer does not have one of these facts, the document says so instead of
-supplying a substitute. A synthesized container has no heading row of its own in the
-source, a section with no text of its own has no body, and a PDF heading the parser could
-not recover has no reliable position; each is recorded as absent, and a consumer treats
-absent as unknown. A position is never manufactured to satisfy the shape.
+supplying a substitute. A grouping created only for navigation, such as Front Matter, has
+no heading row in `full_text`; a section with no text of its own has no body; a PDF heading
+the parser did not detect has no position the producer knows, even where its text is
+printed. Each is recorded as absent, and a consumer treats absent as unknown. A position is
+never manufactured to satisfy the shape. Being synthesized is not the test: a container
+built from heading paths whose heading row the producer did emit, such as an XML title,
+records that row.
 
 A node identifier is an address within one document. Generating it is deterministic
 ([0008](0008-deterministic-engine.md)): the same inputs under the same implementation
