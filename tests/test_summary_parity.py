@@ -92,8 +92,7 @@ def _assert_summary_conforms(summary: dict, changes: list, producer: str, label:
     assert not zeros, f"{producer} summary for {label} carries zero-valued keys: {zeros}"
     counted = {t: sum(1 for c in changes if c.get("change_type") == t) for t in summary}
     assert summary == counted, (
-        f"{producer} summary for {label} disagrees with its changes: summary says {summary}, "
-        f"document carries {counted}"
+        f"{producer} summary for {label} disagrees with its changes: summary says {summary}, document carries {counted}"
     )
 
 
