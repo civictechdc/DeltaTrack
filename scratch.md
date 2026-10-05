@@ -10,7 +10,8 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 
 ## Contents
 
-1. [Current register](#current-register) (authoritative state; read this first)
+1. [Resume here: status as of 2026-10-05](#resume-here-status-as-of-2026-10-05)
+1. [Current register](#current-register) (authoritative evidence per finding)
 1. [Decisions](#decisions) (principle; F4b)
 2. [Stage IDs](#stage-ids)
 3. [Overview](#overview-both-paths)
@@ -29,6 +30,57 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 16. [External review of the brief](#external-review-of-the-brief-2026-10-05)
 17. [Work log](#work-log)
 18. [Open questions](#open-questions)
+
+---
+
+## Resume here: status as of 2026-10-05
+
+**Goal:** each pipeline stage (parse → diff → canonical document → viewer) can be changed by a
+different person without touching or importing another stage, and without one stage
+re-deciding what another settled.
+
+### Done (merged to `develop`)
+
+| What | Where | Effect |
+|---|---|---|
+| Audit converged (round 4) | this file, [Current register](#current-register) | 16 open findings, F2/F14 dismissed, F4d resolved by decision |
+| ADR rules | civictechdc/DeltaTrack#782 (merged) | ADR 0007: the view faithfully represents the diff and decides nothing the document leaves open. ADR 0006: the document names the structure its changes sit in (node ids, `changes[].node`, heading/body spans; deterministic, not persistent; absent stays absent). ADR 0019: scope note separating these ids from stored-artifact identity |
+| Issues filed | #784 (removed provisions misfiled), #785 (node identity) | #784 closed by #791; #785 open |
+| F4b fixed | civictechdc/DeltaTrack#791 (merged, `e89e8b1`) | Removed section under `path.v1`, exact-path pointers, `_remap_removed_path` and `_v2_label_lookup` deleted. 711/711 XML, 202/202 PDF removals placed; 0 misfiled (was 93 / 26) |
+
+### Next, in order (agreed with the user)
+
+1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md).
+   - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
+   - Schema `3.1` → `3.2` (develop is still 3.1). Open #736 also wants a minor; whichever lands second takes the next.
+   - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
+   - XML refs via `ObservationRef` ordinals from `diff_bill._classified` → `NodeDiff.ordinal_old/new` → `bill_diff_to_dict` → `xml_diff_to_canonical`; never `element_id`. Ids assigned in `text_serializer._xml_tree_payload`.
+   - XML heading spans from `_serialize`'s per-node `heading_markers` at emission time, not the first-occurrence `heading_offsets` (63 wrong).
+   - PDF refs via anchor object identity in `canonical._pdf_tree_payload`; heading span from the line-offset table; 66 anchorless nodes and 8 off-table anchors get null.
+   - Gates in the plan: reference validity, unresolved count (XML 0, PDF 0 of 7,253), duplicate-label check against body_span, determinism across processes, ids ignore labels, absent spans, no manufactured spans (source scan).
+   - Expected churn: canonical baselines' digests; committed examples change only inside the embedded `diff-data` JSON.
+   - Then **PR C** (the view applies B's facts; deletes `_span_join_index`, `_join_node_path`, label-keyed `_node_order_map`, the TOC label search). Fixes F4a (1,676 unplaceable), F4c, F6, #701. Then #736 rebases onto B/C.
+2. **In parallel: F1 + F15, the code boundary.** Branch `claude/split-canonical-view`, own worktree. No issue yet: check for duplicates (#62 is the import-cycle/acyclic issue, #751 the `pypdfium2` route) and file one if needed.
+   - F1: move `view_from_canonical` and its helpers (`canonical.py` view half: `_heading_and_nav`, `_citation_html`, `_move_info_html`, `_card_texts`, `_span_join_index`, `_join_node_path`, `_node_path_for_change`, `_removed_path`, `_removed_offset`, `_reject_unknown_major`, …) out of `formatters/canonical.py` into a viewer-side module that imports nothing from parsers, `compare/`, `diff_bill`, `diff_pdf` or `pypdfium2`. `SCHEMA_VERSION` must live somewhere both can import without pulling the producers in.
+   - Known friction: 5 test files import `view_from_canonical`; `test_canonical_node_join.py` monkeypatches `canonical._span_join_index`; probe `pdf_move_user_facing.py` would break silently (`test_research_probes.py` scans only provision-matching probes); docs name the location (grep `view_from_canonical`).
+   - Falsification showed a simulated split renders byte-identical on all 27 + 17 pairs and drops renderer import to ~30–53 ms with no `pypdfium2`.
+   - F15: add an import-direction gate that is proven to fire (plant a violation once). Start it at `diff_html` / the new view module, since `formatters/` already imports producers. Directions: viewer ↛ producers/parsers/compare; parsers ↛ viewer; differ ↛ viewer and ↛ `compare/`.
+3. **File issues for untracked findings** after a duplicate check: F7a (XML side), F7b, F9, F6.
+
+### Open findings after #791 (see register for evidence)
+
+F1, F15 (boundary; next) · F4a, F4c, F6, F11 (#785 / PR C) · F7a, F3, F17 (canonicalizer re-decides) · F7b, F8, F9, F10 (#731 open), F16 (#471), F5, F12, F13 (smaller).
+
+### Working conventions in this effort
+
+- External ChatGPT review of each ADR/plan/PR as we go; an independent Claude review agent on every diff before opening a PR.
+- Tests first, shown failing on `develop`; every design-decision test proven by a mutation that turns it red (AGENTS.md "Gate the decision you had to argue for").
+- PR body follows `.github/pull_request_template.md`; `Closes #N`; disclose AI assistance.
+- Local CI gates: `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest -m "not slow and not browser"`, `uv run pytest -m browser --run-browser`, `uv run pytest -m slow --deselect tests/test_govinfo_corpus_parity.py`.
+- Renderer changes: `uv run python scripts/render_examples.py` then `cp examples/hr8752_pdf_diff.html web/webapp/sample/example.html`.
+- **Browser tier in this container:** the project's Playwright wants chromium_headless_shell-1223 but /opt has 1194. Workaround (outside the repo): a scratch dir `pwb/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` symlinked to `/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`, plus `INSTALLATION_COMPLETE` and `DEPENDENCIES_VALIDATED` files, then `PLAYWRIGHT_BROWSERS_PATH=<scratch>/pwb`.
+- New worktrees need `uv run` (or `source ./init`) once to build their own `.venv`. Remove a worktree and its local branch once its PR merges.
+- Corpus probes used for measurements live in the session scratchpad (`pra_effect.py` etc.), not the repo.
 
 ---
 
