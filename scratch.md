@@ -68,6 +68,13 @@ finding and supersedes the earlier per-finding sections wherever they disagree.
 | **F10** | XML `summary` always has five keys including `unchanged` (always 0); PDF emits only present types | 7 PDF key sets over 17 pairs. No consumer is affected. | **#706** (fix PR #731 open) | Low |
 | **F6** | The renderer reads both `DiffView` and the raw document; the "hoist unlabeled nodes" path rule is implemented three times (`_span_join_index` `canonical.py:573`, `_v2_label_lookup` `canonical.py:630`, `_node_order_map` `diff_html.py:195`), plus a fourth for the TOC in `_build_tree_nav` | Reading the document directly is sanctioned by ADR 0007. Only the join's copy is guarded (`test_canonical_node_join.py:152`); the other two are inert on the corpus and untested. | none | Low |
 
+### Resolved on `develop`
+
+- **F4b (fixed, #791 merged as `e89e8b1`; issue #784).** Removed changes are listed under their
+  earlier path in a removed section; `_remap_removed_path` and `_v2_label_lookup` are deleted.
+  Corpus: 711/711 XML and 202/202 PDF removals in the removed section, 0 in a later group. This
+  also removes one of F6's three copies of the hoisting rule. The rule itself is ADR 0007 (#782).
+
 ### Resolved by decision on `develop`
 
 - **F4d.** The renderer recovers line and page numbers by parsing the documented
@@ -91,7 +98,6 @@ finding and supersedes the earlier per-finding sections wherever they disagree.
 
 ### Not tracked in any issue
 
-- **F4b**: misfiled removals.
 - **F7a, XML side**: the rule mismatch, the false docstring, and `body_unchanged`.
 - **F7b**: XML pairs emitting an empty identity.
 - **F9**: the filter keyed on `match_path`.
@@ -1997,6 +2003,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | PR A (#784) on `claude/removed-changes-section`: removed section + exact-path pointers; `_remap_removed_path` / `_v2_label_lookup` deleted. Measured on the corpus: XML 711/711 and PDF 202/202 removals in the removed section, 0 inside a later group; pointers on 279 XML and 72 PDF removals. Plan corrections below. | F4b |
 | 2026-10-05 | Independent review of PR A before opening. Fixed: dropped scroll-margin selectors (blocking, mine); PDF front-matter removals sorted after divisions (now ordered by earlier offset); "outside the outline" label renamed "(no heading path recorded)"; lost all-changes corpus check restored; pointer links now reveal and sync Prev/Next. Opened civictechdc/DeltaTrack#791 (Closes #784). | F4b |
 | 2026-10-05 | External review of #791 at `874e696`: two P2s outside corpus coverage, both fixed in `00ef51d` with tests that fail on `874e696`. (1) Pathless-only removals fell back to flat cards while the sidebar showed the removed section; the cards now render flat only when nothing is placed and nothing was removed. (2) A pointer left collapsed child groups closed, so Prev/Next could skip ahead; it now reveals the first card beneath the heading. Merged develop (#782 has merged). | F4b |
+| 2026-10-05 | #791 merged (`e89e8b1`); #782 merged earlier. F4b moved to resolved. Next: #785 (PR B/C), and the F1 + F15 boundary split. | F4b, F6 |
 
 ## Open questions
 
