@@ -11,6 +11,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 ## Contents
 
 1. [Current register](#current-register) (authoritative state; read this first)
+1. [Decisions](#decisions) (principle; F4b)
 2. [Stage IDs](#stage-ids)
 3. [Overview](#overview-both-paths)
 4. [XML pipeline, end to end](#xml-pipeline-end-to-end)
@@ -95,6 +96,66 @@ finding and supersedes the earlier per-finding sections wherever they disagree.
 - **F7b**: XML pairs emitting an empty identity.
 - **F9**: the filter keyed on `match_path`.
 - **F6**.
+
+---
+
+## Decisions
+
+### Principle (agreed 2026-10-05)
+
+> **The viewer faithfully represents the diff.** It does not decide correspondence, placement
+> or structure that the engine did not decide. Where the diff doesn't say, the viewer shows
+> what it does know and says no more.
+
+This is the standing test for viewer work. It is a candidate for an explicit line in ADR 0007
+(single renderer), next to "the renderer does not branch on pipeline identity".
+
+### F4b: removed changes → a "Removed" section with pointers (option c, agreed 2026-10-05)
+
+**Behaviour in the Changes view and sidebar:**
+
+1. **No removal is placed in the new version's outline groups.**
+2. **A "Removed from the earlier version" section** follows the outline groups. It is nested by
+   each removal's own old location (`changes[].path.v1`) and ordered by the earlier version's
+   document order. Removals with no old path go in an "(outside the earlier version's
+   outline)" subgroup.
+3. **Pointers.**
+   - A new-version group whose **full heading path equals** a removal's old parent path
+     exactly gets a note: "N removed provisions were under a heading with this name in the
+     earlier version", linking to them.
+   - There are no partial or deepest-label matches. A heading that moved under a new wrapper
+     (e.g. `Division J › TITLE I …`) gets no pointer, an honest miss.
+   - The wording states only what is known: same name, not same place.
+4. **The Full bill view is unchanged.** Its "Removed in end version" appendix already lists
+   removals under their old path, so the two views become consistent.
+
+**Removed code:** `_remap_removed_path` and `_v2_label_lookup` (`formatters/canonical.py`),
+and the v1 branch of `_node_path_for_change`.
+
+**Tests:**
+- No removed change appears inside a new-version group.
+- A pointer appears on an exact path match.
+- No pointer in the wrapper case (114-hr-2029 5→6 `c-0013`).
+- No pointer in the label-collision case (114-hr-2029 4→5 `c-0046` must **not** point at
+  TITLE II › … › sec. 227 › (a)).
+- Every removal appears exactly once.
+
+**Measured effect:**
+- Today's 93 misfiled removals (48 across titles) go to zero.
+- About half of the placeable removals get a pointer: 285 of 582 have an exact surviving parent
+  path.
+- The 128 removals with no text span, which today fall into trailing fallback groups (#701),
+  get their old location from `path.v1`.
+
+**Dependencies:**
+- None. It uses only `path.v1`, which the contract already carries, so it can ship before node
+  IDs (step 1).
+- When the engine one day publishes settled container correspondence (on hold), removals can
+  move inline using that data instead of labels.
+
+**Relation to issues:**
+- Replaces the earlier F4b fix-task idea.
+- Partly overlaps #701: trailing groups for unplaced changes.
 
 ---
 
@@ -1928,6 +1989,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-04 | Design draft (root causes, target shape, D1–D6, phases). Compared open PRs #734/#736/#739: #739 and #736 driven by missing node identity (measured F4b 93→95 on #739); #734 mostly independent. Root cause agreed with user; D1 minimal slice to settle before #736 merges. No code changes. | F4a–c, F6, F11, F16, D1 |
 | 2026-10-04 | Ideal design: tree to parse stage, node ids = parser addresses, diff-stage correspondence (prototyped on XML: 46,942/46,942 refs map to one node; 630/711 removals placed, 98.9% same-label container; 81 fail closed), ledger as a contract consumer; #736 to be rebased onto it. Found an engine mispairing of heading-only nodes across divisions. No code changes. | F4a, F4b, F4c, F5, D1, D2 |
 | 2026-10-05 | External review (GPT) of the brief: node ids/references/spans/reader withstand; container correspondence withdrawn pending controls; corrections recorded (46,942 = all observations; GP node is not heading-only; 98.9% is label agreement, not correctness). Verified points 1, 3, 5 here. Revised plan recorded. | D1, D2, F4b |
+| 2026-10-05 | Decision: "the viewer faithfully represents the diff". F4b resolved as a Removed section with exact-match pointers (option c), buildable now from `path.v1`. | F4b |
 
 ## Open questions
 
