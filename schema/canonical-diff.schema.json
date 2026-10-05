@@ -136,7 +136,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "pattern": "^v[12]\\.[0-9]+$",
+          "pattern": "^v[12]\\.(0|[1-9][0-9]*)$",
           "description": "Optional (v3.1+) the node's identifier: its side, then its 0-based preorder position in that side's tree (\"v1.17\"). Unique per side and deterministic for the same inputs and implementation, but NOT persistent across versions, parser revisions or tree changes. Never derived from label text."
         },
         "label": { "type": "string" },
@@ -219,8 +219,8 @@
               "required": ["v1", "v2"],
               "additionalProperties": false,
               "properties": {
-                "v1": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v1\\.[0-9]+$" }] },
-                "v2": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v2\\.[0-9]+$" }] }
+                "v1": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v1\\.(0|[1-9][0-9]*)$" }] },
+                "v2": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v2\\.(0|[1-9][0-9]*)$" }] }
               }
             }
           ],

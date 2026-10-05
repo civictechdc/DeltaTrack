@@ -217,6 +217,23 @@ def test_xml_second_node_on_a_path_takes_its_own_heading_row():
         assert text[heading["end"] : body["start"]].strip() == "", "the heading is not the row printed above the body"
 
 
+def test_xml_container_takes_the_heading_row_its_children_follow():
+    """A node that is content and container, whose path is printed again before its own
+    body, anchors on the first row, under which its children sit."""
+    old = [
+        make_bill_node(("TITLE I", "Agency A", "Account B"), body_text="For account B, $1."),
+        make_bill_node(("TITLE I", "Agency C"), body_text="For agency C, $2."),
+        make_bill_node(("TITLE I", "Agency A"), body_text="General provision for agency A."),
+    ]
+    doc = _xml_doc(old, old)
+    agency = next(n for n, _ in _walk(doc["tree"]["v1"]) if n["label"] == "Agency A")
+    assert [c["label"] for c in agency["children"]] == ["Account B"]
+    text = doc["full_text"]["v1"]
+    first = text.index("Agency A")
+    assert agency["heading_span"] == {"start": first, "end": first + len("Agency A")}
+    assert agency["body_span"]["start"] > text.index("Agency A", first + 1)
+
+
 def test_xml_empty_body_section_has_no_body_span():
     old = [_section(("TITLE I", "sec. 101"), "Sec. 101", ""), make_bill_node(("TITLE I", "Agency A"))]
     doc = _xml_doc(old, old)
@@ -353,9 +370,10 @@ def test_documents_with_node_identity_validate():
     [
         lambda doc: doc["changes"][0].update(node={"v1": "v2.3", "v2": None}),
         lambda doc: doc["tree"]["v1"][0].update(id="17"),
+        lambda doc: doc["tree"]["v1"][0].update(id="v1.00"),
         lambda doc: doc["tree"]["v1"][0].update(heading_span={"start": 0}),
     ],
-    ids=["reference-to-the-wrong-side", "identifier-without-side", "span-without-end"],
+    ids=["reference-to-the-wrong-side", "identifier-without-side", "identifier-with-leading-zero", "span-without-end"],
 )
 def test_schema_rejects_malformed_node_identity(corrupt):
     jsonschema = pytest.importorskip("jsonschema")

@@ -16,8 +16,8 @@ producer lacks the fact, so a rise is a fact lost and a fall a fact gained; eith
 be reviewed rather than absorbed. What the nulls are, measured when pinned:
 
 - XML ``heading_span``: the synthesized Front Matter group, pathless boilerplate with no
-  header, and a node whose path repeats the one printed just before it (no heading row
-  was printed for it).
+  header, and a node whose whole path was already in the heading run the node before it
+  printed (so nothing new was printed for it).
 - XML ``body_span``: containers built from paths, and sections with an empty body.
 - PDF ``heading_span``: headings reconstructed from breadcrumbs with no anchor, the
   synthesized Front Matter anchor, anchors on rows outside the offset table.
@@ -41,7 +41,7 @@ from deltatrack.bill_tree import normalize_bill
 from deltatrack.compare.pdf import UnsupportedLayoutError, compare_pdfs
 from deltatrack.compare.xml import compare_xml
 from deltatrack.formatters.text_serializer import build_xml_full_text
-from tests.corpus_paths import PROJECT_ROOT
+from tests.corpus_paths import DATA_DIR, PROJECT_ROOT
 from tests.pdf_corpus import cached_print_pages
 from tests.test_canonical_baseline import baseline_pairs as xml_baseline_pairs
 from tests.test_pdf_canonical_baseline import baseline_pairs as pdf_baseline_pairs
@@ -53,7 +53,7 @@ _APPLIES = {"v1": {"removed", "modified", "moved"}, "v2": {"added", "modified", 
 XML_PAIRS = xml_baseline_pairs()
 PDF_PAIRS = pdf_baseline_pairs()
 # The pairs production accepts; the rest are enrolled prints it declines.
-_PDF_BASELINE = json.loads((PROJECT_ROOT / "tests" / "data" / "pdf_canonical_baseline.json").read_text())
+_PDF_BASELINE = json.loads((DATA_DIR / "pdf_canonical_baseline.json").read_text())
 ACCEPTED_PDF = {key for key, record in _PDF_BASELINE.items() if not record["declined"]}
 
 # (null heading_span, null body_span, references checked for containment), both sides

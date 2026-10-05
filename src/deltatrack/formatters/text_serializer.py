@@ -97,12 +97,12 @@ def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[
     Each node also carries (#785):
 
     - ``id``: ``"<side>.<n>"``, its 0-based preorder position in the final tree.
-    - ``heading_span``: the row the serializer emitted as this node's heading. A
-      content node's own row comes first: the heading line printed for its path while
-      the node itself was being written, or its run-in ``SEC.``/``(a)`` row, or the
-      header row of a pathless node. A container that has no row of its own takes the
-      first heading row printed for its path. ``null`` where no row was printed for the
-      node, as for the synthesized Front Matter group.
+    - ``heading_span``: the earliest row the serializer emitted as this node's
+      heading: the heading line printed for its path while writing it or anything inside
+      it, its run-in ``SEC.``/``(a)`` row, or the header row of a pathless node. A later
+      node on a repeated path takes the row printed for it, never the first occurrence
+      of the path. ``null`` where no row was printed for the node, as for the
+      synthesized Front Matter group.
     - ``body_span``: the node's own body, ``null`` when it has no text of its own.
 
     Spans come from what the serializer recorded while emitting the text, never from
@@ -121,15 +121,23 @@ def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[
     owners: dict[tuple[str, ...], TreeNode] = {}
     for n in order:
         owners.setdefault(tuple(n.source.display_path) if n.source is not None else n.display_path, n)
+    # Each row belongs to one node: a heading printed for a node's own full path while
+    # that node was written is that node's (so a later node on a repeated path keeps its
+    # own row); one printed for a shorter path, while writing something inside it, is the
+    # owner's of that path; a run-in or header row is its node's. A node then takes the
+    # earliest row it was given, which for a container is the one its children follow.
     heading: dict[int, int] = {}
+
+    def give(node: TreeNode, start: int) -> None:
+        heading[id(node)] = min(start, heading.get(id(node), start))
+
     for start, ordinal, path in layout.heading_rows:
         if path == tuple(bill.nodes[ordinal].display_path):
-            heading.setdefault(id(by_ordinal[ordinal]), start)
+            give(by_ordinal[ordinal], start)
+        elif path in owners:
+            give(owners[path], start)
     for start, ordinal in layout.run_in_rows:
-        heading.setdefault(id(by_ordinal[ordinal]), start)
-    for start, ordinal, path in layout.heading_rows:
-        if path != tuple(bill.nodes[ordinal].display_path) and path in owners:
-            heading.setdefault(id(owners[path]), start)
+        give(by_ordinal[ordinal], start)
 
     def node_json(n: TreeNode) -> dict:
         children = [node_json(c) for c in n.children]
