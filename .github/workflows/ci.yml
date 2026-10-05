@@ -319,6 +319,7 @@ jobs:
           "$GITHUB_WORKSPACE/tests/test_pdf_watermark_recall.py"
           "$GITHUB_WORKSPACE/tests/test_formatters_text_serializer.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_xml_withheld_recall.py"
+          "$GITHUB_WORKSPACE/tests/test_summary_parity.py"
           "$GITHUB_WORKSPACE/tests/test_cli_api_parity.py"
       - name: Run remaining slow suites (shard 2 of 2)
         if: ${{ !cancelled() && matrix.shard == 2 }}
