@@ -27,6 +27,7 @@ from tests.corpus_paths import FIXTURES_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "examples"
+WEBAPP_STYLESHEET = ROOT / "web" / "webapp" / "css" / "styles.css"
 SERVED_SAMPLE = ROOT / "web" / "webapp" / "sample" / "example.html"
 PDF_EXAMPLE = EXAMPLES / "hr8752_pdf_diff.html"
 
@@ -246,10 +247,13 @@ def test_every_token_is_used_by_some_surface():
     what the report check used to catch on the way past.
 
     Uses are read from what each surface ships, comment-free, for the reason
-    `_live_stylesheet` gives: a token mentioned only in prose is not used.
+    `_live_stylesheet` gives: a token mentioned only in prose is not used. For the upload
+    pages that is the generated block, which holds exactly what their rules and the
+    processing tab use; `tests/test_webapp_css.py` keeps it current.
     """
     report_css = _live_stylesheet((EXAMPLES / "hr8752_pdf_diff.html").read_text())
-    used = set(_VAR_REFERENCE.findall(report_css)) | set(LANDING_SUBSET)
+    webapp_css = _CSS_COMMENT.sub("", WEBAPP_STYLESHEET.read_text())
+    used = set(_VAR_REFERENCE.findall(report_css)) | set(LANDING_SUBSET) | set(_css_tokens(_root_block(webapp_css)))
 
     assert used, "no token uses found on any surface; this check would vacuously pass"
 

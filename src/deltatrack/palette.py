@@ -1,17 +1,15 @@
-"""The palette for DeltaTrack's report and its examples landing page.
+"""The palette for DeltaTrack's report, its examples landing page, and the upload pages.
 
-The values live in `styles/tokens.css`; this module reads them so the renderers can emit
-them. Two surfaces take their values from here: the report (`formatters/diff_html.py`), and
-the published examples landing page (`scripts/render_examples.py`), which embeds a subset.
-Nothing else does yet. The web app declares its own values in `webapp/css/styles.css`,
-and the loading tab in `webapp/js/compare.js` hardcodes four of them, so editing the
-tokens reaches neither and no test would report the divergence (#773).
+The values live in `styles/tokens.css`; this module reads them so each surface can emit
+them. The report (`formatters/diff_html.py`) and the published examples landing page
+(`scripts/render_examples.py`) embed them when rendered. The upload pages get a
+generated block in `web/webapp/css/styles.css` (`scripts/render_webapp_css.py`),
+committed because those pages are served as static files. The processing tab in
+`web/webapp/js/compare.js` still hardcodes its colours (#773).
 
-Both surfaces *embed* rather than link, and any surface wired up later will have to as
-well. A report has to render with no network at all (ADR 0011), so it cannot fetch a
-stylesheet, and the loading tab is written via `document.write` and can resolve no URLs.
-"One palette" can therefore only mean one source generated into each surface, never one
-file they all link.
+Each surface *embeds* its tokens rather than linking one shared file. A report has to
+render with no network at all (ADR 0011), so it cannot fetch a stylesheet. "One palette"
+therefore means one source generated into each surface, never one file they all link.
 
 Each surface embeds only the tokens its own rules use (`referenced`), not the whole file,
 so a token one surface needs ships nowhere else. An unreferenced token would ship in
