@@ -113,6 +113,10 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
 .change-group > summary:hover { background: var(--secondary); }
 .change-group .change-group { margin-left: 16px; }
 .change-group > .change { margin-left: 16px; }
+/* Removed changes, under their earlier location (#784) */
+.change-group.removed-section { border-top: 1px solid var(--border); margin-top: 24px; padding-top: 8px; }
+.removed-pointer { margin: 2px 0 12px 16px; font-size: 13px; color: var(--muted-foreground); }
+.nav-group.removed-section { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 4px; }
 
 /* Change cards */
 .change { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px;
@@ -243,9 +247,9 @@ mark.find-hit--current { background: var(--primary); color: var(--primary-foregr
 .prompt-copy:hover { background: var(--accent); }
 .prompt-text { line-height: 1.5; }
 
-/* Nav targets clear the sticky action bar when scrolled to via Prev/Next */
+/* Nav and pointer targets clear the sticky action bar when scrolled to */
 .change, .full-text [id^="attr-"], .full-text [id^="sec-"], .full-text [id^="fb-off-"],
-.removed-changes__item { scroll-margin-top: 64px; }
+.removed-changes__item, .removed-section .change-group { scroll-margin-top: 64px; }
 
 /* Full-bill section TOC (sidebar variant) */
 .sidebar-changes[hidden], .sidebar-tree[hidden] { display: none; }
@@ -834,6 +838,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       // Full-bill content is not inside <details>, so nothing to reveal here.
       syncCurrentTo(e.target.closest(FULL_TARGET_SEL));
+      return;
+    }
+    // A removed-changes pointer (#784) targets a heading group in the removed
+    // section. Its removals sit in child groups the reader may have collapsed, so
+    // reveal the first card beneath the heading (opening every group between) and
+    // resume Prev/Next from that card, not from whatever visible card follows.
+    var pointer = e.target.closest('a[href^="#removed-group-"]');
+    if (pointer) {
+      var group = document.getElementById(pointer.getAttribute('href').slice(1));
+      if (group) {
+        group.open = true;
+        revealCard(group);
+        var first = group.querySelector('.change');
+        if (first) revealCard(first);
+        syncCurrentFrom(group);
+      }
       return;
     }
     var link = e.target.closest('a[href^="#change-"]');

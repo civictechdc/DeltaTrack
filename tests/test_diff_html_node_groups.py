@@ -177,8 +177,8 @@ def _order_map():
 
 
 def test_groups_follow_tree_document_order_not_change_order():
-    # A removal remapped into a LATE v2 group can appear FIRST in the change
-    # list; insertion order would hoist TITLE II above TITLE I in both panes.
+    # A change filed in a LATE v2 group can appear FIRST in the change list;
+    # insertion order would hoist TITLE II above TITLE I in both panes.
     view = _view(
         [
             _change(node_path=(("TITLE II", "title"),)),
@@ -204,8 +204,8 @@ def test_groups_keep_insertion_order_without_an_order_map():
 
 
 def test_unknown_paths_trail_ordered_groups():
-    # A v1-kept breadcrumb (removed change with no v2 match) isn't in the v2
-    # order map; it renders after the ordered groups, keeping insertion order.
+    # A path the v2 order map doesn't know renders after the ordered groups,
+    # keeping insertion order.
     view = _view(
         [
             _change(node_path=(("VANISHED TITLE", "title"),)),
