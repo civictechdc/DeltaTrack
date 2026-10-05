@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 
 from deltatrack.amounts import extract_amounts
 from deltatrack.bill_tree import BillNode, BillTree, amount_text
-from deltatrack.parsers.pdf_anchors import Anchor, breadcrumb_for
+from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for
 
 # Leaf level from the XML tag — typed and reliable (docs/bill-structure.md glossary).
 _LEAF_LEVEL: dict[str, str] = {
@@ -283,7 +283,8 @@ def build_pdf_tree(anchors: Iterable[Anchor]) -> list[TreeNode]:
     anchors = list(anchors)
     # own_amounts attach in canonical._pdf_tree_payload (it owns full_text + the
     # per-line char offsets); the tree itself carries () here.
-    roots = _build_tree((breadcrumb_for(a, anchors), a.kind, a, ()) for a in anchors)
+    positions = anchor_positions(anchors)
+    roots = _build_tree((breadcrumb_for(a, anchors, positions), a.kind, a, ()) for a in anchors)
     # Group the bill's opening (the synthesized Front Matter anchor + any leading
     # SEC. anchors before the first title/division) under one node, at parity with
     # the XML pipeline (#161). Span/own_amounts are computed downstream from the flat

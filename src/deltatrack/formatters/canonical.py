@@ -25,7 +25,7 @@ from html import escape
 from deltatrack.amounts import extract_amounts
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
 from deltatrack.formatters.view_model import ChangeView, DiffView
-from deltatrack.parsers.pdf_anchors import Anchor, breadcrumb_for
+from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 
 SCHEMA_VERSION = "3.1"
@@ -253,10 +253,12 @@ def _range_to_canonical(rng: tuple[int, int, int, int] | None) -> dict | None:
     }
 
 
-def _path_for_anchor(anchor: Anchor | None, all_anchors: tuple[Anchor, ...]) -> list[str] | None:
+def _path_for_anchor(
+    anchor: Anchor | None, all_anchors: tuple[Anchor, ...], positions: dict[Anchor, int]
+) -> list[str] | None:
     if anchor is None:
         return None
-    return list(breadcrumb_for(anchor, all_anchors))
+    return list(breadcrumb_for(anchor, all_anchors, positions))
 
 
 def _pdf_move(hunk: PdfHunk) -> dict:
@@ -281,9 +283,11 @@ def _pdf_hunk_to_canonical(
     v2_anchors: tuple[Anchor, ...],
     line_offsets_v1: dict | None,
     line_offsets_v2: dict | None,
+    v1_positions: dict[Anchor, int],
+    v2_positions: dict[Anchor, int],
 ) -> dict:
-    path_v1 = _path_for_anchor(hunk.v1_anchor, v1_anchors)
-    path_v2 = _path_for_anchor(hunk.v2_anchor, v2_anchors)
+    path_v1 = _path_for_anchor(hunk.v1_anchor, v1_anchors, v1_positions)
+    path_v2 = _path_for_anchor(hunk.v2_anchor, v2_anchors, v2_positions)
     # Degraded: neither side resolved an anchor (regardless of which sides are
     # active for this change_type). For added/removed, the absent side has no
     # anchor by definition, so we only flag degraded when the *expected* side
@@ -440,6 +444,8 @@ def pdf_diff_to_canonical(
             "v1": _pdf_tree_payload(diff.v1_anchors, line_offsets_v1, normalized_full_text["v1"]),
             "v2": _pdf_tree_payload(diff.v2_anchors, line_offsets_v2, normalized_full_text["v2"]),
         }
+    # Built once per side, so each change's breadcrumb is a lookup rather than a search.
+    v1_positions, v2_positions = anchor_positions(diff.v1_anchors), anchor_positions(diff.v2_anchors)
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": {"name": GENERATOR_NAME, "version": "0"},
@@ -454,7 +460,9 @@ def pdf_diff_to_canonical(
         "print_breaks": print_breaks if normalized_full_text is not None else None,
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
-            _pdf_hunk_to_canonical(h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2)
+            _pdf_hunk_to_canonical(
+                h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2, v1_positions, v2_positions
+            )
             for i, h in enumerate(diff.hunks)
         ],
     }
