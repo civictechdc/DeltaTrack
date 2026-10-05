@@ -102,7 +102,7 @@ versions = [
 [[bill]]
 id = "113-hr-3547"
 subcommittee = "full-year omnibus (enrolled)"
-covers = "Enrolled multi-division omnibus whose later titles spill out as orphan <title> siblings — the #146/#167 duplicate-match_path proof case (its cross-division duplicate-count and money-drop baselines are pinned in test_corpus_properties / test_corpus_tree_properties). Stages 1-5 added in #220: the node-join gates pin 4->5 and 5->6 as XML amendment-shape pairs and 1->2 / 3->4 as PDF pairs."
+covers = "Enrolled multi-division omnibus whose later titles spill out as orphan <title> siblings — the #146/#167 duplicate-match_path proof case (its cross-division duplicate-count and money-drop baselines are pinned in test_corpus_properties / test_corpus_tree_properties). Stages 1-5 added in #220: the node-join gates pin 4->5 and 5->6 as XML amendment-shape pairs and 1->2 as the PDF null-span pair."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
   { stage = "2_engrossed-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "bill has no committee reports (introduced only or floor-amended omnibus)"}]},
@@ -118,7 +118,7 @@ versions = [
 [[bill]]
 id = "114-hr-2029"
 subcommittee = "full-year omnibus"
-covers = "Omnibus span-geometry case (#172/#175). The 5->6 XML pair is the node-join amendment-shape gate; the 3->4 PDF pair is its anchor-agreement gate. Committed in #220 as part of retiring REQUIRE_CORPUS; also a #126 curation candidate. The enrolled text (v7) joined in #278 with the Legislative Branch validation set, extending the XML chain to a 6->7 pair."
+covers = "Omnibus span-geometry case (#172/#175). The 5->6 XML pair is the node-join amendment-shape gate and, with 4->5, the removed-section gate (#784); the 3->4 PDF pair is its anchor-agreement gate. Committed in #220 as part of retiring REQUIRE_CORPUS; also a #126 curation candidate. The enrolled text (v7) joined in #278 with the Legislative Branch validation set, extending the XML chain to a 6->7 pair."
 versions = [
   { stage = "1_reported-in-house", formats = ["pdf", "xml"], committee_report = [{pkg = "CRPT-114hrpt92", citation = "H. Rept. 114-92", chamber = "house"}]},
   { stage = "3_referred-in-senate", formats = ["pdf", "xml"], committee_report = [{pkg = "CRPT-114hrpt92", citation = "H. Rept. 114-92", chamber = "house"}]},
@@ -205,7 +205,7 @@ versions = [
 [[bill]]
 id = "118-hr-2882"
 subcommittee = "non-appropriations House bill (catchline repro)"
-covers = "SEC.-catchline continuation repro (#89): the wrapped catchline 'TRUST FUND.' must not become a false account/major (test_pdf_anchor_golden)."
+covers = "SEC.-catchline continuation repro (#89): the wrapped catchline 'TRUST FUND.' must not become a false account/major (test_pdf_anchor_golden). The 1->4 PDF pair is the node-join section-level gate: no agency/account anchors."
 versions = [
   { stage = "1_introduced-in-house", formats = ["pdf", "xml"], committee_report = [{citation = "none", chamber = "none", reason = "version predates the committee report, which is filed at the reported stage"}]},
   { stage = "4_engrossed-amendment-senate", formats = ["xml", "pdf"], committee_report = [{citation = "none", chamber = "none", reason = "no senate committee report explains this stage"}]},

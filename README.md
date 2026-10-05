@@ -157,7 +157,7 @@ download all read one shape. `./diff_pdf.py --format json` does the same for a P
 
 - **Header** with bill number, congress, and version numbers (e.g., "v1: reported-in-house → v2: engrossed-in-house")
 - **Sidebar** listing all changed sections, grouped under their headings with counts, with color-coded change type badges. **All** / **Structural** narrows the list and the cards (Structural hides modified sections, leaving additions, removals and moves). Click any item to jump to that section. In the full-bill view the sidebar shows the bill's section tree instead; to search the text, use **Find in view** above the report.
-- **Change cards** for each modified, added, removed, or moved section. Modified sections show word-level inline diffs: additions highlighted in green, deletions in red strikethrough. Moved sections show both the old and new location, plus body text.
+- **Change cards** for each modified, added, removed, or moved section. Modified sections show word-level inline diffs: additions highlighted in green, deletions in red strikethrough. Moved sections show both the old and new location, plus body text. Removed sections come last, in **Removed from the earlier version**, under the headings they had in the earlier version; a later-version heading with exactly the same name links to them.
 - **Prev/next buttons** in the bottom right corner to step through changes one at a time.
 
 When no changes are detected between versions, the report displays "No changes found" rather than a blank page.

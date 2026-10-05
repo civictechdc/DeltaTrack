@@ -39,6 +39,7 @@ from deltatrack.formatters.diff_html import format_diff_html
 from tests.conftest import assert_manifest_committed
 from tests.corpus_paths import FIXTURES_DIR
 from tests.pdf_corpus import cached_pages
+from tests.removed_changes_report import changes_view
 
 pytestmark = pytest.mark.slow
 
@@ -48,6 +49,11 @@ XML_PAIRS = [
     ("113-hr-3547", "5_engrossed-amendment-house", "6_enrolled-bill"),
     ("113-hr-3547", "4_engrossed-amendment-senate", "5_engrossed-amendment-house"),
     ("114-hr-2029", "5_engrossed-amendment-senate", "6_engrossed-amendment-house"),
+]
+# 114-hr-2029 4->5 holds the label-collision misfiling #784 names; 5->6 the added-wrapper case.
+REMOVED_PAIRS = [
+    ("114-hr-2029", "4_reported-in-senate", "5_engrossed-amendment-senate"),
+    XML_PAIRS[2],
 ]
 
 
@@ -75,7 +81,7 @@ def test_manifest_fixtures_committed():
     """Fail-closed floor (#220, ADR 0015). Every pair below is a committed manifest
     fixture, so this always collects and runs with no env var: a fixture that was not
     committed fails here instead of silently emptying the parametrization (#167)."""
-    assert_manifest_committed(XML_PAIRS, "node-join")
+    assert_manifest_committed(XML_PAIRS + REMOVED_PAIRS, "node-join")
 
 
 # ---------- XML: join agrees with the structural path ---------------------------
@@ -124,20 +130,87 @@ def test_xml_front_matter_changes_file_under_children_not_the_hull(bill, v1, v2)
     assert {"Short title", "Table of contents"} <= fm_leaves, fm_leaves
 
 
-@pytest.mark.parametrize(("bill", "v1", "v2"), [XML_PAIRS[2]])
-def test_xml_removed_changes_place_into_v2_groups(bill, v1, v2):
-    # 114-hr-2029 5->6 removes whole sections. Every removal with a v1 span
-    # must file somewhere (v2 remap or v1-derived group), never drop to
-    # Uncategorized silently.
+# ---------- removed changes: listed under their earlier location (#784) ----------
+#
+# A removal exists only in the earlier version. The view lists it in the removed
+# section under ``path.v1``; it never files it inside a later-version group by
+# matching heading labels, which put 114-hr-2029 4->5 c-0046 (Title I) under Title
+# II's "sec. 227 > (a)". Pointers are exact full-path matches only.
+
+
+@pytest.mark.parametrize(("bill", "v1", "v2"), REMOVED_PAIRS)
+def test_no_removed_change_inside_a_later_group(bill, v1, v2):
     canonical, view = _xml_view(bill, v1, v2)
-    removed = [
-        cv
-        for change, cv in zip(canonical["changes"], view.changes)
-        if cv.change_type == "removed" and (change.get("full_text_span") or {}).get("v1")
+    ctx = changes_view(format_diff_html(canonical))
+    removed = [i for i, cv in enumerate(view.changes) if cv.change_type == "removed"]
+    assert removed, "gate ran on zero removals (fail-open, #167)"
+    misplaced = [canonical["changes"][i]["id"] for i in removed if not ctx.cards[i]["in_removed"]]
+    assert not misplaced, f"removals rendered inside later-version groups: {misplaced[:5]}"
+    later_removed = [
+        i for i, card in ctx.cards.items() if card["in_removed"] and view.changes[i].change_type != "removed"
     ]
-    assert len(removed) > 0, "gate ran on zero removals (fail-open, #167)"
-    unplaced = [cv.nav_label_html for cv in removed if not cv.node_path]
-    assert not unplaced, f"{len(unplaced)} removals unplaced: {unplaced[:3]}"
+    assert not later_removed, "a non-removed change rendered in the removed section"
+
+
+@pytest.mark.parametrize(("bill", "v1", "v2"), REMOVED_PAIRS)
+def test_every_removal_rendered_exactly_once(bill, v1, v2):
+    canonical, view = _xml_view(bill, v1, v2)
+    html = format_diff_html(canonical)
+    changes_view = html.split('<div class="view view-full"', 1)[0]
+    sidebar = changes_view[changes_view.index('<nav class="sidebar">') : changes_view.index("</nav>")]
+    removed = [i for i, cv in enumerate(view.changes) if cv.change_type == "removed"]
+    assert removed, "gate ran on zero removals (fail-open, #167)"
+    for i in removed:
+        assert changes_view.count(f'id="change-{i}"') == 1, f"card change-{i} dropped or duplicated"
+        assert sidebar.count(f'href="#change-{i}"') == 1, f"nav item change-{i} dropped or duplicated"
+
+
+def test_label_collision_gets_no_pointer():
+    # c-0046 was under Title I's sec. 122; Title II's sec. 227 > (a) shares only the
+    # deepest label and must not point at it. sec. 122 itself has no later-version
+    # changes, so no later group renders there and nothing points at c-0046's heading.
+    bill, v1, v2 = REMOVED_PAIRS[0]
+    canonical, _ = _xml_view(bill, v1, v2)
+    ctx = changes_view(format_diff_html(canonical))
+    c0046 = next(i for i, c in enumerate(canonical["changes"]) if c["id"] == "c-0046")
+    parent = tuple(canonical["changes"][c0046]["path"]["v1"][:-1])
+    assert parent[0].startswith("TITLE I—") and parent[-1] == "sec. 122"
+    assert ctx.cards[c0046]["in_removed"]
+    assert all(target != parent for target, _count in ctx.pointers.values())
+    assert all(not (path[0].startswith("TITLE II—") and path[-1:] == ("(a)",)) for path in ctx.pointers)
+
+
+def test_exact_parent_path_gets_a_pointer():
+    # c-0024's earlier parent TITLE I > Administrative provisions survives exactly.
+    bill, v1, v2 = REMOVED_PAIRS[0]
+    canonical, _ = _xml_view(bill, v1, v2)
+    ctx = changes_view(format_diff_html(canonical))
+    c0024 = next(c for c in canonical["changes"] if c["id"] == "c-0024")
+    parent = tuple(c0024["path"]["v1"][:-1])
+    assert parent == ("TITLE I—Department of defense", "Administrative provisions")
+    target, count = ctx.pointers[parent]
+    assert target == parent
+    direct = [
+        c
+        for c in canonical["changes"]
+        if c["change_type"] == "removed" and tuple((c["path"]["v1"] or [])[:-1]) == parent
+    ]
+    assert count == len(direct)
+
+
+def test_added_wrapper_gets_no_pointer():
+    # 5->6 c-0013's earlier parent "TITLE I > Administrative provisions" now sits under
+    # the added Division J. Same labels, different full path: no pointer.
+    bill, v1, v2 = REMOVED_PAIRS[1]
+    canonical, _ = _xml_view(bill, v1, v2)
+    ctx = changes_view(format_diff_html(canonical))
+    c0013 = next(i for i, c in enumerate(canonical["changes"]) if c["id"] == "c-0013")
+    parent = tuple(canonical["changes"][c0013]["path"]["v1"][:-1])
+    assert parent == ("TITLE I—Department of defense", "Administrative provisions")
+    wrapped = [c["path"] for c in ctx.cards.values() if not c["in_removed"] and c["path"][1:3] == parent]
+    assert wrapped, "fixture drifted: no later-version group renders the wrapped heading"
+    assert ctx.cards[c0013]["in_removed"]
+    assert all(target != parent for target, _count in ctx.pointers.values())
 
 
 @pytest.mark.parametrize(("bill", "v1", "v2"), [XML_PAIRS[0]])
@@ -152,7 +225,8 @@ def test_xml_rendered_report_neither_drops_nor_duplicates_cards(bill, v1, v2):
 # ---------- PDF ------------------------------------------------------------------
 
 PDF_AGREEMENT_PAIR = [("114-hr-2029", "3_referred-in-senate", "4_reported-in-senate")]
-PDF_SECTION_ONLY_PAIR = [("113-hr-3547", "3_received-in-senate", "4_engrossed-amendment-senate")]
+# 118-hr-2882 1->4: no agency/account anchors, and later-version changes the join places.
+PDF_SECTION_ONLY_PAIR = [("118-hr-2882", "1_introduced-in-house", "4_engrossed-amendment-senate")]
 PDF_NULL_SPAN_PAIR = [("113-hr-3547", "1_introduced-in-house", "2_engrossed-in-house")]
 _ALL_PDF_PAIRS = PDF_AGREEMENT_PAIR + PDF_SECTION_ONLY_PAIR + PDF_NULL_SPAN_PAIR
 
@@ -201,13 +275,12 @@ def test_pdf_without_account_level_lands_at_section_level(bill, v1, v2):
     assert "account" not in tree_levels and "agency" not in tree_levels, (
         f"fixture no longer account-absent ({sorted(tree_levels)}); pick another pair"
     )
-    # All change types: on this pair the only placeable changes are removals
-    # (v1 tree, same section-only shape); the level property is type-agnostic.
+    # Removals are not joined (#784), so every placed change is a later-version one.
     placed = [cv for cv in view.changes if cv.node_path]
     assert len(placed) > 0, "gate ran on zero placed changes (fail-open, #167)"
-    # Exact set, NOT a fail-open ⊆: both sides of this fixture were measured to have
-    # ZERO run-in subsection candidates (#96), so a `subsection` level cannot appear
-    # here. Keep the exact assertion. If a future fixture swap introduces run-ins, the
+    # Exact set, NOT a fail-open ⊆: on this fixture every placed change lands at
+    # section level, so a `subsection` level appearing here is a change to investigate
+    # (#96 run-ins), not noise. Keep the exact assertion. If a future fixture swap introduces run-ins, the
     # replacement is `⊆ {"section", "subsection"}` PAIRED with a positive "≥1 change
     # lands at subsection" assertion (matching this file's checked>0 floors), never a
     # bare ⊆.

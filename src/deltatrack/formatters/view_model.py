@@ -56,10 +56,23 @@ class ChangeView:
     the top of its breadcrumb (e.g. "TITLE I"). Empty → "Uncategorized"."""
 
     node_path: tuple[tuple[str, str], ...] = ()
-    """Raw (label, level) breadcrumb, root → the tree node this change was
-    filed under by the own-span containment join (#172). Empty when the join
-    could not place the change (no tree, null span, uncovered position) — the
-    renderer then falls back to group_label for that card."""
+    """Raw (label, level) breadcrumb, root → the later-version tree node this
+    change was filed under by the own-span containment join (#172). Empty when
+    the join could not place the change (no tree, null span, uncovered position)
+    — the renderer then falls back to group_label for that card — and always
+    empty for a removed change, which has no later-version position."""
+
+    removed_path: tuple[str, ...] = ()
+    """A removed change's earlier breadcrumb (``changes[].path.v1``), root →
+    the removed node, exactly as the document carries it. The renderer lists the
+    removal under it in the removed section (#784). Empty for every other change
+    type, and for a removal the document gives no earlier path."""
+
+    removed_offset: int | None = None
+    """A removed change's start in the earlier version's full text
+    (``full_text_span.v1.start``), used only to order the removed section by
+    earlier document position. None for every other change type, and for a
+    removal without an earlier span."""
 
     # The view model carries NO money field: the report presents no dollar figure as a
     # change until an amount can be typed to an account (#115, #175). Leaving it out

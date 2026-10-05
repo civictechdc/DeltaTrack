@@ -155,10 +155,14 @@ def _group_changes_by_node(view: DiffView) -> tuple[dict, dict[str, list[int]]]:
     segments, insertion-ordered by first appearance; ``fallback`` maps
     ``group_label`` (or "Uncategorized") to the indices of changes the join
     couldn't place (empty node_path) — never worse than the old flat grouping.
+    Removed changes are in neither: they belong to the removed section
+    (``_group_removed``), never to the later version's outline.
     """
     root: dict = {"children": {}, "items": []}
     fallback: dict[str, list[int]] = {}
     for i, c in enumerate(view.changes):
+        if c.change_type == "removed":
+            continue
         if c.node_path:
             node = root
             for seg in c.node_path:
@@ -177,12 +181,102 @@ def _fallback_labels(fallback: dict[str, list[int]]) -> list[str]:
     return labels
 
 
+REMOVED_SECTION_LABEL = "Removed from the earlier version"
+NO_PATH_LABEL = "(no heading path recorded)"
+
+
+def _group_removed(view: DiffView) -> tuple[dict, list[int]]:
+    """Nest removed change indices by their earlier breadcrumb (#784).
+
+    Returns ``(root, outside)``: ``root`` has the same shape as
+    ``_group_changes_by_node``'s, keyed by ``removed_path`` labels, and each node
+    also records ``first``, the smallest ``removed_offset`` in its subtree (None
+    when none has one); ``outside`` holds the removals the document gives no
+    earlier path. A removal exists only in the earlier version, so it is listed
+    where the document says it was, never filed inside the later outline by
+    matching heading labels (ADR 0007).
+    """
+    root: dict = {"children": {}, "items": [], "first": None}
+    outside: list[int] = []
+    for i, c in enumerate(view.changes):
+        if c.change_type != "removed":
+            continue
+        if not c.removed_path:
+            outside.append(i)
+            continue
+        node = root
+        for label in c.removed_path:
+            node = node["children"].setdefault(label, {"children": {}, "items": [], "first": None})
+            if c.removed_offset is not None and (node["first"] is None or c.removed_offset < node["first"]):
+                node["first"] = c.removed_offset
+        node["items"].append(i)
+    return root, outside
+
+
+def _ordered_removed_children(node: dict, path: tuple, removed_order: dict[tuple[str, ...], int] | None):
+    """A removed group's children in earlier document order.
+
+    By earliest earlier-text offset when every sibling has one; otherwise by the
+    earlier tree's order (``_removed_order_map``), unknown paths trailing. Offsets
+    come first because a PDF breadcrumb can omit a grouping the tree adds (the
+    synthesized Front Matter), so its path is not in the tree's order map.
+    """
+    items = list(node["children"].items())
+    if items and all(child["first"] is not None for _, child in items):
+        return sorted(items, key=lambda item: item[1]["first"])
+    return _ordered_children(node, path, removed_order)
+
+
+def _removed_pointers(view: DiffView) -> dict[tuple[str, ...], int]:
+    """Earlier parent breadcrumb -> how many removals were directly under it (#784).
+
+    A later-version group whose label path is exactly one of these keys says that
+    removals were under a heading with the same name in the earlier version. The
+    match is the whole label sequence, compared exactly: a shared deepest label
+    ("(a)", "sec. 205") or a heading that moved under an added wrapper is not the
+    same path. A pointer is a same-name match, not a claim that it is the same
+    place, so it is only rendered; it never places, groups or counts a removal.
+    """
+    pointers: dict[tuple[str, ...], int] = {}
+    for c in view.changes:
+        if c.change_type == "removed" and len(c.removed_path) > 1:
+            parent = c.removed_path[:-1]
+            pointers[parent] = pointers.get(parent, 0) + 1
+    return pointers
+
+
+def _pointer_html(count: int, target_id: str) -> str:
+    """A later-version group's pointer to the same-name heading in the removed section."""
+    lead = "1 removed provision</a> was" if count == 1 else f"{count} removed provisions</a> were"
+    return (
+        f'<p class="removed-pointer"><a href="#{target_id}">{lead}'
+        " directly under a heading with this name in the earlier version.</p>"
+    )
+
+
+def _subtree_count(node: dict) -> int:
+    return len(node["items"]) + sum(_subtree_count(c) for c in node["children"].values())
+
+
+def _removed_order_map(tree_nodes: list[dict] | None) -> dict[tuple[str, ...], int]:
+    """Label breadcrumb -> earlier document order, for the removed section (#784).
+
+    ``removed_path`` carries labels without levels, so this keys
+    ``_node_order_map``'s v1 order by labels alone; where two paths differ only
+    by level, the earlier one sets the position.
+    """
+    order: dict[tuple[str, ...], int] = {}
+    for path, rank in _node_order_map(tree_nodes).items():
+        order.setdefault(tuple(label for label, _level in path), rank)
+    return order
+
+
 def _node_order_map(tree_nodes: list[dict] | None) -> dict[tuple, int]:
     """(label, level) breadcrumb -> v2 document order, for sorting groups (#172).
 
     Grouping by first appearance in the change list can deviate from bill
-    order — a removal remapped into a late v2 group but appearing early in the
-    change list would hoist that group above earlier titles. Sorting siblings
+    order — a change filed in a late group but appearing early in the change
+    list would hoist that group above earlier titles. Sorting siblings
     by the tree's own document order keeps groups in bill order regardless of
     change order. Same labeled-ancestor hoisting convention as the join, so
     the keys match node_path prefixes exactly.
@@ -205,8 +299,8 @@ def _node_order_map(tree_nodes: list[dict] | None) -> dict[tuple, int]:
 
 
 def _ordered_children(node: dict, path: tuple, order_map: dict[tuple, int] | None):
-    """A group node's children sorted by v2 document order, insertion order for
-    paths the map doesn't know (v1-kept breadcrumbs trail, mutual order kept)."""
+    """A group node's children sorted by the map's document order, insertion
+    order for paths the map doesn't know (they trail, mutual order kept)."""
     items = list(node["children"].items())
     if not order_map:
         return items
@@ -218,7 +312,11 @@ def _ordered_children(node: dict, path: tuple, order_map: dict[tuple, int] | Non
     return [item for _, item in ranked]
 
 
-def _build_change_groups(view: DiffView, order_map: dict[tuple, int] | None = None) -> str:
+def _build_change_groups(
+    view: DiffView,
+    order_map: dict[tuple, int] | None = None,
+    removed_order: dict[tuple[str, ...], int] | None = None,
+) -> str:
     """Group nav items under nested collapsible tree-node headers (#172).
 
     One ``<details class="nav-group">`` per node_path segment, nested to
@@ -227,7 +325,9 @@ def _build_change_groups(view: DiffView, order_map: dict[tuple, int] | None = No
     recursive. Changes without a node_path keep the old flat ``group_label``
     grouping, trailing the tree groups ("Uncategorized" last). Sibling groups
     follow v2 document order when ``order_map`` is given (see
-    ``_node_order_map``), first appearance otherwise.
+    ``_node_order_map``), first appearance otherwise. Removed changes trail
+    everything in one "Removed from the earlier version" group nested by their
+    earlier breadcrumb (``_removed_nav_html``).
     `_build_nav_item`'s <li> is unchanged — only the wrapping differs.
     Returns "<ul></ul>" when there are no changes.
     """
@@ -235,29 +335,46 @@ def _build_change_groups(view: DiffView, order_map: dict[tuple, int] | None = No
         return "<ul></ul>"
     root, fallback = _group_changes_by_node(view)
 
-    def subtree_count(node: dict) -> int:
-        return len(node["items"]) + sum(subtree_count(c) for c in node["children"].values())
-
     def render(seg: tuple[str, str], node: dict, path: tuple) -> str:
         label, _level = seg
         p = path + (seg,)
         items = "".join(_build_nav_item(view.changes[i], i) for i in node["items"])
         kids = "".join(render(s, c, p) for s, c in _ordered_children(node, p, order_map))
-        return (
-            f'<details class="nav-group"><summary class="disclosure">{escape(label)}'
-            f' <span class="nav-group__count">({subtree_count(node)})</span></summary>'
-            f"<ul>{items}</ul>{kids}</details>"
-        )
+        return _nav_group_html(label, _subtree_count(node), f"<ul>{items}</ul>{kids}")
 
     blocks = [render(seg, node, ()) for seg, node in _ordered_children(root, (), order_map)]
     for label in _fallback_labels(fallback):
         items = "".join(_build_nav_item(view.changes[i], i) for i in fallback[label])
-        blocks.append(
-            f'<details class="nav-group"><summary class="disclosure">{escape(label)}'
-            f' <span class="nav-group__count">({len(fallback[label])})</span></summary>'
-            f"<ul>{items}</ul></details>"
-        )
+        blocks.append(_nav_group_html(label, len(fallback[label]), f"<ul>{items}</ul>"))
+    blocks.append(_removed_nav_html(view, removed_order))
     return "".join(blocks)
+
+
+def _nav_group_html(label: str, count: int, inner: str, extra_class: str = "") -> str:
+    return (
+        f'<details class="nav-group{extra_class}"><summary class="disclosure">{escape(label)}'
+        f' <span class="nav-group__count">({count})</span></summary>{inner}</details>'
+    )
+
+
+def _removed_nav_html(view: DiffView, removed_order: dict[tuple[str, ...], int] | None) -> str:
+    """The sidebar's removed group: removals nested by earlier breadcrumb (#784)."""
+    root, outside = _group_removed(view)
+    if not root["children"] and not outside:
+        return ""
+
+    def render(label: str, node: dict, path: tuple) -> str:
+        p = path + (label,)
+        items = "".join(_build_nav_item(view.changes[i], i) for i in node["items"])
+        kids = "".join(render(s, c, p) for s, c in _ordered_removed_children(node, p, removed_order))
+        return _nav_group_html(label, _subtree_count(node), f"<ul>{items}</ul>{kids}")
+
+    blocks = [render(label, node, ()) for label, node in _ordered_removed_children(root, (), removed_order)]
+    if outside:
+        items = "".join(_build_nav_item(view.changes[i], i) for i in outside)
+        blocks.append(_nav_group_html(NO_PATH_LABEL, len(outside), f"<ul>{items}</ul>"))
+    total = _subtree_count(root) + len(outside)
+    return _nav_group_html(REMOVED_SECTION_LABEL, total, "".join(blocks), " removed-section")
 
 
 def _walk_tree(nodes: list[dict]):
@@ -399,6 +516,7 @@ def _build_sidebar(
     view: DiffView,
     canonical: dict | None = None,
     order_map: dict[tuple, int] | None = None,
+    removed_order: dict[tuple[str, ...], int] | None = None,
 ) -> str:
     """Render the sidebar with both view variants inside one ``<nav>``.
 
@@ -418,6 +536,8 @@ def _build_sidebar(
     tree_v2 = (canonical.get("tree") or {}).get("v2") if (canonical and canonical.get("tree")) else None
     if order_map is None:
         order_map = _node_order_map(tree_v2)
+    if removed_order is None:
+        removed_order = _removed_order_map(((canonical or {}).get("tree") or {}).get("v1"))
     full_text_v2 = (canonical.get("full_text") or {}).get("v2") if canonical else None
     # A pane is paired with a view only when there is a second view to switch to.
     has_full_text = _has_full_bill(canonical)
@@ -431,7 +551,7 @@ def _build_sidebar(
         '<label class="filter-row"><input type="radio" name="change-filter" value="all" checked> All</label>\n'
         '<label class="filter-row"><input type="radio" name="change-filter" value="structural"> Structural</label>\n'
         "</div>\n"
-        f"{_build_change_groups(view, order_map)}\n"
+        f"{_build_change_groups(view, order_map, removed_order)}\n"
         "</div>"
     )
     # The tree builder owns the navigation outright (#462). It also renders the
@@ -514,7 +634,11 @@ def _heading(bill: dict) -> str:
     return f"{label} — {title}" if title else label
 
 
-def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = None) -> str:
+def _cards_section_html(
+    view: DiffView,
+    order_map: dict[tuple, int] | None = None,
+    removed_order: dict[tuple[str, ...], int] | None = None,
+) -> str:
     """Cards section: cards grouped under their tree-node headings (#172).
 
     One ``<details class="change-group" open>`` per node_path segment, nested to
@@ -524,33 +648,78 @@ def _cards_section_html(view: DiffView, order_map: dict[tuple, int] | None = Non
     keeps ``id="change-{original index}"`` — the sidebar hrefs link by
     change-order index, so grouping may reorder the DOM but never renumber. Sibling groups follow v2 document order when
     ``order_map`` is given. Changes without a node_path trail in flat
-    ``group_label`` groups; when NO change has one (no tree in the canonical)
-    the section renders flat exactly as before.
+    ``group_label`` groups, then removed changes in their own section
+    (``_removed_cards_html``); when NO change has a node_path or a removed_path
+    (no tree and no earlier paths in the canonical) the section renders flat.
+
+    A later-version group whose label path exactly matches removals' earlier
+    parent path carries a pointer to that heading in the removed section
+    (``_removed_pointers``). The pointer is looked up after the removed section is
+    built and only rendered.
     """
     if not view.changes:
         return '<p class="no-changes">No changes found between these versions.</p>'
-    if all(not c.node_path for c in view.changes):
+    if all(not c.node_path and not c.removed_path for c in view.changes):
         return "\n".join(_build_card(c, i) for i, c in enumerate(view.changes))
     root, fallback = _group_changes_by_node(view)
-
-    def group_html(label: str, inner: str) -> str:
-        return (
-            '<details class="change-group" open>'
-            f'<summary class="change-group__label disclosure">{escape(label)}</summary>\n{inner}\n</details>'
-        )
+    removed_section, removed_ids = _removed_cards_html(view, removed_order)
+    pointers = _removed_pointers(view)
 
     def render(seg: tuple[str, str], node: dict, path: tuple) -> str:
         label, _level = seg
         p = path + (seg,)
+        labels = tuple(lbl for lbl, _lvl in p)
+        pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers else ""
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
         kids = "\n".join(render(s, c, p) for s, c in _ordered_children(node, p, order_map))
-        return group_html(label, "\n".join(part for part in (cards, kids) if part))
+        return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part))
 
     blocks = [render(seg, node, ()) for seg, node in _ordered_children(root, (), order_map)]
     for label in _fallback_labels(fallback):
         cards = "\n".join(_build_card(view.changes[i], i) for i in fallback[label])
-        blocks.append(group_html(label, cards))
+        blocks.append(_card_group_html(label, cards))
+    if removed_section:
+        blocks.append(removed_section)
     return "\n".join(blocks)
+
+
+def _card_group_html(label: str, inner: str, extra_class: str = "", group_id: str = "") -> str:
+    id_attr = f' id="{group_id}"' if group_id else ""
+    return (
+        f'<details class="change-group{extra_class}"{id_attr} open>'
+        f'<summary class="change-group__label disclosure">{escape(label)}</summary>\n{inner}\n</details>'
+    )
+
+
+def _removed_cards_html(
+    view: DiffView, removed_order: dict[tuple[str, ...], int] | None
+) -> tuple[str, dict[tuple[str, ...], str]]:
+    """The "Removed from the earlier version" card section (#784).
+
+    Nested by each removal's earlier breadcrumb, siblings in earlier-version
+    document order (``_ordered_removed_children``), then a "(no heading path recorded)" group
+    for removals the document gives no earlier path. Returns the section ("" when
+    nothing was removed) and each nested group's element id by breadcrumb, which
+    the later-version pointers link to. Ids number groups in render order, so they
+    depend on the removals alone.
+    """
+    root, outside = _group_removed(view)
+    ids: dict[tuple[str, ...], str] = {}
+    if not root["children"] and not outside:
+        return "", ids
+
+    def render(label: str, node: dict, path: tuple) -> str:
+        p = path + (label,)
+        ids[p] = f"removed-group-{len(ids)}"
+        group_id = ids[p]
+        cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
+        kids = "\n".join(render(s, c, p) for s, c in _ordered_removed_children(node, p, removed_order))
+        return _card_group_html(label, "\n".join(part for part in (cards, kids) if part), group_id=group_id)
+
+    blocks = [render(label, node, ()) for label, node in _ordered_removed_children(root, (), removed_order)]
+    if outside:
+        blocks.append(_card_group_html(NO_PATH_LABEL, "\n".join(_build_card(view.changes[i], i) for i in outside)))
+    return _card_group_html(REMOVED_SECTION_LABEL, "\n".join(blocks), " removed-section"), ids
 
 
 def _has_full_bill(canonical: dict | None) -> bool:
@@ -837,6 +1006,7 @@ def _views_html(
     view: DiffView,
     canonical: dict | None,
     order_map: dict[tuple, int] | None = None,
+    removed_order: dict[tuple[str, ...], int] | None = None,
 ) -> str:
     """Main content: classic cards, or the toggled changes/full-text pair.
 
@@ -844,8 +1014,10 @@ def _views_html(
     """
     if order_map is None:
         order_map = _node_order_map((canonical.get("tree") or {}).get("v2") if canonical else None)
+    if removed_order is None:
+        removed_order = _removed_order_map(((canonical or {}).get("tree") or {}).get("v1"))
     changes_inner = (
-        f"<h2>Changes</h2>\n{_cards_section_html(view, order_map)}"
+        f"<h2>Changes</h2>\n{_cards_section_html(view, order_map, removed_order)}"
         '\n<p class="filter-empty" id="filter-empty" hidden>No changes match this filter.</p>'
     )
     if not _has_full_bill(canonical):
@@ -995,9 +1167,10 @@ def format_diff_html(
     # One order map for both panes, from the join's canonical — guarantees the
     # sidebar and cards can never sort their shared groups from different trees.
     order_map = _node_order_map((canonical.get("tree") or {}).get("v2"))
+    removed_order = _removed_order_map((canonical.get("tree") or {}).get("v1"))
     # The TOC's anchors index the text the full-bill view renders, so it reads the
     # same printed layout.
-    sidebar = _build_sidebar(view, printed_document(canonical)[0], order_map)
+    sidebar = _build_sidebar(view, printed_document(canonical)[0], order_map, removed_order)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1028,7 +1201,7 @@ def format_diff_html(
 {_export_button_html(canonical)}
 </div>
 </div>
-{_views_html(view, canonical, order_map)}
+{_views_html(view, canonical, order_map, removed_order)}
 </div>
 </div>
 {_export_modal_html(canonical)}
@@ -1290,6 +1463,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       // Full-bill content is not inside <details>, so nothing to reveal here.
       syncCurrentTo(e.target.closest(FULL_TARGET_SEL));
+      return;
+    }
+    // A removed-changes pointer (#784) targets a heading group in the removed
+    // section: open it and its ancestors, then resume Prev/Next from its first card.
+    var pointer = e.target.closest('a[href^="#removed-group-"]');
+    if (pointer) {
+      var group = document.getElementById(pointer.getAttribute('href').slice(1));
+      if (group) { revealCard(group); group.open = true; }
+      syncCurrentFrom(group);
       return;
     }
     var link = e.target.closest('a[href^="#change-"]');

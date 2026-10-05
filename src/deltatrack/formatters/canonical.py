@@ -545,7 +545,7 @@ def _group_label_from_path(canonical_change: dict) -> str:
 
 
 def _span_join_index(nodes: list[dict]) -> tuple[list[int], list[tuple], list[tuple]]:
-    """Build the own-span containment index for one side's structure tree (#172).
+    """Build the own-span containment index for the later version's structure tree (#172).
 
     Splits spanned nodes into LEAF spans (own spans overlapping no descendant's —
     body slices and heading lines, pairwise disjoint on the corpus) and HULL
@@ -560,7 +560,7 @@ def _span_join_index(nodes: list[dict]) -> tuple[list[int], list[tuple], list[tu
 
     Returns ``(starts, leaves, hulls)``: ``leaves`` as ``(start, end, path)``
     sorted by start with ``starts`` pre-extracted for bisect; ``hulls`` as
-    ``(start, end, depth, path)``. Built once per side per view — the lookup is
+    ``(start, end, depth, path)``. Built once per view — the lookup is
     O(log leaves) + O(hulls) per change (hulls ≈ 1 today), never O(nodes).
     """
     leaves: list[tuple[int, int, tuple]] = []
@@ -617,81 +617,37 @@ def _join_node_path(index: tuple[list[int], list[tuple], list[tuple]], pos: int)
     return best
 
 
-def _v2_label_lookup(nodes: list[dict]) -> dict[str, list[tuple[int, tuple]]]:
-    """Normalized (casefolded, stripped) label -> [(document_order, path)] over
-    one tree, for remapping removed changes' v1 breadcrumbs into v2 groups."""
-    lookup: dict[str, list[tuple[int, tuple]]] = {}
-    order = 0
+def _node_path_for_change(canonical_change: dict, join_index: tuple) -> tuple:
+    """Join one change to its later-version tree node by v2 start offset (#172).
 
-    def walk(ns: list[dict], path: tuple) -> None:
-        nonlocal order
-        for n in ns:
-            label = (n.get("label") or "").strip()
-            p = path + ((label, n.get("level") or ""),) if label else path
-            if label:
-                lookup.setdefault(label.casefold(), []).append((order, p))
-                order += 1
-            walk(n.get("children") or [], p)
-
-    walk(nodes, ())
-    return lookup
-
-
-def _remap_removed_path(v1_path: tuple, v2_lookup: dict) -> tuple:
-    """Place a removed change's v1 breadcrumb into the v2-organized grouping.
-
-    The report groups by the v2 tree, but a removal only exists in v1. Walk the
-    v1 breadcrumb deepest-segment-first; the first segment whose normalized
-    label exists in v2 wins, so the card files under the nearest surviving
-    group ("what left Title III" is findable where the reader looks). Among
-    same-label v2 candidates, prefer the one sharing the longest normalized
-    trailing-path match with the v1 breadcrumb (distinguishes duplicate account
-    names under different agencies), then matching level (an account named like
-    a title must not remap to a same-named title — the #155 phenomenon; a hard
-    level requirement would hurt recall since sides can drift, hence tiebreak
-    only), then document order. Labels drift across independently-serialized
-    sides, hence normalized matching — the returned path carries the v2 node's
-    own labels so group heading and card agree.
-    No label matches at any depth: keep the v1 breadcrumb as its own group.
+    A removed change has no later-version position, so it is not joined: it is
+    listed under its earlier breadcrumb (``removed_path``) in the removed section
+    instead. Filing it inside the later outline would mean matching heading labels
+    across versions, a correspondence the document does not state (ADR 0007, #784).
+    The span dict can be None as a whole (PDF without offset tables, XML without
+    full_text), not just per-side null; both degrade to () rather than raising.
     """
-    if not v1_path:
+    if canonical_change["change_type"] == "removed":
         return ()
-    norm = [label.casefold() for label, _level in v1_path]
-    for i in range(len(v1_path) - 1, -1, -1):
-        candidates = v2_lookup.get(norm[i])
-        if not candidates:
-            continue
-        level = v1_path[i][1]
-
-        def rank(item: tuple[int, tuple], i: int = i, level: str = level) -> tuple[int, int, int]:
-            candidate_norm = [label.casefold() for label, _level in item[1]]
-            k = 0
-            while k < min(len(candidate_norm), i + 1) and candidate_norm[-1 - k] == norm[i - k]:
-                k += 1
-            return (k, 1 if item[1][-1][1] == level else 0, -item[0])
-
-        return max(candidates, key=rank)[1]
-    return v1_path
-
-
-def _node_path_for_change(canonical_change: dict, join_index: dict, v2_lookup: dict) -> tuple:
-    """Join one change to its tree node by start offset, per-side (#172).
-
-    Removals join on the v1 side (their only span, against the v1 tree) and
-    are then remapped into the v2 grouping; everything else joins on its v2
-    start — never a v1 offset against the v2 index, the offset spaces are
-    unrelated. The span dict can be None as a whole (PDF without offset
-    tables, XML without full_text), not just per-side null; both degrade to
-    () rather than raising.
-    """
-    side = "v1" if canonical_change["change_type"] == "removed" else "v2"
-    span = (canonical_change.get("full_text_span") or {}).get(side)
+    span = (canonical_change.get("full_text_span") or {}).get("v2")
     if not span:
         return ()
-    node_path = _join_node_path(join_index[side], span["start"])
-    if side == "v1":
-        return _remap_removed_path(node_path, v2_lookup)
-    return node_path
+    return _join_node_path(join_index, span["start"])
+
+
+def _removed_path(canonical_change: dict) -> tuple[str, ...]:
+    """A removed change's earlier breadcrumb, exactly as the document carries it."""
+    if canonical_change["change_type"] != "removed":
+        return ()
+    return tuple((canonical_change.get("path") or {}).get("v1") or ())
+
+
+def _removed_offset(canonical_change: dict) -> int | None:
+    """A removed change's start in the earlier full text, for ordering only."""
+    if canonical_change["change_type"] != "removed":
+        return None
+    span = (canonical_change.get("full_text_span") or {}).get("v1")
+    return span["start"] if span else None
 
 
 def _card_texts(canonical_change: dict, source: str, full_text: dict | None) -> tuple[str, str]:
@@ -732,7 +688,7 @@ def _card_texts(canonical_change: dict, source: str, full_text: dict | None) -> 
 
 
 def _change_view_from_canonical(
-    canonical_change: dict, source: str, full_text: dict | None, join_index: dict, v2_lookup: dict
+    canonical_change: dict, source: str, full_text: dict | None, join_index: tuple
 ) -> ChangeView:
     heading_html, nav_label_html, degraded = _heading_and_nav(canonical_change, source)
     old_text, new_text = _card_texts(canonical_change, source, full_text)
@@ -747,7 +703,9 @@ def _change_view_from_canonical(
         old_text=old_text,
         new_text=new_text,
         group_label=_group_label_from_path(canonical_change),
-        node_path=_node_path_for_change(canonical_change, join_index, v2_lookup),
+        node_path=_node_path_for_change(canonical_change, join_index),
+        removed_path=_removed_path(canonical_change),
+        removed_offset=_removed_offset(canonical_change),
     )
 
 
@@ -787,8 +745,7 @@ def view_from_canonical(canonical: dict) -> DiffView:
     # full-bill view moves spans onto the printed layout (`print_layout`); joining
     # change spans against a tree in the other offsets would misfile silently (#172).
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
-    join_index = {side: _span_join_index(tree.get(side) or []) for side in ("v1", "v2")}
-    v2_lookup = _v2_label_lookup(tree.get("v2") or [])
+    join_index = _span_join_index(tree.get("v2") or [])
     return DiffView(
         bill_type=canonical["bill"]["type"],
         bill_number=canonical["bill"]["number"],
@@ -799,7 +756,6 @@ def view_from_canonical(canonical: dict) -> DiffView:
         v2_version_number=canonical["versions"]["v2"]["version_number"],
         summary=dict(canonical.get("summary") or {}),
         changes=tuple(
-            _change_view_from_canonical(c, source, full_text, join_index, v2_lookup)
-            for c in canonical.get("changes") or ()
+            _change_view_from_canonical(c, source, full_text, join_index) for c in canonical.get("changes") or ()
         ),
     )
