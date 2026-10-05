@@ -78,6 +78,33 @@ applying them rather than re-guessing them. Glyph geometry and font metrics are 
 source and stay out. This is what keeps the contract presentation-free while letting a
 view be a pure consumer of it.
 
+**The document names the structure its changes sit in.** Each version's outline
+(`tree`) gives every node an identifier, each change names the node it concerns on each
+side, and each node records where its heading row and its own body text sit in
+`full_text`. The producer derives all three while building the document; without them a
+consumer reattaches changes to the outline by character offsets and finds heading rows
+by searching for label text, which is the re-inference the rule above forbids.
+
+Where the producer does not have one of these facts, the document says so instead of
+supplying a substitute. A grouping created only for navigation, such as Front Matter, has
+no heading row in `full_text`; a section with no text of its own has no body; a PDF heading
+the parser did not detect has no position the producer knows, even where its text is
+printed. Each is recorded as absent, and a consumer treats absent as unknown. A position is
+never manufactured to satisfy the shape. Being synthesized is not the test: a container
+built from heading paths whose heading row the producer did emit, such as an XML title,
+records that row.
+
+A node identifier is an address within one document. Generating it is deterministic
+([0008](0008-deterministic-engine.md)): the same inputs under the same implementation
+yield the same identifiers, as they yield the same document. What it does not promise is
+persistence between documents: it is not stable across versions or parser revisions, a
+consumer must not carry it from one document to another, it is not a cross-version
+match key, and it is not the identity a stored artifact records
+([0019](0019-observation-identity.md)). Which
+node in one version corresponds to which node in the other remains the diff engine's
+output; carrying that correspondence in the document is a separate decision, not made
+here. Field shapes are the schema's. Tracking: [DeltaTrack#785](https://github.com/civictechdc/DeltaTrack/issues/785).
+
 Producers are expected to emit schema-valid documents and are tested against the
 schema. The schema defines validity; the DeltaTrack reader carries explicit
 compatibility guards but is not a general schema validator, so "invalid" is a

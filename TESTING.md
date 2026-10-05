@@ -97,15 +97,17 @@ that every comparison was read and signed off by a person.
 ### 4. Draft-bill comparisons (PDF)
 
 Draft bills circulate as PDFs with no official machine-readable version behind
-them, so they are handled and tested separately. For one draft bill, we built a
-fixture by hand: a written list of the changes the comparison ought to surface,
-including where each change appears (page and line) and what kind of change it
-is. The tool's PDF comparison is then checked against that list.
+them, so they are handled and tested separately. For one pair of PDF versions,
+we built a fixture by hand: a written list of the changes the comparison ought to
+surface, including where each change appears (page and line) and what kind of
+change it is. The tool's PDF comparison is then checked against that list.
 
-**Limit:** this is the newest and thinnest area, and the hand-built list so far
-covers a single draft bill. It is also the only place the wording of a bill is
-checked against a human reading of it: for published bills, check 6 uses the
-official text instead, which no draft has.
+**Limit:** this is the newest and thinnest area. The hand-built list covers a
+single pair, HR 8752 (118th Congress) as reported in the House and as passed by
+the House. Both are published prints, not drafts, so no comparison of two drafts
+has a hand-checked list yet (#527). It is also the only place the wording of a
+bill is checked against a human reading of it: for published bills, check 6 uses
+the official text instead, which no draft has.
 
 ### 5. Cross-checking the PDF reading against the official text
 
