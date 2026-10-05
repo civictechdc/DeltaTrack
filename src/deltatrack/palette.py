@@ -13,9 +13,11 @@ stylesheet, and the loading tab is written via `document.write` and can resolve 
 "One palette" can therefore only mean one source generated into each surface, never one
 file they all link.
 
-Keep the set to what the stylesheets actually use. An unreferenced token ships in every
-report and styles nothing, which is how eleven of them accumulated with the whole suite
-green (#667). `tests/test_committed_examples.py` gates that against a rendered report.
+Each surface embeds only the tokens its own rules use (`referenced`), not the whole file,
+so a token one surface needs ships nowhere else. An unreferenced token would ship in
+every report and style nothing, which is how eleven of them accumulated with the whole
+suite green (#667). `tests/test_committed_examples.py` gates both halves: what a rendered
+report declares, and that every token here is used by some surface.
 
 The four diff states (added, removed, modified, moved) are the vocabulary bill
 comparison needs, and each carries a background and a foreground.
@@ -31,6 +33,7 @@ from importlib.resources import files
 
 _COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _DECLARATION = re.compile(r"(--[\w-]+)\s*:\s*([^;]+);")
+_VAR_REFERENCE = re.compile(r"var\(\s*(--[\w-]+)")
 
 
 def _read_tokens() -> dict[str, str]:
@@ -62,6 +65,27 @@ LANDING_SUBSET: tuple[str, ...] = (
     "--font-serif",
     "--shadow-soft",
 )
+
+
+def referenced(css: str, palette: dict[str, str] = PALETTE) -> tuple[str, ...]:
+    """The tokens `css` uses, in palette order.
+
+    A `var()` fallback counts as a use, and a token whose value refers to another brings
+    that one along, so nothing a rule needs is left out. Comments are not uses: a token
+    named only in prose would otherwise ship and style nothing. A name the palette does
+    not declare raises, because a browser resolves it to nothing without complaint.
+    """
+    pending = set(_VAR_REFERENCE.findall(_COMMENT.sub("", css)))
+    found: set[str] = set()
+    while pending:
+        name = pending.pop()
+        if name in found:
+            continue
+        if name not in palette:
+            raise ValueError(f"{name} is used but styles/tokens.css does not declare it")
+        found.add(name)
+        pending.update(_VAR_REFERENCE.findall(palette[name]))
+    return tuple(name for name in palette if name in found)
 
 
 def declarations(names: tuple[str, ...] | None = None, indent: str = "  ") -> str:

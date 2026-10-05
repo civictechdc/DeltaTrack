@@ -23,7 +23,7 @@ from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import view_from_canonical
 from deltatrack.formatters.print_layout import printed_document
 from deltatrack.formatters.view_model import ChangeView, DiffView
-from deltatrack.palette import root_block
+from deltatrack.palette import referenced, root_block
 
 __all__ = ["format_diff_html"]
 
@@ -1243,19 +1243,20 @@ def format_diff_html(
 # applied, so both pipelines share one stylesheet.
 # ---------------------------------------------------------------------------
 
-# The palette is `styles/tokens.css`, read by `deltatrack.palette`. Every report embeds it at render
-# time, which is what keeps a report zero-egress (ADR 0011): nothing is fetched when one
-# is opened. Gated by `test_the_report_palette_declares_exactly_what_it_uses`, which
-# reads a rendered report and fails on a token this stylesheet does not use.
-_DESIGN_TOKENS_CSS = root_block()
-
 #: The report's rule files, in cascade order. Read from the package and embedded rather
 #: than linked, for the same reason as the palette: a report carries its whole stylesheet.
 _STYLESHEETS = ("base.css", "report.css")
 
-_CSS = _DESIGN_TOKENS_CSS + "".join(
-    files("deltatrack").joinpath("styles", name).read_text(encoding="utf-8") for name in _STYLESHEETS
-)
+_RULES_CSS = "".join(files("deltatrack").joinpath("styles", name).read_text(encoding="utf-8") for name in _STYLESHEETS)
+
+# The palette is `styles/tokens.css`, read by `deltatrack.palette`. Every report embeds
+# the tokens its rules use at render time, which is what keeps a report zero-egress (ADR
+# 0011): nothing is fetched when one is opened. Only those tokens, because the file also
+# holds tokens other surfaces need. Gated by
+# `test_the_report_palette_declares_exactly_what_it_uses`, which reads a rendered report.
+_DESIGN_TOKENS_CSS = root_block(referenced(_RULES_CSS))
+
+_CSS = _DESIGN_TOKENS_CSS + _RULES_CSS
 
 
 _JS = """\
