@@ -1,0 +1,40 @@
+/* DeltaTrack's design tokens: every color, font stack, radius and shadow the report's
+   stylesheets use, as custom properties. `deltatrack.palette` reads this file and each
+   report embeds the declarations in its own `:root` (ADR 0011, reports are zero-egress).
+   Ordered by role; the order is what a reader sees in a report's `:root`. One
+   declaration per line, so a value change is a one-line diff in the committed examples. */
+:root {
+  /* Surfaces and text */
+  --background: #f9f7f5;
+  --foreground: #1c1c3a;
+  --card: #ffffff;
+  --border: #e3ddd7;
+  /* Brand */
+  --primary: #2c2c5c;
+  --primary-foreground: #f9f7f5;
+  --secondary: #eef0f8;
+  --muted: #f2f0ed;
+  --muted-foreground: #686881;
+  --accent: #ede8df;
+  --gold: #c9944e;
+  /* Status */
+  --destructive: #c04040;
+  --success: #3d9b6d;
+  /* Diff states, one background/foreground pair each */
+  --diff-add: #d3f0e2;
+  --diff-add-foreground: #1a6647;
+  --diff-remove: #f5ddd8;
+  --diff-remove-foreground: #8a2828;
+  --diff-modified: #f1e6d2;
+  --diff-modified-foreground: #8a6320;
+  --diff-moved: #eef0f8;
+  --diff-moved-foreground: #2c2c5c;
+  /* Geometry */
+  --radius: 0.625rem;
+  /* Typography. System stacks, never a webfont: a report fetches nothing when opened. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Depth */
+  --shadow-soft: 0 1px 2px 0 rgba(28,28,58,0.04), 0 1px 3px 0 rgba(28,28,58,0.06);
+}
