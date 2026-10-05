@@ -1245,7 +1245,9 @@ def format_diff_html(
 
 #: The report's rule files, in cascade order. Read from the package and embedded rather
 #: than linked, for the same reason as the palette: a report carries its whole stylesheet.
-_STYLESHEETS = ("base.css", "report.css")
+#: `components.css` holds the button and badge rules the upload pages share (#774); the
+#: report's own rules come after it, so they can place a control.
+_STYLESHEETS = ("base.css", "components.css", "report.css")
 
 _RULES_CSS = "".join(files("deltatrack").joinpath("styles", name).read_text(encoding="utf-8") for name in _STYLESHEETS)
 

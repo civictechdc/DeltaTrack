@@ -1,0 +1,4 @@
+/* Buttons and badges: one class and one rule per control, for every DeltaTrack surface
+   (#774). A report embeds this file; the upload pages get a copy generated into their
+   stylesheet. Each rule sets its own type, so a control looks the same whatever the
+   page around it sets. A page's own rules may place a control but not restyle it. */

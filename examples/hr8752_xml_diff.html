@@ -36,6 +36,10 @@
 body { font-family: var(--font-sans); color: var(--foreground); background: var(--background); line-height: 1.6;
   -webkit-font-smoothing: antialiased; }
 h1, h2, h3, h4 { font-family: var(--font-serif); letter-spacing: -0.02em; }
+/* Buttons and badges: one class and one rule per control, for every DeltaTrack surface
+   (#774). A report embeds this file; the upload pages get a copy generated into their
+   stylesheet. Each rule sets its own type, so a control looks the same whatever the
+   page around it sets. A page's own rules may place a control but not restyle it. */
 .layout { display: flex; min-height: 100vh; }
 
 /* Sidebar */
