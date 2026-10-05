@@ -85,9 +85,19 @@ side, and each node records where its heading row and its own body text sit in
 consumer reattaches changes to the outline by character offsets and finds heading rows
 by searching for label text, which is the re-inference the rule above forbids.
 
-A node identifier is an address within one document. It is not stable across versions,
-parser revisions or regenerations, it is not a cross-version match key, and it is not
-the identity a stored artifact records ([0019](0019-observation-identity.md)). Which
+Where the producer does not have one of these facts, the document says so instead of
+supplying a substitute. A synthesized container has no heading row of its own in the
+source, a section with no text of its own has no body, and a PDF heading the parser could
+not recover has no reliable position; each is recorded as absent, and a consumer treats
+absent as unknown. A position is never manufactured to satisfy the shape.
+
+A node identifier is an address within one document. Generating it is deterministic
+([0008](0008-deterministic-engine.md)): the same inputs under the same implementation
+yield the same identifiers, as they yield the same document. What it does not promise is
+persistence between documents: it is not stable across versions or parser revisions, a
+consumer must not carry it from one document to another, it is not a cross-version
+match key, and it is not the identity a stored artifact records
+([0019](0019-observation-identity.md)). Which
 node in one version corresponds to which node in the other remains the diff engine's
 output; carrying that correspondence in the document is a separate decision, not made
 here. Field shapes are the schema's. Tracking: TRACKING-ISSUE-NODE-IDENTITY.
