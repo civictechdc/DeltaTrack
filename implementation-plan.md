@@ -78,6 +78,24 @@ Later, separately: a shared reader for the text layouts, and #736 rebased onto B
 **Expected:** misfiled removals 93 (XML) and 26 (PDF) → 0. Pointers on 285 of the 582 XML
 removals the view places today.
 
+**As built (PR A), where it differs from the above:**
+- **The pointer is one link,** to the same-name heading's group in the removed section, with a count
+  of the removals directly under it. A list of links, one per removal labelled by its breadcrumb,
+  was unreadable (31 links on one 114-hr-2029 group).
+- **The positive pointer test uses `c-0024`,** whose earlier parent is `TITLE I › Administrative
+  provisions`. `c-0046`'s parent `… › sec. 122` has no later-version changes in 4→5, so no group
+  renders there to carry a pointer.
+- **Pointers attach only to rendered later-version groups.** Of the 299 XML removals whose
+  earlier parent path exists exactly in the later tree, 279 land on a rendered group. 72 of 202
+  PDF removals get a pointer.
+- **Counts are over all removals**, not only those the old view placed: XML 711 of 711 (20 have no
+  `path.v1`) and PDF 202 of 202 are in the removed section, and none are in a later group.
+- **One PDF gate changed fixture.** `test_pdf_without_account_level_lands_at_section_level`
+  relied on removals joining the earlier tree, and on 113-hr-3547 3→4 they were its only placed
+  changes. It now uses 118-hr-2882 1→4, which has no account levels and later-version changes the
+  join places.
+- **The sidebar has no pointers**; it lists the removed section as its own group.
+
 ---
 
 ## PR B: node identity in the document

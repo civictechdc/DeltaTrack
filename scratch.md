@@ -1992,6 +1992,9 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | External review (GPT) of the brief: node ids/references/spans/reader withstand; container correspondence withdrawn pending controls; corrections recorded (46,942 = all observations; GP node is not heading-only; 98.9% is label agreement, not correctness). Verified points 1, 3, 5 here. Revised plan recorded. | D1, D2, F4b |
 | 2026-10-05 | Decision: "the viewer faithfully represents the diff". F4b resolved as a Removed section with exact-match pointers (option c), buildable now from `path.v1`. | F4b |
 | 2026-10-05 | Opened draft PR civictechdc/DeltaTrack#782 (branch `claude/adr-viewer-fidelity-node-identity`): ADR 0007 fidelity principle + removed-changes rule, ADR 0006 node identity, ADR 0019 scope; two issue drafts in the PR body, not yet filed. For external review before the step 1 spec. | F4b, D1 |
+| 2026-10-05 | Second and third external reviews of #782: determinism and absent-position wording tightened (`b52ea68`); absent-position example narrowed to navigation-only groupings (`10840bb`). Implementation plan written and reviewed. | D1, F4b |
+| 2026-10-05 | Checked for duplicates (none; related: #701, #766, #552/#557, #648, #778) and filed #784 (removed provisions misfiled by label) and #785 (node identity in the document). Replaced the ADR placeholders with links; #782 body now says "Refs #784, #785". | F4b, D1 |
+| 2026-10-05 | PR A (#784) on `claude/removed-changes-section`: removed section + exact-path pointers; `_remap_removed_path` / `_v2_label_lookup` deleted. Measured on the corpus: XML 711/711 and PDF 202/202 removals in the removed section, 0 inside a later group; pointers on 279 XML and 72 PDF removals. Plan corrections below. | F4b |
 
 ## Open questions
 
@@ -2000,7 +2003,7 @@ correspondence gets its own ADR only if and when it is adopted.
 - ~~Convergence criterion: no verdict changes, blind audit finds nothing new, no evidence correction beyond wording.~~ Relaxed by the user before round 4 to "stop if no findings change"; precision corrections don't count. Met in round 4.
 
 - F2/F3/F5 were reclassified as recorded decisions (ADR 0006/0007, schema). Does the team want any of them reopened as ADR changes?
-- F4b: fix narrowly in the view (prefix match), or move v1→v2 container correspondence into the producer?
+- ~~F4b: fix narrowly in the view (prefix match), or move v1→v2 container correspondence into the producer?~~ Decided: neither. Removed section under `path.v1` with exact-path pointers (#784); container correspondence deferred.
 - Keep `DiffView` as the viewer's single input, or drop it and render from C directly? (F6)
 - Should `--financial` facts be in the contract, or deleted? ADR 0006 still describes them as available. (F8)
 - Is the F4 fix one schema minor (additive fields) or does removing the gutter (F5) force a major?
