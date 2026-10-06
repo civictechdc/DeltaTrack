@@ -1,15 +1,19 @@
-"""Every colour a DeltaTrack surface paints comes from `styles/tokens.css` (#775).
+"""Every colour a DeltaTrack surface paints comes from `styles/tokens.css`, and every
+pair it draws is readable (#775).
 
 The tokens file is the single style source (#752): change a value there, regenerate, and
 every surface follows. A colour typed straight into a rule is invisible to that, so it
-keeps its old value through the next palette change while the suite stays green. This
-reads what each surface ships, the way the token census in `test_committed_examples.py`
-does, and fails on any literal colour outside a token declaration.
+keeps its old value through the next palette change while the suite stays green. These
+checks read what each surface ships, the way the token census in
+`test_committed_examples.py` does. They fail on any literal colour outside a token
+declaration, and on any pair in `styles/contrast.toml` below WCAG AA.
 """
 
 from __future__ import annotations
 
 import re
+import tomllib
+from importlib.resources import files
 
 import pytest
 
@@ -82,16 +86,25 @@ def _surfaces() -> dict[str, str]:
     }
 
 
-def _declarations(css: str) -> list[tuple[str, str]]:
-    """Every `property: value` in `css`, comments, strings and `url()`s blanked."""
-    found = []
+def _rules(css: str) -> list[list[tuple[str, str]]]:
+    """Each rule's `property: value` pairs, comments, strings and `url()`s blanked.
+
+    A list rather than a dict, so a property declared twice in one rule keeps both.
+    """
+    rules = []
     for block in _DECLARATION_BLOCK.findall(_COMMENT.sub("", css)):
         block = _URL.sub("url()", _STRING.sub('""', block))
+        rule = []
         for declaration in block.split(";"):
             if ":" in declaration:
                 name, value = declaration.split(":", 1)
-                found.append((name.strip(), " ".join(value.split())))
-    return found
+                rule.append((name.strip(), " ".join(value.split())))
+        rules.append(rule)
+    return rules
+
+
+def _declarations(css: str) -> list[tuple[str, str]]:
+    return [declaration for rule in _rules(css) for declaration in rule]
 
 
 def _literal_colours(css: str) -> list[str]:
@@ -145,3 +158,94 @@ def test_no_surface_paints_a_colour_outside_the_tokens_file():
 )
 def test_each_way_of_writing_a_colour_is_caught(css):
     assert _literal_colours(css), f"{css!r} paints a literal colour but was not flagged"
+
+
+#: WCAG 2.2 AA minimums, by the `kind` a pair declares in `contrast.toml`.
+_MINIMUM_RATIO = {"text": 4.5, "non-text": 3.0}
+_SOLID_HEX = re.compile(r"#(?:[0-9a-f]{3}|[0-9a-f]{6})", re.I)
+_ONLY_A_TOKEN = re.compile(r"var\(\s*(--[\w-]+)\s*\)")
+
+
+def _pairs() -> list[dict[str, str]]:
+    text = files("deltatrack").joinpath("styles", "contrast.toml").read_text(encoding="utf-8")
+    return tomllib.loads(text)["pair"]
+
+
+def _relative_luminance(hex_colour: str) -> float:
+    digits = hex_colour.lstrip("#")
+    if len(digits) == 3:
+        digits = "".join(digit * 2 for digit in digits)
+    linear = []
+    for i in (0, 2, 4):
+        channel = int(digits[i : i + 2], 16) / 255
+        linear.append(channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4)
+    red, green, blue = linear
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+def _contrast(foreground: str, background: str) -> float:
+    lighter, darker = sorted((_relative_luminance(foreground), _relative_luminance(background)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def test_every_declared_pair_meets_wcag_aa():
+    pairs = _pairs()
+    assert pairs, "no pairs parsed from styles/contrast.toml; this check would vacuously pass"
+
+    problems = []
+    seen = set()
+    for pair in pairs:
+        foreground, background, kind = pair["foreground"], pair["background"], pair["kind"]
+        if (foreground, background) in seen:
+            problems.append(f"{foreground} on {background} is listed twice")
+        seen.add((foreground, background))
+        if kind not in _MINIMUM_RATIO:
+            problems.append(f"{foreground} on {background} has kind {kind!r}; use one of {sorted(_MINIMUM_RATIO)}")
+            continue
+        values = [PALETTE.get(foreground, ""), PALETTE.get(background, "")]
+        if not all(_SOLID_HEX.fullmatch(value) for value in values):
+            problems.append(f"{foreground} on {background}: both must be solid hex tokens in tokens.css, got {values}")
+            continue
+        ratio = _contrast(*values)
+        if ratio < _MINIMUM_RATIO[kind]:
+            problems.append(
+                f"{foreground} on {background} is {ratio:.2f}:1, below {_MINIMUM_RATIO[kind]}:1 ({pair['where']})"
+            )
+
+    assert not problems, "colour pairs in styles/contrast.toml fail WCAG AA:\n" + "\n".join(problems)
+
+
+def test_every_pair_a_rule_draws_is_declared():
+    """`contrast.toml` covers what the stylesheets draw, so the check above can't go stale.
+
+    Two things a rule says outright: a rule setting both `color` and `background` to
+    tokens draws that pair, and a token used as `color` is text on *something*. A pair
+    the file doesn't list would pass the contrast check by never being checked.
+    """
+    declared = {(pair["foreground"], pair["background"]) for pair in _pairs()}
+    foregrounds = {foreground for foreground, _ in declared}
+
+    drawn, text_colours = {}, {}
+    for surface, css in _surfaces().items():
+        for rule in _rules(css):
+            values = dict(rule)
+            colour = _ONLY_A_TOKEN.fullmatch(values.get("color", ""))
+            fill = _ONLY_A_TOKEN.fullmatch(values.get("background", values.get("background-color", "")))
+            if colour:
+                text_colours.setdefault(colour[1], surface)
+            if colour and fill:
+                drawn.setdefault((colour[1], fill[1]), surface)
+
+    assert drawn, "no rule found setting both color and background; this check would vacuously pass"
+
+    undeclared = {f"{fg} on {bg}": surface for (fg, bg), surface in drawn.items() if (fg, bg) not in declared}
+    assert not undeclared, (
+        f"rules draw colour pairs styles/contrast.toml doesn't list (pair: surface): {undeclared}. "
+        "Add each, with where it is drawn."
+    )
+
+    unplaced = {token: surface for token, surface in text_colours.items() if token not in foregrounds}
+    assert not unplaced, (
+        f"tokens used as text colour that no pair in styles/contrast.toml names as a foreground "
+        f"(token: surface): {unplaced}. Add a pair for each background it is drawn on."
+    )
