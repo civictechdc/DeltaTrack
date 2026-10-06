@@ -11,6 +11,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 ## Contents
 
 1. [Resume here: status as of 2026-10-05](#resume-here-status-as-of-2026-10-05)
+1. [Targeted review register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) (G1–G9)
 1. [Current register](#current-register) (authoritative evidence per finding)
 1. [Decisions](#decisions) (principle; F4b)
 2. [Stage IDs](#stage-ids)
@@ -72,6 +73,43 @@ a full re-audit** (full audit deferred until #810, #807, #808 land, or before #7
   then a falsification pass on every finding (reproduce on `develop`, stamp date + sha), as in the
   audit rounds. Findings go in a new register section here, numbered G1…; file issues only after the
   user reviews them.
+
+### Targeted review register (G-findings, converged 2026-10-06, `develop` 5a7cb20)
+
+Round 1: two independent reviewers (A from the code, B from the schema's guarantees). Round 2: two
+fresh reviewers (C: node-identity wiring, entry points, JS; D: viewer degrade paths, print layout,
+pointers, browser tests), each also challenging round 1. Every finding below was reproduced on
+`develop` 5a7cb20 on 2026-10-06. **Converged:** round 2 changed no decision (file / severity); it
+only sharpened the G1 and G2 fixes and added two nits (G8, G9). Not filed: awaiting user review.
+
+Answer to the review's question: **no new code re-infers a fact the document states, decides in the
+wrong stage, or couples viewer ↔ producer outside the document.** The findings are gates that pass
+when they should fail (G1, G2, G5), contract enforcement gaps (G3, G4, G6), and nits.
+
+| # | Sev | Finding | Fix (as converged) |
+|---|---|---|---|
+| G1 | should-fix | `tests/test_import_direction.py` is defeatable: a function-local viewer import of any engine module that loads without pypdfium2 (`amounts`, `matching`, `similarity`, `version_stems`, `parsers.committee_report`) passes 22/22; so does an import only reached when `source == "pdf"` or in an error branch, and a lazy engine→viewer import in `canonical.xml_diff_to_canonical`. Reproduced: reviewer A's mutation diff → `22 passed`. | Static AST scan of **every file in `VIEWER_MAY_LOAD`** (incl. package `__init__`s, `print_layout`, `_text`, `palette`, `view_model`, `schema_version`): imports at any depth, `from X import Y` read as `X.Y` (else `from deltatrack import matching` passes), flag non-literal `importlib.import_module`/`__import__`. Engine side: no import at any depth of a viewer-only module or `compare.*`, with the three existing CLI imports allowlisted (`diff_bill.py:2075`, `diff_pdf.py:1306`, `:1325`; the #62 cycle). Keep the blocked render, add a saved PDF document **with `print_breaks`** (only then does `print_side` run). |
+| G2 | should-fix | PDF `body_span` "own text, never children's" has no gate beyond byte snapshots: a mutation widening every PDF body to its subtree's end passes all 280 tests in the node-identity, join, refs and print-layout suites; only `test_pdf_canonical_baseline` (13 fail) and `test_committed_examples` catch it, and baseline PRs re-bless those. The containment check gets easier as a body grows. 1,750 refs whose change has no span on that side are checked only for existence (C's probe: 0 wrong refs across all 19,210 XML / 7,253 PDF refs today). | Assert **all `body_span`s on a side are pairwise disjoint** (holds on every corpus pair today: 0 overlaps), which also catches a body running into its next sibling; check span-less refs against the node's `full_text_span`/`location`. Only `print_layout` reads `body_span` in-repo, so this guards the published contract. |
+| G3 | nit | `xml_diff_to_canonical(tree=…)` without `node_ids` emits `node: null` beside a non-null tree, against the schema ("null when the document has no tree"). Not reachable from `compare/` (every XML entry point passes `node_ids`). PDF analogue: `full_text` without `line_offsets` → empty trees, every applicable side null. Reproduced. | Raise when a tree is given without `node_ids`. |
+| G4 | nit | JSON Schema doesn't enforce markdown guarantees: `TreeNode.id` accepts the wrong side prefix; empty/inverted `Offset` validates (reproduced: 0 errors each). `diff_html._in_tree_order` parses the id suffix as preorder, a guarantee stated only in markdown (can't crash: the pattern is numeric). | Record each node's position in `_node_chains`' walk instead of parsing ids; per-side `TreeNode` defs for the prefix; doc says emptiness is not schema-checkable. |
+| G5 | nit | `test_span_producers_never_search_the_text` bans only `find/index/search/…`; `partition`/`split`/`in` pass, and only six listed functions are scanned. Corpus pins catch the reviewer's `partition` mutation (11 fail), so the property is protected; the scan's claim is not. | Widen the banned set or drop the claim and rely on the pins. |
+| G6 | nit (predates the reviewed PRs) | `main` is at schema 2.0; `develop` holds two unreleased versions, 3.0 (#671) and 3.1 (opened by #653 on 2026-10-04 02:22, before the "share one unreleased version" rule landed in 51fd14d at 18:10). A saved 3.0 document now renders flat by top label (deliberate, `test_a_document_without_node_identity_groups_nothing`), harmless only because 3.0 never shipped. No test ties `schema/canonical-diff.md`'s version to `SCHEMA_VERSION`; `tests/test_formatters_canonical.py:38` hardcodes `"3.1"`. | Fold 3.0 + 3.1 into one version before the next `main` promotion; add a doc ↔ constant test. |
+| G7 | info | After `print_layout.printed_document`, 1,395 PDF `heading_span`s cover several printed rows (the whole-word row includes joined continuation lines). Viewer uses only `.start`; the moved document is internal. Reproduced. | Doc: "a whole-word row". |
+| G8 | nit | Pointer suppression counts label paths over groups **with changes**, not over `tree.v2`: on PDF 118-hr-8774 1→2, `('TITLE IV', 'RESEARCH, DEVELOPMENT, TEST AND EVALUATION', '…EVALUATION,')` occurs 5× in the later tree (4 childless) and the pointer still renders (lands correctly here). The comment's "either could be meant" rationale covers the childless headings too. Reproduced. | Count over `tree.v2`, or reword the comment. |
+| G9 | nit | An unresolved change (`node.v2` null/unknown) falls back to a flat group named by its path's top label, beside a tree group with the same label (two "TITLE I" headings; fallback has no `data-node`, so no guessing). 0 unresolved refs in the corpus. Reproduced with a hand-built document. | Give the fallback group a distinguishing label. |
+
+**Not findings:** repeated-path container heading rows (no repeated containers in the corpus; the
+synthetic test catches the mutation); 156 PDF / 4,228 XML empty tree `full_text_span`s (older
+behavior, not node identity); `test_pdf_join_consistent_with_anchor_breadcrumb` is weak (case-folded
+containment, one pair) but C's exact-suffix probe passes everywhere (optional upgrade).
+
+**Checked sound:** XML ordinals survive `filter_diff` (8 pairs × 3 filters, 3,282 changes, 0
+mismatches) and every XML entry point shares one `BillTree` between diff and serializer; PDF anchors
+are never copied, colliding anchors stay distinct; all refs resolve, none dangling or wrong-side;
+viewer reads only `node.v2`, ids and `heading_span`; no JS reads `data-node`, labels or offsets to
+place changes; degrade paths (pre-identity, null/empty tree, `node: {}`, id-less labeled nodes) don't
+crash and leave no dead TOC links; nav counts equal descendant items; print layout keeps ids, nullness
+and bounds; fast tests pin `data-node` and group order.
 
 ### Next, in order (agreed with the user)
 
