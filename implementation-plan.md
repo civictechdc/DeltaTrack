@@ -255,6 +255,20 @@ merge into one node (#552, #557). Identifiers are assigned to the merged tree as
 - `test_report_from_document` stays byte-identical.
 - Committed examples are regenerated and reviewed.
 
+**As built (PR C), where it differs from the above:**
+- **Groups key on node id**, with `(id, label, level)` breadcrumb steps; siblings sort by the id's
+  number (preorder). Later groups carry `data-node`.
+- **The label-keyed order map survives only for the removed section**, which is nested by `path.v1`
+  labels (decision 3 left as is).
+- **A removed-section pointer needs exactly one later group with its label path**: with groups keyed
+  by node, two same-label groups would both claim the same removals.
+- **A labeled node without an id is hoisted**, like an unlabeled one (the schema allows mixing).
+- **Duplicated top-level headings:** XML 105 → 0; PDF 19 → 4, all on 114-hr-2029 3→4, whose later
+  tree has two roots for each of TITLE I–IV. The gate allows exactly that pair.
+- **TOC:** 185 of 34,715 XML links move; later nodes on a repeated path (null `heading_span`) now link
+  to their own text rather than an earlier node's heading. "Receipts collected" → 904730.
+- Opened as civictechdc/DeltaTrack#806 (closes #785 and #701).
+
 ---
 
 ## Decisions for review

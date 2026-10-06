@@ -50,7 +50,7 @@ re-deciding what another settled.
 
 ### Next, in order (agreed with the user)
 
-1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06); as-built deviations recorded in the plan. PR C is next.
+1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06). **PR C opened as #806** (closes #785, #701): groups by `node.v2`, TOC by `heading_span`; unplaced 1,548→0 XML, 39→0 PDF. As-built notes in the plan.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
    - Schema stays `3.1` (unreleased; versioning rule in `schema/canonical-diff.md`), not 3.2 as first planned.
    - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
@@ -2058,6 +2058,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | #791 merged (`e89e8b1`); #782 merged earlier. F4b moved to resolved. Next: #785 (PR B/C), and the F1 + F15 boundary split. | F4b, F6 |
 | 2026-10-05 | PR B opened as #800: node ids, `changes[].node`, heading/body spans; schema stays 3.1 (unreleased). 0 unresolved refs both pipelines; 10 mutations fire. Next: PR C, F1 + F15 split. | F4a, F4c, F6 |
 | 2026-10-06 | #800 merged. F1 + F15 filed as #801, opened as #802 (independent review: roster widened to every engine module). Next: PR C. | F1, F15 |
+| 2026-10-06 | #802 merged. PR C opened as #806 after independent review (mixed-id crash, ambiguous pointers, circular gate fixed). Next: untracked findings F7a, F7b, F9, F6 → issues. | F4a, F4c, F6, F11 |
 
 ## Open questions
 
