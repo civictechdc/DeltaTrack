@@ -6,11 +6,12 @@
    The colours, fonts and shadow are DeltaTrack's design tokens, the ones the report
    uses, defined in src/deltatrack/styles/tokens.css. The :root block below is
    generated from that file by scripts/render_webapp_css.py and holds only the tokens
-   this file's rules and the processing tab in js/compare.js use (#773). The block
-   after it is the same script's copy of src/deltatrack/styles/components.css, the
-   button and badge rules the report embeds too (#774). Edit the rules after both
-   blocks by hand; change tokens.css or components.css and rerun the script.
-   tests/test_webapp_css.py fails if either block disagrees with its source.
+   this file's rules and the processing tab in js/compare.js use (#773). The next two
+   blocks are the same script's copies of src/deltatrack/styles/base.css, the reset,
+   body and heading rules (#804), and components.css, the button and badge rules
+   (#774), both of which the report embeds too. Edit the rules after the blocks by
+   hand; change a file in src/deltatrack/styles/ and rerun the script.
+   tests/test_webapp_css.py fails if a block disagrees with its source.
 
    The standalone report is not styled from this file. It carries its own embedded
    stylesheet, assembled by formatters/diff_html.py from src/deltatrack/styles/, so a saved report renders with
@@ -47,11 +48,19 @@
   --diff-moved-foreground: #1f4f8b;
   --radius: 6px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --shadow-soft: 0 1px 2px rgba(20, 30, 50, 0.08);
   --shadow-card-hover: 0 4px 16px rgba(31, 79, 139, 0.18);
 }
 /* END GENERATED tokens */
+
+/* BEGIN GENERATED base by scripts/render_webapp_css.py, copied from src/deltatrack/styles/base.css. Do not edit by hand. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); color: var(--foreground); background: var(--background); line-height: 1.6;
+  -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--font-serif); letter-spacing: -0.02em; }
+/* END GENERATED base */
 
 /* BEGIN GENERATED components by scripts/render_webapp_css.py, copied from src/deltatrack/styles/components.css. Do not edit by hand. */
 /* Buttons and badges: one class and one rule per control, for every DeltaTrack surface
@@ -89,16 +98,9 @@
 .badge[data-type="moved"] { background: var(--diff-moved); color: var(--diff-moved-foreground); }
 /* END GENERATED components */
 
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-
-body {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--foreground);
-  background: var(--background);
-}
+html, body { height: 100%; }
+/* Denser than the report's running text: these pages are short forms, not a bill. */
+body { font-size: 14px; line-height: 1.5; }
 
 button { font: inherit; cursor: pointer; }
 code { font-family: var(--font-mono); font-size: 0.9em; }
