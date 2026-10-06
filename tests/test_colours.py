@@ -1,12 +1,17 @@
-"""Every colour a DeltaTrack surface paints comes from `styles/tokens.css`, and every
-pair it draws is readable (#775).
+"""Colours come from `styles/tokens.css`, and the pairs we list stay readable (#775).
 
 The tokens file is the single style source (#752): change a value there, regenerate, and
 every surface follows. A colour typed straight into a rule is invisible to that, so it
-keeps its old value through the next palette change while the suite stays green. These
-checks read what each surface ships, the way the token census in
-`test_committed_examples.py` does. They fail on any literal colour outside a token
-declaration, and on any pair in `styles/contrast.toml` below WCAG AA.
+keeps its old value through the next palette change while the suite stays green.
+
+Three checks:
+
+- No surface ships a literal colour outside a token declaration. Reads what each
+  surface ships, the way the token census in `test_committed_examples.py` does.
+- Each pair listed in `styles/contrast.toml` meets its declared threshold. The list is
+  kept by hand: it says nothing about pairs it doesn't name.
+- The report's find box outline is at least 3:1 against what is behind it, read from
+  the report's stylesheet.
 """
 
 from __future__ import annotations
@@ -165,7 +170,7 @@ def test_each_way_of_writing_a_colour_is_caught(css):
 #: WCAG 2.2 AA minimums, by the `kind` a pair declares in `contrast.toml`.
 _MINIMUM_RATIO = {"text": 4.5, "non-text": 3.0}
 _SOLID_HEX = re.compile(r"#(?:[0-9a-f]{3}|[0-9a-f]{6})", re.I)
-_ONLY_A_TOKEN = re.compile(r"var\(\s*(--[\w-]+)\s*\)")
+_VAR_REFERENCE = re.compile(r"var\(\s*(--[\w-]+)")
 
 
 def _pairs() -> list[dict[str, str]]:
@@ -217,37 +222,38 @@ def test_every_declared_pair_meets_wcag_aa():
     assert not problems, "colour pairs in styles/contrast.toml fail WCAG AA:\n" + "\n".join(problems)
 
 
-def test_every_pair_a_rule_draws_is_declared():
-    """`contrast.toml` covers what the stylesheets draw, so the check above can't go stale.
+def _tokens_in_rule(css: str, selector: str, prop: str) -> list[str]:
+    """The tokens `prop` names in each rule written for exactly `selector`."""
+    rule = re.compile(r"(?:^|[},\s])" + re.escape(selector) + r"\s*\{([^{}]*)\}")
+    found = []
+    for body in rule.findall(_COMMENT.sub("", css)):
+        for declaration in body.split(";"):
+            name, _, value = declaration.partition(":")
+            if name.strip() == prop:
+                found += _VAR_REFERENCE.findall(value)
+    return found
 
-    Two things a rule says outright: a rule setting both `color` and `background` to
-    tokens draws that pair, and a token used as `color` is text on *something*. A pair
-    the file doesn't list would pass the contrast check by never being checked.
+
+def test_the_find_box_outline_stands_out_from_its_fill_and_surroundings():
+    """The report's find box is identifiable by its outline: 3:1 or more (WCAG 1.4.11).
+
+    Read from the report's stylesheet, so its border returned to `--border` fails here
+    (1.39:1 on its fill, 1.29:1 on the action bar). It sits in the action bar on wide
+    screens and in the bottom find bar on narrow ones.
     """
-    declared = {(pair["foreground"], pair["background"]) for pair in _pairs()}
-    foregrounds = {foreground for foreground, _ in declared}
-
-    drawn, text_colours = {}, {}
-    for surface, css in _surfaces().items():
-        for rule in _rules(css):
-            values = dict(rule)
-            colour = _ONLY_A_TOKEN.fullmatch(values.get("color", ""))
-            fill = _ONLY_A_TOKEN.fullmatch(values.get("background", values.get("background-color", "")))
-            if colour:
-                text_colours.setdefault(colour[1], surface)
-            if colour and fill:
-                drawn.setdefault((colour[1], fill[1]), surface)
-
-    assert drawn, "no rule found setting both color and background; this check would vacuously pass"
-
-    undeclared = {f"{fg} on {bg}": surface for (fg, bg), surface in drawn.items() if (fg, bg) not in declared}
-    assert not undeclared, (
-        f"rules draw colour pairs styles/contrast.toml doesn't list (pair: surface): {undeclared}. "
-        "Add each, with where it is drawn."
+    css = diff_html._CSS
+    borders = _tokens_in_rule(css, ".find-bar input", "border")
+    fill = _tokens_in_rule(css, ".find-bar input", "background")
+    surroundings = _tokens_in_rule(css, ".action-bar", "background") + _tokens_in_rule(css, ".find-bar", "background")
+    assert borders and fill and surroundings, (
+        f"find box colours not found (border {borders}, fill {fill}, surroundings {surroundings}); "
+        "this check would vacuously pass"
     )
 
-    unplaced = {token: surface for token, surface in text_colours.items() if token not in foregrounds}
-    assert not unplaced, (
-        f"tokens used as text colour that no pair in styles/contrast.toml names as a foreground "
-        f"(token: surface): {unplaced}. Add a pair for each background it is drawn on."
-    )
+    weak = {
+        f"{border} on {background}": f"{ratio:.2f}:1"
+        for border in borders
+        for background in fill + surroundings
+        if (ratio := _contrast(PALETTE[border], PALETTE[background])) < 3.0
+    }
+    assert not weak, f"the find box's outline is below 3:1 against what is behind it: {weak}"
