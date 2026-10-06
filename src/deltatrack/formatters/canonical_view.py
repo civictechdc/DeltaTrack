@@ -11,7 +11,6 @@ test_import_direction.py` holds that (#801).
 
 from __future__ import annotations
 
-from bisect import bisect_right
 from html import escape
 
 from deltatrack.formatters.schema_version import SCHEMA_VERSION
@@ -99,95 +98,43 @@ def _group_label_from_path(canonical_change: dict) -> str:
     return parts[0] if parts else ""
 
 
-def _span_join_index(nodes: list[dict]) -> tuple[list[int], list[tuple], list[tuple]]:
-    """Build the own-span containment index for the later version's structure tree (#172).
+def _node_chains(nodes: list[dict]) -> dict[str, tuple[tuple[str, str, str], ...]]:
+    """Node id -> the ``(id, label, level)`` chain of labeled nodes from the root to it.
 
-    Splits spanned nodes into LEAF spans (own spans overlapping no descendant's —
-    body slices and heading lines, pairwise disjoint on the corpus) and HULL
-    spans (a span overlapping a descendant's — today only the synthesized Front
-    Matter node, whose span is the min/max hull of its children; handled
-    generically so any future container files changes correctly instead of
-    silently claiming them). Null spans are skipped; zero-length spans exist by
-    design on PDF (collision/non-monotonic guards) and must claim nothing.
-
-    An unlabeled node contributes its span under the nearest labeled ancestor's
-    path, mirroring how the TOC hoists unlabeled nodes' children.
-
-    Returns ``(starts, leaves, hulls)``: ``leaves`` as ``(start, end, path)``
-    sorted by start with ``starts`` pre-extracted for bisect; ``hulls`` as
-    ``(start, end, depth, path)``. Built once per view — the lookup is
-    O(log leaves) + O(hulls) per change (hulls ≈ 1 today), never O(nodes).
+    The chain is the breadcrumb a change named against that node is grouped under
+    (#785). An unlabeled node adds no step, so its changes group under its nearest
+    labeled ancestor, as the table of contents hoists its children. A node without an
+    ``id`` (a document from before node identity, or one mixing the two) is hoisted the
+    same way: a group is keyed on the node's id, so one without an id cannot be one.
     """
-    leaves: list[tuple[int, int, tuple]] = []
-    hulls: list[tuple[int, int, int, tuple]] = []
+    chains: dict[str, tuple[tuple[str, str, str], ...]] = {}
 
-    def walk(ns: list[dict], path: tuple, depth: int) -> tuple[int, int] | None:
-        lo = hi = None
+    def walk(ns: list[dict], chain: tuple) -> None:
         for n in ns:
             label = (n.get("label") or "").strip()
-            p = path + ((label, n.get("level") or ""),) if label else path
-            sub = walk(n.get("children") or [], p, depth + 1)
-            span = n.get("full_text_span")
-            if span and span["end"] > span["start"]:
-                if sub is not None and span["start"] < sub[1] and sub[0] < span["end"]:
-                    hulls.append((span["start"], span["end"], depth, p))
-                else:
-                    leaves.append((span["start"], span["end"], p))
-                lo = span["start"] if lo is None else min(lo, span["start"])
-                hi = span["end"] if hi is None else max(hi, span["end"])
-            if sub is not None:
-                lo = sub[0] if lo is None else min(lo, sub[0])
-                hi = sub[1] if hi is None else max(hi, sub[1])
-        return None if lo is None else (lo, hi)
+            node_id = n.get("id")
+            step = chain + ((node_id, label, n.get("level") or ""),) if label and node_id else chain
+            if node_id:
+                chains[node_id] = step
+            walk(n.get("children") or [], step)
 
-    walk(nodes, (), 0)
-    leaves.sort()
-    return [leaf[0] for leaf in leaves], leaves, hulls
+    walk(nodes, ())
+    return chains
 
 
-def _join_node_path(index: tuple[list[int], list[tuple], list[tuple]], pos: int) -> tuple:
-    """The (label, level) breadcrumb of the deepest tree node containing ``pos``.
+def _node_path_for_change(canonical_change: dict, chains: dict) -> tuple:
+    """The breadcrumb of the later-version node the document says holds this change.
 
-    Interval stabbing, not a bare bisect: the bisect candidate must pass an
-    end-containment check (spans are disjoint-with-gaps — a position in a gap
-    would otherwise be misfiled to the preceding leaf), and a leaf miss falls
-    through to the deepest containing hull. Front Matter shares its exact start
-    offset with its first child, so a flat sorted index without the leaf/hull
-    split would resolve that tie to the container — the wrong (shallowest) node.
-    Returns () when no span contains ``pos``.
-    """
-    starts, leaves, hulls = index
-    i = bisect_right(starts, pos) - 1
-    if i >= 0:
-        start, end, path = leaves[i]
-        if start <= pos < end:
-            return path
-    best: tuple = ()
-    best_key: tuple[int, int] | None = None
-    for start, end, depth, path in hulls:
-        if start <= pos < end:
-            key = (depth, -(end - start))  # deepest; tiebreak narrowest
-            if best_key is None or key > best_key:
-                best_key, best = key, path
-    return best
-
-
-def _node_path_for_change(canonical_change: dict, join_index: tuple) -> tuple:
-    """Join one change to its later-version tree node by v2 start offset (#172).
-
-    A removed change has no later-version position, so it is not joined: it is
-    listed under its earlier breadcrumb (``removed_path``) in the removed section
-    instead. Filing it inside the later outline would mean matching heading labels
-    across versions, a correspondence the document does not state (ADR 0007, #784).
-    The span dict can be None as a whole (PDF without offset tables, XML without
-    full_text), not just per-side null; both degrade to () rather than raising.
+    Read from ``changes[].node.v2`` (#785): the producer names the node, so nothing
+    here infers it from offsets or labels. A removed change has no later-version node;
+    it is listed under its earlier breadcrumb (``removed_path``) in the removed
+    section. An unresolved reference, or a document without node identity, gives ()
+    and the change groups flat by its path.
     """
     if canonical_change["change_type"] == "removed":
         return ()
-    span = (canonical_change.get("full_text_span") or {}).get("v2")
-    if not span:
-        return ()
-    return _join_node_path(join_index, span["start"])
+    ref = (canonical_change.get("node") or {}).get("v2")
+    return chains.get(ref, ()) if ref else ()
 
 
 def _removed_path(canonical_change: dict) -> tuple[str, ...]:
@@ -243,7 +190,7 @@ def _card_texts(canonical_change: dict, source: str, full_text: dict | None) -> 
 
 
 def _change_view_from_canonical(
-    canonical_change: dict, source: str, full_text: dict | None, join_index: tuple
+    canonical_change: dict, source: str, full_text: dict | None, chains: dict
 ) -> ChangeView:
     heading_html, nav_label_html, degraded = _heading_and_nav(canonical_change, source)
     old_text, new_text = _card_texts(canonical_change, source, full_text)
@@ -258,7 +205,7 @@ def _change_view_from_canonical(
         old_text=old_text,
         new_text=new_text,
         group_label=_group_label_from_path(canonical_change),
-        node_path=_node_path_for_change(canonical_change, join_index),
+        node_path=_node_path_for_change(canonical_change, chains),
         removed_path=_removed_path(canonical_change),
         removed_offset=_removed_offset(canonical_change),
     )
@@ -296,11 +243,8 @@ def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
     source = canonical["versions"]["v1"]["source"]
     full_text = canonical.get("full_text")
-    # The join reads only THIS canonical's tree, in the whole-word text's offsets. The
-    # full-bill view moves spans onto the printed layout (`print_layout`); joining
-    # change spans against a tree in the other offsets would misfile silently (#172).
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
-    join_index = _span_join_index(tree.get("v2") or [])
+    chains = _node_chains(tree.get("v2") or [])
     return DiffView(
         bill_type=canonical["bill"]["type"],
         bill_number=canonical["bill"]["number"],
@@ -311,6 +255,6 @@ def view_from_canonical(canonical: dict) -> DiffView:
         v2_version_number=canonical["versions"]["v2"]["version_number"],
         summary=dict(canonical.get("summary") or {}),
         changes=tuple(
-            _change_view_from_canonical(c, source, full_text, join_index) for c in canonical.get("changes") or ()
+            _change_view_from_canonical(c, source, full_text, chains) for c in canonical.get("changes") or ()
         ),
     )

@@ -167,10 +167,9 @@ def test_toc_group_caret_sits_on_header_line(chromium, tmp_path):
 def _render_grouped_report() -> str:
     """A full standalone report whose cards group under tree nodes (#172).
 
-    Hand-built canonical (the consumed contract) with a v2 tree and change
-    spans in one offset space, so the own-span join is live: one ADDED change
-    directly under TITLE I, two MODIFIED changes under its SALARIES /
-    OPERATIONS accounts. Exercises the real _JS.
+    Hand-built canonical (the consumed contract) whose changes name their v2
+    tree nodes (#785): one ADDED change directly under TITLE I, two MODIFIED
+    changes under its SALARIES / OPERATIONS accounts. Exercises the real _JS.
 
     The change types are load-bearing: the Structural filter selects on
     ``data-type !== 'modified'``, so this shape gives it exactly one survivor,
@@ -181,8 +180,9 @@ def _render_grouped_report() -> str:
     """
     from deltatrack.formatters.diff_html import format_diff_html
 
-    def node(label, level, span, children=()):
+    def node(node_id, label, level, span, children=()):
         return {
+            "id": node_id,
             "label": label,
             "level": level,
             "own_amounts": [],
@@ -190,12 +190,13 @@ def _render_grouped_report() -> str:
             "children": list(children),
         }
 
-    def change(i, start, end, change_type="modified"):
+    def change(i, start, end, change_type="modified", *, node_id):
         return {
             "id": f"c{i}",
             "change_type": change_type,
             "section_number": "",
             "path": {"v1": ["TITLE I"], "v2": ["TITLE I"]},
+            "node": {"v1": None if change_type == "added" else "v1.0", "v2": node_id},
             "location": None,
             "anchor_resolution": "resolved",
             # The appended token survives word_diff as ONE contiguous <ins>
@@ -207,12 +208,13 @@ def _render_grouped_report() -> str:
 
     tree_v2 = [
         node(
+            "v2.0",
             "TITLE I",
             "title",
             {"start": 0, "end": 7},
             [
-                node("SALARIES", "account", {"start": 10, "end": 50}),
-                node("OPERATIONS", "account", {"start": 60, "end": 100}),
+                node("v2.1", "SALARIES", "account", {"start": 10, "end": 50}),
+                node("v2.2", "OPERATIONS", "account", {"start": 60, "end": 100}),
             ],
         ),
     ]
@@ -225,9 +227,9 @@ def _render_grouped_report() -> str:
         },
         "summary": {"added": 1, "removed": 0, "modified": 2, "moved": 0},
         "changes": [
-            change(0, 2, 5, "added"),  # TITLE I direct
-            change(1, 20, 30),  # SALARIES
-            change(2, 70, 80),  # OPERATIONS
+            change(0, 2, 5, "added", node_id="v2.0"),  # TITLE I direct
+            change(1, 20, 30, node_id="v2.1"),  # SALARIES
+            change(2, 70, 80, node_id="v2.2"),  # OPERATIONS
         ],
         "full_text": {"v1": "x" * 120, "v2": "TITLE I\n" + "y" * 112},
         "tree": {"v1": [], "v2": tree_v2},
