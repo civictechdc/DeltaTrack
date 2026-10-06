@@ -888,7 +888,25 @@ def extract_anchors(pages: list[Page]) -> list[Anchor]:
     return _assign_divisions(anchors, _flatten(pages))
 
 
-def breadcrumb_for(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anchor]) -> tuple[str, ...]:
+def anchor_positions(all_anchors: tuple[Anchor, ...] | list[Anchor]) -> dict[Anchor, int]:
+    """Each anchor's index in ``all_anchors``, the first one where several are equal.
+
+    The answer ``list.index`` gives, computed once for the whole sequence. A caller that
+    builds breadcrumbs for many anchors of one document passes this to ``breadcrumb_for``;
+    otherwise every breadcrumb copies the list and searches it from the front, which over
+    a bill's few thousand anchors made building them quadratic.
+    """
+    positions: dict[Anchor, int] = {}
+    for index, anchor in enumerate(all_anchors):
+        positions.setdefault(anchor, index)
+    return positions
+
+
+def breadcrumb_for(
+    anchor: Anchor,
+    all_anchors: tuple[Anchor, ...] | list[Anchor],
+    positions: dict[Anchor, int] | None = None,
+) -> tuple[str, ...]:
     """Assemble an anchor's breadcrumb, prepending its division when present.
 
     Delegates the title/major/agency/grouping walk to ``_breadcrumb_core`` (whose
@@ -900,11 +918,15 @@ def breadcrumb_for(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anchor
     label, so the result is unchanged. The synthesized front-matter ``preamble`` anchor
     has no division by construction (it sits above all divisions).
     """
-    core = _breadcrumb_core(anchor, all_anchors)
+    core = _breadcrumb_core(anchor, all_anchors, positions)
     return (anchor.division, *core) if anchor.division else core
 
 
-def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anchor]) -> tuple[str, ...]:
+def _breadcrumb_core(
+    anchor: Anchor,
+    all_anchors: tuple[Anchor, ...] | list[Anchor],
+    positions: dict[Anchor, int] | None = None,
+) -> tuple[str, ...]:
     """Walk back through `all_anchors` from `anchor` to assemble a parent chain.
 
     For a TITLE anchor: returns just `("TITLE I",)`.
@@ -946,10 +968,15 @@ def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anch
     # (page, line) — the size path emits at most one per line, so no two value-equal
     # anchors exist. Keep that invariant if emitting more; it is gated corpus-wide by
     # test_pdf_anchor_golden.py::test_no_value_equal_duplicate_anchors.
-    try:
-        idx = list(all_anchors).index(anchor)
-    except ValueError:
-        return (anchor.text,)
+    if positions is not None:
+        idx = positions.get(anchor)
+        if idx is None:
+            return (anchor.text,)
+    else:
+        try:
+            idx = list(all_anchors).index(anchor)
+        except ValueError:
+            return (anchor.text,)
     # A run-in subsection (DeltaTrack#96) nests under its enclosing SEC.: extend that
     # section's own breadcrumb by the subsection text. The subsection path is then an
     # exact prefix-extension of the section path, so `build_pdf_tree` adopts the section
@@ -958,7 +985,7 @@ def _breadcrumb_core(anchor: Anchor, all_anchors: tuple[Anchor, ...] | list[Anch
         for j in range(idx - 1, -1, -1):
             prev = all_anchors[j]
             if prev.kind == "section":
-                return (*_breadcrumb_core(prev, all_anchors), anchor.text)
+                return (*_breadcrumb_core(prev, all_anchors, positions), anchor.text)
             if prev.kind == "title":
                 break
         return (anchor.text,)
