@@ -30,6 +30,7 @@ from __future__ import annotations
 import html
 import sys
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -152,6 +153,10 @@ RENDERERS = {"xml": render_xml_diff, "pdf": render_pdf_diff}
 #: visitor lands on and the reports it links cannot drift apart by transcription.
 INDEX_TOKENS = declarations(LANDING_SUBSET)
 
+#: The reset, body and heading rules every DeltaTrack surface shares (#804), embedded
+#: ahead of this page's own rules the way a report embeds them.
+INDEX_BASE = files("deltatrack").joinpath("styles", "base.css").read_text(encoding="utf-8")
+
 INDEX_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,11 +167,8 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
 :root {{
 {tokens}
 }}
-* {{ box-sizing: border-box; }}
-body {{ font-family: var(--font-sans); color: var(--foreground); background: var(--background);
-  line-height: 1.6; margin: 0; padding: 48px 20px; }}
+{base}body {{ padding: 48px 20px; }}
 main {{ max-width: 760px; margin: 0 auto; }}
-h1, h2 {{ font-family: var(--font-serif); letter-spacing: -0.02em; margin: 0; }}
 h1 {{ font-size: 28px; }}
 .lead {{ color: var(--muted-foreground); margin: 12px 0 32px; }}
 .report {{ display: block; background: var(--card); border: 1px solid var(--border);
@@ -232,7 +234,7 @@ def render_index() -> Path:
                 )
             )
     out = EXAMPLES / "index.html"
-    out.write_text(INDEX_TEMPLATE.format(tokens=INDEX_TOKENS, cards="\n\n".join(cards)))
+    out.write_text(INDEX_TEMPLATE.format(tokens=INDEX_TOKENS, base=INDEX_BASE, cards="\n\n".join(cards)))
     return out
 
 
