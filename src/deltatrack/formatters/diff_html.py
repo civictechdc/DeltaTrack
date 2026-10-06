@@ -63,7 +63,7 @@ def _build_card(change: ChangeView, index: int) -> str:
 
     parts = [f'<div class="change{extra_card_class}" id="change-{index}" data-type="{ct}">']
     parts.append('<div class="change__header">')
-    parts.append(f'<span class="change-type" data-type="{ct}">{ct}</span>')
+    parts.append(f'<span class="badge" data-type="{ct}">{ct}</span>')
     parts.append(f"<h3{h3_class}>{change.heading_html}</h3>")
     if change.section_number:
         parts.append(f'<span class="section-number">{escape(change.section_number)}</span>')
@@ -141,7 +141,7 @@ def _build_nav_item(change: ChangeView, index: int) -> str:
     return (
         f'<li class="{nav_class}" data-type="{ct}">'
         f'<a href="#change-{index}">'
-        f'<span class="change-type" data-type="{ct}">{ct}</span> '
+        f'<span class="badge" data-type="{ct}">{ct}</span> '
         f"{label}"
         f"</a></li>"
     )
@@ -600,7 +600,7 @@ def _summary_bar_html(summary: dict[str, int]) -> str:
         if count > 0:
             items.append(
                 f'<span class="summary-item">'
-                f'<span class="change-type" data-type="{key}">{key}</span> '
+                f'<span class="badge" data-type="{key}">{key}</span> '
                 f"<strong>{count}</strong>"
                 f"</span>"
             )
@@ -748,9 +748,9 @@ def _view_toggle_html(canonical: dict | None) -> str:
         return ""
     return (
         '<div class="view-toggle" role="tablist" aria-label="View mode">'
-        '<button class="view-toggle__btn is-active" data-view="changes" role="tab"'
+        '<button class="button button--segment is-active" data-view="changes" role="tab"'
         ' aria-selected="true">Changes</button>'
-        '<button class="view-toggle__btn" data-view="full" role="tab"'
+        '<button class="button button--segment" data-view="full" role="tab"'
         ' aria-selected="false">Full bill</button>'
         "</div>"
     )
@@ -1083,7 +1083,7 @@ def _export_button_html(canonical: dict | None) -> str:
     pipeline that supplies it — XML and PDF alike, not PDF-only."""
     if not _has_full_bill(canonical):
         return ""
-    return '<button id="export-open" class="export-btn" type="button">Export and share</button>'
+    return '<button id="export-open" class="button button--primary" type="button">Export and share</button>'
 
 
 def _nav_controls_html(canonical: dict | None) -> str:
@@ -1096,9 +1096,9 @@ def _nav_controls_html(canonical: dict | None) -> str:
         return ""
     return (
         '<div class="nav-controls" role="group" aria-label="Navigate changes">'
-        '<button id="btn-prev" type="button" aria-label="Previous change" disabled>&larr;</button>'
+        '<button id="btn-prev" class="button" type="button" aria-label="Previous change" disabled>&larr;</button>'
         '<span id="nav-counter" class="nav-counter" aria-live="polite">0 / 0</span>'
-        '<button id="btn-next" type="button" aria-label="Next change">&rarr;</button>'
+        '<button id="btn-next" class="button" type="button" aria-label="Next change">&rarr;</button>'
         "</div>"
     )
 
@@ -1114,8 +1114,8 @@ def _find_bar_html(canonical: dict | None) -> str:
         '<div class="find-bar" role="search">'
         '<input id="find-input" type="search" placeholder="Find in view…" aria-label="Find in view">'
         '<span id="find-counter" class="find-counter" aria-live="polite">0 / 0</span>'
-        '<button id="find-prev" type="button" aria-label="Previous match" disabled>&uarr;</button>'
-        '<button id="find-next" type="button" aria-label="Next match" disabled>&darr;</button>'
+        '<button id="find-prev" class="button" type="button" aria-label="Previous match" disabled>&uarr;</button>'
+        '<button id="find-next" class="button" type="button" aria-label="Next match" disabled>&darr;</button>'
         "</div>"
     )
 
@@ -1130,7 +1130,7 @@ def _export_modal_html(canonical: dict | None) -> str:
         return ""
     prompts = "".join(
         f'<li class="prompt-item">'
-        f'<button class="prompt-copy" type="button">Copy</button>'
+        f'<button class="button button--small" type="button">Copy</button>'
         f'<span class="prompt-text">{escape(p)}</span></li>'
         for p in _LLM_PROMPTS
     )
@@ -1142,8 +1142,8 @@ def _export_modal_html(canonical: dict | None) -> str:
         "<h2>Export this comparison</h2>"
         '<p class="export-modal__lead">Download the data, then ask an AI assistant to explain it.</p>'
         '<div class="export-downloads">'
-        '<button id="dl-json" class="export-dl" type="button">Download diff.json</button>'
-        '<button id="dl-html" class="export-dl" type="button">Download report.html</button>'
+        '<button id="dl-json" class="button button--primary" type="button">Download diff.json</button>'
+        '<button id="dl-html" class="button button--primary" type="button">Download report.html</button>'
         "</div>"
         '<div id="export-prompts" class="export-prompts">'
         "<h3>Ask AI</h3>"
@@ -1245,7 +1245,9 @@ def format_diff_html(
 
 #: The report's rule files, in cascade order. Read from the package and embedded rather
 #: than linked, for the same reason as the palette: a report carries its whole stylesheet.
-_STYLESHEETS = ("base.css", "report.css")
+#: `components.css` holds the button and badge rules the upload pages share (#774); the
+#: report's own rules come after it, so they can place a control.
+_STYLESHEETS = ("base.css", "components.css", "report.css")
 
 _RULES_CSS = "".join(files("deltatrack").joinpath("styles", name).read_text(encoding="utf-8") for name in _STYLESHEETS)
 
@@ -1262,7 +1264,7 @@ _CSS = _DESIGN_TOKENS_CSS + _RULES_CSS
 _JS = """\
 document.addEventListener('DOMContentLoaded', function() {
   // View toggle (Changes / Full bill)
-  var toggleBtns = document.querySelectorAll('.view-toggle__btn');
+  var toggleBtns = document.querySelectorAll('.view-toggle [data-view]');
   var sidebarChanges = document.querySelector('.sidebar-changes');
   var sidebarToc = document.querySelector('.sidebar-tree');
   function showView(name) {
@@ -1332,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   // Prompt copy buttons
-  document.querySelectorAll('.prompt-copy').forEach(function(btn) {
+  document.querySelectorAll('.prompt-item .button').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var text = btn.parentElement.querySelector('.prompt-text').textContent;
       navigator.clipboard.writeText(text).then(function() {

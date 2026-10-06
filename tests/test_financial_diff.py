@@ -766,8 +766,8 @@ class TestSectionsWhoseOnlyChangeIsMoney:
         later = [pos for pos, _ in views if pos > start]
         changes_view = html[start : later[0] if later else len(html)]
 
-        # Split on the card's id, not its class. `change` is a prefix of `change-type`,
-        # `change-group`, `change__header` and `change__body`, so matching the class
+        # Split on the card's id, not its class. `change` is a prefix of `change-group`,
+        # `change__header` and `change__body`, so matching the class
         # alone shatters one card into fragments and an amount lands in a different
         # chunk from the heading that scopes it -- which reads as the amount being
         # absent from the report, exactly the defect these tests exist to catch.
