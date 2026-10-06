@@ -50,7 +50,7 @@ re-deciding what another settled.
 
 ### Next, in order (agreed with the user)
 
-1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06). **PR C opened as #806** (closes #785, #701): groups by `node.v2`, TOC by `heading_span`; unplaced 1,548→0 XML, 39→0 PDF. As-built notes in the plan.
+1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06). **PR C merged as #806** (closes #785, #701): groups by `node.v2`, TOC by `heading_span`; unplaced 1,548→0 XML, 39→0 PDF. As-built notes in the plan.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
    - Schema stays `3.1` (unreleased; versioning rule in `schema/canonical-diff.md`), not 3.2 as first planned.
    - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
