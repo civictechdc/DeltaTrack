@@ -13,8 +13,10 @@
 #     content and the alert's text and fill are what a reader sees.
 #   - Disabled controls, drawn at reduced opacity. WCAG exempts inactive components.
 #
-# The test fails if a rule sets both `color` and `background` to a pair missing here,
-# or uses a token as text colour that no entry names as a foreground.
+# This list is kept by hand. The test checks each pair here against its threshold; it
+# does not check that the list names every pair a stylesheet draws. Add a pair when you
+# add a rule that draws one. The report's find box outline has its own check, read
+# from the report's stylesheet.
 
 # Text on the page and on cards
 [[pair]]
@@ -156,10 +158,10 @@ where = "Moved badges and notes"
 foreground = "--border-strong"
 background = "--card"
 kind = "non-text"
-where = "The find box and the upload drop zones, outline against their own fill"
+where = "The upload drop zones, outline against their own fill"
 
 [[pair]]
 foreground = "--border-strong"
 background = "--background"
 kind = "non-text"
-where = "The find box and the upload drop zones, outline against the page around them"
+where = "The upload drop zones, outline against the page around them"
