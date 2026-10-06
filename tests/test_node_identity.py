@@ -424,7 +424,7 @@ def test_the_source_scan_fires_on_a_label_search():
         test_span_producers_never_search_the_text(manufactured)
 
 
-# ---------- The view does not read the new facts yet ----------------------------------
+# ---------- Documents without node identity, and absent spans -------------------------
 
 _DATA_BLOCK = re.compile(r'(<script[^>]*id="diff-data"[^>]*>).*?(</script>)', re.S)
 
@@ -440,16 +440,16 @@ def _without_node_identity(doc: dict) -> dict:
     return doc
 
 
-def test_report_is_unchanged_by_node_identity():
-    """The report renders identically with and without the new fields, outside the embedded document."""
+def test_a_document_without_node_identity_still_renders():
+    """A saved document from before #785 names no nodes: the report groups its changes
+    flat by path instead of guessing a node, and still renders every change."""
     old, new = (
         fixture_path("118-hr-8752", "1_reported-in-house.xml"),
         fixture_path("118-hr-8752", "2_engrossed-in-house.xml"),
     )
-    doc = compare_xml(old.read_bytes(), new.read_bytes())
-    with_facts = _DATA_BLOCK.sub(r"\1\2", format_diff_html(doc))
-    without = _DATA_BLOCK.sub(r"\1\2", format_diff_html(_without_node_identity(doc)))
-    assert with_facts == without
+    doc = _without_node_identity(compare_xml(old.read_bytes(), new.read_bytes()))
+    html = _DATA_BLOCK.sub(r"\1\2", format_diff_html(doc))
+    assert all(f'id="change-{i}"' in html for i in range(len(doc["changes"])))
 
 
 def test_report_renders_when_every_span_is_null():

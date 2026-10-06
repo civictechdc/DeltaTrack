@@ -89,7 +89,43 @@ def changes(title_one="TITLE I"):
     ]
 
 
+def _with_ids(nodes, side):
+    """Give every node its preorder identifier, as the producer does (#785), and
+    return a map from each node's label path to its id."""
+    by_path: dict[tuple[str, ...], str] = {}
+    counter = 0
+
+    def walk(ns, path):
+        nonlocal counter
+        for n in ns:
+            n["id"] = f"{side}.{counter}"
+            counter += 1
+            p = (*path, n["label"]) if n["label"] else path
+            by_path.setdefault(p, n["id"])
+            walk(n["children"], p)
+
+    walk(nodes, ())
+    return by_path
+
+
 def canonical(change_list=None, *, later_tree=None):
+    """A document whose changes name their nodes, the way a producer states them.
+
+    The builder resolves each change's node from its path because these synthetic
+    paths are unique where it matters; a producer resolves it from the parse (#785).
+    A change that already carries ``node`` keeps it.
+    """
+    trees = {"v1": tree_v1(), "v2": tree_v2() if later_tree is None else later_tree}
+    ids = {side: _with_ids(trees[side], side) for side in ("v1", "v2")}
+    change_list = changes() if change_list is None else change_list
+    for c in change_list:
+        if "node" not in c:
+            v1_applies = c["change_type"] in ("removed", "modified", "moved")
+            v2_applies = c["change_type"] in ("added", "modified", "moved")
+            c["node"] = {
+                "v1": ids["v1"].get(tuple(c["path"]["v1"] or ())) if v1_applies else None,
+                "v2": ids["v2"].get(tuple(c["path"]["v2"] or ())) if v2_applies else None,
+            }
     return {
         "schema_version": "3.1",
         "bill": {"type": "hr", "number": 1, "congress": 119},
@@ -98,8 +134,8 @@ def canonical(change_list=None, *, later_tree=None):
             "v2": {"label": "v2", "version_number": 2, "source": "xml"},
         },
         "summary": {"added": 0, "removed": 3, "modified": 2, "moved": 0},
-        "changes": changes() if change_list is None else change_list,
-        "tree": {"v1": tree_v1(), "v2": tree_v2() if later_tree is None else later_tree},
+        "changes": change_list,
+        "tree": trees,
     }
 
 
