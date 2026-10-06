@@ -76,7 +76,9 @@ def _surfaces() -> dict[str, str]:
     regenerated. The upload pages' stylesheet is the committed file, because that is
     what the server sends; `test_webapp_css.py` keeps its generated blocks current.
     """
-    index = render_examples.INDEX_TEMPLATE.format(tokens=render_examples.INDEX_TOKENS, cards="")
+    index = render_examples.INDEX_TEMPLATE.format(
+        tokens=render_examples.INDEX_TOKENS, base=render_examples.INDEX_BASE, cards=""
+    )
     markup = []
     for page in sorted(WEBAPP.glob("*.html")):
         html = page.read_text()
