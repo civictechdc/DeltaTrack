@@ -50,7 +50,7 @@ re-deciding what another settled.
 
 ### Next, in order (agreed with the user)
 
-1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Opened as #800** (2026-10-05); as-built deviations recorded in the plan. Awaiting review/CI.
+1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06); as-built deviations recorded in the plan. PR C is next.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
    - Schema stays `3.1` (unreleased; versioning rule in `schema/canonical-diff.md`), not 3.2 as first planned.
    - Producer-only: `TreeNode.id` (`"v1.17"`, preorder over the final tree), `TreeNode.heading_span` / `body_span` (null = producer lacks the fact), `Change.node {v1, v2}`.
@@ -60,7 +60,7 @@ re-deciding what another settled.
    - Gates in the plan: reference validity, unresolved count (XML 0, PDF 0 of 7,253), duplicate-label check against body_span, determinism across processes, ids ignore labels, absent spans, no manufactured spans (source scan).
    - Expected churn: canonical baselines' digests; committed examples change only inside the embedded `diff-data` JSON.
    - Then **PR C** (the view applies B's facts; deletes `_span_join_index`, `_join_node_path`, label-keyed `_node_order_map`, the TOC label search). Fixes F4a (1,676 unplaceable), F4c, F6, #701. Then #736 rebases onto B/C.
-2. **In parallel: F1 + F15, the code boundary.** Branch `claude/split-canonical-view`, own worktree. No issue yet: check for duplicates (#62 is the import-cycle/acyclic issue, #751 the `pypdfium2` route) and file one if needed.
+2. **In parallel: F1 + F15, the code boundary.** Filed as #801 (no duplicate: #62 closed 2026-10-05, #751 is the XML→`pypdfium2` route). **Opened as #802**: viewer half → `formatters/canonical_view.py`, `SCHEMA_VERSION` → `formatters/schema_version.py`, `tests/test_import_direction.py` (load-closure gate, 5 planted violations fire). Renderer import ~250 → ~50 ms.
    - F1: move `view_from_canonical` and its helpers (`canonical.py` view half: `_heading_and_nav`, `_citation_html`, `_move_info_html`, `_card_texts`, `_span_join_index`, `_join_node_path`, `_node_path_for_change`, `_removed_path`, `_removed_offset`, `_reject_unknown_major`, …) out of `formatters/canonical.py` into a viewer-side module that imports nothing from parsers, `compare/`, `diff_bill`, `diff_pdf` or `pypdfium2`. `SCHEMA_VERSION` must live somewhere both can import without pulling the producers in.
    - Known friction: 5 test files import `view_from_canonical`; `test_canonical_node_join.py` monkeypatches `canonical._span_join_index`; probe `pdf_move_user_facing.py` would break silently (`test_research_probes.py` scans only provision-matching probes); docs name the location (grep `view_from_canonical`).
    - Falsification showed a simulated split renders byte-identical on all 27 + 17 pairs and drops renderer import to ~30–53 ms with no `pypdfium2`.
@@ -2057,6 +2057,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | External review of #791 at `874e696`: two P2s outside corpus coverage, both fixed in `00ef51d` with tests that fail on `874e696`. (1) Pathless-only removals fell back to flat cards while the sidebar showed the removed section; the cards now render flat only when nothing is placed and nothing was removed. (2) A pointer left collapsed child groups closed, so Prev/Next could skip ahead; it now reveals the first card beneath the heading. Merged develop (#782 has merged). | F4b |
 | 2026-10-05 | #791 merged (`e89e8b1`); #782 merged earlier. F4b moved to resolved. Next: #785 (PR B/C), and the F1 + F15 boundary split. | F4b, F6 |
 | 2026-10-05 | PR B opened as #800: node ids, `changes[].node`, heading/body spans; schema stays 3.1 (unreleased). 0 unresolved refs both pipelines; 10 mutations fire. Next: PR C, F1 + F15 split. | F4a, F4c, F6 |
+| 2026-10-06 | #800 merged. F1 + F15 filed as #801, opened as #802 (independent review: roster widened to every engine module). Next: PR C. | F1, F15 |
 
 ## Open questions
 
