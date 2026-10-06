@@ -15,7 +15,9 @@ Each surface embeds only the tokens its own rules use (`referenced`), not the wh
 so a token one surface needs ships nowhere else. An unreferenced token would ship in
 every report and style nothing, which is how eleven of them accumulated with the whole
 suite green (#667). `tests/test_committed_examples.py` gates both halves: what a rendered
-report declares, and that every token here is used by some surface.
+report declares, and that every token here is used by some surface. `tests/test_colours.py`
+gates the other direction: no surface paints a colour that isn't a token, and every pair
+in `styles/contrast.toml` meets WCAG AA (#775).
 
 The four diff states (added, removed, modified, moved) are the vocabulary bill
 comparison needs, and each carries a background and a foreground.

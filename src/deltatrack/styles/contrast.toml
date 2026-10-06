@@ -1,0 +1,167 @@
+# What DeltaTrack draws on what, so `tests/test_colours.py` can hold each pair to WCAG
+# AA (#775). Tokens alone don't say which colour sits on which, so this file does.
+#
+# One entry per foreground/background combination, naming tokens from tokens.css.
+# `kind` sets the minimum ratio:
+#   text      4.5:1, for any text, including badges and links.
+#   non-text  3:1, for an outline or mark that is the only thing showing where a
+#             control is or what state it is in (WCAG 1.4.11).
+# A pair drawn as both text and an indicator is listed once, as text.
+#
+# Not listed, on purpose:
+#   - Borders that identify nothing: card edges, dividers, the alert borders. The card's
+#     content and the alert's text and fill are what a reader sees.
+#   - Disabled controls, drawn at reduced opacity. WCAG exempts inactive components.
+#
+# This list is kept by hand. The test checks each pair here against its threshold; it
+# does not check that the list names every pair a stylesheet draws. Add a pair when you
+# add a rule that draws one. The report's find box outline has its own check, read
+# from the report's stylesheet.
+
+# Text on the page and on cards
+[[pair]]
+foreground = "--foreground"
+background = "--background"
+kind = "text"
+where = "Body text on every surface"
+
+[[pair]]
+foreground = "--foreground"
+background = "--card"
+kind = "text"
+where = "Change cards, the sidebar, panels, buttons"
+
+[[pair]]
+foreground = "--foreground"
+background = "--secondary"
+kind = "text"
+where = "Hovered rows and buttons, the report's summary chips"
+
+[[pair]]
+foreground = "--foreground"
+background = "--muted"
+kind = "text"
+where = "Body text of a change the report could not anchor"
+
+[[pair]]
+foreground = "--foreground"
+background = "--accent"
+kind = "text"
+where = "Find-in-page hits"
+
+[[pair]]
+foreground = "--foreground"
+background = "--diff-add"
+kind = "text"
+where = "New text in a modified change"
+
+[[pair]]
+foreground = "--foreground"
+background = "--diff-remove"
+kind = "text"
+where = "Old text in a modified change"
+
+[[pair]]
+foreground = "--foreground"
+background = "--diff-modified"
+kind = "text"
+where = "Modified spans in the full-bill view"
+
+[[pair]]
+foreground = "--muted-foreground"
+background = "--background"
+kind = "text"
+where = "Lead paragraphs, footers, the action bar's counters"
+
+[[pair]]
+foreground = "--muted-foreground"
+background = "--card"
+kind = "text"
+where = "Secondary text on cards and in the sidebar; also the active segment's edge against an inactive one"
+
+[[pair]]
+foreground = "--muted-foreground"
+background = "--muted"
+kind = "text"
+where = "Citations, the heading of an unanchored change"
+
+[[pair]]
+foreground = "--muted-foreground"
+background = "--secondary"
+kind = "text"
+where = "Counts in a hovered sidebar row"
+
+[[pair]]
+foreground = "--primary"
+background = "--card"
+kind = "text"
+where = "Links and titles on cards"
+
+[[pair]]
+foreground = "--primary"
+background = "--background"
+kind = "text"
+where = "Links on the page; the hovered drop zone's border against the page"
+
+[[pair]]
+foreground = "--primary"
+background = "--secondary"
+kind = "text"
+where = "Disclosure arrow on a hovered row; the hovered drop zone's border against its fill"
+
+# Filled controls
+[[pair]]
+foreground = "--primary-foreground"
+background = "--primary"
+kind = "text"
+where = "Primary buttons, the current find hit"
+
+[[pair]]
+foreground = "--primary-foreground"
+background = "--primary-hover"
+kind = "text"
+where = "A hovered primary button"
+
+[[pair]]
+foreground = "--card"
+background = "--muted-foreground"
+kind = "text"
+where = "The active segment of a segmented control"
+
+# Diff states
+[[pair]]
+foreground = "--diff-add-foreground"
+background = "--diff-add"
+kind = "text"
+where = "Added badges and text, the upload success message, a filled drop zone and its border"
+
+[[pair]]
+foreground = "--diff-remove-foreground"
+background = "--diff-remove"
+kind = "text"
+where = "Removed badges and text, the upload error message"
+
+[[pair]]
+foreground = "--diff-modified-foreground"
+background = "--diff-modified"
+kind = "text"
+where = "Modified badges, the 'Coming soon' badge"
+
+[[pair]]
+foreground = "--diff-moved-foreground"
+background = "--diff-moved"
+kind = "text"
+where = "Moved badges and notes"
+
+# Control outlines
+[[pair]]
+foreground = "--border-strong"
+background = "--card"
+kind = "non-text"
+where = "The upload drop zones, outline against their own fill"
+
+[[pair]]
+foreground = "--border-strong"
+background = "--background"
+kind = "non-text"
+where = "The upload drop zones, outline against the page around them"

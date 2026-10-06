@@ -37,8 +37,10 @@
   --muted-foreground: #5a626d;
   --diff-add: #e3f4e9;
   --diff-add-foreground: #1c6e3a;
+  --diff-add-border: #b8dfc4;
   --diff-remove: #fbe4e1;
   --diff-remove-foreground: #a3261c;
+  --diff-remove-border: #efc4be;
   --diff-modified: #fff3d6;
   --diff-modified-foreground: #8a5b00;
   --diff-moved: #e6edf6;
@@ -47,6 +49,7 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --shadow-soft: 0 1px 2px rgba(20, 30, 50, 0.08);
+  --shadow-card-hover: 0 4px 16px rgba(31, 79, 139, 0.18);
 }
 /* END GENERATED tokens */
 
@@ -138,7 +141,7 @@ a { color: var(--primary); }
   color: inherit;
 }
 .path-card--active { border-color: var(--primary); }
-.path-card--active:hover { box-shadow: 0 4px 16px rgba(31, 79, 139, 0.18); transform: translateY(-1px); }
+.path-card--active:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
 .path-card--disabled { opacity: 0.7; background: var(--muted); cursor: not-allowed; }
 
 .path-card__badge { margin-bottom: 14px; }
@@ -201,12 +204,12 @@ a { color: var(--primary); }
 .upload-error {
   margin-top: 16px; padding: 10px 14px;
   background: var(--diff-remove); color: var(--diff-remove-foreground);
-  border: 1px solid #efc4be; border-radius: 4px; font-size: 13px;
+  border: 1px solid var(--diff-remove-border); border-radius: 4px; font-size: 13px;
 }
 .upload-success {
   margin-top: 16px; padding: 10px 14px;
   background: var(--diff-add); color: var(--diff-add-foreground);
-  border: 1px solid #b8dfc4; border-radius: 4px; font-size: 13px;
+  border: 1px solid var(--diff-add-border); border-radius: 4px; font-size: 13px;
 }
 .upload-actions { margin-top: 20px; display: flex; align-items: center; gap: 14px; }
 .upload-note { font-size: 12px; color: var(--muted-foreground); }
