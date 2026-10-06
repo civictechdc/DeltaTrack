@@ -52,6 +52,27 @@ re-deciding what another settled.
 | PR C: view applies node facts | civictechdc/DeltaTrack#806 (merged, `ea7227c`) | Closes #785, #701; unplaced 1,548 → 0 XML, 39 → 0 PDF |
 | Issues filed for untracked findings | #807 (F7a move kind), #808 (F7b bill identity), #809 (F9 `--filter`), #810 (F3 + F17 + F11's front-matter path and `""` label), #811 (F11: front matter recognized by label, under #552), #812 (F5: one owner for the PDF layout); #751 scope extended (F12) | #807 and #808 linked as XML/PDF parity; F6 resolved without an issue |
 
+### Resume here: targeted review of the new surfaces (agreed 2026-10-06)
+
+All PRs in the plan merged (#791, #782, #800, #802, #806); every audit finding is fixed, resolved,
+or owned by an issue (#807–#812, #751, #698, #706, #471). The user asked for a **targeted review, not
+a full re-audit** (full audit deferred until #810, #807, #808 land, or before #736/#734 merge).
+
+- **Scope:** code added since the audit baseline `f2e698a` by #800, #802, #806, on current `develop`:
+  - producer heading/body attribution: `text_serializer._serialize_layout` / `_xml_tree_payload`,
+    `canonical._pdf_tree_payload`, `_rows_span`;
+  - node references: `NodeDiff.ordinal_old/new`, `canonical._node_refs`, `PdfDiff.v1_bodies/v2_bodies`;
+  - the viewer: `canonical_view._node_chains` / `_node_path_for_change`, `diff_html._in_tree_order`,
+    `_node_anchor_offset`, pointer uniqueness, `data-node`;
+  - `print_layout._move_tree` moving the new spans; `formatters/schema_version.py`;
+    `tests/test_import_direction.py` (can it be defeated?).
+- **Question:** does any new code re-infer a fact the document states, decide something in the wrong
+  stage, or couple viewer ↔ producer outside the document? Also: are the new gates sound or vacuous?
+- **Method:** two independent reviewers on the diff `f2e698a..develop` restricted to the files above,
+  then a falsification pass on every finding (reproduce on `develop`, stamp date + sha), as in the
+  audit rounds. Findings go in a new register section here, numbered G1…; file issues only after the
+  user reviews them.
+
 ### Next, in order (agreed with the user)
 
 1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06). **PR C merged as #806** (closes #785, #701): groups by `node.v2`, TOC by `heading_span`; unplaced 1,548→0 XML, 39→0 PDF. As-built notes in the plan.
