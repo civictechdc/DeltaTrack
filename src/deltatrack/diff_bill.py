@@ -12,7 +12,7 @@ import difflib
 import json
 import sys
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from deltatrack.amounts import (
@@ -1043,6 +1043,14 @@ class NodeDiff:
     # #422 removed that fast path.
     old_amount_text: str | None = None
     new_amount_text: str | None = None
+    # --- Each side's observation ordinal (#785) --------------------------------
+    # The ADR 0019 ordinal of the node on each side, copied from the settled
+    # correspondence's ObservationRef. The canonical producer maps it to the id of the
+    # structure-tree node built from the same parse. Run-local: valid only against the
+    # BillTree objects this diff was computed from, never stored as identity. None on a
+    # side the change has no node on, and on records built outside classification.
+    ordinal_old: int | None = None
+    ordinal_new: int | None = None
 
     @property
     def amount_source_old(self) -> str | None:
@@ -1749,12 +1757,18 @@ def _classified(item: SettledCorrespondence, registry: ObservationRegistry) -> N
     new_node = registry.node(correspondence.new[0]) if correspondence.new else None
 
     if old_node is None:
-        return _added_record(new_node)
-    if new_node is None:
-        return _removed_record(old_node)
-    if item.round == MOVE_ROUND:
-        return _moved_record(old_node, new_node)
-    return _paired_record(old_node, new_node)
+        record = _added_record(new_node)
+    elif new_node is None:
+        record = _removed_record(old_node)
+    elif item.round == MOVE_ROUND:
+        record = _moved_record(old_node, new_node)
+    else:
+        record = _paired_record(old_node, new_node)
+    return replace(
+        record,
+        ordinal_old=correspondence.old[0].ordinal if correspondence.old else None,
+        ordinal_new=correspondence.new[0].ordinal if correspondence.new else None,
+    )
 
 
 def classify(
@@ -1850,6 +1864,8 @@ def bill_diff_to_dict(diff: BillDiff, *, financial: bool = False) -> dict:
             "section_number": c.section_number,
             "element_id_old": c.element_id_old,
             "element_id_new": c.element_id_new,
+            "ordinal_old": c.ordinal_old,
+            "ordinal_new": c.ordinal_new,
         }
         if financial:
             # Amounts come from the display rendering, not body_text (#365).

@@ -33,6 +33,32 @@ def _make_id(index: int) -> str:
     return f"c-{index + 1:04d}"
 
 
+# Which sides of a change name a node (#785): the earlier version for what it removed or
+# changed, the later version for what it added or changed.
+_NODE_SIDES = {
+    "v1": frozenset({"removed", "modified", "moved"}),
+    "v2": frozenset({"added", "modified", "moved"}),
+}
+
+
+def _node_refs(change_type: str, keys: dict, node_ids: dict | None) -> dict | None:
+    """``changes[].node``: each applicable side's tree-node identifier (#785).
+
+    ``keys`` holds each side's source key into ``node_ids`` (an XML ordinal, or a PDF
+    anchor's ``id()``). An inapplicable side is ``None``. An applicable side whose key
+    resolves to nothing is also ``None``, which the contract reads as unresolved. With no
+    tree in the document there is nothing to name, so the field is ``None``.
+    """
+    if node_ids is None:
+        return None
+    refs = {}
+    for side in ("v1", "v2"):
+        key = keys[side]
+        applies = change_type in _NODE_SIDES[side] and key is not None
+        refs[side] = node_ids[side].get(key) if applies else None
+    return refs
+
+
 # ---------- XML producer -----------------------------------------------------
 
 
@@ -42,6 +68,7 @@ def _xml_change_to_canonical(
     full_text: dict | None,
     full_text_spans: dict | None,
     search_state: dict,
+    node_ids: dict | None,
 ) -> dict:
     change_type = change.get("change_type", "modified")
     path_old = change.get("display_path_old")
@@ -58,6 +85,7 @@ def _xml_change_to_canonical(
             "v1": list(path_old) if path_old else None,
             "v2": list(path_new) if path_new else None,
         },
+        "node": _node_refs(change_type, {"v1": change.get("ordinal_old"), "v2": change.get("ordinal_new")}, node_ids),
         "location": None,  # XML carries no source coordinates
         "anchor_resolution": "resolved",  # XML pipeline always resolves structurally
         "text": {"old": text_old, "new": text_new},
@@ -140,6 +168,7 @@ def xml_diff_to_canonical(
     full_text: dict | None = None,
     full_text_spans: dict | None = None,
     tree: dict | None = None,
+    node_ids: dict | None = None,
     title: str | None = None,
 ) -> dict:
     """Convert a bill-diff dict (from bill_diff_to_dict) into canonical JSON.
@@ -155,9 +184,17 @@ def xml_diff_to_canonical(
     `{"v1"|"v2": {element_id: (start, end)}}` into `full_text`; it lets each change's
     inline highlight resolve structurally by element_id (#51). It is NEVER serialized
     into the returned JSON.
+
+    `node_ids`, when provided with `tree`, maps `{"v1"|"v2": {ordinal: node id}}`, the
+    fourth value of `build_xml_full_text`, so each change names its tree nodes through the
+    ordinals `bill_diff_to_dict` carries (#785). Like `full_text_spans`, it is a build-time
+    input and never serialized. Without a tree, `changes[].node` is null.
     """
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
     normalized_full_text = _normalize_full_text(full_text)
+    normalized_tree = _normalize_tree(tree, normalized_full_text)
+    if normalized_tree is None:
+        node_ids = None
     search_state: dict = {}
     return {
         "schema_version": SCHEMA_VERSION,
@@ -184,9 +221,9 @@ def xml_diff_to_canonical(
         "full_text": normalized_full_text,
         "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
         "print_breaks": None,  # XML text has no printed line breaks
-        "tree": _normalize_tree(tree, normalized_full_text),
+        "tree": normalized_tree,
         "changes": [
-            _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state)
+            _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state, node_ids)
             for i, c in enumerate(diffed)
         ],
     }
@@ -279,6 +316,7 @@ def _pdf_hunk_to_canonical(
     line_offsets_v2: dict | None,
     v1_positions: dict[Anchor, int],
     v2_positions: dict[Anchor, int],
+    node_ids: dict | None,
 ) -> dict:
     path_v1 = _path_for_anchor(hunk.v1_anchor, v1_anchors, v1_positions)
     path_v2 = _path_for_anchor(hunk.v2_anchor, v2_anchors, v2_positions)
@@ -294,6 +332,14 @@ def _pdf_hunk_to_canonical(
         "change_type": hunk.change_type,
         "section_number": "",  # PDF surfaces the section inside the breadcrumb instead
         "path": {"v1": path_v1, "v2": path_v2},
+        "node": _node_refs(
+            hunk.change_type,
+            {
+                "v1": id(hunk.v1_anchor) if hunk.v1_anchor is not None else None,
+                "v2": id(hunk.v2_anchor) if hunk.v2_anchor is not None else None,
+            },
+            node_ids,
+        ),
         "location": {
             "v1": _range_to_canonical(hunk.v1_range),
             "v2": _range_to_canonical(hunk.v2_range),
@@ -316,26 +362,16 @@ def _pdf_span(hunk: PdfHunk, line_offsets_v1: dict | None, line_offsets_v2: dict
     if line_offsets_v1 is None and line_offsets_v2 is None:
         return None
 
-    def _span(rng: tuple[int, int, int, int] | None, offsets: dict | None) -> dict | None:
-        if rng is None or offsets is None:
-            return None
-        sp, sl, ep, el = rng
-        if sl < 0 or el < 0:
-            return None  # unnumbered source lines aren't reachable via the table
-        start_entry = offsets.get((sp, sl))
-        end_entry = offsets.get((ep, el))
-        if start_entry is None or end_entry is None:
-            return None
-        return {"start": start_entry[0], "end": end_entry[1]}
-
-    return {"v1": _span(hunk.v1_range, line_offsets_v1), "v2": _span(hunk.v2_range, line_offsets_v2)}
+    return {"v1": _rows_span(hunk.v1_range, line_offsets_v1), "v2": _rows_span(hunk.v2_range, line_offsets_v2)}
 
 
 def _pdf_tree_payload(
     anchors: tuple[Anchor, ...],
     side_offsets: dict | None,
     side_text: str | None,
-) -> list[dict]:
+    side: str,
+    bodies: tuple[tuple[Anchor, tuple[int, int, int, int] | None], ...] = (),
+) -> tuple[list[dict], dict[int, str]]:
     """Serialize one PDF version's structure tree to canonical JSON nodes (#108).
 
     The XML pipeline gets per-node ``own_amounts`` and spans for free from the
@@ -347,10 +383,22 @@ def _pdf_tree_payload(
     invariant. Text before the first anchor (front matter) is unattributed; for
     appropriations bills it carries no dollar amounts (bounded, documented drop).
 
-    Returns ``[]`` when there are no anchors or no offset table to index into.
+    Each node also carries (#785):
+
+    - ``id``: ``"<side>.<n>"``, its 0-based preorder position in the final tree.
+    - ``heading_span``: its anchor's printed row from the offset table. ``null`` where no
+      anchor backs the node (a heading reconstructed from breadcrumbs), for the
+      synthesized Front Matter anchor, whose coordinate is coerced rather than read, and
+      for an anchor on a row outside the table.
+    - ``body_span``: its block's rows after heading chrome is trimmed, first to last, from
+      ``bodies``. ``null`` when the block was dropped as empty, or an end row is outside
+      the table.
+
+    Returns the nodes and a map from each anchor's ``id()`` to its node's id; ``([], {})``
+    when there are no anchors or no offset table to index into.
     """
     if not anchors or side_offsets is None or side_text is None:
-        return []
+        return [], {}
     ordered = list(anchors)  # extract_anchors yields document order
     # The synthesized front-matter anchor (diff_pdf #33) sits at the bill's opening;
     # its coerced (page, 1) coordinate is often absent from the per-line offset table,
@@ -382,17 +430,53 @@ def _pdf_tree_payload(
         end = max(start, end)  # guard non-monotonic offsets (multi-column) → empty, never overlap
         block[id(a)] = ({"start": start, "end": end}, tuple(extract_amounts(side_text[start:end])))
 
+    body_range = {id(a): rng for a, rng in bodies}
+    roots = build_pdf_tree(ordered)
+    order = list(_preorder(roots))
+    node_id = {id(n): f"{side}.{i}" for i, n in enumerate(order)}
+
+    def heading_span(anchor: Anchor | None) -> dict | None:
+        if anchor is None or anchor.kind == "preamble":
+            return None
+        row = side_offsets.get((anchor.page_number, anchor.line_number))
+        return {"start": row[0], "end": row[1]} if row is not None else None
+
     def node_json(n: TreeNode) -> dict:
         span, own = block.get(id(n.source), (None, ())) if n.source is not None else (None, ())
         return {
+            "id": node_id[id(n)],
             "label": n.label,
             "level": n.level,
             "own_amounts": list(own),
             "full_text_span": span,
+            "heading_span": heading_span(n.source),
+            "body_span": _rows_span(body_range.get(id(n.source)), side_offsets) if n.source is not None else None,
             "children": [node_json(c) for c in n.children],
         }
 
-    return [node_json(r) for r in build_pdf_tree(ordered)]
+    nodes = [node_json(r) for r in roots]
+    return nodes, {id(n.source): node_id[id(n)] for n in order if n.source is not None}
+
+
+def _preorder(nodes: list[TreeNode]):
+    for n in nodes:
+        yield n
+        yield from _preorder(n.children)
+
+
+def _rows_span(rng: tuple[int, int, int, int] | None, offsets: dict | None) -> dict | None:
+    """Char span from the first row of a page-line range to the end of its last row,
+    or ``None`` when either end is unnumbered or outside the offset table."""
+    if rng is None or offsets is None:
+        return None
+    sp, sl, ep, el = rng
+    if sl < 0 or el < 0:
+        return None  # unnumbered source lines aren't reachable via the table
+    start_entry = offsets.get((sp, sl))
+    end_entry = offsets.get((ep, el))
+    if start_entry is None or end_entry is None:
+        return None
+    return {"start": start_entry[0], "end": end_entry[1]}
 
 
 def pdf_diff_to_canonical(
@@ -432,12 +516,16 @@ def pdf_diff_to_canonical(
     normalized_full_text = _normalize_full_text(full_text)
     # The structure tree's spans index into full_text, so it only ships when
     # full_text does (co-presence rule, enforced by _normalize_tree).
-    tree = None
+    tree = node_ids = None
     if normalized_full_text is not None:
-        tree = {
-            "v1": _pdf_tree_payload(diff.v1_anchors, line_offsets_v1, normalized_full_text["v1"]),
-            "v2": _pdf_tree_payload(diff.v2_anchors, line_offsets_v2, normalized_full_text["v2"]),
-        }
+        v1_nodes, v1_ids = _pdf_tree_payload(
+            diff.v1_anchors, line_offsets_v1, normalized_full_text["v1"], "v1", diff.v1_bodies
+        )
+        v2_nodes, v2_ids = _pdf_tree_payload(
+            diff.v2_anchors, line_offsets_v2, normalized_full_text["v2"], "v2", diff.v2_bodies
+        )
+        tree = {"v1": v1_nodes, "v2": v2_nodes}
+        node_ids = {"v1": v1_ids, "v2": v2_ids}
     # Built once per side, so each change's breadcrumb is a lookup rather than a search.
     v1_positions, v2_positions = anchor_positions(diff.v1_anchors), anchor_positions(diff.v2_anchors)
     return {
@@ -455,7 +543,15 @@ def pdf_diff_to_canonical(
         "tree": _normalize_tree(tree, normalized_full_text),
         "changes": [
             _pdf_hunk_to_canonical(
-                h, i, diff.v1_anchors, diff.v2_anchors, line_offsets_v1, line_offsets_v2, v1_positions, v2_positions
+                h,
+                i,
+                diff.v1_anchors,
+                diff.v2_anchors,
+                line_offsets_v1,
+                line_offsets_v2,
+                v1_positions,
+                v2_positions,
+                node_ids,
             )
             for i, h in enumerate(diff.hunks)
         ],

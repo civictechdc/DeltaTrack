@@ -86,3 +86,24 @@ def test_malformed_breaks_leave_the_text_unbroken_rather_than_broken_wrongly():
 def test_a_document_without_print_breaks_is_rendered_as_it_is():
     canonical = {"full_text": {"v1": "a", "v2": "b"}, "print_breaks": None, "changes": []}
     assert printed_document(canonical) == (canonical, {})
+
+
+def test_every_tree_span_moves_onto_the_printed_text():
+    """A node's heading and body (#785) index `full_text` like its `full_text_span`, so all
+    three move; one left behind would point into the whole-word text."""
+    pages = _pages()
+    whole_word, offsets = pdf_full_text(pages)
+    breaks = pdf_print_breaks(pages)
+    row = {"start": offsets[(2, 2)][0], "end": offsets[(2, 2)][1]}
+    node = {"label": "SEC. 2", "full_text_span": row, "heading_span": row, "body_span": row, "children": []}
+    canonical = {
+        "full_text": {"v1": whole_word, "v2": whole_word},
+        "print_breaks": {"v1": breaks, "v2": breaks},
+        "tree": {"v1": [node], "v2": [node]},
+        "changes": [],
+    }
+    printed, _joins = printed_document(canonical)
+    moved = printed["tree"]["v2"][0]
+    text = printed["full_text"]["v2"]
+    for key in ("full_text_span", "heading_span", "body_span"):
+        assert text[moved[key]["start"] : moved[key]["end"]] == "    2  SEC. 2. Short title.", key
