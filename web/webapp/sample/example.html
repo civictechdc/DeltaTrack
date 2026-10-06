@@ -10,6 +10,7 @@
   --foreground: #1c1f23;
   --card: #ffffff;
   --border: #d6dbe1;
+  --border-strong: #848e9a;
   --primary: #1f4f8b;
   --primary-foreground: #ffffff;
   --primary-hover: #173d6f;
@@ -197,7 +198,8 @@ ins { background: var(--diff-add); text-decoration: none; color: var(--diff-add-
 .action-bar__left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .action-bar__group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .find-bar { display: inline-flex; align-items: center; gap: 4px; }
-.find-bar input { padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+/* The outline is what shows where to type, so it needs 3:1 (WCAG 1.4.11, #775). */
+.find-bar input { padding: 5px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius);
   font: inherit; font-family: var(--font-sans); font-size: 13px; width: 180px; background: var(--card); }
 .find-counter { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted-foreground);
   min-width: 3.5em; text-align: center; }
