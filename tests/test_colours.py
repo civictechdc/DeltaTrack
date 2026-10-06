@@ -30,7 +30,8 @@ from scripts.render_webapp_css import PROCESSING_TAB, STYLESHEET, WEBAPP
 _COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _STYLE_BLOCK = re.compile(r"<style[^>]*>(.*?)</style>", re.S)
 _STYLE_ATTRIBUTE = re.compile(r"""\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')""")
-_PENDING_CSS = re.compile(r"const PENDING_CSS = `(.*?)`", re.S)
+#: The processing tab's CSS: its generated `BASE_CSS` copy and its own `PENDING_CSS` rules.
+_TAB_CSS = re.compile(r"const (?:BASE|PENDING)_CSS = [^`]*`(.*?)`", re.S)
 
 #: The innermost `{ ... }`, which is a rule's declarations even inside `@media`.
 _DECLARATION_BLOCK = re.compile(r"\{([^{}]*)\}")
@@ -89,7 +90,7 @@ def _surfaces() -> dict[str, str]:
         "examples index": "\n".join(_STYLE_BLOCK.findall(index)),
         "upload pages": STYLESHEET.read_text(),
         "upload page markup": "\n".join(markup),
-        "processing tab": _PENDING_CSS.search(PROCESSING_TAB.read_text()).group(1),
+        "processing tab": "\n".join(_TAB_CSS.findall(PROCESSING_TAB.read_text())),
     }
 
 

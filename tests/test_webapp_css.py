@@ -1,12 +1,13 @@
-"""The upload pages' generated blocks come from `styles/` (#773, #774, #804).
+"""The upload pages' and processing tab's generated blocks come from `styles/` (#773, #774, #804).
 
 `web/webapp/css/styles.css` is committed, because the upload pages are served as static
 files, so nothing regenerates it on the way to a browser. Three blocks in it are
 generated: the tokens from `tokens.css`, the reset, body and heading rules from
 `base.css`, and the shared button and badge rules from `components.css`. If a source
 changes and the script is not rerun, or someone edits a block by hand, the upload pages
-quietly stop matching the report they open. These checks compare the committed file
-with what the generator would write, and never write it themselves.
+quietly stop matching the report they open. `web/webapp/js/compare.js` carries one more,
+its copy of `base.css` for the processing tab. These checks compare the committed files
+with what the generator would write, and never write them themselves.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ from scripts.render_webapp_css import (
     TOKENS_BEGIN,
     TOKENS_END,
     render,
+    render_processing_tab,
 )
 
 REGENERATE = "Run `uv run python scripts/render_webapp_css.py` and commit the result."
@@ -43,6 +45,17 @@ def test_the_committed_generated_blocks_are_what_the_generator_writes():
 
     diff = difflib.unified_diff(committed.splitlines(True), fresh.splitlines(True), "committed", "generated", n=0)
     assert committed == fresh, f"web/webapp/css/styles.css's generated blocks are stale. {REGENERATE}\n" + "".join(
+        islice(diff, 12)
+    )
+
+
+def test_the_processing_tabs_base_block_is_what_the_generator_writes():
+    # The tab is written with document.write and can't link base.css, so it carries a copy.
+    committed = PROCESSING_TAB.read_text()
+    fresh = render_processing_tab(committed, BASE.read_text())
+
+    diff = difflib.unified_diff(committed.splitlines(True), fresh.splitlines(True), "committed", "generated", n=0)
+    assert committed == fresh, f"web/webapp/js/compare.js's generated BASE_CSS is stale. {REGENERATE}\n" + "".join(
         islice(diff, 12)
     )
 

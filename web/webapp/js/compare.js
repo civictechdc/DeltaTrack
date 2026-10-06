@@ -78,19 +78,28 @@
   //
   // Its CSS travels inline rather than as a link to styles.css, so it paints the
   // moment it is written, with no request to wait on while the server is busy.
-  // Its colours and font are this page's design tokens, copied when Compare is
-  // clicked (#773): the rules below name tokens, and pendingHtml() declares each
-  // one with the value this page currently computes for it. styles.css generates
-  // those tokens from src/deltatrack/styles/tokens.css, and the generator reads
-  // this file too, so every token named here is declared on this page.
-  const PENDING_CSS = `
-  html,body{height:100%;margin:0}
-  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-    background:var(--background);color:var(--foreground);font-family:var(--font-sans)}
-  .spinner{width:44px;height:44px;border:4px solid var(--border);border-top-color:var(--primary);
+  // Its base rules (reset, body, serif headings) are every screen's, from
+  // src/deltatrack/styles/base.css; scripts/render_webapp_css.py writes the copy
+  // below. Its colours and fonts are this page's design tokens, copied when Compare
+  // is clicked (#773): the rules name tokens, and pendingHtml() declares each one
+  // with the value this page currently computes for it. styles.css generates those
+  // tokens from src/deltatrack/styles/tokens.css, and the generator reads this file
+  // too, so every token named here is declared on this page.
+  // BEGIN GENERATED base by scripts/render_webapp_css.py, copied from src/deltatrack/styles/base.css. Do not edit by hand.
+  const BASE_CSS = `
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); color: var(--foreground); background: var(--background); line-height: 1.6;
+  -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--font-serif); letter-spacing: -0.02em; }
+`;
+  // END GENERATED base
+  const PENDING_CSS = BASE_CSS + `
+  html,body{height:100%}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+  .spinner{width:52px;height:52px;border:4px solid var(--border);border-top-color:var(--primary);
     border-radius:50%;animation:spin 900ms linear infinite}
-  h1{font-size:1.15rem;font-weight:600;margin:0}
-  p{margin:0;font-size:.85rem;color:var(--muted-foreground)}
+  h1{font-size:1.15rem;font-weight:600}
+  p{font-size:.85rem;color:var(--muted-foreground)}
   @keyframes spin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.spinner{animation-duration:2.4s}}
 `;

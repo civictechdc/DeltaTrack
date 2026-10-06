@@ -1,4 +1,4 @@
-"""Regenerate the three generated blocks in the upload pages' stylesheet.
+"""Regenerate the upload pages' stylesheet blocks and the processing tab's base styles.
 
 Run from anywhere after changing `tokens.css`, `base.css` or `components.css` in
 `src/deltatrack/styles/`, or after a rule in `web/webapp/css/styles.css` or the
@@ -21,6 +21,10 @@ The other two are verbatim copies, in the order a report embeds them: `base.css`
 reset, body and heading rules, then `components.css`, the button and badge rules. Both
 sit before the hand-written rules, which may set what is particular to these pages but
 should not restyle a shared control.
+
+The processing tab is written with `document.write`, so it can't link a stylesheet
+either. `compare.js` gets its own copy of `base.css`, as the `BASE_CSS` template literal
+between its GENERATED markers, and the tab's rules follow it.
 
 Kept out of `render_examples.py` on purpose: tests drive that script's `main()` with
 only its output folder redirected, so a write to a checkout path there would run on
@@ -52,17 +56,32 @@ COMPONENTS_BEGIN = (
     "copied from src/deltatrack/styles/components.css. Do not edit by hand. */\n"
 )
 COMPONENTS_END = "/* END GENERATED components */\n"
+TAB_BASE_BEGIN = (
+    "  // BEGIN GENERATED base by scripts/render_webapp_css.py, "
+    "copied from src/deltatrack/styles/base.css. Do not edit by hand.\n"
+)
+TAB_BASE_END = "  // END GENERATED base\n"
 
 
-def _block(stylesheet: str, begin: str, end: str) -> tuple[int, int]:
+def _block(text: str, begin: str, end: str, name: str = STYLESHEET.name) -> tuple[int, int]:
     """Where the text between `begin` and `end` starts and stops."""
-    if stylesheet.count(begin) != 1 or stylesheet.count(end) != 1:
-        raise ValueError(f"{STYLESHEET.name} must contain exactly one {begin.strip()!r} and one {end.strip()!r}")
-    start = stylesheet.index(begin) + len(begin)
-    stop = stylesheet.index(end)
+    if text.count(begin) != 1 or text.count(end) != 1:
+        raise ValueError(f"{name} must contain exactly one {begin.strip()!r} and one {end.strip()!r}")
+    start = text.index(begin) + len(begin)
+    stop = text.index(end)
     if stop < start:
-        raise ValueError(f"{STYLESHEET.name}'s {end.strip()!r} comes before its {begin.strip()!r}")
+        raise ValueError(f"{name}'s {end.strip()!r} comes before its {begin.strip()!r}")
     return start, stop
+
+
+def render_processing_tab(processing_tab: str, base: str) -> str:
+    """`processing_tab` with its `BASE_CSS` block rewritten from `base.css`."""
+    if any(text in base for text in ("`", "${", "\\")):
+        # Each would end or alter the JavaScript template literal the copy sits in.
+        raise ValueError("base.css can't contain a backtick, '${' or a backslash: compare.js embeds it in a template")
+    start, stop = _block(processing_tab, TAB_BASE_BEGIN, TAB_BASE_END, PROCESSING_TAB.name)
+    base = base if base.endswith("\n") else base + "\n"
+    return processing_tab[:start] + f"  const BASE_CSS = `\n{base}`;\n" + processing_tab[stop:]
 
 
 def render(stylesheet: str, base: str, components: str, processing_tab: str) -> str:
@@ -87,9 +106,12 @@ def render(stylesheet: str, base: str, components: str, processing_tab: str) -> 
 
 
 def main() -> None:
-    sources = (BASE.read_text(), COMPONENTS.read_text(), PROCESSING_TAB.read_text())
-    STYLESHEET.write_text(render(STYLESHEET.read_text(), *sources))
-    print(f"Wrote {STYLESHEET}")
+    base = BASE.read_text()
+    # The tab first: the stylesheet declares the tokens the regenerated tab uses.
+    processing_tab = render_processing_tab(PROCESSING_TAB.read_text(), base)
+    PROCESSING_TAB.write_text(processing_tab)
+    STYLESHEET.write_text(render(STYLESHEET.read_text(), base, COMPONENTS.read_text(), processing_tab))
+    print(f"Wrote {PROCESSING_TAB} and {STYLESHEET}")
 
 
 if __name__ == "__main__":
