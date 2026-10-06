@@ -995,6 +995,8 @@ def test_report_tab_takes_its_colours_from_the_upload_page(live_url, chromium, t
     assert computed(".spinner", "borderLeftColor") == sentinels["--border"]
     assert computed(".spinner", "borderTopColor") == sentinels["--primary"]
     assert computed("body", "fontFamily") == sentinels["--font-sans"]
+    # Headings follow the shared base styles, whatever they set, as the upload page's do.
+    assert computed("h1", "fontFamily") == page.locator("h1").evaluate("el => getComputedStyle(el).fontFamily")
     tab.close()
     page.close()
 
