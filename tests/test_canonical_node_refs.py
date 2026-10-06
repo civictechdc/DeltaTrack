@@ -144,3 +144,15 @@ def test_a_document_without_node_identity_groups_nothing():
     change = _change(v2_span=_span(75, 80))
     del change["node"]
     assert _path(change, tree_v2=strip(_tree_v2())) == ()
+
+
+def test_a_labeled_node_without_an_id_is_hoisted_and_the_report_renders():
+    """The schema leaves ``id`` optional per node, so a tree may mix the two. A group is
+    keyed on a node's id, so a node without one adds no step, like an unlabeled node."""
+    from deltatrack.formatters.diff_html import format_diff_html
+
+    tree = _tree_v2()
+    del tree[1]["id"]  # TITLE I, parent of the named account
+    canonical = _canonical([_change(node={"v1": None, "v2": "v2.3"})], tree_v2=tree)
+    assert view_from_canonical(canonical).changes[0].node_path == (("v2.3", "SALARIES AND EXPENSES", "account"),)
+    assert 'id="change-0"' in format_diff_html(canonical)

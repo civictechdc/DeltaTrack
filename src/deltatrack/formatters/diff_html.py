@@ -600,14 +600,26 @@ def _cards_section_html(
     root, fallback = _group_changes_by_node(view)
     removed_section, removed_ids = _removed_cards_html(view, removed_order)
     pointers = _removed_pointers(view)
+    # A pointer names a heading by its labels. Where two later groups share a label
+    # path, either could be meant and both would claim the same removals, so neither
+    # carries one, as a label collision never does.
+    shared: dict[tuple[str, ...], int] = {}
+
+    def count(node: dict, labels: tuple[str, ...]) -> None:
+        for (_id, label, _level), child in node["children"].items():
+            shared[(*labels, label)] = shared.get((*labels, label), 0) + 1
+            count(child, (*labels, label))
+
+    count(root, ())
 
     def render(seg: tuple[str, str, str], node: dict, labels: tuple[str, ...]) -> str:
         _id, label, _level = seg
         labels = (*labels, label)
-        pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers else ""
+        unique = shared.get(labels) == 1
+        pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers and unique else ""
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
         kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node))
-        return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part))
+        return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part), node_id=seg[0])
 
     blocks = [render(seg, node, ()) for seg, node in _in_tree_order(root)]
     for label in _fallback_labels(fallback):
@@ -618,10 +630,13 @@ def _cards_section_html(
     return "\n".join(blocks)
 
 
-def _card_group_html(label: str, inner: str, extra_class: str = "", group_id: str = "") -> str:
+def _card_group_html(label: str, inner: str, extra_class: str = "", group_id: str = "", node_id: str = "") -> str:
+    """One card group. ``node_id`` is the tree node a later-version group stands for, as
+    ``data-node``, so the group's identity is in the page and not only its label."""
     id_attr = f' id="{group_id}"' if group_id else ""
+    node_attr = f' data-node="{escape(node_id, quote=True)}"' if node_id else ""
     return (
-        f'<details class="change-group{extra_class}"{id_attr} open>'
+        f'<details class="change-group{extra_class}"{id_attr}{node_attr} open>'
         f'<summary class="change-group__label disclosure">{escape(label)}</summary>\n{inner}\n</details>'
     )
 

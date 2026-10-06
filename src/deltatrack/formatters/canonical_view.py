@@ -103,8 +103,9 @@ def _node_chains(nodes: list[dict]) -> dict[str, tuple[tuple[str, str, str], ...
 
     The chain is the breadcrumb a change named against that node is grouped under
     (#785). An unlabeled node adds no step, so its changes group under its nearest
-    labeled ancestor, as the table of contents hoists its children. Nodes without an
-    ``id`` (a document from before node identity) contribute nothing.
+    labeled ancestor, as the table of contents hoists its children. A node without an
+    ``id`` (a document from before node identity, or one mixing the two) is hoisted the
+    same way: a group is keyed on the node's id, so one without an id cannot be one.
     """
     chains: dict[str, tuple[tuple[str, str, str], ...]] = {}
 
@@ -112,7 +113,7 @@ def _node_chains(nodes: list[dict]) -> dict[str, tuple[tuple[str, str, str], ...
         for n in ns:
             label = (n.get("label") or "").strip()
             node_id = n.get("id")
-            step = chain + ((node_id or "", label, n.get("level") or ""),) if label else chain
+            step = chain + ((node_id, label, n.get("level") or ""),) if label and node_id else chain
             if node_id:
                 chains[node_id] = step
             walk(n.get("children") or [], step)

@@ -15,7 +15,16 @@ from __future__ import annotations
 
 from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.formatters.diff_html import format_diff_html
-from tests.removed_changes_report import canonical, change, changes, changes_view, removed_section, span, tree_v2
+from tests.removed_changes_report import (
+    canonical,
+    change,
+    changes,
+    changes_view,
+    node,
+    removed_section,
+    span,
+    tree_v2,
+)
 
 
 def test_removed_changes_render_only_in_theremoved_section():
@@ -138,3 +147,19 @@ def test_flat_cards_only_when_nothing_is_placed_and_nothing_was_removed():
     del doc["tree"]
     html = format_diff_html(doc)
     assert 'class="change-group' not in html.split('<nav class="sidebar">')[0] + html.split("</nav>", 1)[1]
+
+
+def test_two_later_groups_with_one_label_path_carry_no_pointer():
+    """Either could be the heading meant, and both would claim the same removals, so
+    neither points: the rule a label collision already follows (#784)."""
+    later = tree_v2() + [node("TITLE I", "title", span(120, 127), [node("KEPT ACCOUNT", "account", span(130, 150))])]
+    # Preorder ids: the later tree's two "TITLE I > KEPT ACCOUNT" accounts are v2.1 and
+    # v2.5, and the path names neither alone, so each change names its node outright.
+    kept = change("c-0001", "modified", v1_path=["TITLE I", "KEPT ACCOUNT"], v2_path=["TITLE I", "KEPT ACCOUNT"])
+    second = dict(kept, id="c-0006")
+    kept["node"], second["node"] = {"v1": "v1.2", "v2": "v2.1"}, {"v1": "v1.2", "v2": "v2.5"}
+    doc = canonical([kept, second, *changes()[2:]], later_tree=later)
+    view = changes_view(format_diff_html(doc))
+    assert view.cards[0]["nodes"][-1] != view.cards[1]["nodes"][-1]
+    assert view.cards[0]["path"] == view.cards[1]["path"] == ("TITLE I", "KEPT ACCOUNT")
+    assert not any(path == ("TITLE I", "KEPT ACCOUNT") for path, _ in view.pointer_list)

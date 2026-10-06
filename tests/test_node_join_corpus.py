@@ -101,24 +101,22 @@ def test_xml_join_matches_structural_path(bill, v1, v2):
         if joined == [seg.casefold() for seg in path]:
             continue
         # The one sanctioned divergence: leading sections the tree groups
-        # under Front Matter (#161) — the join lands DEEPER than the flat
-        # path, under the Front Matter child named for the section.
+        # under Front Matter (#161) sit DEEPER than the flat path, under the
+        # Front Matter child named for the section.
         if cv.node_path[0][1] == "Front Matter" and len(cv.node_path) > 1:
             continue
         mismatched += 1
         if len(examples) < 3:
-            examples.append((path, [label for label, _ in cv.node_path]))
+            examples.append((path, [label for _id, label, _level in cv.node_path]))
     assert checked > 0, "gate ran on zero placeable changes (fail-open, #167)"
-    assert mismatched == 0, f"join disagrees with structural path: {examples}"
+    assert mismatched == 0, f"named node's breadcrumb disagrees with structural path: {examples}"
 
 
 @pytest.mark.parametrize(("bill", "v1", "v2"), [XML_PAIRS[1]])
-def test_xml_front_matter_changes_file_under_children_not_the_hull(bill, v1, v2):
-    # 113-hr-3547 4->5 changes its leading sections. Their positions sit inside
-    # BOTH the Front Matter hull span and its children's own spans, and the
-    # hull shares its exact start offset with the first child — the two
-    # position classes a naive sorted-starts bisect misfiles (to the hull /
-    # the preceding leaf). Deepest-wins must land them on the children.
+def test_xml_front_matter_changes_file_under_children_not_the_group(bill, v1, v2):
+    # 113-hr-3547 4->5 changes its leading sections, which the tree nests inside
+    # the synthesized Front Matter group. Each names its own section node, so it
+    # files under that child, not the group above it.
     _, view = _xml_view(bill, v1, v2)
     fm_leaves = {
         cv.node_path[-1][1]
@@ -310,10 +308,10 @@ OMNIBUS_PAIR = [("114-hr-2029", "5_engrossed-amendment-senate", "6_engrossed-ame
 
 
 @pytest.mark.parametrize(("bill", "v1", "v2"), OMNIBUS_PAIR)
-def test_join_at_omnibus_scale_stays_fast(bill, v1, v2):
-    # ~2.2k changes x ~2.4k tree nodes. The index is built once per side and
-    # each lookup is O(log N); an accidental O(changes x nodes) regression
-    # blows straight through this generous ceiling.
+def test_view_at_omnibus_scale_stays_fast(bill, v1, v2):
+    # ~2.2k changes x ~2.4k tree nodes. The chains are built once per document and
+    # each change is a lookup; an accidental O(changes x nodes) regression blows
+    # straight through this generous ceiling.
     canonical, _ = _xml_view(bill, v1, v2)
     start = time.perf_counter()
     view = view_from_canonical(canonical)
@@ -324,12 +322,20 @@ def test_join_at_omnibus_scale_stays_fast(bill, v1, v2):
 
 # ---------- every committed pair: placement and table-of-contents links (#785) -----
 
+# The one pair whose later PDF tree has two roots for each of TITLE I-IV: the print
+# carries them twice, so two groups per label are the tree as it is, not a merge failure.
+PDF_REPEATED_TITLES = "114-hr-2029/3_referred-in-senate->4_reported-in-senate"
+
 
 def _documents():
     from tests import test_node_identity_corpus as corpus
 
-    xml = [pytest.param("xml", old, new, id=key) for key, old, new in corpus.XML_PAIRS]
-    pdf = [pytest.param("pdf", old, new, id=key) for key, old, new in corpus.PDF_PAIRS if key in corpus.ACCEPTED_PDF]
+    xml = [pytest.param("xml", key, old, new, id=f"xml:{key}") for key, old, new in corpus.XML_PAIRS]
+    pdf = [
+        pytest.param("pdf", key, old, new, id=f"pdf:{key}")
+        for key, old, new in corpus.PDF_PAIRS
+        if key in corpus.ACCEPTED_PDF
+    ]
     return xml + pdf
 
 
@@ -339,36 +345,83 @@ def _document(kind, old, new):
     return corpus._xml_doc(old, new) if kind == "xml" else corpus._pdf_doc(old, new)
 
 
-@pytest.mark.parametrize(("kind", "old", "new"), _documents())
-def test_every_change_is_rendered_under_the_node_it_names(kind, old, new):
+def _expected_groups(tree: list[dict]) -> dict[str, tuple[str, ...]]:
+    """Node id -> the ids of the labeled nodes from the root to it, read from the tree
+    here rather than through the view, so the gate below does not check the view
+    against itself."""
+    chains: dict[str, tuple[str, ...]] = {}
+
+    def walk(nodes, chain):
+        for n in nodes:
+            step = (*chain, n["id"]) if (n.get("label") or "").strip() else chain
+            chains[n["id"]] = step
+            walk(n["children"], step)
+
+    walk(tree, ())
+    return chains
+
+
+@pytest.mark.parametrize(("kind", "key", "old", "new"), _documents())
+def test_every_change_is_rendered_under_the_node_it_names(kind, key, old, new):
     """No change trails the bill in a fallback group (#701): each later-version card
-    sits under the breadcrumb of the node the document names for it."""
+    sits inside the groups for exactly the nodes on the path to the one the document
+    names, by node id, so two headings sharing a label cannot be confused."""
     canonical = _document(kind, old, new)
-    view = view_from_canonical(canonical)
+    expected = _expected_groups(canonical["tree"]["v2"])
     cards = changes_view(format_diff_html(canonical)).cards
     checked = 0
-    for i, (change, cv) in enumerate(zip(canonical["changes"], view.changes)):
-        if cv.change_type == "removed":
+    for i, change in enumerate(canonical["changes"]):
+        if change["change_type"] == "removed":
             continue
         checked += 1
-        assert cv.node_path, f"{change['id']} names {change['node']} but is not placed"
-        rendered = tuple(cards[i]["path"])
-        assert rendered == tuple(label for _id, label, _level in cv.node_path), change["id"]
+        assert expected[change["node"]["v2"]], f"{change['id']} names a node with no labeled ancestor"
+        assert cards[i]["nodes"] == expected[change["node"]["v2"]], change["id"]
     assert checked or not canonical["changes"], "gate ran on zero later-version changes (fail-open)"
 
 
-@pytest.mark.parametrize(("kind", "old", "new"), _documents())
-def test_every_table_of_contents_link_reaches_a_row(kind, old, new):
-    """Each TOC entry jumps to a row the full-bill view renders with that id; an
-    entry whose node has a heading row jumps to that row."""
+@pytest.mark.parametrize(("kind", "key", "old", "new"), _documents())
+def test_no_top_level_heading_repeats_unless_the_tree_repeats_it(kind, key, old, new):
     import re
 
     html = format_diff_html(_document(kind, old, new))
+    body = html[html.index("<h2>Changes</h2>") : html.index('<p class="filter-empty"')]
+    depth, tops = 0, []
+    for match in re.finditer(
+        r'<details class="change-group[^"]*"[^>]*>\s*<summary[^>]*>([^<]*)</summary>|</details>', body
+    ):
+        if match.group(0) == "</details>":
+            depth -= 1
+            continue
+        if depth == 0:
+            tops.append(match.group(1))
+        depth += 1
+    repeated = sorted({label for label in tops if tops.count(label) > 1})
+    expected = ["TITLE I", "TITLE II", "TITLE III", "TITLE IV"] if (kind, key) == ("pdf", PDF_REPEATED_TITLES) else []
+    assert repeated == expected
+
+
+@pytest.mark.parametrize(("kind", "key", "old", "new"), _documents())
+def test_every_table_of_contents_link_reaches_its_heading_row(kind, key, old, new):
+    """Each TOC entry jumps to a row the full-bill view renders with that id, and an
+    entry whose node has a recorded heading row jumps to exactly that row. Both are
+    read from the printed layout the full-bill view draws."""
+    import re
+    from html import escape
+
+    from deltatrack.formatters.diff_html import _walk_tree
+    from deltatrack.formatters.print_layout import printed_document
+
+    canonical = _document(kind, old, new)
+    html = format_diff_html(canonical)
     tree_pane = html[html.index('<div class="sidebar-tree"') : html.index("</nav>")]
     links = set(re.findall(r'href="#(fb-off-\d+)"', tree_pane))
     targets = set(re.findall(r'id="(fb-off-\d+)"', html))
     assert links, "no table-of-contents links rendered (fail-open)"
     assert not links - targets, f"links with no row: {sorted(links - targets)[:5]}"
+    headed = [n for n in _walk_tree(printed_document(canonical)[0]["tree"]["v2"]) if n["heading_span"] and n["label"]]
+    assert headed, "no node has a heading row (fail-open)"
+    for n in headed:
+        assert f'href="#fb-off-{n["heading_span"]["start"]}">{escape(n["label"])}<' in tree_pane, n["id"]
 
 
 def test_receipts_collected_links_to_its_heading_not_its_body():
