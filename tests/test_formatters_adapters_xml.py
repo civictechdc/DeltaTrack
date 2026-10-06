@@ -48,7 +48,9 @@ def test_returns_diff_view_with_metadata():
     assert view.v2_label == "Engrossed in House"
     assert view.v1_version_number == 1
     assert view.v2_version_number == 2
-    assert view.summary == {"added": 1, "removed": 0, "modified": 2, "moved": 0}
+    # Zero-count keys do not ship in the canonical document (#706); the view
+    # passes the summary through as produced.
+    assert view.summary == {"added": 1, "modified": 2}
     assert view.changes == ()
 
 

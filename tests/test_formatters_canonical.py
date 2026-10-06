@@ -71,7 +71,9 @@ def test_xml_envelope_has_versioned_metadata():
         "version_number": 2,
         "source": "xml",
     }
-    assert canonical["summary"] == {"added": 1, "removed": 0, "modified": 2, "moved": 0}
+    # Zero-count keys do not ship (#706): the producer's seeds are filtered to the
+    # non-zero canonical keys, at parity with the PDF producer's Counter summary.
+    assert canonical["summary"] == {"added": 1, "modified": 2}
     assert canonical["changes"] == []
 
 

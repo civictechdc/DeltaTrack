@@ -163,6 +163,17 @@ def xml_diff_to_canonical(
     into the returned JSON.
     """
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
+    # The summary the document ships must count only what the document carries. Two
+    # producer-side artifacts are filtered out here (#706):
+    #  - `unchanged`: counts entries dropped above, so the count has no referent in
+    #    this document. (It can be non-zero on a shipped path today — the CLI's
+    #    --include-unchanged HTML path opts entries back in upstream — but the
+    #    canonical document still never carries them.)
+    #  - zero-valued keys: the PDF producer's Counter omits them naturally; keeping
+    #    them on the XML side broke pipeline parity whenever a category happened to
+    #    be empty. The contract (schema/canonical-diff.md) permits omission, and the
+    #    renderer reads summaries with .get(key, 0), so a missing key is already 0.
+    summary = {k: v for k, v in (diff_dict.get("summary") or {}).items() if k != "unchanged" and v}
     normalized_full_text = _normalize_full_text(full_text)
     search_state: dict = {}
     return {
@@ -186,7 +197,7 @@ def xml_diff_to_canonical(
                 "source": "xml",
             },
         },
-        "summary": dict(diff_dict.get("summary") or {}),
+        "summary": summary,
         "full_text": normalized_full_text,
         "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
         "print_breaks": None,  # XML text has no printed line breaks
