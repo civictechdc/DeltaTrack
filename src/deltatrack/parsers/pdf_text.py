@@ -557,6 +557,25 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
     return first_word_right
 
 
+def _unchecked(function):
+    """``function`` called through a prototype that skips ctypes' per-call argument checks.
+
+    pypdfium2 declares each binding's ``argtypes``, so every call converts and validates
+    every argument. That conversion, not PDFium, was most of the glyph loop's time: about
+    1.4 µs of a 1.6 µs ``FPDFText_GetCharBox`` call. The same C function behind a prototype
+    with no ``argtypes`` takes its arguments as passed. They must already be the C types the
+    function expects (a ``c_void_p`` handle, a Python ``int`` for ``int``, ``byref`` for a
+    pointer), which the one caller below guarantees; a wrong argument would not raise.
+    """
+    unchecked = ctypes.CFUNCTYPE(function.restype)(ctypes.cast(function, ctypes.c_void_p).value)
+    unchecked.argtypes = None
+    return unchecked
+
+
+_GET_CHAR_BOX = _unchecked(pdfium_raw.FPDFText_GetCharBox)
+_GET_MATRIX = _unchecked(pdfium_raw.FPDFText_GetMatrix)
+
+
 def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGeom]]:
     """Map GPO margin line number → `(glyph size, horizontal extent)` for one page.
 
@@ -597,6 +616,8 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
     box_out = (ctypes.byref(left), ctypes.byref(right), ctypes.byref(bottom), ctypes.byref(top))
     mat = pdfium_raw.FS_MATRIX()
     mat_out = ctypes.byref(mat)
+    # D) The two per-glyph calls go through unchecked prototypes; see `_unchecked`.
+    handle = ctypes.c_void_p(ctypes.cast(raw, ctypes.c_void_p).value)
 
     chars: list[tuple[float, float, float, int, float]] = []
     for i in range(n):
@@ -604,11 +625,11 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
         cp = ord(page_text[i]) if use_bulk_cp else pdfium_raw.FPDFText_GetUnicode(raw, i)
         if cp < 0x20:  # NUL / control glyphs (undecodable, newlines)
             continue
-        if not pdfium_raw.FPDFText_GetCharBox(raw, i, *box_out):
+        if not _GET_CHAR_BOX(handle, i, *box_out):
             continue
 
         # Size: matrix is always needed; GetFontSize only if not already sampled fast.
-        if not pdfium_raw.FPDFText_GetMatrix(raw, i, mat_out):
+        if not _GET_MATRIX(handle, i, mat_out):
             continue
         if fast_fs is None:
             # First valid glyph on this page: sample the font size.

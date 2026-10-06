@@ -946,6 +946,57 @@ def test_report_tab_shows_progress_until_the_report_arrives(live_url, chromium, 
     page.close()
 
 
+def test_report_tab_takes_its_colours_from_the_upload_page(live_url, chromium, tmp_path):
+    """The processing tab is drawn in the tokens the upload page has when Compare is clicked (#773).
+
+    The tab used to carry its own hex values, copied from an older palette, so it
+    stayed cream and indigo after every other screen moved on. It now copies the
+    upload page's tokens, which `styles.css` generates from `tokens.css`.
+
+    Each token gets a distinct value, so a swapped mapping fails, and they are set
+    after the page has loaded, so a copy taken at load time rather than at the click
+    fails too. The upload is held and never sent: only the placeholder is under test.
+    """
+    hold_fetch = "window.fetch = () => new Promise(() => {});"
+    start, end = tmp_path / "start.pdf", tmp_path / "end.pdf"
+    start.write_bytes(b"%PDF-1.4 start")
+    end.write_bytes(b"%PDF-1.4 end")
+    page = _upload_page(chromium, live_url, init_script=hold_fetch)
+    page.wait_for_load_state("load")
+
+    sentinels = {
+        "--background": "rgb(1, 2, 3)",
+        "--foreground": "rgb(4, 5, 6)",
+        "--muted-foreground": "rgb(7, 8, 9)",
+        "--border": "rgb(10, 11, 12)",
+        "--primary": "rgb(13, 14, 15)",
+        "--font-sans": "sentinel-font",
+    }
+    page.evaluate(
+        "(tokens) => { for (const [k, v] of Object.entries(tokens))"
+        " document.documentElement.style.setProperty(k, v); }",
+        sentinels,
+    )
+    page.locator("#start-input").set_input_files(start)
+    page.locator("#end-input").set_input_files(end)
+    with page.context.expect_page() as tab_info:
+        page.locator("#compare-btn").click()
+    tab = tab_info.value
+    tab.wait_for_selector(".spinner")
+
+    def computed(selector, prop):
+        return tab.locator(selector).evaluate(f"el => getComputedStyle(el).{prop}")
+
+    assert computed("body", "backgroundColor") == sentinels["--background"]
+    assert computed("h1", "color") == sentinels["--foreground"]
+    assert computed("p", "color") == sentinels["--muted-foreground"]
+    assert computed(".spinner", "borderLeftColor") == sentinels["--border"]
+    assert computed(".spinner", "borderTopColor") == sentinels["--primary"]
+    assert computed("body", "fontFamily") == sentinels["--font-sans"]
+    tab.close()
+    page.close()
+
+
 def test_blocked_popup_is_reported_instead_of_failing_silently(live_url, chromium, tmp_path):
     """When the browser blocks the report tab, the user is told (#71).
 

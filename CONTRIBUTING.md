@@ -242,6 +242,31 @@ If a slow run ends in `undeclared skip ceiling exceeded`, that is not a flake: a
 
 A maintainer reviews and merges. CI must be green.
 
+### Writing the description
+
+Fill in [the pull request template](.github/pull_request_template.md) rather than
+replacing it. A few habits keep the description useful after the merge, when it's
+the record of why the change was made:
+
+- **One closing keyword per issue, spelled exactly.** `Closes #123, closes #124`.
+  The keyword doesn't distribute across a list, and `Closes # 123` or
+  `Closes issue 123` doesn't link at all. The October 2026 backlog audit found
+  several fixed issues still open because their PR's keyword didn't parse.
+- **`Refs #123` when the PR only does part of the work.** Use a closing keyword only
+  if merging this PR finishes the issue's "Done when" list. Otherwise say which
+  items it covers and which remain.
+- **What changed and why, in plain words first.** The same first-sentence rule as
+  for issues: a reviewer should know what behaviour changes before reading file
+  names. Make cross-references self-describing, as in
+  [Writing an issue others can read](#writing-an-issue-others-can-read).
+- **How to test: what you actually ran.** The commands, the bill and versions you
+  compared, what you looked at in the report. For a bug fix, say that the new test
+  fails without the fix. Don't quote a number you didn't run.
+- **Say what you didn't do.** Known gaps, follow-ups, and anything deliberately out
+  of scope, with the issue that owns it.
+- **AI assistance:** name the tool if you used one (see
+  [AI-assisted contributions](#ai-assisted-contributions)).
+
 ### How a merge lands: the merge queue
 
 `develop` sits behind a **merge queue**, so a maintainer approving your pull
@@ -373,7 +398,10 @@ making an issue *ready to pick up* is the team's job, done during triage (the
 - **Effort** *(optional)* — set the org-level Effort field if useful; not a focus right now.
 
 This keeps the bar to *report* low while still giving a newcomer everything they
-need to *start*.
+need to *start*. When the body needs rewriting to get there, use the grooming
+skeleton and conventions in
+[docs/issue-analysis-template.md](docs/issue-analysis-template.md#grooming-rewriting-an-issue-for-pickup);
+closing or merging an issue is covered there too.
 
 ### Priority
 
