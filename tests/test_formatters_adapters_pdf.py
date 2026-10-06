@@ -9,7 +9,8 @@ all get resolved here.
 from __future__ import annotations
 
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
-from deltatrack.formatters.canonical import pdf_diff_to_canonical, view_from_canonical
+from deltatrack.formatters.canonical import pdf_diff_to_canonical
+from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.parsers.pdf_anchors import Anchor
 

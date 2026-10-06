@@ -1,7 +1,7 @@
 """Neutral view model consumed by the unified diff renderer.
 
 Both pipelines reach this shape through the canonical JSON, via
-formatters.canonical.view_from_canonical. The renderer in formatters.diff_html
+formatters.canonical_view.view_from_canonical. The renderer in formatters.diff_html
 consumes it without knowing which pipeline produced it.
 
 Pipeline-specific HTML fragments (heading_html, nav_label_html,

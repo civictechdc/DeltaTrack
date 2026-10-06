@@ -4,7 +4,7 @@ Two producer functions:
   xml_diff_to_canonical(diff_dict)        -> dict
   pdf_diff_to_canonical(pdf_diff, **meta) -> dict
 
-One consumer:
+One consumer, in formatters.canonical_view (#801):
   view_from_canonical(canonical)          -> DiffView
 
 The producers are tested against the canonical JSON shape directly. The
@@ -26,9 +26,9 @@ import pytest
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
 from deltatrack.formatters.canonical import (
     pdf_diff_to_canonical,
-    view_from_canonical,
     xml_diff_to_canonical,
 )
+from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.parsers.pdf_anchors import Anchor
 
 # Local pin (guard against unintended bumps). 3.1 added the optional `print_breaks`,

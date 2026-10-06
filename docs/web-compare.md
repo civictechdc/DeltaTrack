@@ -90,7 +90,7 @@ src/deltatrack/compare/pdf.py ← thin wrapper (bytes in → HTML out)
   │  diff_pdfs()                 src/deltatrack/diff_pdf.py
   │  pdf_diff_to_canonical()     src/deltatrack/formatters/canonical.py
   │  format_diff_html()          src/deltatrack/formatters/diff_html.py
-  │      └ view_from_canonical() src/deltatrack/formatters/canonical.py (internal to the renderer)
+  │      └ view_from_canonical() src/deltatrack/formatters/canonical_view.py (internal to the renderer)
   ▼
 Standalone HTML report           ← opened in new tab by web/webapp/js/compare.js
 ```
@@ -130,7 +130,7 @@ Production is built and deployed by `.github/workflows/deploy.yml`; see
 
 **Diff accuracy or report content** — edit the Python engine, not the web UI:
 
-- `src/deltatrack/diff_pdf.py`, `src/deltatrack/parsers/`, `src/deltatrack/formatters/diff_html.py`, `src/deltatrack/formatters/canonical.py`
+- `src/deltatrack/diff_pdf.py`, `src/deltatrack/parsers/`, `src/deltatrack/formatters/diff_html.py`, `src/deltatrack/formatters/canonical.py`, `src/deltatrack/formatters/canonical_view.py`
 - Re-run PDF tests: `uv run pytest tests/test_pdf_*`
 - Regenerate committed examples if output shape changes: `uv run python scripts/render_examples.py`
 

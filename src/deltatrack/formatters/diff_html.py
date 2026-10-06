@@ -20,7 +20,7 @@ from html import escape
 from importlib.resources import files
 
 from deltatrack.formatters._text import word_diff
-from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.formatters.print_layout import printed_document
 from deltatrack.formatters.view_model import ChangeView, DiffView
 from deltatrack.palette import referenced, root_block
