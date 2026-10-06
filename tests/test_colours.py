@@ -1,0 +1,147 @@
+"""Every colour a DeltaTrack surface paints comes from `styles/tokens.css` (#775).
+
+The tokens file is the single style source (#752): change a value there, regenerate, and
+every surface follows. A colour typed straight into a rule is invisible to that, so it
+keeps its old value through the next palette change while the suite stays green. This
+reads what each surface ships, the way the token census in `test_committed_examples.py`
+does, and fails on any literal colour outside a token declaration.
+"""
+
+from __future__ import annotations
+
+import re
+
+import pytest
+
+from deltatrack.formatters import diff_html
+from deltatrack.palette import PALETTE
+from scripts import render_examples
+from scripts.render_webapp_css import PROCESSING_TAB, STYLESHEET, WEBAPP
+
+_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+_STYLE_BLOCK = re.compile(r"<style[^>]*>(.*?)</style>", re.S)
+_STYLE_ATTRIBUTE = re.compile(r"""\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')""")
+_PENDING_CSS = re.compile(r"const PENDING_CSS = `(.*?)`", re.S)
+
+#: The innermost `{ ... }`, which is a rule's declarations even inside `@media`.
+_DECLARATION_BLOCK = re.compile(r"\{([^{}]*)\}")
+_STRING = re.compile(r""""[^"]*"|'[^']*'""")
+_URL = re.compile(r"url\([^)]*\)", re.I)
+
+_HEX = re.compile(r"#[0-9a-f]{3,8}\b", re.I)
+_COLOUR_FUNCTION = re.compile(r"\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\(", re.I)
+_IDENTIFIER = re.compile(r"[a-z][a-z0-9-]*", re.I)
+_CUSTOM_PROPERTY_NAME = re.compile(r"--[\w-]+")
+
+#: CSS Color Level 4's named colours. `transparent` and `currentcolor` are left out:
+#: neither is a palette choice.
+_NAMED_COLOURS = frozenset(
+    """
+    aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue
+    blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk
+    crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki
+    darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen
+    darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue
+    dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro
+    ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo
+    ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral
+    lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon
+    lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime
+    limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple
+    mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred
+    midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab
+    orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip
+    peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue
+    saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue
+    slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet
+    wheat white whitesmoke yellow yellowgreen
+    """.split()
+)
+
+
+def _surfaces() -> dict[str, str]:
+    """The CSS each surface ships, by surface.
+
+    The report's stylesheet is read as the formatter builds it, so a literal in a
+    package `.css` fails here directly rather than only after the examples are
+    regenerated. The upload pages' stylesheet is the committed file, because that is
+    what the server sends; `test_webapp_css.py` keeps its generated blocks current.
+    """
+    index = render_examples.INDEX_TEMPLATE.format(tokens=render_examples.INDEX_TOKENS, cards="")
+    markup = []
+    for page in sorted(WEBAPP.glob("*.html")):
+        html = page.read_text()
+        markup += _STYLE_BLOCK.findall(html)
+        markup += [f"{{{double or single}}}" for double, single in _STYLE_ATTRIBUTE.findall(html)]
+    return {
+        "report": diff_html._CSS,
+        "examples index": "\n".join(_STYLE_BLOCK.findall(index)),
+        "upload pages": STYLESHEET.read_text(),
+        "upload page markup": "\n".join(markup),
+        "processing tab": _PENDING_CSS.search(PROCESSING_TAB.read_text()).group(1),
+    }
+
+
+def _declarations(css: str) -> list[tuple[str, str]]:
+    """Every `property: value` in `css`, comments, strings and `url()`s blanked."""
+    found = []
+    for block in _DECLARATION_BLOCK.findall(_COMMENT.sub("", css)):
+        block = _URL.sub("url()", _STRING.sub('""', block))
+        for declaration in block.split(";"):
+            if ":" in declaration:
+                name, value = declaration.split(":", 1)
+                found.append((name.strip(), " ".join(value.split())))
+    return found
+
+
+def _literal_colours(css: str) -> list[str]:
+    """The declarations in `css` that paint a colour not taken from the tokens file.
+
+    A token's own declaration is exempt only with the value `tokens.css` gives it, which
+    is how each surface's generated `:root` reads. Any other custom property holding a
+    colour is a second source, and so is a token redeclared with a different value.
+    """
+    flagged = []
+    for name, value in _declarations(css):
+        if name in PALETTE and value == " ".join(PALETTE[name].split()):
+            continue
+        bare = _CUSTOM_PROPERTY_NAME.sub("", value)
+        named = {word.lower() for word in _IDENTIFIER.findall(bare)} & _NAMED_COLOURS
+        if _HEX.search(bare) or _COLOUR_FUNCTION.search(bare) or named:
+            flagged.append(f"{name}: {value}")
+    return flagged
+
+
+def test_no_surface_paints_a_colour_outside_the_tokens_file():
+    assert list(WEBAPP.glob("*.html")), f"no upload pages found in {WEBAPP}; their markup would go unscanned"
+    surfaces = _surfaces()
+    for surface, css in surfaces.items():
+        if surface != "upload page markup":
+            assert _declarations(css), f"no declarations parsed from the {surface}; this check would vacuously pass"
+
+    literals = {surface: found for surface, css in surfaces.items() if (found := _literal_colours(css))}
+    assert not literals, (
+        f"literal colours outside styles/tokens.css: {literals}. Add a token for each to "
+        "tokens.css and refer to it with var(--name), then regenerate "
+        "(`uv run python scripts/render_webapp_css.py` and `uv run python scripts/render_examples.py`)."
+    )
+
+
+@pytest.mark.parametrize(
+    "css",
+    [
+        pytest.param("a { color: #abc; }", id="hex-3"),
+        pytest.param("a { color: #aabbcc80; }", id="hex-8"),
+        pytest.param("a { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }", id="rgba"),
+        pytest.param("a { color: rgb(0 0 0); }", id="rgb"),
+        pytest.param("a { color: hsl(0 0% 0%); }", id="hsl"),
+        pytest.param("a { color: oklch(50% 0.1 200); }", id="oklch"),
+        pytest.param("a { color: color-mix(in srgb, var(--primary) 50%, var(--card)); }", id="color-mix"),
+        pytest.param("a { border: 1px solid Red; }", id="named"),
+        pytest.param("a { color: var(--primary, #fff); }", id="var-fallback"),
+        pytest.param("a { --rogue: #123456; }", id="untracked-custom-property"),
+        pytest.param(":root { --primary: #000000; }", id="token-redeclared-with-another-value"),
+    ],
+)
+def test_each_way_of_writing_a_colour_is_caught(css):
+    assert _literal_colours(css), f"{css!r} paints a literal colour but was not flagged"

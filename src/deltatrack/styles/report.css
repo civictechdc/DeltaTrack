@@ -161,9 +161,9 @@ mark.find-hit--current { background: var(--primary); color: var(--primary-foregr
 .export-modal { position: fixed; inset: 0; z-index: 50; display: flex;
   align-items: center; justify-content: center; }
 .export-modal[hidden] { display: none; }
-.export-modal__backdrop { position: absolute; inset: 0; background: rgba(28,28,58,0.45); }
+.export-modal__backdrop { position: absolute; inset: 0; background: var(--overlay); }
 .export-modal__panel { position: relative; background: var(--card); border-radius: var(--radius); padding: 24px 28px;
-  max-width: 560px; width: 92%; max-height: 88vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(28,28,58,0.25); }
+  max-width: 560px; width: 92%; max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-modal); }
 .export-modal__close { position: absolute; top: 10px; right: 14px; border: 0; background: none;
   font-size: 24px; line-height: 1; cursor: pointer; color: var(--muted-foreground); }
 .export-modal__panel h2 { font-size: 18px; margin-bottom: 4px; }
@@ -214,7 +214,7 @@ body.nav-collapsed .main { margin-left: 0; padding-left: 64px; }
 @media (max-width: 820px) {
   .main { margin-left: 0; padding: 64px 18px 24px; }
   body.nav-collapsed .main { padding-left: 18px; }
-  .sidebar { box-shadow: 0 8px 24px -8px rgba(28,28,58,0.35); }
+  .sidebar { box-shadow: var(--shadow-drawer); }
   .report-header h1 { font-size: 20px; }
   .summary-bar { gap: 8px; }
   /* Don't pin the top bar over the fixed hamburger; drop nav + find to a
@@ -224,7 +224,7 @@ body.nav-collapsed .main { margin-left: 0; padding-left: 64px; }
   body { padding-bottom: 108px; }
   .nav-controls { position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
     justify-content: center; gap: 24px; background: var(--card);
-    border-top: 1px solid var(--border); box-shadow: 0 -2px 10px rgba(28,28,58,0.12);
+    border-top: 1px solid var(--border); box-shadow: var(--shadow-bottom-bar);
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
   .find-bar { position: fixed; left: 0; right: 0; bottom: 46px; z-index: 35;
     justify-content: center; background: var(--card); border-top: 1px solid var(--border);
