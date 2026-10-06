@@ -59,14 +59,6 @@ summary:hover .disclosure::before, summary.disclosure:hover::before { color: var
   border-radius: 999px; font-size: 13px; background: var(--secondary); }
 .summary-item strong { font-size: 14px; }
 
-/* Badges */
-.change-type { display: inline-block; padding: 2px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.change-type[data-type="modified"] { background: var(--diff-modified); color: var(--diff-modified-foreground); }
-.change-type[data-type="added"] { background: var(--diff-add); color: var(--diff-add-foreground); }
-.change-type[data-type="removed"] { background: var(--diff-remove); color: var(--diff-remove-foreground); }
-.change-type[data-type="moved"] { background: var(--diff-moved); color: var(--diff-moved-foreground); }
-
 /* Card groups: cards nested under their tree-node headings (#172) */
 .change-group { margin: 6px 0 14px; }
 .change-group > summary { cursor: pointer; font-weight: 600; padding: 6px 8px;
@@ -122,7 +114,6 @@ del { background: var(--diff-remove); text-decoration: line-through; color: var(
 ins { background: var(--diff-add); text-decoration: none; color: var(--diff-add-foreground);
   padding: 0 1px; border-radius: 3px; }
 
-/* View toggle (Changes / Full bill) — neutral grey, distinct from action buttons */
 /* Sticky action bar: view toggle (left), nav + export (right) */
 .action-bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center;
   justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--background);
@@ -132,29 +123,17 @@ ins { background: var(--diff-add); text-decoration: none; color: var(--diff-add-
 .find-bar { display: inline-flex; align-items: center; gap: 4px; }
 .find-bar input { padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius);
   font: inherit; font-family: var(--font-sans); font-size: 13px; width: 180px; background: var(--card); }
-.find-bar button { padding: 5px 9px; border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 13px; }
-.find-bar button:hover { background: var(--secondary); }
-.find-bar button[disabled] { opacity: 0.4; cursor: default; }
 .find-counter { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted-foreground);
   min-width: 3.5em; text-align: center; }
 mark.find-hit { background: var(--accent); color: inherit; border-radius: 2px; scroll-margin-top: 64px; }
 mark.find-hit--current { background: var(--primary); color: var(--primary-foreground); }
 .nav-controls { display: inline-flex; align-items: center; gap: 4px; }
-.nav-controls button { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--card); cursor: pointer; font-family: var(--font-sans); font-size: 14px;
-  box-shadow: var(--shadow-soft); }
-.nav-controls button:hover { background: var(--secondary); }
-.nav-controls button[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
 .nav-counter { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted-foreground);
   min-width: 3.5em; text-align: center; }
 
+/* View toggle (Changes / Full bill): the outer border of its joined .button--segment buttons */
 .view-toggle { display: inline-flex; border: 1px solid var(--border);
   border-radius: var(--radius); overflow: hidden; }
-.view-toggle__btn { padding: 6px 16px; border: 0; background: var(--card); cursor: pointer;
-  font: inherit; font-family: var(--font-sans); font-size: 13px; color: var(--foreground); }
-.view-toggle__btn + .view-toggle__btn { border-left: 1px solid var(--border); }
-.view-toggle__btn.is-active { background: var(--muted-foreground); color: #fff; }
 .view[hidden] { display: none; }
 
 /* Full-bill tracked-changes view */
@@ -178,11 +157,7 @@ mark.find-hit--current { background: var(--primary); color: var(--primary-foregr
 .removed-changes__item-head { font-size: 13px; color: var(--muted-foreground); margin-bottom: 4px; font-weight: 600; }
 .removed-changes__item .diff-removed { white-space: pre-wrap; }
 
-/* Export button + modal */
-.export-btn { padding: 6px 16px; border: 1px solid var(--primary);
-  border-radius: var(--radius); background: var(--primary); color: var(--primary-foreground); cursor: pointer;
-  font: inherit; font-family: var(--font-sans); font-size: 13px; }
-.export-btn:hover { filter: brightness(1.25); }
+/* Export modal */
 .export-modal { position: fixed; inset: 0; z-index: 50; display: flex;
   align-items: center; justify-content: center; }
 .export-modal[hidden] { display: none; }
@@ -194,19 +169,13 @@ mark.find-hit--current { background: var(--primary); color: var(--primary-foregr
 .export-modal__panel h2 { font-size: 18px; margin-bottom: 4px; }
 .export-modal__lead { color: var(--muted-foreground); font-size: 14px; margin-bottom: 16px; }
 .export-downloads { display: flex; gap: 10px; flex-wrap: wrap; }
-.export-dl { padding: 8px 16px; border: 1px solid var(--primary); border-radius: var(--radius);
-  background: var(--primary);
-  color: var(--primary-foreground); cursor: pointer; font: inherit; font-family: var(--font-sans); font-size: 14px; }
-.export-dl:hover { filter: brightness(1.25); }
 .export-prompts { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
 .export-prompts[hidden] { display: none; }
 .export-prompts h3 { font-size: 15px; margin-bottom: 4px; }
 .export-prompts__lead { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
 .prompt-list { list-style: none; }
 .prompt-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; font-size: 13px; }
-.prompt-copy { flex: none; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px;
-  background: var(--secondary); cursor: pointer; font: inherit; font-family: var(--font-sans); font-size: 12px; }
-.prompt-copy:hover { background: var(--accent); }
+.prompt-item .button { flex: none; }
 .prompt-text { line-height: 1.5; }
 
 /* Nav and pointer targets clear the sticky action bar when scrolled to */
