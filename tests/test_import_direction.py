@@ -17,8 +17,9 @@ question from which code loads with which.
 be named below. A new dependency is then a decision someone reads in review, not a silent
 widening; a denylist would guard a shrinking subset as the engine grows.
 
-**The engine's rosters are derived** from what is on disk (every parser module, both
-differs), and each has a floor, so a rename cannot empty a check into a pass.
+**The engine's roster is derived** from what is on disk: every module that is not the
+viewer, a helper it may load, or ``compare/`` (which assembles both). It has a floor, so a
+rename cannot empty a check into a pass.
 """
 
 from __future__ import annotations
@@ -70,8 +71,19 @@ VIEWER_ONLY = frozenset(
 )
 
 
-def _parser_modules() -> list[str]:
-    return sorted(f"deltatrack.parsers.{p.stem}" for p in (PACKAGE / "parsers").glob("*.py") if p.stem != "__init__")
+def _all_modules() -> list[str]:
+    """Every module in the package, from the files on disk."""
+    names = []
+    for path in sorted(PACKAGE.rglob("*.py")):
+        parts = path.relative_to(PACKAGE.parent).with_suffix("").parts
+        names.append(".".join(parts[:-1] if parts[-1] == "__init__" else parts))
+    return names
+
+
+def _engine_modules() -> list[str]:
+    """Everything that is not the viewer, a helper it may load, or ``compare/``, which
+    assembles the engine and the renderer and so may load both."""
+    return [m for m in _all_modules() if m not in VIEWER_MAY_LOAD and not m.startswith("deltatrack.compare")]
 
 
 DIFFERS = ("deltatrack.diff_bill", "deltatrack.diff_pdf")
@@ -86,7 +98,8 @@ def _loaded_by(module: str, *, block: tuple[str, ...] = ()) -> set[str]:
         f"import {module}\n"
         "print(json.dumps(sorted(k for k, v in sys.modules.items() if v is not None)))\n"
     )
-    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, cwd=ROOT)
+    # -P keeps the checkout off sys.path: the package resolves as installed, as for a user.
+    result = subprocess.run([sys.executable, "-P", "-c", script], capture_output=True, text=True, cwd=ROOT)
     assert result.returncode == 0, f"importing {module} failed:\n{result.stderr}"
     return set(json.loads(result.stdout))
 
@@ -103,12 +116,15 @@ def test_the_viewer_loads_only_its_allowlist(module):
     assert not external, f"{module} loads {external}"
 
 
-def test_the_engine_rosters_are_not_empty():
-    assert len(_parser_modules()) >= 4, _parser_modules()
-    assert all((PACKAGE / f"{m.rsplit('.', 1)[1]}.py").exists() for m in DIFFERS)
+def test_the_rosters_name_real_modules():
+    """A renamed module must not empty a check into a pass."""
+    engine = _engine_modules()
+    assert len(engine) >= 15, engine
+    assert {"deltatrack.formatters.canonical", "deltatrack.parsers.pdf_text", *DIFFERS} <= set(engine)
+    assert VIEWER_ONLY <= _loaded_by("deltatrack.formatters.diff_html"), "a viewer-only module is not loaded"
 
 
-@pytest.mark.parametrize("module", [*_parser_modules(), *DIFFERS])
+@pytest.mark.parametrize("module", _engine_modules())
 def test_the_engine_does_not_load_the_viewer(module):
     viewer = sorted(VIEWER_ONLY & _loaded_by(module))
     assert not viewer, f"{module} loads the viewer: {viewer}"
