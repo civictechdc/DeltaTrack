@@ -74,7 +74,7 @@ Both paths reach the same canonical JSON, then the same renderer.
 | Stage | Owner | What it does |
 |---|---|---|
 | Render | `formatters.diff_html.format_diff_html` | Canonical JSON → standalone report. One renderer for both pipelines ([ADR 0007](decisions/0007-single-renderer.md)). |
-| View model | `formatters.canonical.view_from_canonical` | Canonical JSON → `DiffView` (`formatters.view_model`). Called by the renderer, not by its callers, so the view cannot be assembled differently by different callers ([ADR 0006](decisions/0006-canonical-diff-contract.md)). |
+| View model | `formatters.canonical_view.view_from_canonical` | Canonical JSON → `DiffView` (`formatters.view_model`). Kept out of `formatters.canonical` so drawing a report never loads the producers, parsers or differs; `tests/test_import_direction.py` holds that (#801). Called by the renderer, not by its callers, so the view cannot be assembled differently by different callers ([ADR 0006](decisions/0006-canonical-diff-contract.md)). |
 
 Alongside these, `structure_tree.py` derives the leveled heading tree both pipelines feed
 ([ADR 0012](decisions/0012-pdf-heading-levels.md),
@@ -142,7 +142,7 @@ the published schema — treat it as a breaking change.
 2. `src/deltatrack/compare/xml.py` — the whole XML chain in one file, docstring first.
 3. `src/deltatrack/bill_tree.py` — how a bill becomes a tree.
 4. `src/deltatrack/diff_bill.py` — the matching and money logic, where the product's judgment lives.
-5. `src/deltatrack/formatters/canonical.py` — the contract both paths meet at.
+5. `src/deltatrack/formatters/canonical.py` — the contract both paths meet at; `canonical_view.py` reads it back for the report.
 6. `src/deltatrack/compare/pdf.py` then `parsers/pdf_text.py` — the PDF path, once the XML one is familiar.
 7. [TESTING.md](../TESTING.md) — how any of it is proven correct.
 
@@ -162,7 +162,7 @@ uses:
 - **Financial diff** (`diff_bill.py`). Dollar amounts are the product
   ([ADR 0001](decisions/0001-structured-money-diff.md)). Wrong money is worse than no
   money, because a staffer cannot tell it is wrong by looking.
-- **The canonical contract** (`formatters/canonical.py`, `schema/`). Both pipelines and
+- **The canonical contract** (`formatters/canonical.py`, `formatters/canonical_view.py`, `schema/`). Both pipelines and
   every renderer depend on it.
 - **Section matching in the similarity dead zone.** When two sections are partly alike, the
   tool has to judge, and that is where it mislabels. Deliberately tracked rather than

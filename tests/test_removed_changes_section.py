@@ -13,7 +13,7 @@ removed section is built and never used to place, group or count a removal.
 
 from __future__ import annotations
 
-from deltatrack.formatters.canonical import view_from_canonical
+from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.formatters.diff_html import format_diff_html
 from tests.removed_changes_report import canonical, change, changes, changes_view, removed_section, span, tree_v2
 
