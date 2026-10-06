@@ -105,11 +105,15 @@ def _move_span(span: dict | None, side: PrintedSide) -> dict | None:
     return {**span, "start": start, "end": max(start, side.end(span["end"]))}
 
 
+# Every tree-node field that holds an offset into `full_text`.
+_NODE_SPANS = ("full_text_span", "heading_span", "body_span")
+
+
 def _move_tree(nodes: list[dict], side: PrintedSide) -> list[dict]:
     return [
         {
             **n,
-            "full_text_span": _move_span(n.get("full_text_span"), side),
+            **{key: _move_span(n[key], side) for key in _NODE_SPANS if key in n},
             "children": _move_tree(n.get("children") or [], side),
         }
         for n in nodes

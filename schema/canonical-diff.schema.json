@@ -134,6 +134,11 @@
       "required": ["label", "level", "own_amounts", "full_text_span", "children"],
       "additionalProperties": false,
       "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^v[12]\\.(0|[1-9][0-9]*)$",
+          "description": "Optional (v3.1+) the node's identifier: its side, then its 0-based preorder position in that side's tree (\"v1.17\"). Unique per side and deterministic for the same inputs and implementation, but NOT persistent across versions, parser revisions or tree changes. Never derived from label text."
+        },
         "label": { "type": "string" },
         "level": {
           "enum": ["division", "title", "major", "agency", "account", "section", "subsection", "grouping", "preamble", "heading"],
@@ -145,6 +150,14 @@
           "description": "Dollar amounts in THIS node's own block only (not its children's)."
         },
         "full_text_span": { "$ref": "#/$defs/Offset" },
+        "heading_span": {
+          "$ref": "#/$defs/Offset",
+          "description": "Optional (v3.1+) the whole row of full_text[side] that the node's heading is printed on; null when the producer has no such row for this node. Never found by searching for the label."
+        },
+        "body_span": {
+          "$ref": "#/$defs/Offset",
+          "description": "Optional (v3.1+) the node's own body in full_text[side], not its children's; null when the node has no text of its own or the producer cannot place it."
+        },
         "children": { "type": "array", "items": { "$ref": "#/$defs/TreeNode" } }
       }
     },
@@ -197,6 +210,21 @@
             "v1": { "$ref": "#/$defs/PathArray" },
             "v2": { "$ref": "#/$defs/PathArray" }
           }
+        },
+        "node": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["v1", "v2"],
+              "additionalProperties": false,
+              "properties": {
+                "v1": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v1\\.(0|[1-9][0-9]*)$" }] },
+                "v2": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^v2\\.(0|[1-9][0-9]*)$" }] }
+              }
+            }
+          ],
+          "description": "Optional (v3.1+) the id of the tree node holding this change on each side. Side v1 applies to removed, modified and moved changes, side v2 to added, modified and moved; an inapplicable side is null, and an applicable side that is null is unresolved. Null when the document has no tree."
         },
         "location": {
           "anyOf": [

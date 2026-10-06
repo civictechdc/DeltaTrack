@@ -121,7 +121,7 @@ def test_tree_toc_covers_every_flat_section_heading():
     from deltatrack.formatters.text_serializer import build_xml_full_text, serialize_tree_for_tree
 
     v1, v2 = normalize_bill(_V1), normalize_bill(_V2)
-    full_text, _spans, tree = build_xml_full_text(v1, v2)
+    full_text, _spans, tree, _ids = build_xml_full_text(v1, v2)
     _v2_text, flat_sections, _v2_spans, _v2_ho = serialize_tree_for_tree(v2)
     ft_v2 = full_text["v2"]
     node_offsets = {_node_anchor_offset(ft_v2, n) for n in _walk_tree(tree["v2"]) if n["full_text_span"] is not None}
