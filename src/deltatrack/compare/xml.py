@@ -77,9 +77,14 @@ def _build_from_trees(
         diff_dict["new_version_number"] = new_version_number
 
     # Readable full text + per-side element_id spans + the leveled structure tree.
-    full_text, full_text_spans, tree = build_xml_full_text(old_tree, new_tree)
+    full_text, full_text_spans, tree, node_ids = build_xml_full_text(old_tree, new_tree)
     return xml_diff_to_canonical(
-        diff_dict, full_text=full_text, full_text_spans=full_text_spans, tree=tree, title=new_tree.official_title
+        diff_dict,
+        full_text=full_text,
+        full_text_spans=full_text_spans,
+        tree=tree,
+        node_ids=node_ids,
+        title=new_tree.official_title,
     )
 
 

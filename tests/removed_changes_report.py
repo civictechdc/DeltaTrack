@@ -89,7 +89,52 @@ def changes(title_one="TITLE I"):
     ]
 
 
+def _with_ids(nodes, side):
+    """Give every node its preorder identifier, as the producer does (#785), and
+    return a map from each node's label path to its id."""
+    by_path: dict[tuple[str, ...], str | None] = {}
+    counter = 0
+
+    def walk(ns, path):
+        nonlocal counter
+        for n in ns:
+            n["id"] = f"{side}.{counter}"
+            counter += 1
+            p = (*path, n["label"]) if n["label"] else path
+            # A repeated label path names no single node: resolving a change against
+            # it would pick one silently, the collision #785 exists to remove.
+            by_path[p] = None if p in by_path else n["id"]
+            walk(n["children"], p)
+
+    walk(nodes, ())
+    return by_path
+
+
 def canonical(change_list=None, *, later_tree=None):
+    """A document whose changes name their nodes, the way a producer states them.
+
+    The builder resolves each change's node from its path, and refuses a path that
+    names two nodes; a producer resolves it from the parse (#785). A change that
+    already carries ``node`` keeps it.
+    """
+    trees = {"v1": tree_v1(), "v2": tree_v2() if later_tree is None else later_tree}
+    ids = {side: _with_ids(trees[side], side) for side in ("v1", "v2")}
+    change_list = changes() if change_list is None else change_list
+
+    def resolve(side, path):
+        key = tuple(path or ())
+        if key in ids[side] and ids[side][key] is None:
+            raise ValueError(f"{side} path {key} names two nodes; give the change an explicit node")
+        return ids[side].get(key)
+
+    for c in change_list:
+        if "node" not in c:
+            v1_applies = c["change_type"] in ("removed", "modified", "moved")
+            v2_applies = c["change_type"] in ("added", "modified", "moved")
+            c["node"] = {
+                "v1": resolve("v1", c["path"]["v1"]) if v1_applies else None,
+                "v2": resolve("v2", c["path"]["v2"]) if v2_applies else None,
+            }
     return {
         "schema_version": "3.1",
         "bill": {"type": "hr", "number": 1, "congress": 119},
@@ -98,8 +143,8 @@ def canonical(change_list=None, *, later_tree=None):
             "v2": {"label": "v2", "version_number": 2, "source": "xml"},
         },
         "summary": {"added": 0, "removed": 3, "modified": 2, "moved": 0},
-        "changes": changes() if change_list is None else change_list,
-        "tree": {"v1": tree_v1(), "v2": tree_v2() if later_tree is None else later_tree},
+        "changes": change_list,
+        "tree": trees,
     }
 
 
@@ -124,8 +169,17 @@ class ChangesView(HTMLParser):
         self._in_pointer = False
 
     @property
+    def pointer_list(self) -> list[tuple[tuple[str, ...], tuple[tuple[str, ...], int]]]:
+        """Every pointer in page order, duplicates kept."""
+        return [(path, (self._removed_groups[target], count)) for path, target, count in self._pointer_links]
+
+    @property
     def pointers(self) -> dict[tuple[str, ...], tuple[tuple[str, ...], int]]:
-        return {path: (self._removed_groups[target], count) for path, target, count in self._pointer_links}
+        """Pointers by later group path. Fails if two groups at one path both carry one,
+        rather than letting a dict keep only the last."""
+        paths = [path for path, _ in self.pointer_list]
+        assert len(paths) == len(set(paths)), f"two pointers from one label path: {paths}"
+        return dict(self.pointer_list)
 
     def _path(self) -> tuple[str, ...]:
         return tuple(g["label"] for g in self.stack if g["group"] and not g["removed"])
@@ -140,6 +194,7 @@ class ChangesView(HTMLParser):
                     "removed": "removed-section" in classes,
                     "label": "",
                     "id": a.get("id"),
+                    "node": a.get("data-node"),
                 }
             )
         elif tag == "summary" and self.stack:
@@ -147,6 +202,7 @@ class ChangesView(HTMLParser):
         elif tag == "div" and "change" in classes and (a.get("id") or "").startswith("change-"):
             self.cards[int(a["id"].split("-")[1])] = {
                 "path": self._path(),
+                "nodes": tuple(g["node"] for g in self.stack if g["group"] and g["node"]),
                 "in_removed": any(g["removed"] for g in self.stack),
             }
         elif tag == "a" and self.stack and self._pointer_link is None and self._in_pointer:

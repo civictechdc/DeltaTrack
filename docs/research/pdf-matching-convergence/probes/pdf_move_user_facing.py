@@ -29,9 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from corpus import accepted_pdf_pairs, pages_for  # noqa: E402
 
 from deltatrack.diff_pdf import diff_pdfs  # noqa: E402
-from deltatrack.formatters.canonical import (  # noqa: E402
+from deltatrack.formatters.canonical import pdf_diff_to_canonical  # noqa: E402
+from deltatrack.formatters.canonical_view import (  # noqa: E402
     _move_info_html,
-    pdf_diff_to_canonical,
     view_from_canonical,
 )
 

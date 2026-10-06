@@ -92,19 +92,29 @@ def test_account_named_title_is_not_promoted_to_a_toc_group():
     assert any("Title 17 Innovative" in leaf for leaf in leaves)
 
 
-def test_an_account_links_to_its_heading_row_not_into_its_body():
-    """An account's span starts at its body, one line below the heading the serializer
-    emits for it, and the TOC entry must land on that heading. Red if the lookup for
-    the nearest preceding heading line misses the line directly above the body by one
-    character: the entry falls back to the body row and a reader lands below the
-    account's name."""
+def test_an_account_links_to_the_heading_row_the_producer_recorded():
+    """An account's span starts at its body; its heading row is a fact the document
+    carries (``heading_span``, #785), and the TOC entry lands on it."""
     text = "DEPARTMENT OF ENERGY\nOPERATIONS\nFor necessary expenses, $1,000.\n"
     body = text.index("For necessary")
-    tree = [_node("DEPARTMENT OF ENERGY", "agency", 0, [_node("OPERATIONS", "account", body)])]
+    heading = text.index("OPERATIONS")
+    account = _node("OPERATIONS", "account", body) | {"heading_span": {"start": heading, "end": heading + 10}}
+    tree = [_node("DEPARTMENT OF ENERGY", "agency", 0, [account])]
 
     html = _build_tree_nav(tree, text)
 
-    assert f'href="#fb-off-{text.index("OPERATIONS")}">OPERATIONS<' in html
+    assert f'href="#fb-off-{heading}">OPERATIONS<' in html
+
+
+def test_without_a_heading_row_the_link_goes_to_the_node_own_row_not_a_same_name_line():
+    """No label search: a line reading "OPERATIONS" above belongs to another node, and
+    #766's "Receipts collected" shows such a match can be the wrong row. Without a
+    recorded heading, the entry jumps to the row its own text starts on."""
+    text = "TITLE I\nOPERATIONS\nFor the first account, $1.\nFor the second account, $2.\n"
+    second = text.index("For the second")
+    tree = [_node("OPERATIONS", "account", second) | {"heading_span": None}]
+
+    assert f'href="#fb-off-{second}">OPERATIONS<' in _build_tree_nav(tree, text)
 
 
 @pytest.mark.slow
@@ -121,7 +131,7 @@ def test_tree_toc_covers_every_flat_section_heading():
     from deltatrack.formatters.text_serializer import build_xml_full_text, serialize_tree_for_tree
 
     v1, v2 = normalize_bill(_V1), normalize_bill(_V2)
-    full_text, _spans, tree = build_xml_full_text(v1, v2)
+    full_text, _spans, tree, _ids = build_xml_full_text(v1, v2)
     _v2_text, flat_sections, _v2_spans, _v2_ho = serialize_tree_for_tree(v2)
     ft_v2 = full_text["v2"]
     node_offsets = {_node_anchor_offset(ft_v2, n) for n in _walk_tree(tree["v2"]) if n["full_text_span"] is not None}

@@ -1,7 +1,7 @@
 """Neutral view model consumed by the unified diff renderer.
 
 Both pipelines reach this shape through the canonical JSON, via
-formatters.canonical.view_from_canonical. The renderer in formatters.diff_html
+formatters.canonical_view.view_from_canonical. The renderer in formatters.diff_html
 consumes it without knowing which pipeline produced it.
 
 Pipeline-specific HTML fragments (heading_html, nav_label_html,
@@ -55,12 +55,13 @@ class ChangeView:
     """Raw (unescaped) section label the sidebar groups this change under —
     the top of its breadcrumb (e.g. "TITLE I"). Empty → "Uncategorized"."""
 
-    node_path: tuple[tuple[str, str], ...] = ()
-    """Raw (label, level) breadcrumb, root → the later-version tree node this
-    change was filed under by the own-span containment join (#172). Empty when
-    the join could not place the change (no tree, null span, uncovered position)
-    — the renderer then falls back to group_label for that card — and always
-    empty for a removed change, which has no later-version position."""
+    node_path: tuple[tuple[str, str, str], ...] = ()
+    """Raw (id, label, level) breadcrumb of labeled tree nodes, root → the
+    later-version node the document names for this change (``changes[].node.v2``,
+    #785). Groups key on the id, so two headings with the same label stay apart.
+    Empty when the document names no node (an unresolved reference, or a document
+    from before node identity): the renderer then falls back to group_label for that
+    card. Always empty for a removed change, which has no later-version node."""
 
     removed_path: tuple[str, ...] = ()
     """A removed change's earlier breadcrumb (``changes[].path.v1``), root →

@@ -327,7 +327,7 @@ What to look at, roughly in priority order:
 - **The risk hotspots**, where a bug does the most damage:
   - **Parser accuracy** (`src/deltatrack/bill_tree.py`, `src/deltatrack/parsers/`) -- does the bill's structure come through intact? A missing or mis-nested section corrupts everything downstream. See [docs/parser-validation.md](docs/parser-validation.md).
   - **Financial diff** (`src/deltatrack/diff_bill.py` and its financial filtering) -- dollar amounts and their changes must be exact.
-  - **The canonical schema contract** (`src/deltatrack/formatters/canonical.py`) -- both pipelines and the renderer depend on it, so a breaking change there ripples everywhere.
+  - **The canonical schema contract** (`src/deltatrack/formatters/canonical.py` builds it, `canonical_view.py` reads it, `schema_version.py` versions it) -- both pipelines and the renderer depend on it, so a breaking change there ripples everywhere.
 - **Tests for the change.** New behavior should come with a test that would fail without the fix. Judge that by the red-green delta on your own machine rather than by the totals the author reported, and compare like-for-like selections — [TESTING.md](TESTING.md#reading-test-counts) explains what a count does and does not tell you, including which differences are a fail-open signal rather than an environment difference.
 - **Docs and decisions.** A non-obvious choice belongs in a code comment or a [decision record](docs/decisions/); a user-facing change belongs in the README.
 

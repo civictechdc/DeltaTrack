@@ -56,6 +56,14 @@ Top-level field: `schema_version: "3.1"`.
   saved document alone. The PDF pipeline now also fills `bill.type` and `bill.number`
   from the printed designator, which it previously read and discarded.
 
+  Also added node identity (#785, ADR 0006): optional `id`, `heading_span` and
+  `body_span` on each `tree` node, and optional `node: { v1, v2 } | null` on each
+  change, naming the tree node that holds it on each side. A consumer used to recover
+  which node a change sits in by joining spans and matching labels, which misfiled
+  changes wherever two headings share a name; it can now read the producer's answer.
+  The spans state where the producer printed a node's heading and body, so a consumer
+  no longer searches the text for a label. `full_text_span` keeps its meaning.
+
 - **3.0** — **Breaking:** removed `amount_entries` from each change object and from
   its `required` list (#671). No field replaces it: a change object now carries no
   money at all. The field paired a dollar figure on one side with a figure on the
@@ -243,7 +251,10 @@ A `TreeNode`:
 | `label` | string | The node's own heading text (`""` for an empty-path root). |
 | `level` | enum | Shared GPO vocabulary: `division`, `title`, `major`, `agency`, `account`, `section`, `subsection`, `grouping`, `preamble`, `heading`. Leaf level is typed from the source tag/kind; interior levels are positional (`heading` when an interior container has no typed source). `subsection` nests under its `section` on both pipelines: XML emits every direct non-quoted `<subsection>` (#188), the PDF the catchline-bearing run-in subset (#96). |
 | `own_amounts` | int[] | Dollar amounts in **this node's own block only** (never its children's). The union over all nodes conserves the bill's amounts exactly. |
+| `id` | string | Optional (v3.1+). See [Node identity](#node-identity-optional-v31). |
 | `full_text_span` | Offset \| null | `{ start, end }` char range into `full_text[side]` locating this node; `null` when it can't be located. Reference only — never duplicates the text. |
+| `heading_span` | Offset \| null | Optional (v3.1+). The whole row of `full_text[side]` the node's heading is printed on. See below. |
+| `body_span` | Offset \| null | Optional (v3.1+). The node's own body in `full_text[side]`, never its children's. See below. |
 | `children` | TreeNode[] | Ordered child nodes. |
 
 The tree is **per-side, independently built, not paired** — cross-version
@@ -253,6 +264,37 @@ be both content and container (an account that holds sub-accounts has a
 derivable from this tree, and since #462 it is the renderer's only source for
 the navigation: the separate flat `sections` jump-list and the builder that read
 it were removed.
+
+#### Node identity (optional, v3.1+)
+
+`id` is `"<side>.<n>"`, for example `"v1.17"`: the node's side, then its 0-based
+position in a preorder walk of that side's tree, counting every node, unlabeled ones
+included.
+
+- **Unique per side**, and the side prefix means an identifier from one side can never
+  equal one from the other. Two nodes with the same label, or the same full path, still
+  have different identifiers.
+- **Deterministic:** the same inputs and the same implementation give the same
+  identifiers.
+- **Not persistent.** An identifier names a node in this document only. It is not
+  stable across versions of a bill, parser revisions, or changes to how the tree is
+  built, and it says nothing about which node in the other version corresponds to this
+  one; that is what `changes` is for. It is never derived from label text, so a
+  relabelled heading keeps its identifier when the tree's shape is unchanged.
+
+`heading_span` and `body_span` are facts the producer recorded while writing
+`full_text`, never found by searching it for a label. A present span is never empty.
+**`null` means the producer does not have the fact**; it is never a substitute such as
+the node's first row.
+
+| | XML (`paragraphs`) | PDF (`numbered_lines`) |
+|---|---|---|
+| `heading_span` | The earliest row printed as this node's heading: a heading line printed for its path while writing it or anything inside it, its run-in `SEC. NN.` or `(a)` row (which also starts its body), or a pathless node's header line. `null` where no row was printed for the node: the synthesized Front Matter group, boilerplate without a header, and a node whose whole path was already in the heading run printed for the node before it. A later node on a repeated path whose heading *is* printed again takes that row, never the first occurrence | The anchor's printed row, gutter included. `null` where no anchor backs the node (a heading reconstructed from breadcrumbs), for the synthesized Front Matter anchor, and for an anchor whose row is outside the line-offset table |
+| `body_span` | The node's own body text. `null` for a node with no text of its own: a container built from a path, or a section whose body is empty | The node's block rows after heading lines are trimmed, first row to last, gutter included. `null` where no anchor backs the node, when the anchor's block is empty, or when an end row is outside the line-offset table (an unnumbered line is never in it) |
+
+A PDF span covers printed rows, so it includes the line-number gutter. A consumer
+wanting the plain text reads the rows as `full_text_layout` defines them rather than
+slicing.
 
 ### `bill`
 
@@ -299,6 +341,7 @@ that need a different order MUST resort.
   "anchor_resolution": "resolved",
   "text":    { "old": "...", "new": "..." },
   "move":    null,
+  "node":    { "v1": "v1.42", "v2": "v2.40" },  // optional, v3.1+
   "full_text_span": {                            // optional, v1.2+
     "v1": { "start": 4823, "end": 4961 },
     "v2": { "start": 4823, "end": 4972 }
@@ -349,6 +392,29 @@ For PDF diffs where neither anchor resolved, both sides are `null` and
 
 Renderers MUST escape segments individually before joining (a literal `>` in a
 segment must not collide with a `>` separator).
+
+### `node` (optional, v3.1+)
+
+The `id` of the `tree` node that holds this change, per side.
+
+```jsonc
+"node": { "v1": "v1.42" | null, "v2": "v2.40" | null } | null
+```
+
+| Side | Applies to | Inapplicable |
+|------|------------|--------------|
+| `v1` | `removed`, `modified`, `moved` | `added` |
+| `v2` | `added`, `modified`, `moved` | `removed` |
+
+- An inapplicable side is `null`.
+- An applicable side that is `null` is **unresolved**: the producer could not name the
+  node. A consumer MUST NOT guess one from `path` or labels.
+- The whole field is `null` when the document has no `tree`.
+
+The producer resolves it from the same parse the tree was built from, never from
+labels, so two headings with the same name cannot be confused. It names one node in
+one version; it does not say that the two sides' nodes correspond to each other beyond
+what the change itself states.
 
 ### `location`
 
