@@ -6,6 +6,10 @@
    in each `:root`. One declaration per line, so a value change is a one-line diff in
    the committed examples and stylesheet.
 
+   No surface types a colour anywhere else, and `contrast.toml` beside this file lists
+   what is drawn on what; `tests/test_colours.py` fails on a stray colour or on a pair
+   below WCAG AA (#775). A new colour pair goes in that file with the rule that draws it.
+
    Values were the web app's when the report adopted them (#772), so the upload pages
    and the report they open look like one product. Where the app had no counterpart the
    value is chosen here: --accent, the find-in-page highlight, must stay distinct from
