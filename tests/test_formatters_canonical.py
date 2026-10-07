@@ -32,6 +32,7 @@ from deltatrack.formatters.canonical import (
 from deltatrack.formatters.canonical_view import view_from_canonical
 from deltatrack.formatters.schema_version import SCHEMA_VERSION as PRODUCER_SCHEMA_VERSION
 from deltatrack.parsers.pdf_anchors import Anchor
+from tests.conftest import with_readable_text
 
 # Local pin (guard against unintended bumps). 3.0 removed `amount_entries` (#671), so
 # a change object carries no money field at all, and added the optional
@@ -57,7 +58,7 @@ def _xml_diff_dict(*, changes=None, **overrides) -> dict:
         "changes": changes or [],
     }
     base.update(overrides)
-    return base
+    return with_readable_text(base)
 
 
 def test_xml_envelope_has_versioned_metadata():
@@ -772,7 +773,7 @@ def test_xml_full_text_span_resolved_structurally_by_element_id():
     assert span["v2"] == {"start": 9, "end": 20}
 
 
-# ---------- #76: cards show the readable full_text slice ----------------------
+# ---------- #810: the document's text is the readable text ------------------
 
 
 def _modified_change_with_id(**overrides) -> dict:
@@ -824,93 +825,27 @@ def test_reader_accepts_a_current_document():
     assert view_from_canonical(canonical).changes[0].old_text
 
 
-def test_card_prefers_readable_full_text_slice():
-    """A modified card shows the readable slice (`(a) The old`), not the collapsed body."""
+def test_xml_text_is_the_readable_text_not_the_matching_form():
+    """`changes[].text` is what a reader sees (#810): the diff dict's readable text, while
+    the collapsed form matching compares stays out of the document."""
+    change = {**_modified_change_with_id(), "old_readable_text": "(a) The old", "new_readable_text": "(a) The new"}
+    canonical = xml_diff_to_canonical(
+        _xml_diff_dict(changes=[change]), full_text=_READABLE_FULL_TEXT, full_text_spans=_READABLE_SPANS
+    )
+    assert canonical["changes"][0]["text"] == {"old": "(a) The old", "new": "(a) The new"}
+
+
+def test_the_card_shows_the_documents_text_as_it_is():
+    """The card reads `changes[].text` and slices nothing out of `full_text`, whatever
+    the spans say: the document's text is already what a reader sees (#810)."""
     canonical = xml_diff_to_canonical(
         _xml_diff_dict(changes=[_modified_change_with_id()]),
         full_text=_READABLE_FULL_TEXT,
         full_text_spans=_READABLE_SPANS,
     )
+    canonical["changes"][0]["text"] = {"old": "as exported, old", "new": "as exported, new"}
     cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == "(a) The old"
-    assert cv.new_text == "(a) The new"
-
-
-def test_card_falls_back_to_body_when_no_full_text():
-    """Without full_text the card keeps the prior collapsed body text."""
-    canonical = xml_diff_to_canonical(_xml_diff_dict(changes=[_modified_change_with_id()]))
-    cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == "(a)The old"
-    assert cv.new_text == "(a)The new"
-
-
-def test_card_added_slices_v2_only():
-    change = {
-        "change_type": "added",
-        "display_path_old": None,
-        "display_path_new": ["A"],
-        "old_text": None,
-        "new_text": "(a)The new",
-        "section_number": "",
-        "element_id_old": "",
-        "element_id_new": "E1",
-    }
-    canonical = xml_diff_to_canonical(
-        _xml_diff_dict(changes=[change]),
-        full_text=_READABLE_FULL_TEXT,
-        full_text_spans={"v1": {}, "v2": {"E1": (9, 20)}},
-    )
-    cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == ""
-    assert cv.new_text == "(a) The new"
-
-
-def test_card_removed_slices_v1_only():
-    change = {
-        "change_type": "removed",
-        "display_path_old": ["A"],
-        "display_path_new": None,
-        "old_text": "(a)The old",
-        "new_text": None,
-        "section_number": "",
-        "element_id_old": "E1",
-        "element_id_new": "",
-    }
-    canonical = xml_diff_to_canonical(
-        _xml_diff_dict(changes=[change]),
-        full_text=_READABLE_FULL_TEXT,
-        full_text_spans={"v1": {"E1": (9, 20)}, "v2": {}},
-    )
-    cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == "(a) The old"
-    assert cv.new_text == ""
-
-
-def test_card_modified_both_or_neither_on_asymmetric_span():
-    """If only one side of a modified change resolves a span, both fall back to body —
-    avoiding a spurious readable-vs-collapsed whitespace diff."""
-    canonical = xml_diff_to_canonical(
-        _xml_diff_dict(changes=[_modified_change_with_id()]),
-        full_text=_READABLE_FULL_TEXT,
-        full_text_spans={"v1": {"E1": (9, 20)}, "v2": {}},  # v2 unresolved
-    )
-    cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == "(a)The old"
-    assert cv.new_text == "(a)The new"
-
-
-def test_card_pdf_source_is_not_sliced():
-    """The slice is gated on source=='xml'; PDF full_text (line-number gutters) is never
-    sliced into a card even when a span resolves."""
-    canonical = xml_diff_to_canonical(
-        _xml_diff_dict(changes=[_modified_change_with_id()]),
-        full_text=_READABLE_FULL_TEXT,
-        full_text_spans=_READABLE_SPANS,
-    )
-    canonical["versions"]["v1"]["source"] = "pdf"
-    cv = view_from_canonical(canonical).changes[0]
-    assert cv.old_text == "(a)The old"
-    assert cv.new_text == "(a)The new"
+    assert (cv.old_text, cv.new_text) == ("as exported, old", "as exported, new")
 
 
 def test_xml_full_text_spans_never_serialized_and_schema_valid():

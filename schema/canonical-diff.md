@@ -111,6 +111,14 @@ Top-level field: `schema_version: "3.0"`.
   heading text changed at all, which called a heading that only wrapped differently
   across two printed lines renumbered.
 
+  Also, XML `changes[].text` is now the readable text (#810), the characters
+  `full_text` shows for the node. It used to be the collapsed form the matcher compares
+  (`(a)Of`, `include—(1)`), which the report replaced with a `full_text` slice for
+  documents whose `versions.v1.source` was `"xml"`; the exported document disagreed with
+  the cards on whitespace in 7,916 XML text sides of the committed corpus. A consumer no
+  longer branches on `source` to read `text`, and `move.body_unchanged` compares that
+  text, as it is defined to.
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -483,9 +491,15 @@ Future minor versions MAY introduce `"partial"` (one side resolved, one not).
 "text": { "old": string|null, "new": string|null }
 ```
 
-Plain text bodies. `null` on the side that doesn't exist (`added`: `old=null`;
-`removed`: `new=null`). Word-level inline diffs are NOT carried in the JSON;
-renderers compute them at render time.
+Plain text bodies, as a reader sees them, on both pipelines: an XML enumerator keeps
+its space (`(a) Of`, not the matcher's collapsed `(a)Of`), and PDF text is the printed
+words. Under `full_text_layout: "paragraphs"` it is exactly the slice of `full_text` at
+`full_text_span`; under `"numbered_lines"` that span also covers the line-number gutter,
+which `text` leaves out. `null` on the side that doesn't exist (`added`: `old=null`;
+`removed`: `new=null`). Word-level inline diffs are NOT carried in the JSON; renderers
+compute them at render time, over words, so whitespace alone draws no difference. A
+consumer reads `text` as it is; it does not choose by `versions.*.source` whether to look
+elsewhere.
 
 ### Money fields: none (removed in v3.0)
 

@@ -75,8 +75,13 @@ def _xml_change_to_canonical(
     change_type = change.get("change_type", "modified")
     path_old = change.get("display_path_old")
     path_new = change.get("display_path_new")
-    text_old = change.get("old_text")
-    text_new = change.get("new_text")
+    # The text a reader sees (#810). `old_text`/`new_text` are the collapsed form matching
+    # compares (`(a)The`) and stay out of the document, so a change without its readable
+    # text is refused rather than published in the matcher's form.
+    if "old_readable_text" not in change or "new_readable_text" not in change:
+        raise ValueError("an XML change carries no old_readable_text/new_readable_text (see bill_diff_to_dict)")
+    text_old = change["old_readable_text"]
+    text_new = change["new_readable_text"]
     id_old = change.get("element_id_old")
     id_new = change.get("element_id_new")
     return {
@@ -91,7 +96,7 @@ def _xml_change_to_canonical(
         "location": None,  # XML carries no source coordinates
         "anchor_resolution": "resolved",  # XML pipeline always resolves structurally
         "text": {"old": text_old, "new": text_new},
-        "move": _xml_move(change) if change_type == "moved" else None,
+        "move": _xml_move(change, text_old, text_new) if change_type == "moved" else None,
         "full_text_span": _search_span(full_text, full_text_spans, text_old, text_new, id_old, id_new, search_state),
     }
 
@@ -112,10 +117,9 @@ def _search_span(
     contiguous slice of the readable full_text). This is exact — no occurrence ambiguity.
 
     Fallback: substring search, with ``state`` holding per-side hint offsets so
-    document-order searches don't backtrack onto an earlier identical phrase. Note this
-    fallback is degenerate once full_text is readable — the change text stays normalized
-    (``(a)The``) while full_text reads ``(a) The``, so the find usually misses and the
-    span is null. Correctness rests on element_ids being present (verified on the corpus).
+    document-order searches don't backtrack onto an earlier identical phrase. The change
+    text is readable (#810), so a find can land on an identical phrase elsewhere; every
+    XML change in the corpus resolves by element_id, and correctness rests on that.
     """
     if full_text is None:
         return None
@@ -183,14 +187,16 @@ def _move(kind: str | None, old_label: str | None, new_label: str | None, body_u
     return {"kind": kind, "old_label": old_label, "new_label": new_label, "body_unchanged": body_unchanged}
 
 
-def _xml_move(change: dict) -> dict:
+def _xml_move(change: dict, text_old: str | None, text_new: str | None) -> dict:
     old_path = change.get("display_path_old") or []
     new_path = change.get("display_path_new") or []
+    # `body_unchanged` is `text.old == text.new`, as the contract defines it: the text the
+    # document carries, not the matcher's collapsed form, which differs on whitespace.
     return _move(
         change.get("move_kind"),
         old_path[-1] if old_path else None,
         new_path[-1] if new_path else None,
-        (change.get("old_text") or "") == (change.get("new_text") or ""),
+        (text_old or "") == (text_new or ""),
     )
 
 

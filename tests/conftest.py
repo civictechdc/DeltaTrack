@@ -1125,3 +1125,13 @@ def make_change_dict(*, change_type="modified", path=None, financial=None, index
         "element_id_new": f"new-{index}",
         **({"financial": financial} if financial else {}),
     }
+
+
+def with_readable_text(diff_dict: dict) -> dict:
+    """A hand-built XML diff dict as ``bill_diff_to_dict`` emits it: each change's readable
+    text, which the canonical producer requires (#810), stated as the fixture's own text.
+    A fixture that means the collapsed and readable forms to differ sets both itself."""
+    for change in diff_dict.get("changes") or []:
+        change.setdefault("old_readable_text", change.get("old_text"))
+        change.setdefault("new_readable_text", change.get("new_text"))
+    return diff_dict

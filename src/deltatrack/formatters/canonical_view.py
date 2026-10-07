@@ -35,24 +35,23 @@ def _format_range_str(rng: dict | None) -> str:
     return f"{start} – {end}"
 
 
-def _heading_and_nav(canonical_change: dict, source: str) -> tuple[str, str, bool]:
-    """Returns (heading_html, nav_label_html, degraded)."""
+def _heading_and_nav(canonical_change: dict) -> tuple[str, str, bool]:
+    """Returns (heading_html, nav_label_html, degraded).
+
+    Read from the change alone, the same way whichever pipeline produced it (ADR 0007,
+    #810): a change whose anchor did not resolve says so and cites its location; any other
+    heads with its breadcrumb.
+    """
     path_v1 = canonical_change["path"]["v1"]
     path_v2 = canonical_change["path"]["v2"]
     parts = path_v2 or path_v1 or []
-    degraded = canonical_change["anchor_resolution"] == "degraded"
-    if source == "xml":
-        heading = _join_path(parts)
-        nav = _join_path(parts) if parts else "(unknown)"
-        return heading, nav, False
-    # PDF
-    if degraded:
+    if canonical_change["anchor_resolution"] == "degraded":
         loc = canonical_change.get("location") or {}
         rng = loc.get("v2") or loc.get("v1")
         nav_label = f"(uncategorized) — {escape(_format_range_str(rng))}"
         return "anchor unresolved · see PDF for context", nav_label, True
     crumb = _join_path(parts)
-    return crumb, crumb, False
+    return crumb, crumb or "(unknown)", False
 
 
 def _citation_html(canonical_change: dict) -> str:
@@ -154,48 +153,11 @@ def _removed_offset(canonical_change: dict) -> int | None:
     return span["start"] if span else None
 
 
-def _card_texts(canonical_change: dict, source: str, full_text: dict | None) -> tuple[str, str]:
-    """Card old/new text, preferring the readable full_text slice over collapsed body.
-
-    The per-change ``text`` is the node's match-normalized ``body_text`` (`(a)The`),
-    which reads as a bug next to the full-bill view's readable form (#76). When the
-    change resolves a ``full_text_span`` (built by #51, anchored by element_id), the
-    full-bill view slices the readable text out of the same ``full_text``; we slice the
-    identical span here so the card and full-bill view cannot disagree.
-
-    XML only: the PDF producer also emits spans, but PDF ``full_text`` carries
-    line-number gutters that must not be sliced into a card. Falls back to the collapsed
-    ``text`` whenever ``full_text`` is absent or the side's span is null (node without an
-    XML id, bodyless node, quoted-block payload) — identical to the prior behavior.
-    """
-    text = canonical_change["text"]
-    span_obj = canonical_change.get("full_text_span") or {}
-
-    def _slice(side: str) -> str | None:
-        ft = (full_text or {}).get(side)
-        s = span_obj.get(side)
-        if source == "xml" and ft is not None and s is not None:
-            return ft[s["start"] : s["end"]]
-        return None
-
-    readable_old, readable_new = _slice("v1"), _slice("v2")
-    # Both-or-neither for two-sided changes: a readable side paired with a collapsed
-    # fallback side would produce a spurious `(a) The`/`(a)The` whitespace diff.
-    if canonical_change["change_type"] in ("modified", "moved") and not (
-        readable_old is not None and readable_new is not None
-    ):
-        readable_old = readable_new = None
-
-    old_text = readable_old if readable_old is not None else (text.get("old") or "")
-    new_text = readable_new if readable_new is not None else (text.get("new") or "")
-    return old_text, new_text
-
-
-def _change_view_from_canonical(
-    canonical_change: dict, source: str, full_text: dict | None, chains: dict
-) -> ChangeView:
-    heading_html, nav_label_html, degraded = _heading_and_nav(canonical_change, source)
-    old_text, new_text = _card_texts(canonical_change, source, full_text)
+def _change_view_from_canonical(canonical_change: dict, chains: dict) -> ChangeView:
+    heading_html, nav_label_html, degraded = _heading_and_nav(canonical_change)
+    # The document's text is what a reader sees, on both pipelines (#810).
+    old_text = canonical_change["text"].get("old") or ""
+    new_text = canonical_change["text"].get("new") or ""
     return ChangeView(
         change_type=canonical_change["change_type"],
         heading_html=heading_html,
@@ -243,8 +205,6 @@ def _reject_unknown_major(canonical: dict) -> None:
 
 def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
-    source = canonical["versions"]["v1"]["source"]
-    full_text = canonical.get("full_text")
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
     chains = _node_chains(tree.get("v2") or [])
     return DiffView(
@@ -256,7 +216,5 @@ def view_from_canonical(canonical: dict) -> DiffView:
         v1_version_number=canonical["versions"]["v1"]["version_number"],
         v2_version_number=canonical["versions"]["v2"]["version_number"],
         summary=dict(canonical.get("summary") or {}),
-        changes=tuple(
-            _change_view_from_canonical(c, source, full_text, chains) for c in canonical.get("changes") or ()
-        ),
+        changes=tuple(_change_view_from_canonical(c, chains) for c in canonical.get("changes") or ()),
     )
