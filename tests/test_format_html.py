@@ -10,11 +10,12 @@ import pytest
 from deltatrack.formatters._text import word_diff
 from deltatrack.formatters.canonical import xml_diff_to_canonical
 from deltatrack.formatters.diff_html import format_diff_html
+from tests.conftest import with_readable_text
 
 
 def format_html(diff_dict):
     """Local helper preserving the historical dict -> HTML entry point."""
-    return format_diff_html(xml_diff_to_canonical(diff_dict))
+    return format_diff_html(xml_diff_to_canonical(with_readable_text(diff_dict)))
 
 
 class TestWordDiff:

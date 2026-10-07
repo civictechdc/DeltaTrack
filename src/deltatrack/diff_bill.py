@@ -1035,10 +1035,11 @@ class NodeDiff:
     # A no-op on the current corpus, and kept deliberately: display_text is the more
     # faithful rendering of a section (body_text stays collapsed for matching), and
     # removing these fields lets the two views drift apart again with nothing naming
-    # the rule. old_text/new_text stay body_text — they feed matching, text_diff and
-    # the JSON payload, which this does not touch. None means "no separate source
-    # recorded" (a hand-built NodeDiff); the amount_source_* properties then fall back
-    # to old_text/new_text.
+    # the rule. They are also the document's `text` (`readable_old/new`, #810): removing
+    # them would publish the collapsed `(a)Of` again. old_text/new_text stay body_text —
+    # they feed matching and text_diff. None means "no separate source recorded" (a
+    # hand-built NodeDiff); the amount_source_* properties then fall back to
+    # old_text/new_text.
     #
     # Why not remove them: see above — the no-op is the pinned agreement, not dead code.
     # History: #365 the two views read different renderings, because body_text was
@@ -1069,6 +1070,18 @@ class NodeDiff:
     def amount_source_new(self) -> str | None:
         """New-side text that amount extraction should read (#365)."""
         return self.new_amount_text if self.new_amount_text is not None else self.new_text
+
+    @property
+    def readable_old(self) -> str | None:
+        """Old-side text as a reader sees it: the node's ``display_text``, the characters
+        the full text shows for it (#810). The amount source is that same rendering, so
+        this reads it; ``old_text`` stays the collapsed form matching compares."""
+        return self.amount_source_old
+
+    @property
+    def readable_new(self) -> str | None:
+        """New-side text as a reader sees it (see :attr:`readable_old`)."""
+        return self.amount_source_new
 
 
 @dataclass(frozen=True)
@@ -1915,6 +1928,8 @@ def bill_diff_to_dict(diff: BillDiff, *, financial: bool = False) -> dict:
             "ordinal_old": c.ordinal_old,
             "ordinal_new": c.ordinal_new,
             "move_kind": c.move_kind,
+            "old_readable_text": c.readable_old,
+            "new_readable_text": c.readable_new,
         }
         if financial:
             # Amounts come from the display rendering, not body_text (#365).

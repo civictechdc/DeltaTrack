@@ -12,8 +12,8 @@ deleted before return), nothing is persisted.
     format_diff_html()     (formatters.diff_html) — HTML path (canonical → report)
 
 The XML pipeline resolves changes structurally (no page/line coordinates), and
-its full_text is gutterless paragraph flow — the renderer keys off
-``versions.v2.source == "xml"`` to drop the PDF line-number gutter.
+its full_text is gutterless paragraph flow, which the document states as
+``full_text_layout: "paragraphs"``.
 
 **This module is the only place a bill-XML report is assembled** (#42). The web app,
 the ``diff_bill.py compare`` CLI (both of its formats, #693), and ``render_examples.py``
