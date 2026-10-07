@@ -372,3 +372,95 @@ def test_an_appropriations_heading_does_not_own_the_title_it_inherits():
     new = _node(("TITLE II—NAVY",), ("navy",), tag="appropriations-intermediate")
     assert _placement(old) == Placement("", "", ("title i—army",))
     assert move_kind(_placement(old), _placement(new)) == RELOCATED
+
+
+@pytest.mark.parametrize(
+    ("v1", "v2", "note"),
+    [
+        (  # THUD re-lettered in the omnibus (118-hr-4366)
+            ["Division C: Transportation, Housing", "TITLE II", "Sec. 252"],
+            ["Division F: TRANSPORTATION, HOUSING", "TITLE II", "Sec. 241"],
+            " · Division C &rarr; Division F",
+        ),
+        (  # a bill folded into an omnibus (117-hr-2471)
+            ["Sec. 5"],
+            ["Division V: Haiti Development", "Sec. 105"],
+            " · outside a division &rarr; Division V",
+        ),
+        (  # a division taken away
+            ["Division J: Military Construction", "TITLE IV", "Sec. 407"],
+            ["TITLE IV", "Sec. 406"],
+            " · Division J &rarr; outside a division",
+        ),
+        (  # the same headings in another case are the same headings
+            ["Division C: Military", "TITLE II", "Sec. 230"],
+            ["Division C: MILITARY", "Title II", "Sec. 231"],
+            "",
+        ),
+        (  # the same division with its act retitled is the same division
+            ["Division A: Military Construction", "TITLE I", "Sec. 101"],
+            ["Division A: Military Construction, VA, 2025", "TITLE I", "Sec. 102"],
+            "",
+        ),
+        (  # nested divisions name each one
+            ["Division A: Omnibus", "Division C: THUD", "Sec. 2"],
+            ["Division B: Omnibus", "Division C: THUD", "Sec. 3"],
+            " · Division A &gt; Division C &rarr; Division B &gt; Division C",
+        ),
+        (  # a heading carrying stray leading space is still a division
+            [" Division C: THUD", "Sec. 252"],
+            ["Division F: THUD", "Sec. 241"],
+            " · Division C &rarr; Division F",
+        ),
+        (  # no path on one side: nothing to compare against but the other side's divisions
+            None,
+            ["Division F: THUD", "Sec. 241"],
+            " · outside a division &rarr; Division F",
+        ),
+    ],
+    ids=[
+        "relettered",
+        "division-added",
+        "division-removed",
+        "case-only",
+        "act-retitled",
+        "nested",
+        "leading-space",
+        "no-v1-path",
+    ],
+)
+def test_a_renumbered_card_names_the_division_it_left(v1, v2, note):
+    """A renumbering keeps its structural parent, but the division above it may still have
+    changed; the card's heading shows only the new place, so the move line names the old.
+    Asserted on the raw HTML, so the markup itself is pinned."""
+    from deltatrack.formatters.canonical_view import _move_info_html
+
+    move = {"kind": RENUMBERED, "old_label": "Sec. 1", "new_label": "Sec. 2", "body_unchanged": False}
+    line = _move_info_html({"move": move, "path": {"v1": v1, "v2": v2}})
+    assert line == f'<div class="move-info">Renumbered: <code>Sec. 1</code> &rarr; <code>Sec. 2</code>{note}</div>'
+
+
+def test_the_division_note_comes_before_body_text_unchanged():
+    from deltatrack.formatters.canonical_view import _move_info_html
+
+    move = {"kind": RENUMBERED, "old_label": "Sec. 1", "new_label": "Sec. 2", "body_unchanged": True}
+    line = _move_info_html(
+        {"move": move, "path": {"v1": ["Division C: X", "Sec. 1"], "v2": ["Division F: X", "Sec. 2"]}}
+    )
+    assert line.endswith("· Division C &rarr; Division F · body text unchanged</div>")
+
+
+@pytest.mark.parametrize(
+    "label",
+    ["Division C: Transportation", "DIVISION F—THUD", "division b", "Division 12", "Division of Labor", "Divisional"],
+)
+def test_the_viewer_reads_a_division_as_move_kind_does(label):
+    """The viewer keeps its own copy of the division pattern (it may not import the engine);
+    the two must agree on what is a division and on its letter."""
+    from deltatrack.formatters.canonical_view import _DIVISION
+
+    unit, number = unit_and_number(label)
+    m = _DIVISION.match(label.strip())
+    assert (unit == "division") == bool(m)
+    if m:
+        assert m.group(1) == number
