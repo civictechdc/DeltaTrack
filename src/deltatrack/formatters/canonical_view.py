@@ -11,6 +11,7 @@ test_import_direction.py` holds that (#801).
 
 from __future__ import annotations
 
+import re
 from html import escape
 
 from deltatrack.formatters.schema_version import SCHEMA_VERSION
@@ -71,12 +72,38 @@ def _citation_html(canonical_change: dict) -> str:
     return "".join(parts)
 
 
+#: A division heading ("Division C: Transportation, Housing…"), named by its letter on a
+#: renumbered card, whose heading already names the act in full. The same pattern as the
+#: division unit in ``move_kind`` (the viewer may not import it; a test ties the two).
+_DIVISION = re.compile(r"^(?i:division)\s+([A-Z]{1,2}|\d+)\b")
+
+
+def _parent_change_html(path_v1: list[str] | None, path_v2: list[str] | None) -> str:
+    """The division a renumbered section left and the one it is in, or "" when it is the same.
+
+    A renumbering keeps its structural parent, which leaves divisions out: everything above
+    the section but its divisions is the same on both sides. The division can still have been
+    re-lettered (THUD went from Division C to Division F) or newly wrapped around it (a bill
+    folded into an omnibus). The card's heading shows the new place; this names the old one.
+    """
+
+    def letters(path: list[str] | None) -> list[str]:
+        return [m.group(1) for s in (path or [])[:-1] if (m := _DIVISION.match(s.strip()))]
+
+    def name(found: list[str]) -> str:
+        return " &gt; ".join(f"Division {letter}" for letter in found) if found else "outside a division"
+
+    old, new = letters(path_v1), letters(path_v2)
+    return "" if old == new else f" · {name(old)} &rarr; {name(new)}"
+
+
 def _move_info_html(canonical_change: dict) -> str:
     move = canonical_change.get("move")
     if move is None:
         return ""
     if move["kind"] == "renumbered":
         label = f"Renumbered: <code>{escape(move['old_label'])}</code> &rarr; <code>{escape(move['new_label'])}</code>"
+        label += _parent_change_html(canonical_change["path"]["v1"], canonical_change["path"]["v2"])
         if move.get("body_unchanged"):
             label += " · body text unchanged"
         return f'<div class="move-info">{label}</div>'
