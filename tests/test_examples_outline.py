@@ -63,5 +63,5 @@ def test_hr8752_groups_follow_the_bill_front_matter_first():
 def test_a_section_without_text_of_its_own_is_filed_under_its_heading():
     """HR 8752 SEC. 553's content is all subsections, so it has no body to place by."""
     cards = changes_view((PROJECT_ROOT / "examples" / "hr8752_xml_diff.html").read_text()).cards
-    paths = [card["path"] for card in cards.values() if card["path"] and card["path"][-1] == "sec. 553"]
-    assert paths == [("TITLE V", "GENERAL PROVISIONS", "SPENDING REDUCTION ACCOUNT", "sec. 553")]
+    paths = [card["path"] for card in cards.values() if card["path"] and card["path"][-1] == "Sec. 553"]
+    assert paths == [("TITLE V", "GENERAL PROVISIONS", "SPENDING REDUCTION ACCOUNT", "Sec. 553")]
