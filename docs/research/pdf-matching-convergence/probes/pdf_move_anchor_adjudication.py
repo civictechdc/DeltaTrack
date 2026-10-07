@@ -95,7 +95,7 @@ def main() -> None:
     if not CENSUS.exists():
         sys.exit(f"missing {CENSUS}; run pdf_move_semantics_census.py first")
     # Round-2 moves (A) are included because the SAME anchor-inequality predicate decides
-    # the canonical `move.kind` for them (`canonical._pdf_move`), so a fragmented anchor
+    # the canonical `move.kind` for them (`canonical._pdf_move`, until #807 moved it into the differ), so a fragmented anchor
     # mislabels a relocation as a renumbering there too. Their context is not printed --
     # only the verdict tally -- because the design question is about B/C/D.
     rows = [r for r in json.loads(CENSUS.read_text())["rows"] if r["partition"] in {"A", "B", "C", "D"}]

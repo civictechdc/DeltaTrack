@@ -466,6 +466,7 @@ CI_SLOW_MODULES = (
     "tests/test_pdf_watermark_recall.py",
     "tests/test_formatters_text_serializer.py",
     "tests/test_validate_extraction.py",
+    "tests/test_move_kind.py",
     # Named in its own CI step (the packaging gate, #398) rather than the slow-suite step,
     # but the convention keys on being named by SOME CI slow step, not on which one.
     # Deliberately carries NO entry in the allowlist below: its only skip channel is `uv`

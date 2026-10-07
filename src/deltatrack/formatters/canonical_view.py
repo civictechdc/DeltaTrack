@@ -81,13 +81,15 @@ def _move_info_html(canonical_change: dict) -> str:
         if move.get("body_unchanged"):
             label += " · body text unchanged"
         return f'<div class="move-info">{label}</div>'
-    # Relocated: use breadcrumbs, falling back to page-range when path is null.
+    # Relocated, renumbered or not: the breadcrumbs say where it went (and, when it was
+    # renumbered too, under which number), falling back to page-range when path is null.
     path_v1 = canonical_change["path"]["v1"]
     path_v2 = canonical_change["path"]["v2"]
     loc = canonical_change.get("location") or {}
     v1_label = _join_path(path_v1) if path_v1 else escape(_format_range_str(loc.get("v1")))
     v2_label = _join_path(path_v2) if path_v2 else escape(_format_range_str(loc.get("v2")))
-    return f'<div class="move-info">Moved: {v1_label} &rarr; {v2_label}</div>'
+    verb = "Moved and renumbered" if move["kind"] == "relocated_and_renumbered" else "Moved"
+    return f'<div class="move-info">{verb}: {v1_label} &rarr; {v2_label}</div>'
 
 
 def _group_label_from_path(canonical_change: dict) -> str:

@@ -33,6 +33,8 @@ from deltatrack.matching import (
     ObservationRef,
     RetrieverInvocation,
 )
+from deltatrack.move_kind import Placement, unit_and_number
+from deltatrack.move_kind import move_kind as kind_of_move
 from deltatrack.similarity import (
     MOVE_THRESHOLD,
     SIMILARITY_THRESHOLD,
@@ -1052,6 +1054,11 @@ class NodeDiff:
     # side the change has no node on, and on records built outside classification.
     ordinal_old: int | None = None
     ordinal_new: int | None = None
+    # --- What kind of move a `moved` record is (#807) ------------------------------
+    # Decided here, from the two nodes this round paired, by the rule both pipelines share
+    # (`move_kind.move_kind`); None on every other change type. The canonical document
+    # carries it rather than deciding again from the breadcrumbs.
+    move_kind: str | None = None
 
     @property
     def amount_source_old(self) -> str | None:
@@ -1748,7 +1755,41 @@ def _moved_record(old_node: BillNode, new_node: BillNode) -> NodeDiff:
         # amounts stay readable (#365).
         old_amount_text=amount_text(old_node),
         new_amount_text=amount_text(new_node),
+        move_kind=kind_of_move(_placement(old_node), _placement(new_node)),
     )
+
+
+def _placement(node: BillNode) -> Placement:
+    """Where a node sits, for its move kind: its own heading label, its tag, and the
+    display path above it.
+
+    The display path, not the match path: the match path keys a title on its heading words
+    alone ("TITLE VII—GENERAL PROVISIONS" is ``general provisions``, a bare "TITLE IV" adds
+    nothing), so two different titles would read as one parent. ``structural_parent`` leaves
+    out the division and ignores case, which is all the normalization a parent needs.
+
+    A node's display path ends with its own label only when it has one; otherwise it ends
+    with the heading it inherited. A section owns its label when it has a number: one
+    printed without an ``<enum>`` carries its title's or division's label last, and reading
+    that as its own would "renumber" it from TITLE I to TITLE II. A subsection always appends
+    its own label. Any other node (an appropriations heading) is never a title or division
+    itself, so a title or division label last is inherited. A node with no label of its own
+    keeps its whole display path as ancestry.
+    """
+    path = node.display_path
+    if not path:
+        return Placement.of(None, node.tag, ())
+    if node.tag == "section":
+        own = bool(node.section_number)
+    elif node.tag == "subsection":
+        own = True
+    else:
+        own = unit_and_number(path[-1])[0] not in _CONTAINER_UNITS
+    return Placement.of(path[-1] if own else None, node.tag, path[:-1] if own else path)
+
+
+#: The units that contain provisions; an appropriations heading is never one of them.
+_CONTAINER_UNITS = frozenset({"division", "title", "subtitle", "chapter", "part"})
 
 
 def _classified(item: SettledCorrespondence, registry: ObservationRegistry) -> NodeDiff:
@@ -1873,6 +1914,7 @@ def bill_diff_to_dict(diff: BillDiff, *, financial: bool = False) -> dict:
             "element_id_new": c.element_id_new,
             "ordinal_old": c.ordinal_old,
             "ordinal_new": c.ordinal_new,
+            "move_kind": c.move_kind,
         }
         if financial:
             # Amounts come from the display rendering, not body_text (#365).

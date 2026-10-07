@@ -308,7 +308,7 @@
       "required": ["kind", "old_label", "new_label", "body_unchanged"],
       "additionalProperties": false,
       "properties": {
-        "kind": { "const": "renumbered" },
+        "kind": { "enum": ["renumbered", "relocated_and_renumbered"] },
         "old_label": { "type": "string" },
         "new_label": { "type": "string" },
         "body_unchanged": { "type": "boolean" }

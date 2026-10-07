@@ -21,6 +21,7 @@ from deltatrack.amounts import extract_amounts
 from deltatrack.bill_identity import BillIdentity, combined
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
 from deltatrack.formatters.schema_version import SCHEMA_VERSION
+from deltatrack.move_kind import MOVE_KINDS, RELOCATED
 from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for
 from deltatrack.structure_tree import TreeNode, build_pdf_tree
 
@@ -168,26 +169,29 @@ def _versions_payload(source: str, labels: dict, numbers: dict, identities: dict
     return versions
 
 
-def _xml_move(change: dict) -> dict:
-    """Move kind from the display paths, mirroring ``_pdf_move`` (#188).
+def _move(kind: str | None, old_label: str | None, new_label: str | None, body_unchanged: bool) -> dict:
+    """A change's `move` object, carrying the kind the differ decided (#807).
 
-    A move whose paths share the same parent and differ only in the trailing
-    label is an identifier change — a renumbered/renamed section or subsection
-    (their match keys ARE their labels, so a rename reconciles as a move) — not a
-    relocation within the hierarchy. Reporting "relocated" there told a staffer
-    the provision moved when nothing did.
+    The kind is read, never decided here: each differ records it from what it paired, by the
+    rule both share (`move_kind.move_kind`). A renumbering, relocated or not, names the
+    labels it changed between.
     """
+    if kind not in MOVE_KINDS:
+        raise ValueError(f"a moved change carries move kind {kind!r}; expected one of {MOVE_KINDS}")
+    if kind == RELOCATED:
+        return {"kind": kind, "body_unchanged": body_unchanged}
+    return {"kind": kind, "old_label": old_label, "new_label": new_label, "body_unchanged": body_unchanged}
+
+
+def _xml_move(change: dict) -> dict:
     old_path = change.get("display_path_old") or []
     new_path = change.get("display_path_new") or []
-    body_unchanged = (change.get("old_text") or "") == (change.get("new_text") or "")
-    if old_path and new_path and list(old_path[:-1]) == list(new_path[:-1]) and old_path[-1] != new_path[-1]:
-        return {
-            "kind": "renumbered",
-            "old_label": old_path[-1],
-            "new_label": new_path[-1],
-            "body_unchanged": body_unchanged,
-        }
-    return {"kind": "relocated", "body_unchanged": body_unchanged}
+    return _move(
+        change.get("move_kind"),
+        old_path[-1] if old_path else None,
+        new_path[-1] if new_path else None,
+        (change.get("old_text") or "") == (change.get("new_text") or ""),
+    )
 
 
 def xml_diff_to_canonical(
@@ -318,18 +322,12 @@ def _path_for_anchor(
 
 
 def _pdf_move(hunk: PdfHunk) -> dict:
-    """When both anchors resolve and their texts differ, canonical kind is
-    'renumbered' (the section identifier itself changed). Otherwise it's
-    'relocated' -- a move within the hierarchy without an identifier change."""
-    body_unchanged = hunk.v1_text == hunk.v2_text
-    if hunk.v1_anchor is not None and hunk.v2_anchor is not None and hunk.v1_anchor.text != hunk.v2_anchor.text:
-        return {
-            "kind": "renumbered",
-            "old_label": hunk.v1_anchor.text,
-            "new_label": hunk.v2_anchor.text,
-            "body_unchanged": body_unchanged,
-        }
-    return {"kind": "relocated", "body_unchanged": body_unchanged}
+    return _move(
+        hunk.move_kind,
+        hunk.v1_anchor.text if hunk.v1_anchor else None,
+        hunk.v2_anchor.text if hunk.v2_anchor else None,
+        hunk.v1_text == hunk.v2_text,
+    )
 
 
 def _pdf_hunk_to_canonical(

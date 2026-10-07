@@ -201,12 +201,12 @@ def test_moved_with_no_anchors_falls_back_to_page_range_in_move_info():
         v2_range=(8, 4, 8, 9),
         v1_text="same body",
         v2_text="same body",
+        move_kind="relocated",
     )
     diff = _diff(hunks=[hunk])
     view = pdf_diff_to_view(diff, **_meta())
     cv = view.changes[0]
-    # Falls into the "Moved: ..." branch (not "Renumbered: ..." since neither
-    # anchor exists to compare texts).
+    # Falls into the "Moved: ..." branch: with no anchor there is no number to change.
     assert "Renumbered" not in cv.move_info_html
     assert cv.move_info_html.startswith('<div class="move-info">Moved: ')
     # Both sides use the page-range fallback.
@@ -227,11 +227,12 @@ def test_moved_with_one_anchor_missing_uses_page_range_for_missing_side():
         v2_range=(5, 1, 5, 12),
         v1_text="same body",
         v2_text="same body",
+        move_kind="relocated",
     )
     diff = _diff(hunks=[hunk], v2_anchors=[SEC_201])
     view = pdf_diff_to_view(diff, **_meta())
     cv = view.changes[0]
-    # Goes through the "Moved" branch (not Renumbered — needs BOTH anchors).
+    # Goes through the "Moved" branch: a renumbering needs a number on both sides.
     assert "Renumbered" not in cv.move_info_html
     # v1 side: page range (no breadcrumb available).
     assert "p.3 L7" in cv.move_info_html
@@ -240,8 +241,8 @@ def test_moved_with_one_anchor_missing_uses_page_range_for_missing_side():
 
 
 def test_moved_with_renumbered_anchor_uses_renumbered_form():
-    """When the anchor text changes (SEC. 101 -> SEC. 202) but body is similar,
-    the canonical move-info form is "Renumbered: <code>SEC. 101</code> → <code>SEC. 202</code>".
+    """A renumbering (SEC. 101 -> SEC. 201 under the same parent) reads
+    "Renumbered: <code>SEC. 101</code> → <code>SEC. 201</code>".
     """
     hunk = PdfHunk(
         change_type="moved",
@@ -251,6 +252,7 @@ def test_moved_with_renumbered_anchor_uses_renumbered_form():
         v2_range=(5, 1, 5, 12),
         v1_text="same body",
         v2_text="same body",
+        move_kind="renumbered",
     )
     diff = _diff(hunks=[hunk], v1_anchors=[SEC_101], v2_anchors=[SEC_201])
     view = pdf_diff_to_view(diff, **_meta())
@@ -260,6 +262,25 @@ def test_moved_with_renumbered_anchor_uses_renumbered_form():
     assert "<code>SEC. 201</code>" in cv.move_info_html
     # When the body text is identical, the canonical form notes that.
     assert "body text unchanged" in cv.move_info_html
+
+
+def test_moved_and_renumbered_names_both_places():
+    """A renumbering under a different parent reads "Moved and renumbered: <from> → <to>",
+    the breadcrumbs carrying both the new place and the new number (#807)."""
+    hunk = PdfHunk(
+        change_type="moved",
+        v1_anchor=SEC_101,
+        v2_anchor=SEC_201,
+        v1_range=(1, 10, 1, 20),
+        v2_range=(5, 1, 5, 12),
+        v1_text="same body",
+        v2_text="same body",
+        move_kind="relocated_and_renumbered",
+    )
+    diff = _diff(hunks=[hunk], v1_anchors=[SEC_101], v2_anchors=[SEC_201])
+    cv = pdf_diff_to_view(diff, **_meta()).changes[0]
+    assert cv.move_info_html.startswith('<div class="move-info">Moved and renumbered: ')
+    assert "SEC. 101" in cv.move_info_html and "SEC. 201" in cv.move_info_html
 
 
 def test_summary_taken_from_pdf_diff():

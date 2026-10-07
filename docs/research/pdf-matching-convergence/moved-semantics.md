@@ -62,7 +62,7 @@ including the clearest relocation in the corpus (a provision moving from page 28
 unchanged text).
 
 **What a reader is told.** Measured at the consumed output, not inferred: 156 of the 165 moved
-cards render `Renumbered: X → Y`, because `formatters/canonical._pdf_move` applies the same anchor
+cards render `Renumbered: X → Y`, because `formatters/canonical._pdf_move` (until #807 moved the decision into the differ) applies the same anchor
 comparison independently of the matcher. Real sentences the engine produces today:
 
 ```
@@ -100,7 +100,7 @@ A fix needs to cover four things:
 
 1. **A stable heading identity** surviving line wrapping and hyphenation, so one printed heading
    yields one identity in both versions.
-2. **The false `Renumbered:` labels**, decided in `formatters/canonical._pdf_move` independently
+2. **The false `Renumbered:` labels**, decided in `formatters/canonical._pdf_move` (until #807) independently
    of the matcher — fixing correspondence alone does not fix them. At least 9 round-2 rows carry
    one today, in a population the round-1 rule does not touch.
 3. **Definitions for `moved` / `renumbered` / `relocated`**, which are not expressible until (1)

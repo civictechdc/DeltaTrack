@@ -22,7 +22,8 @@ block text. The classifier produces:
 
 - `added` — block present only in v2
 - `removed` — block present only in v1
-- `moved` — block bodies similar but anchors differ (renumbered SEC.)
+- `moved` — block bodies similar but anchors differ; what kind of move it was is
+  `move_kind.move_kind`, recorded on the hunk (#807)
 - `modified` — paired blocks with different bodies
 
 Reuses text similarity from similarity.py: `text_similarity` for the round-1 similarity
@@ -40,7 +41,7 @@ import json
 import sys
 from collections import Counter
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -55,7 +56,9 @@ from deltatrack.matching import (
     ObservationRef,
     RetrieverInvocation,
 )
-from deltatrack.parsers.pdf_anchors import Anchor, extract_anchors
+from deltatrack.move_kind import Placement
+from deltatrack.move_kind import move_kind as kind_of_move
+from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for, extract_anchors
 from deltatrack.parsers.pdf_blocks import (
     PageLineRange,
     _Block,
@@ -100,6 +103,10 @@ class PdfHunk:
     v1_text: str
     v2_text: str
     has_amendment_annotations: bool = False  # mirrors FinancialChange field for XML parity
+    # What kind of move a `moved` hunk is (#807), decided by the differ from the two anchors
+    # and their places in each version's heading structure (`move_kind.move_kind`, the rule
+    # the XML differ shares). None on every other change type.
+    move_kind: str | None = None
 
 
 @dataclass(frozen=True)
@@ -1275,6 +1282,7 @@ def diff_pdfs(v1_pages: list[Page], v2_pages: list[Page]) -> PdfDiff:
         round1_move_bases=round1.move_bases,
     )
     hunks = classify_pdf(settled, registry)
+    hunks = _with_move_kinds(hunks, tuple(v1_anchors), tuple(v2_anchors))
 
     return PdfDiff(
         hunks=tuple(hunks),
@@ -1283,6 +1291,39 @@ def diff_pdfs(v1_pages: list[Page], v2_pages: list[Page]) -> PdfDiff:
         v1_bodies=tuple((b.anchor, b.page_range) for b in v1_blocks if b.anchor is not None),
         v2_bodies=tuple((b.anchor, b.page_range) for b in v2_blocks if b.anchor is not None),
     )
+
+
+def _with_move_kinds(
+    hunks: list[PdfHunk], v1_anchors: tuple[Anchor, ...], v2_anchors: tuple[Anchor, ...]
+) -> list[PdfHunk]:
+    """Each `moved` hunk with its move kind (#807).
+
+    Describes a change classification already made, and needs each anchor's place in its
+    version's heading structure, which only the whole anchor stream gives: so it runs once
+    over the hunks, after classification, rather than inside the per-pair emitter as the
+    XML differ's does. Correspondence and change type are untouched (ADR 0020).
+    """
+    positions = {"v1": anchor_positions(v1_anchors), "v2": anchor_positions(v2_anchors)}
+
+    def placement(anchor: Anchor | None, anchors: tuple[Anchor, ...], side: str) -> Placement:
+        if anchor is None:
+            return Placement.of(None, None, ())
+        crumbs = breadcrumb_for(anchor, anchors, positions[side])
+        # A breadcrumb ends with the anchor itself; were it not to, its "parent" would hold the
+        # node, and every renumbering would read as relocated.
+        if not crumbs or crumbs[-1] != anchor.text:
+            raise ValueError(f"breadcrumb {crumbs!r} does not end with its anchor {anchor.text!r}")
+        return Placement.of(anchor.text, anchor.kind, crumbs[:-1])
+
+    return [
+        replace(
+            h,
+            move_kind=kind_of_move(placement(h.v1_anchor, v1_anchors, "v1"), placement(h.v2_anchor, v2_anchors, "v2")),
+        )
+        if h.change_type == "moved"
+        else h
+        for h in hunks
+    ]
 
 
 # ---- CLI ---------------------------------------------------------------------
