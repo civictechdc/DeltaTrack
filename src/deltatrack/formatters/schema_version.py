@@ -7,4 +7,4 @@ load the parsers, the differs and the PDF library (#801). Versioning rules:
 `schema/canonical-diff.md`.
 """
 
-SCHEMA_VERSION = "3.1"
+SCHEMA_VERSION = "3.0"

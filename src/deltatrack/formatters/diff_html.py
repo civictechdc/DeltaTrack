@@ -680,8 +680,8 @@ def _has_full_bill(canonical: dict | None) -> bool:
 def _full_text_is_guttered(canonical: dict) -> bool:
     """Whether full_text is ``numbered_lines`` (see schema/canonical-diff.md).
 
-    Read from the document's ``full_text_layout``. A 3.0 document predates the field,
-    and only for it is the layout taken from the v2 source.
+    Read from the document's ``full_text_layout``. The field is optional, and only for
+    a document without it is the layout taken from the v2 source.
     """
     layout = canonical.get("full_text_layout")
     if layout is not None:

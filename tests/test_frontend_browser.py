@@ -1123,7 +1123,7 @@ def _render_find_report() -> str:
     merged_text, breaks = _find_fixture_texts()
     start = merged_text.index("vehicles")
     canonical = {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": {"type": "hr", "number": 8752, "congress": 118},
         "versions": {
             "v1": {"label": "Reported", "version_number": 1, "source": "pdf"},
@@ -1306,7 +1306,7 @@ def test_find_rejoins_a_word_broken_across_a_page(chromium, tmp_path):
     pages = merge_print_pages(read, read.evidence())
     whole_word, _ = pdf_full_text(pages)
     canonical = {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": {"type": "hr", "number": 8752, "congress": 118},
         "versions": {
             "v1": {"label": "Reported", "version_number": 1, "source": "pdf"},

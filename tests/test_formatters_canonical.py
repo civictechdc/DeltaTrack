@@ -15,6 +15,7 @@ consumer (view_from_canonical) is tested via the adapter-contract suites
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -29,13 +30,15 @@ from deltatrack.formatters.canonical import (
     xml_diff_to_canonical,
 )
 from deltatrack.formatters.canonical_view import view_from_canonical
+from deltatrack.formatters.schema_version import SCHEMA_VERSION as PRODUCER_SCHEMA_VERSION
 from deltatrack.parsers.pdf_anchors import Anchor
 
-# Local pin (guard against unintended bumps). 3.1 added the optional `print_breaks`,
-# `full_text_layout` and `bill.title` (#653); 3.0 removed `amount_entries` (#671), so
-# a change object carries no money field at all; 2.0 had removed the deprecated
-# `amounts` before it (#274); 1.3 added the optional `tree` field (#108).
-SCHEMA_VERSION = "3.1"
+# Local pin (guard against unintended bumps). 3.0 removed `amount_entries` (#671), so
+# a change object carries no money field at all, and added the optional
+# `print_breaks`, `full_text_layout` and `bill.title` (#653) and node identity (#785);
+# 2.0 had removed the deprecated `amounts` before it (#274); 1.3 added the optional
+# `tree` field (#108).
+SCHEMA_VERSION = "3.0"
 
 
 # ---------- XML producer ------------------------------------------------------
@@ -585,6 +588,42 @@ def test_schema_accepts_the_unmodified_producer_output():
     rejects everything: the same probe document validates untouched."""
     canonical = xml_diff_to_canonical(_xml_diff_dict(changes=[_schema_probe_change()]))
     jsonschema.validate(canonical, _load_schema())
+
+
+def test_schema_documents_state_the_version_the_producer_stamps():
+    """The prose spec and the JSON Schema name the version every document is stamped with.
+
+    `schema/canonical-diff.md` states the version in its title, in its Versioning
+    section's `schema_version` line, in its example document and as its newest
+    changelog entry; the JSON Schema pins the major in the `schema_version` pattern.
+    Each is hand-edited apart from `SCHEMA_VERSION`, so this ties them to it: a
+    reader of the contract must see the version a produced document carries, and a
+    doc that names a version the producer never writes is the drift #816 folded away.
+    """
+    doc = (Path(__file__).resolve().parent.parent / "schema" / "canonical-diff.md").read_text()
+
+    title = re.search(r"^# Canonical Diff JSON — v(\d+\.\d+)$", doc, re.MULTILINE)
+    assert title, "canonical-diff.md title no longer reads `# Canonical Diff JSON — vX.Y`"
+    assert title.group(1) == PRODUCER_SCHEMA_VERSION
+
+    top_level = re.search(r'^Top-level field: `schema_version: "(\d+\.\d+)"`\.$', doc, re.MULTILINE)
+    assert top_level, "canonical-diff.md no longer states `Top-level field: schema_version: ...`"
+    assert top_level.group(1) == PRODUCER_SCHEMA_VERSION
+
+    stated = re.findall(r'"?schema_version"?:\s*"(\d+\.\d+)"', doc)
+    assert len(stated) >= 2, "expected the Versioning line and the example document"
+    assert set(stated) == {PRODUCER_SCHEMA_VERSION}, f"canonical-diff.md states {sorted(set(stated))}"
+
+    changelog = doc.split("## Changelog", 1)[1]
+    newest = re.search(r"^- \*\*(\d+\.\d+)\*\*", changelog, re.MULTILINE)
+    assert newest, "canonical-diff.md changelog has no `- **X.Y**` entry"
+    assert newest.group(1) == PRODUCER_SCHEMA_VERSION
+
+    pattern = _load_schema()["properties"]["schema_version"]["pattern"]
+    major = int(PRODUCER_SCHEMA_VERSION.split(".")[0])
+    assert re.fullmatch(pattern, PRODUCER_SCHEMA_VERSION)
+    assert not re.fullmatch(pattern, f"{major - 1}.0"), "the JSON Schema accepts the previous major"
+    assert not re.fullmatch(pattern, f"{major + 1}.0"), "the JSON Schema accepts the next major"
 
 
 def test_xml_full_text_default_null():

@@ -96,7 +96,7 @@ def test_the_declared_layout_wins_over_the_source():
     seven characters off every row of paragraph text.
     """
     canonical = {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": {"type": "hr", "number": 1, "congress": 118},
         "versions": {
             "v1": {"label": "A", "version_number": 1, "source": "pdf"},
