@@ -233,7 +233,7 @@ def _removed_pointers(view: DiffView) -> dict[tuple[str, ...], int]:
     A later-version group whose label path is exactly one of these keys says that
     removals were under a heading with the same name in the earlier version. The
     match is the whole label sequence, compared exactly: a shared deepest label
-    ("(a)", "sec. 205") or a heading that moved under an added wrapper is not the
+    ("(a)", "Sec. 205") or a heading that moved under an added wrapper is not the
     same path. A pointer is a same-name match, not a claim that it is the same
     place, so it is only rendered; it never places, groups or counts a removal.
     """

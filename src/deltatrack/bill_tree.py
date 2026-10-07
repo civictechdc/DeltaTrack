@@ -623,17 +623,31 @@ _CONGRESS_WORDS = {
 _LEGIS_NUM_RE = re.compile(r"([A-Z][A-Z.\s]*?)\s*(\d+)")
 
 
+def _section_label(section: ET.Element) -> str:
+    """A section's display label, "Sec. 101", wherever it sits (#810); "" with no number.
+    Its match key is this lowercased; the display keeps the number as printed."""
+    enum_el = section.find("enum")
+    if enum_el is None or not enum_el.text:
+        return ""
+    return f"Sec. {enum_el.text.strip().rstrip('.')}"
+
+
 def _build_paths(
     title_display: str,
     division_label: str,
     major: str | None,
     intermediate: str | None,
     leaf_header: str | None,
+    leaf_display: str | None = None,
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Build match_path and display_path tuples.
 
     match_path: normalized, no division. Used for cross-version matching.
     display_path: original case, includes division. Used for human display.
+
+    ``leaf_display`` is the leaf's display form when it differs from its match form: a
+    section matches on ``sec. 101`` and displays as ``Sec. 101``, the form a section outside
+    any title already displays as (#810).
 
     ``title_display`` is the title label with its enum ("TITLE I—<header>", #50).
     Display keeps the full label; matching keys on the header alone (the enum is
@@ -661,7 +675,7 @@ def _build_paths(
 
     if leaf_header and leaf_header != major and leaf_header != intermediate:
         match_parts.append(normalize_header(leaf_header))
-        display_parts.append(leaf_header)
+        display_parts.append(leaf_display or leaf_header)
 
     return tuple(match_parts), tuple(display_parts)
 
@@ -835,13 +849,8 @@ def _walk_section_appro_children(
     account hierarchy into the section's own text and no account node was ever created
     (#485).
 
-    Only this walk is shared, not the section's own node. The two callers build that
-    node's display_path by different conventions (``walk_body_sections`` keeps the
-    section number cased as "Sec. 101", the title path lowercases it through
-    ``_build_paths``), and unifying them here would have re-cased 24,662 of the 25,191
-    plain body-level sections in the corpus to fix 7 — a cosmetic regression far wider
-    than the defect. That difference is real but separate; it is not this function's to
-    settle.
+    Only this walk is shared, not the section's own node: each caller builds that node's
+    paths itself, both displaying the section as "Sec. 101" (:func:`_section_label`, #810).
 
     Context (``current_major`` / ``current_intermediate`` / ``prev_name``) is scoped to
     the caller and not written back: the callers pass their own copies and neither wants
@@ -898,10 +907,7 @@ def _process_section_element(
     """
     has_appro_children = any(c.tag.startswith("appropriations-") for c in section)
 
-    enum_el = section.find("enum")
-    section_num = ""
-    if enum_el is not None and enum_el.text:
-        section_num = f"Sec. {enum_el.text.strip().rstrip('.')}"
+    section_num = _section_label(section)
 
     if has_appro_children:
         appro_carve = frozenset(id(c) for c in section if c.tag.startswith("appropriations-"))
@@ -914,6 +920,7 @@ def _process_section_element(
                 current_major,
                 current_intermediate,
                 sec_label,
+                leaf_display=section_num,
             )
             nodes.append(
                 BillNode(
@@ -955,6 +962,7 @@ def _process_section_element(
                 current_major,
                 current_intermediate,
                 sec_label,
+                leaf_display=section_num,
             )
             nodes.append(
                 BillNode(
@@ -1207,10 +1215,7 @@ def walk_body_sections(parent: ET.Element, division: Division = NO_DIVISION) -> 
         if not body_text and not sub_specs and not appro_carve:
             continue
 
-        enum_el = child.find("enum")
-        section_num = ""
-        if enum_el is not None and enum_el.text:
-            section_num = f"Sec. {enum_el.text.strip().rstrip('.')}"
+        section_num = _section_label(child)
 
         sec_label = section_num.lower() if section_num else ""
         match_path = (sec_label,) if sec_label else ()

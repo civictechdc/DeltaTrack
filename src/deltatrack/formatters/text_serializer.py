@@ -243,8 +243,8 @@ def _serialize_layout(tree: BillTree) -> _Layout:
     prev_path: tuple[str, ...] = ()
     for ordinal, node in enumerate(tree.nodes):
         new_path = tuple(node.display_path)
-        # For section nodes, the trailing display_path segment is a lowercased
-        # copy of section_number ("sec. 101"). Drop it from the heading run so
+        # For section nodes, the trailing display_path segment is the section's
+        # label, section_number ("Sec. 101"). Drop it from the heading run so
         # we can emit a bill-style "SEC. 101." run-in heading on the body line.
         # A subsection node (#188) additionally drops its own label — its body
         # already opens with the run-in "(a) Catchline" — and the section segment
