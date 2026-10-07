@@ -162,15 +162,15 @@ def test_every_removal_rendered_exactly_once(bill, v1, v2):
 
 
 def test_label_collision_gets_no_pointer():
-    # c-0046 was under Title I's sec. 122; Title II's sec. 227 > (a) shares only the
-    # deepest label and must not point at it. sec. 122 itself has no later-version
+    # c-0046 was under Title I's Sec. 122; Title II's Sec. 227 > (a) shares only the
+    # deepest label and must not point at it. Sec. 122 itself has no later-version
     # changes, so no later group renders there and nothing points at c-0046's heading.
     bill, v1, v2 = REMOVED_PAIRS[0]
     canonical, _ = _xml_view(bill, v1, v2)
     ctx = changes_view(format_diff_html(canonical))
     c0046 = next(i for i, c in enumerate(canonical["changes"]) if c["id"] == "c-0046")
     parent = tuple(canonical["changes"][c0046]["path"]["v1"][:-1])
-    assert parent[0].startswith("TITLE I—") and parent[-1] == "sec. 122"
+    assert parent[0].startswith("TITLE I—") and parent[-1] == "Sec. 122"
     assert ctx.cards[c0046]["in_removed"]
     assert all(target != parent for target, _count in ctx.pointers.values())
     assert all(not (path[0].startswith("TITLE II—") and path[-1:] == ("(a)",)) for path in ctx.pointers)

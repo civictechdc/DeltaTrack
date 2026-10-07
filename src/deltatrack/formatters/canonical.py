@@ -23,7 +23,7 @@ from deltatrack.diff_pdf import PdfDiff, PdfHunk
 from deltatrack.formatters.schema_version import SCHEMA_VERSION
 from deltatrack.move_kind import MOVE_KINDS, RELOCATED
 from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for
-from deltatrack.structure_tree import TreeNode, build_pdf_tree
+from deltatrack.structure_tree import FRONT_MATTER_LABEL, TreeNode, build_pdf_tree
 
 GENERATOR_NAME = "deltatrack"
 
@@ -64,6 +64,23 @@ def _node_refs(change_type: str, keys: dict, node_ids: dict | None) -> dict | No
 # ---------- XML producer -----------------------------------------------------
 
 
+def _front_matter_node_ids(tree: dict | None) -> dict[str, frozenset[str]]:
+    """Per side, the ids of the tree's Front Matter node and every node under it."""
+    ids: dict[str, set[str]] = {"v1": set(), "v2": set()}
+
+    def collect(node: dict, side: str) -> None:
+        if node.get("id"):
+            ids[side].add(node["id"])
+        for child in node.get("children") or ():
+            collect(child, side)
+
+    for side in ("v1", "v2"):
+        for root in (tree or {}).get(side) or ():
+            if root.get("label") == FRONT_MATTER_LABEL and root.get("level") == "preamble":
+                collect(root, side)
+    return {side: frozenset(found) for side, found in ids.items()}
+
+
 def _xml_change_to_canonical(
     change: dict,
     index: int,
@@ -71,6 +88,7 @@ def _xml_change_to_canonical(
     full_text_spans: dict | None,
     search_state: dict,
     node_ids: dict | None,
+    front_matter: dict[str, frozenset[str]],
 ) -> dict:
     change_type = change.get("change_type", "modified")
     path_old = change.get("display_path_old")
@@ -84,15 +102,22 @@ def _xml_change_to_canonical(
     text_new = change["new_readable_text"]
     id_old = change.get("element_id_old")
     id_new = change.get("element_id_new")
+    node = _node_refs(change_type, {"v1": change.get("ordinal_old"), "v2": change.get("ordinal_new")}, node_ids)
+
+    def side_path(path: list | None, side: str) -> list | None:
+        # Boilerplate in the bill's opening (masthead, enacting clause) has no heading of
+        # its own; the tree places it under Front Matter, and so does its path, as the PDF
+        # pipeline's does (#810).
+        if path:
+            return list(path)
+        return [FRONT_MATTER_LABEL] if node and node[side] in front_matter[side] else None
+
     return {
         "id": _make_id(index),
         "change_type": change_type,
         "section_number": change.get("section_number") or "",
-        "path": {
-            "v1": list(path_old) if path_old else None,
-            "v2": list(path_new) if path_new else None,
-        },
-        "node": _node_refs(change_type, {"v1": change.get("ordinal_old"), "v2": change.get("ordinal_new")}, node_ids),
+        "path": {"v1": side_path(path_old, "v1"), "v2": side_path(path_new, "v2")},
+        "node": node,
         "location": None,  # XML carries no source coordinates
         "anchor_resolution": "resolved",  # XML pipeline always resolves structurally
         "text": {"old": text_old, "new": text_new},
@@ -236,6 +261,7 @@ def xml_diff_to_canonical(
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
     normalized_full_text = _normalize_full_text(full_text)
     normalized_tree = _normalize_tree(tree, normalized_full_text)
+    front_matter = _front_matter_node_ids(normalized_tree)
     if normalized_tree is None:
         node_ids = None
     search_state: dict = {}
@@ -258,7 +284,7 @@ def xml_diff_to_canonical(
         "print_breaks": None,  # XML text has no printed line breaks
         "tree": normalized_tree,
         "changes": [
-            _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state, node_ids)
+            _xml_change_to_canonical(c, i, normalized_full_text, full_text_spans, search_state, node_ids, front_matter)
             for i, c in enumerate(diffed)
         ],
     }

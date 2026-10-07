@@ -1980,8 +1980,30 @@ class TestSubsectionNodes:
         nodes = walk_title(title, "TITLE V—GENERAL PROVISIONS", NO_DIVISION)
         subs = [n for n in nodes if n.tag == "subsection"]
         assert len(subs) == 3
-        assert subs[0].display_path == ("TITLE V—GENERAL PROVISIONS", "sec. 547", "(a) In general")
+        assert subs[0].display_path == ("TITLE V—GENERAL PROVISIONS", "Sec. 547", "(a) In general")
         assert subs[0].match_path == ("general provisions", "sec. 547", "(a) in general")
+
+    def test_an_appropriations_section_displays_as_sec_n_inside_a_title(self):
+        """The other in-title branch: a section with its own text and accounts below it."""
+        title = ET.fromstring(
+            "<title><enum>I</enum><header>GENERAL PROVISIONS</header>"
+            '<section id="S101"><enum>101.</enum><text>Amounts in this section are available.</text>'
+            "<appropriations-intermediate><header>Salaries</header><text>For salaries, $5.</text>"
+            "</appropriations-intermediate></section></title>"
+        )
+        section = next(n for n in walk_title(title, "TITLE I—GENERAL PROVISIONS", NO_DIVISION) if n.tag == "section")
+        assert section.display_path[-1] == "Sec. 101"
+        assert section.match_path[-1] == "sec. 101"
+
+    def test_a_section_displays_as_sec_n_inside_a_title_or_out(self):
+        """One display form wherever the section sits (#810); matching keeps its key."""
+        title = ET.fromstring(
+            "<title><enum>V</enum><header>GENERAL PROVISIONS</header>" + _SEC547_SUBS_XML + "</title>"
+        )
+        in_title = next(n for n in walk_title(title, "TITLE V—GENERAL PROVISIONS", NO_DIVISION) if n.tag == "section")
+        at_body = next(n for n in walk_body_sections(_body_with(_SEC547_SUBS_XML)) if n.tag == "section")
+        assert in_title.display_path[-1] == at_body.display_path[-1] == "Sec. 547"
+        assert in_title.match_path[-1] == at_body.match_path[-1] == "sec. 547"
 
 
 class TestSubsectionLabelBounds:
@@ -2586,3 +2608,19 @@ class TestUntitledBillAppropriations:
         tree = self._tree("4_enrolled-bill.xml")
         leaves = {n.match_path[-1] for n in tree.nodes if n.match_path}
         assert {"compensation and pensions", "readjustment benefits"} <= leaves
+
+
+@pytest.mark.slow
+def test_every_committed_section_is_labelled_sec_n():
+    """One display form for a section, on every committed XML version (#810): its label is
+    its section number, and no display segment is the lowercased match key."""
+    files = sorted((PROJECT_ROOT / "tests" / "corpus").glob("*/*.xml"))
+    assert len(files) > 40
+    checked = 0
+    for path in files:
+        for node in normalize_bill(path).nodes:
+            assert not [seg for seg in node.display_path if seg.startswith("sec. ")], (path.name, node.display_path)
+            if node.tag == "section" and node.section_number and node.display_path:
+                assert node.display_path[-1] == node.section_number, (path.name, node.display_path)
+                checked += 1
+    assert checked > 10_000

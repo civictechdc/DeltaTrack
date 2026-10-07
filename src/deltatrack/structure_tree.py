@@ -59,6 +59,9 @@ _DIVISION_RE = re.compile(r"^Division [A-Z](?=$|[\s:])")
 
 
 _FRONT_MATTER_LABEL = "Front Matter"
+#: The label of the node both pipelines group a bill's opening under (#161); the canonical
+#: producer names it as the `path` of a front-matter change with no heading of its own.
+FRONT_MATTER_LABEL = _FRONT_MATTER_LABEL
 
 
 def _leaf_level(tag: str) -> str:

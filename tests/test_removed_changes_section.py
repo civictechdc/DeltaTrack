@@ -131,9 +131,10 @@ def test_tree_less_document_still_lists_removals_by_earlier_path():
 
 
 def test_pathless_removals_keep_the_removed_section_when_nothing_else_groups():
-    # 114-hr-2029 4->5 with --filter "front matter" yields only removals with no
-    # earlier path and no other placed change. The cards must not fall back to a flat
-    # list there: they list the removals where the sidebar does.
+    # A document holding only removals with no earlier path and no other placed change
+    # (114-hr-2029 4->5 under a front-matter filter once did, before #810 placed those
+    # removals under Front Matter). The cards must not fall back to a flat list there:
+    # they list the removals where the sidebar does.
     doc = canonical([change("c-0001", "removed"), change("c-0002", "removed")])
     del doc["tree"]
     html = format_diff_html(doc)
