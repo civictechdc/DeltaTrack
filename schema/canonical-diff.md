@@ -119,6 +119,10 @@ Top-level field: `schema_version: "3.0"`.
   longer branches on `source` to read `text`, and `move.body_unchanged` compares that
   text, as it is defined to.
 
+  Also, an XML section inside a title is labelled `Sec. N` in `path`, `tree` and
+  `move` labels (#810), as one outside a title already was; it used to carry the
+  matcher's lowercased key, `sec. 101` (`sec. 119a` for `Sec. 119A`).
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -417,6 +421,10 @@ major/department segment above it
 (`TITLE I > DEPARTMENTAL MANAGEMENT > MANAGEMENT DIRECTORATE > OPERATIONS AND
 SUPPORT`, DeltaTrack#105), reaching the depth the XML side already emits; renderers
 join whatever segments are present and need no per-pipeline branch.
+
+A segment is a display label, the form a reader sees, never a matcher's key. An XML
+section is `Sec. N` (its number as printed, `Sec. 119A`) wherever it sits, inside a
+title or not; `tree` labels use the same form.
 
 | Side | When `null`                                         |
 |------|-----------------------------------------------------|
