@@ -10,7 +10,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 
 ## Contents
 
-1. [Resume here: status as of 2026-10-05](#resume-here-status-as-of-2026-10-05)
+1. [Resume here: status as of 2026-10-07](#resume-here-status-as-of-2026-10-07) (work queue: [the five follow-ups](#resume-here-the-five-follow-ups-agreed-2026-10-07))
 1. [Targeted review register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) (G1–G9)
 1. [Current register](#current-register) (authoritative evidence per finding)
 1. [Decisions](#decisions) (principle; F4b)
@@ -34,7 +34,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 
 ---
 
-## Resume here: status as of 2026-10-05
+## Resume here: status as of 2026-10-07
 
 **Goal:** each pipeline stage (parse → diff → canonical document → viewer) can be changed by a
 different person without touching or importing another stage, and without one stage
@@ -52,8 +52,100 @@ re-deciding what another settled.
 | F1 + F15: viewer apart from engine | #801 → civictechdc/DeltaTrack#802 (merged, `5b9fcb3`) | `canonical_view.py`, import-direction gate |
 | PR C: view applies node facts | civictechdc/DeltaTrack#806 (merged, `ea7227c`) | Closes #785, #701; unplaced 1,548 → 0 XML, 39 → 0 PDF |
 | Issues filed for untracked findings | #807 (F7a move kind), #808 (F7b bill identity), #809 (F9 `--filter`), #810 (F3 + F17 + F11's front-matter path and `""` label), #811 (F11: front matter recognized by label, under #552), #812 (F5: one owner for the PDF layout); #751 scope extended (F12) | #807 and #808 linked as XML/PDF parity; F6 resolved without an issue |
+| Targeted review of #800/#802/#806 | [register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) | 2 rounds, converged; G1 → #814, G2 → #815, G3–G9 → #816 |
 
-### Resume here: targeted review of the new surfaces (agreed 2026-10-06)
+### Resume here: the five follow-ups (agreed 2026-10-07)
+
+The user agreed to work these five, in the priority order below. `develop` was still at `5a7cb20` on 2026-10-07
+(nothing landed since the targeted review); `main` is `3fc85ca` (schema 2.0). Re-check both before starting.
+
+**Priority (reader impact, then structure):** 1. #808 · 2. #807 · 3. #814 · 4. #810 · 5. #816 item 4.
+
+| # | Issue | Why it ranks here |
+|---|---|---|
+| 1 | #808 bill identity read from opposite sides | Only audit item that is visibly wrong on the report (empty bill number / Congress, on the report most likely to be shared). Gates the full re-audit. |
+| 2 | #807 "Renumbered" decided by two rules | Same pair, different verdict by input format; XML calls a division→section move "renumbered". Gates the re-audit. |
+| 3 | #814 import-direction gate defeatable | Cheap; protects the viewer/engine split. **Must land before #810**, the next PR to rework the viewer. |
+| 4 | #810 XML document carries matcher text and labels; viewer branches on `source` | Last open separation-of-concerns violation (F3/F17). Gates the re-audit. |
+| 5 | #816 item 4: fold schema 3.0 + 3.1 | Small, but deadline-bound: before the next promotion of `develop` to `main` (#555). |
+
+**Execution order (dependencies, not priority).** The three producer issues (#808, #807, #810) each regenerate
+the canonical baselines and examples, and each adds to the schema changelog, so they merge one at a time.
+
+1. **#814 and the schema fold first, in parallel.** Both are small, and neither touches the others' files except
+   the fold's version string. Doing the fold first means #808, #807 and #810 all add to the one unreleased
+   changelog entry instead of conflicting over it.
+2. **#808**, then **#807**, then **#810**, each branched off the latest `develop` after the previous one merges.
+
+#### Per-item notes
+
+**#814, test-only PR** (`claude/import-gate`). Read the issue's "What to do"; it is the converged spec:
+- Viewer side: static AST scan of every file in `VIEWER_MAY_LOAD` (including the package `__init__`s). Read
+  `from X import Y` as `X.Y`; flag `importlib.import_module` / `__import__` calls whose argument isn't a literal.
+- Engine side: no import at any depth of a viewer-only module or `compare.*`, except the three CLI imports
+  (`diff_bill.py:2075`, `diff_pdf.py:1306`, `:1325`; the #62 cycle).
+- Runtime: add a saved PDF document **with `print_breaks`** to the blocked render; check `sys.modules` after
+  `format_diff_html`. Find or build a small fixture.
+- Proof: each of the issue's four mutations must turn the gate red (show this in the PR).
+
+**Schema fold, #816 item 4** (`claude/schema-fold`; PR says `Refs #816`, not `Closes`):
+- Decide the number in the PR: under the rule in `schema/canonical-diff.md`, the one unreleased version after
+  `main`'s 2.0 is **3.0** (the #671 break). 3.1 never shipped (`main` and the hosted app are at 2.0).
+- Touches:
+  - `formatters/schema_version.py`;
+  - the changelog, merging 3.1's entries into 3.0;
+  - the JSON schema, if it pins a version;
+  - `tests/test_formatters_canonical.py:38`, which hardcodes `"3.1"`;
+  - any other `"3.1"` in tests and docs (grep).
+- Add a test tying the markdown's current version to `SCHEMA_VERSION`.
+- Regenerate the canonical baselines (`UPDATE_BASELINE=1`, `UPDATE_PDF_BASELINE=1`) and the examples; only the
+  version string should move.
+- **Confirm with the user before opening the PR:** the version going *down* (3.1 → 3.0) is the visible choice.
+
+**#808, one identity rule** (`claude/bill-identity`):
+- Today XML reads identity from the earlier version (`diff_bills`), and PDF from the later one, by regexes in
+  `compare/pdf.py` (`_derive_congress`, `_bill_identity`), in the orchestration layer.
+- Target: one rule for both pipelines, e.g. take each field from whichever version states it. Move the PDF readers
+  to the parser layer.
+- Done-when checks:
+  - 4 XML pairs (113-hr-3547 5→6, 113-hr-83 6→7, 114-hr-2029 6→7, 118-hr-4366 5→6) get type and number;
+  - 4 PDF pairs (113-hr-3547 3→4, 115-hr-5895 3→4, 118-hr-2882 1→4, 118-hr-4366 3→4) get the Congress;
+  - the PDF identity reader gets tests on a cover page and on an engrossed-amendment first page;
+  - only `bill` fields move in the baselines.
+- **Open design question for the user:** when both versions state a field and disagree, how is that "said"? A
+  schema field such as `bill.conflicts`, a warning, or pick-later-and-log? Ask before building.
+
+**#807, one move-kind rule owned by the differ** (`claude/move-kind`):
+- Today `_xml_move` (same parent, different last segment) and `_pdf_move` (anchor texts differ) in
+  `formatters/canonical.py` re-decide what the differ already recorded (`move_basis` in `diff_pdf.py`,
+  `_moved_record` in `diff_bill.py`).
+- Target: the differ emits the kind (or the facts it rests on). The canonicalizer copies it, and the rule is stated
+  in `schema/canonical-diff.md`.
+- Done-when checks:
+  - a division→section move is never "renumbered";
+  - unit tests cover the 4 cases (parent same/changed × last label same/changed) on both pipelines;
+  - the PR lists the moves whose kind changed (census probe:
+    `docs/research/pdf-matching-convergence/probes/pdf_move_user_facing.py`).
+- Out of scope: wrap-fragment false renumberings (#648, #732, PR #734).
+- **Open design question for the user:** the rule itself. Write the options with corpus counts (167 of 496 XML
+  and 85 of 161 PDF flip between today's two rules) before implementing.
+
+**#810, readable XML document, no `source` branches** (likely 2–3 PRs):
+- (a) `changes[].text` is the readable text, and `_card_texts` / `_heading_and_nav` lose their `source` branch. Add
+  a test that flips `source` and gets an identical report.
+- (b) `Sec. N` as the one display form in `path` and the outline (`bill_tree._build_paths` callers around lines
+  910 and 951).
+- (c) Front-matter `path` agrees with the tree. The schema defines a `""` label as "no heading of its own".
+- Before starting, check whether #698 (removing the XML intermediate dictionary) has an open PR: they rewrite the
+  same adapter, and whichever lands second rebases.
+- Requires #814 merged first.
+
+**After all five:**
+- The full re-audit becomes due (its trigger was #810, #807 and #808 landing).
+- Rebases of #736, #734, #739 and #731 remain their authors'.
+- Still undecided by the user: whether to keep this notes branch, move the notes to `docs/`, or delete it.
+
+### Done: targeted review of the new surfaces (agreed 2026-10-06; converged, filed as #814, #815, #816)
 
 All PRs in the plan merged (#791, #782, #800, #802, #806); every audit finding is fixed, resolved,
 or owned by an issue (#807–#812, #751, #698, #706, #471). The user asked for a **targeted review, not
