@@ -8,6 +8,7 @@ from uploaded bytes instead of files on disk:
     diff_pdfs()            (diff_pdf)
     pdf_full_text()        (parsers.pdf_text)   — both paths (full text + offsets)
     pdf_print_breaks()     (parsers.pdf_text)   — both paths (where the printer broke it)
+    pdf_identity()         (parsers.pdf_identity) — each side's bill identity, combined (#808)
     pdf_diff_to_canonical()(formatters.canonical) — both paths (JSON out / embedded)
     format_diff_html()     (formatters.diff_html) — HTML path (canonical → report)
 
@@ -17,13 +18,13 @@ pypdfium2 to open them and are deleted before this function returns.
 
 from __future__ import annotations
 
-import re
 import tempfile
 from pathlib import Path
 
 from deltatrack.diff_pdf import PdfDiff, diff_pdfs
 from deltatrack.formatters.canonical import pdf_diff_to_canonical
 from deltatrack.formatters.diff_html import format_diff_html
+from deltatrack.parsers.pdf_identity import pdf_identity
 from deltatrack.parsers.pdf_text import (
     Page,
     extract_print_pages,
@@ -152,22 +153,6 @@ def _extract_and_diff(
     return diff_pdfs(old_pages, new_pages), old_pages, new_pages
 
 
-_CONGRESS_RE = re.compile(r"(\d{1,3})(?:ST|ND|RD|TH)\s+CONGRESS", re.IGNORECASE)
-
-
-def _derive_congress(pages: list[Page]) -> str:
-    """Pull the Congress number from the cover (e.g. "118TH CONGRESS" → "118").
-
-    GPO PDFs carry no metadata, so the number is read from the front matter;
-    returns "" when not found (the renderer then omits the "th Congress" suffix).
-    """
-    if not pages:
-        return ""
-    head = "\n".join(line.text for line in pages[0].lines[:10])
-    m = _CONGRESS_RE.search(head)
-    return m.group(1) if m else ""
-
-
 def _build_canonical(
     pdf_diff: PdfDiff,
     old_pages: list[Page],
@@ -175,7 +160,6 @@ def _build_canonical(
     start_label: str,
     end_label: str,
     *,
-    congress: str = "",
     start_version_number: int | None = None,
     end_version_number: int | None = None,
 ) -> dict:
@@ -185,16 +169,15 @@ def _build_canonical(
     document the report renders from, and embeds, on the HTML path. The full text is
     whole-word; `print_breaks` carries where the printer broke it, so the report lays
     out the printed page from this document alone (#653).
+
+    Each version's own reading of the bill ships under ``versions``, and the canonicalizer
+    combines the two into ``bill`` (#808).
     """
     v1_text, v1_offsets = pdf_full_text(old_pages)
     v2_text, v2_offsets = pdf_full_text(new_pages)
-    bill_type, bill_number, title = _bill_identity(new_pages)
     return pdf_diff_to_canonical(
         pdf_diff,
-        bill_type=bill_type,
-        bill_number=bill_number,
-        congress=congress,
-        title=title,
+        version_identities={"v1": pdf_identity(old_pages), "v2": pdf_identity(new_pages)},
         v1_label=start_label,
         v2_label=end_label,
         v1_version_number=start_version_number,
@@ -203,42 +186,6 @@ def _build_canonical(
         line_offsets={"v1": v1_offsets, "v2": v2_offsets},
         print_breaks={"v1": pdf_print_breaks(old_pages), "v2": pdf_print_breaks(new_pages)},
     )
-
-
-_BILL_DESIGNATOR = re.compile(
-    r"\b(H\.\s?R\.|S\.\s?J\.\s?RES\.|H\.\s?J\.\s?RES\.|S\.\s?CON\.\s?RES\.|H\.\s?CON\.\s?RES\."
-    r"|S\.\s?RES\.|H\.\s?RES\.|S\.)\s?(\d{1,5})\b"
-)
-
-
-def _bill_identity(pages: list[Page]) -> tuple[str, int | str, str | None]:
-    """(bill type, bill number, long title) read from the document's opening lines.
-
-    The type is the designator's letters lowercased (`H.R.` -> `hr`, `S.J.RES.` ->
-    `sjres`), the same codes the XML path carries; type and number are "" when no
-    designator is found. The title is the long title that follows "AN ACT" / "A BILL",
-    or None. This parses GPO front matter heuristically and is not yet validated across
-    bill types — see the deep-data-testing follow-up.
-    """
-    head = ""
-    for line in (ln for page in pages for ln in page.lines):
-        if len(head) > 1500:
-            break
-        if line.text.strip():
-            head = f"{head} {line.text.strip()}" if head else line.text.strip()
-
-    bill_type: str = ""
-    bill_number: int | str = ""
-    m = _BILL_DESIGNATOR.search(head)
-    if m:
-        bill_type = re.sub(r"[^a-z]", "", m.group(1).lower())
-        bill_number = int(m.group(2))
-
-    m2 = re.search(r"\bAN ACT\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE) or re.search(
-        r"\bA BILL\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE
-    )
-    title = re.sub(r"\s+", " ", m2.group(1)).strip() if m2 else None
-    return bill_type, bill_number, title
 
 
 def compare_pdfs(
@@ -252,14 +199,12 @@ def compare_pdfs(
 ) -> dict:
     """Diff two PDF documents and return canonical diff JSON (see schema/canonical-diff.md)."""
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
-    congress = _derive_congress(new_pages)
     return _build_canonical(
         pdf_diff,
         old_pages,
         new_pages,
         start_label,
         end_label,
-        congress=congress,
         start_version_number=start_version_number,
         end_version_number=end_version_number,
     )
@@ -284,11 +229,8 @@ def compare_pdfs_html(
     :func:`version_identity_from_filename`, so one file is one version on every surface.
     """
     pdf_diff, old_pages, new_pages = _extract_and_diff(start_bytes, end_bytes)
-    congress = _derive_congress(new_pages)
     numbers = {"start_version_number": start_version_number, "end_version_number": end_version_number}
-    return format_diff_html(
-        _build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, congress=congress, **numbers)
-    )
+    return format_diff_html(_build_canonical(pdf_diff, old_pages, new_pages, start_label, end_label, **numbers))
 
 
 def compare_pdf_files_html(

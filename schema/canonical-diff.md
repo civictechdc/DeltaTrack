@@ -91,6 +91,18 @@ Top-level field: `schema_version: "3.0"`.
   The spans state where the producer printed a node's heading and body, so a consumer
   no longer searches the text for a label. `full_text_span` keeps its meaning.
 
+  Also added optional `versions.v1.bill` and `versions.v2.bill` (#808): what each
+  version itself states about the bill. `bill` is now the two combined by one rule on
+  both pipelines, each field from v2 when v2 states it, else from v1. The XML pipeline
+  used to read the type, number and Congress from v1 only and the title from v2 only;
+  the PDF pipeline read every field from v2 only. A pair with an engrossed amendment on
+  the side read lost what the amendment does not state: a House engrossed amendment's
+  XML has no type or number, an engrossed amendment's XML has no title, and its print
+  has no cover, so no Congress. An XML `bill.title` now falls back to v1's title when
+  v2 has none, which also heads the report. The PDF pipeline's `congress` is now an
+  integer, as the XML pipeline's is, and its title starts with a capital letter where an
+  amendment quotes it in lower case ("entitled ‘‘An Act making…’’").
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -299,11 +311,19 @@ slicing.
 
 ### `bill`
 
+The bill the comparison is about. Each field is v2's when v2 states it, else v1's
+(`versions.v1.bill` and `versions.v2.bill` carry each version's own reading). The later
+version wins a disagreement because it is the bill as it now stands: a bill used as the
+vehicle for other legislation keeps its number but takes a new long title. An unstated
+field is `""` (`null` for `title`). An engrossed amendment states the least: it has no
+cover page, so its print names no Congress; its XML has no official title, and a House
+engrossed amendment's XML has no type or number.
+
 | Field      | Type              | Notes                                                       |
 |------------|-------------------|-------------------------------------------------------------|
 | `type`     | string            | Lowercase bill type code, e.g., `"hr"`, `"s"`, `"hjres"`. May be empty. The PDF pipeline reads it from the printed designator (`H.R.` → `"hr"`). |
 | `number`   | integer \| string | Integer for canonical bills (e.g., `4366`); string for drafts or non-numeric identifiers. |
-| `congress` | integer \| string | Congress number, e.g., `118`. May be empty string when unknown. |
+| `congress` | integer \| string | Congress number, e.g., `118`. Empty string when neither version states it. |
 | `title`    | string \| null    | Optional (v3.0+). The bill's long title, e.g. `"Making appropriations for…"`; `null` when none was found. XML takes it from the bill's official title; PDF reads it, best-effort, from the text after "AN ACT" / "A BILL". |
 
 ### `versions.v1` and `versions.v2`
@@ -313,6 +333,7 @@ slicing.
 | `label`          | string              | Human-readable label, e.g., `"Engrossed in House"`, `"Public Law"`, `"draft"`.              |
 | `version_number` | integer \| null     | The version's per-bill ordinal, the `n` of an `n_label` input filename (ADR 0013), on either pipeline; `null` when the filename carries none. Not a GPO bill-version code (`ih`, `enr`). |
 | `source`         | `"xml"` \| `"pdf"`  | Provenance. Lets consumers reason about structural confidence.                              |
+| `bill`           | object              | Optional (v3.0+). What this version itself states about the bill, in the shape of [`bill`](#bill): an unstated field is `""` (`null` for `title`). Where the two versions disagree, `bill` holds v2's value; each version's own reading stays here. |
 
 ### `summary`
 

@@ -70,18 +70,8 @@
       }
     },
     "bill": {
-      "type": "object",
-      "required": ["type", "number", "congress"],
-      "additionalProperties": false,
-      "properties": {
-        "type": { "type": "string" },
-        "number": { "type": ["integer", "string"] },
-        "congress": { "type": ["integer", "string"] },
-        "title": {
-          "type": ["string", "null"],
-          "description": "Optional (v3.0+) the bill's long title (\"Making appropriations for...\"), or null when the producer found none."
-        }
-      }
+      "$ref": "#/$defs/Bill",
+      "description": "The bill the comparison is about: each field from versions.v2.bill when it states one, else from versions.v1.bill."
     },
     "versions": {
       "type": "object",
@@ -168,7 +158,25 @@
       "properties": {
         "label": { "type": "string" },
         "version_number": { "type": ["integer", "null"] },
-        "source": { "enum": ["xml", "pdf"] }
+        "source": { "enum": ["xml", "pdf"] },
+        "bill": {
+          "$ref": "#/$defs/Bill",
+          "description": "Optional (v3.0+) what this version itself states about the bill. An unstated field is \"\" (null for title)."
+        }
+      }
+    },
+    "Bill": {
+      "type": "object",
+      "required": ["type", "number", "congress"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string" },
+        "number": { "type": ["integer", "string"] },
+        "congress": { "type": ["integer", "string"] },
+        "title": {
+          "type": ["string", "null"],
+          "description": "Optional (v3.0+) the bill's long title (\"Making appropriations for...\"), or null when none was found."
+        }
       }
     },
     "Change": {

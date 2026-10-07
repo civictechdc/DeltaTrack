@@ -21,6 +21,7 @@ from deltatrack.amounts import (
     has_amendment_annotation,
     strip_amendment_annotations,
 )
+from deltatrack.bill_identity import combined, xml_identity
 from deltatrack.bill_tree import BillNode, BillTree, amount_text, normalize_bill
 from deltatrack.matching import (
     NEW,
@@ -1065,7 +1066,12 @@ class NodeDiff:
 
 @dataclass(frozen=True)
 class BillDiff:
-    """Complete diff between two bill versions."""
+    """Complete diff between two bill versions.
+
+    ``congress``, ``bill_type`` and ``bill_number`` are the bill the comparison is about,
+    each from the newer version when it states it, else the older (#808,
+    ``bill_identity.combined``). Unstated in both, they keep the tree's empty values.
+    """
 
     old_version: str
     new_version: str
@@ -1836,12 +1842,13 @@ def diff_bills(old: BillTree, new: BillTree) -> BillDiff:
     settled = settle_correspondences(pairs, registry, moves, round1_evidence=round1_evidence)
     changes = classify(settled, registry)
 
+    bill = combined(xml_identity(old), xml_identity(new))
     return BillDiff(
         old_version=old.version,
         new_version=new.version,
-        congress=old.congress,
-        bill_type=old.bill_type,
-        bill_number=old.bill_number,
+        congress=bill.congress,
+        bill_type=bill.bill_type,
+        bill_number=bill.bill_number,
         summary=_count_changes(changes),
         changes=changes,
     )

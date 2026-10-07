@@ -643,6 +643,10 @@ def synthetic_bills_dir(tmp_path) -> Path:
     return root
 
 
+#: What every synthetic version states about its bill: no `<official-title>`.
+SYNTHETIC_BILL = {"type": "hr", "number": 4366, "congress": 118, "title": None}
+
+
 def _run_compare(monkeypatch, *argv: str) -> None:
     monkeypatch.setattr(sys, "argv", ["diff_bill.py", "compare", *argv])
     main()
@@ -990,8 +994,10 @@ class TestCompareLegacyTwoPathForm:
         )
         raw = out.read_text() if out.exists() else capsys.readouterr().out
         data = json.loads(raw)
-        assert data["versions"]["v1"] == {"label": "reported-in-house", "version_number": 1, "source": "xml"}
-        assert data["versions"]["v2"] == {"label": "enrolled-bill", "version_number": 6, "source": "xml"}
+        assert data["versions"] == {
+            "v1": {"label": "reported-in-house", "version_number": 1, "source": "xml", "bill": SYNTHETIC_BILL},
+            "v2": {"label": "enrolled-bill", "version_number": 6, "source": "xml", "bill": SYNTHETIC_BILL},
+        }
 
     def test_a_flag_between_the_paths_still_takes_effect(self, synthetic_bills_dir, monkeypatch, capsys):
         """Accepting the ordering is not enough, the flag has to still be applied.
@@ -1119,8 +1125,10 @@ class TestCompareVersionAddressableForm:
             "json",
         )
         data = json.loads(capsys.readouterr().out)
-        assert data["versions"]["v1"] == {"label": "reported-in-house", "version_number": 1, "source": "xml"}
-        assert data["versions"]["v2"] == {"label": "enrolled-bill", "version_number": 6, "source": "xml"}
+        assert data["versions"] == {
+            "v1": {"label": "reported-in-house", "version_number": 1, "source": "xml", "bill": SYNTHETIC_BILL},
+            "v2": {"label": "enrolled-bill", "version_number": 6, "source": "xml", "bill": SYNTHETIC_BILL},
+        }
         assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
 
     def test_the_ordinals_pick_the_versions_named(self, synthetic_bills_dir, monkeypatch, capsys):

@@ -71,7 +71,7 @@ def _pdf_view(bill: str, v1: str, v2: str):
     a = BILLS / bill / f"{v1}.pdf"
     b = BILLS / bill / f"{v2}.pdf"
     diff = diff_pdfs(cached_pages(a), cached_pages(b))
-    canonical = _build_canonical(diff, cached_pages(a), cached_pages(b), "v1", "v2", congress="")
+    canonical = _build_canonical(diff, cached_pages(a), cached_pages(b), "v1", "v2")
     return canonical, view_from_canonical(canonical)
 
 

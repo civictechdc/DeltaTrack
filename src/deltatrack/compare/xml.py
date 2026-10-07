@@ -28,6 +28,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
+from deltatrack.bill_identity import xml_identity
 from deltatrack.bill_tree import BillTree, normalize_bill
 from deltatrack.diff_bill import bill_diff_to_dict, diff_bills, filter_diff
 from deltatrack.formatters.canonical import xml_diff_to_canonical
@@ -84,7 +85,7 @@ def _build_from_trees(
         full_text_spans=full_text_spans,
         tree=tree,
         node_ids=node_ids,
-        title=new_tree.official_title,
+        version_identities={"v1": xml_identity(old_tree), "v2": xml_identity(new_tree)},
     )
 
 
