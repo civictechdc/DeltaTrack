@@ -137,7 +137,7 @@ def _imports(module: str, source: str) -> list[tuple[int, str, str]]:
     Walks the whole tree, so an import inside a function, a branch or ``TYPE_CHECKING``
     counts. ``from X import Y`` is read as ``X.Y`` when that is a module, since
     ``from deltatrack import matching`` loads ``deltatrack.matching``, not ``deltatrack``.
-    The loaders ``importlib.import_module``, ``__import__`` and ``importlib.resources.files``
+    The loaders ``importlib.import_module``, ``builtins.__import__`` and ``importlib.resources.files``
     (which imports the package it is given) count too, under any name they are bound to, with
     an absolute literal target; any other target is :data:`NON_LITERAL`.
 
@@ -149,8 +149,8 @@ def _imports(module: str, source: str) -> list[tuple[int, str, str]]:
     tree = ast.parse(source)
     loaders = {"import_module", "__import__", "files"}
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module in ("importlib", "importlib.resources"):
-            loaders |= {a.asname for a in node.names if a.name in ("import_module", "files") and a.asname}
+        if isinstance(node, ast.ImportFrom) and node.module in ("importlib", "importlib.resources", "builtins"):
+            loaders |= {a.asname for a in node.names if a.name in ("import_module", "files", "__import__") and a.asname}
     package = module if _source_path(module).name == "__init__.py" else module.rpartition(".")[0]
     found: list[tuple[int, str, str]] = []
 
@@ -307,6 +307,8 @@ def test_the_cli_exceptions_still_exist():
         ("import importlib\nimportlib.import_module(name)", NON_LITERAL),
         ("__import__('deltatrack' + '.matching')", NON_LITERAL),
         ("from importlib import import_module as load\nload('deltatrack.diff_pdf')", "deltatrack.diff_pdf"),
+        ("from builtins import __import__ as load\nload('deltatrack.matching')", "deltatrack.matching"),
+        ("import builtins\nbuiltins.__import__('deltatrack.matching')", "deltatrack.matching"),
         ("import importlib\nimportlib.import_module('.canonical', __package__)", NON_LITERAL),
         ("from importlib.resources import files\nfiles('deltatrack.compare.pdf')", "deltatrack.compare.pdf"),
         ("from importlib.resources import files as f\nf('deltatrack.amounts')", "deltatrack.amounts"),
