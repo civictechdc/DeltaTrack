@@ -33,7 +33,7 @@ from deltatrack.matching import (
     ObservationRef,
     RetrieverInvocation,
 )
-from deltatrack.move_kind import Placement
+from deltatrack.move_kind import Placement, unit_and_number
 from deltatrack.move_kind import move_kind as kind_of_move
 from deltatrack.similarity import (
     MOVE_THRESHOLD,
@@ -1781,13 +1781,28 @@ def _placement(node: BillNode) -> Placement:
     nothing), so two different titles would read as one parent. ``structural_parent`` leaves
     out the division and ignores case, which is all the normalization a parent needs.
 
-    A node with no heading of its own, such as a section with no `<enum>` directly in a
-    division, has the division's label as its whole display path; that label is not the
-    node's, so the node is placed with no label rather than read as a division.
+    A node's display path ends with its own label only when it has one; otherwise it ends
+    with the heading it inherited. A section owns its label when it has a number: one
+    printed without an ``<enum>`` carries its title's or division's label last, and reading
+    that as its own would "renumber" it from TITLE I to TITLE II. A subsection always appends
+    its own label. Any other node (an appropriations heading) is never a title or division
+    itself, so a title or division label last is inherited. A node with no label of its own
+    keeps its whole display path as ancestry.
     """
     path = node.display_path
-    own = bool(path) and not (node.division_label and path[-1] == node.division_label)
+    if not path:
+        return Placement.of(None, node.tag, ())
+    if node.tag == "section":
+        own = bool(node.section_number)
+    elif node.tag == "subsection":
+        own = True
+    else:
+        own = unit_and_number(path[-1])[0] not in _CONTAINER_UNITS
     return Placement.of(path[-1] if own else None, node.tag, path[:-1] if own else path)
+
+
+#: The units that contain provisions; an appropriations heading is never one of them.
+_CONTAINER_UNITS = frozenset({"division", "title", "subtitle", "chapter", "part"})
 
 
 def _classified(item: SettledCorrespondence, registry: ObservationRegistry) -> NodeDiff:

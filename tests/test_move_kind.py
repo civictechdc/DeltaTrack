@@ -110,7 +110,8 @@ def _node(display: tuple[str, ...], match: tuple[str, ...], tag: str = "section"
         element_id="",
         header_text="",
         body_text=_BODY,
-        section_number="",
+        # The parser numbers a section from its `<enum>`; its display label is that number.
+        section_number=display[-1] if tag == "section" and display and display[-1].lower().startswith("sec") else "",
         division_label=division,
     )
 
@@ -336,3 +337,38 @@ def test_the_full_bill_tooltip_names_a_renumbering_relocated_or_not(kind, note):
     if kind != RELOCATED:
         move |= {"old_label": "SEC. 2", "new_label": "SEC. 202"}
     assert _move_note({"move": move}) == note
+
+
+def _bill_with_an_unnumbered_section(title_enum: str, title_header: str) -> bytes:
+    """A bill whose one moving section has no `<enum>`, so its display path ends with its title."""
+    return f"""<?xml version="1.0"?><bill bill-stage="Reported-in-House"><form>
+<congress>One Hundred Eighteenth Congress</congress><legis-num>H. R. 1</legis-num></form><legis-body>
+<title id="T0"><enum>IX</enum><header>OTHER</header><section id="S0"><enum>901.</enum><header>Stays</header>
+<text>An unrelated provision that stays where it is.</text></section></title>
+<title id="T1"><enum>{title_enum}</enum><header>{title_header}</header>
+<section id="S1"><text>{_BODY}.</text></section></title></legis-body></bill>""".encode()
+
+
+def test_an_unnumbered_section_is_not_renumbered_by_the_title_it_inherits():
+    """Parser to document: a section printed without a number carries its title's label
+    last in its display path. That label is not the section's, so a move from Title I to
+    Title II is `relocated`, never "renumbered" from TITLE I—ARMY to TITLE II—NAVY."""
+    from deltatrack.compare.xml import compare_xml
+
+    document = compare_xml(
+        _bill_with_an_unnumbered_section("I", "ARMY"), _bill_with_an_unnumbered_section("II", "NAVY")
+    )
+    (moved,) = [c for c in document["changes"] if c["change_type"] == "moved"]
+    assert moved["path"] == {"v1": ["TITLE I—ARMY"], "v2": ["TITLE II—NAVY"]}
+    assert moved["move"] == {"kind": RELOCATED, "body_unchanged": True}
+
+
+def test_an_appropriations_heading_does_not_own_the_title_it_inherits():
+    """An appropriations node directly under a title, with no heading of its own, ends its
+    display path with the title; the title is its parent, not its label."""
+    from deltatrack.diff_bill import _placement
+
+    old = _node(("TITLE I—ARMY",), ("army",), tag="appropriations-intermediate")
+    new = _node(("TITLE II—NAVY",), ("navy",), tag="appropriations-intermediate")
+    assert _placement(old) == Placement("", "", ("title i—army",))
+    assert move_kind(_placement(old), _placement(new)) == RELOCATED
