@@ -86,6 +86,12 @@ def _endpoint_json(old: Path, new: Path) -> dict:
     return response.json()
 
 
+def _names(versions: dict) -> dict:
+    """Each version's label, ordinal and source: the fields that name it. Its `bill` reading
+    is the subject of tests/test_bill_identity.py; the surfaces are compared whole below."""
+    return {side: {k: v[k] for k in ("label", "version_number", "source")} for side, v in versions.items()}
+
+
 def _embedded_versions(html: str) -> dict:
     """``versions`` from the diff document a rendered report embeds."""
     embedded = html.split('<script type="application/json" id="diff-data">', 1)[1].split("</script>", 1)[0]
@@ -183,10 +189,11 @@ def test_numbered_corpus_names_give_one_version_identity_on_every_surface(tmp_pa
         "v1": {"label": "reported-in-house", "version_number": 1, "source": fmt},
         "v2": {"label": "engrossed-in-house", "version_number": 2, "source": fmt},
     }
-    assert cli["versions"] == expected
+    assert _names(cli["versions"]) == expected
     assert cli == endpoint
-    assert _endpoint_html_versions(old, new) == expected
-    assert _example_versions(monkeypatch, tmp_path, fmt) == expected
+    # Whole `versions`, each version's `bill` reading included, on the report surfaces too.
+    assert _endpoint_html_versions(old, new) == cli["versions"]
+    assert _example_versions(monkeypatch, tmp_path, fmt) == cli["versions"]
 
 
 @pytest.mark.slow
@@ -211,8 +218,8 @@ def test_an_all_digit_upload_name_is_a_label_with_no_ordinal(tmp_path):
         "v1": {"label": "2026", "version_number": None, "source": "xml"},
         "v2": {"label": "2027", "version_number": None, "source": "xml"},
     }
-    assert _endpoint_json(old, new)["versions"] == expected
-    assert json.loads(_cli_json(tmp_path, old, new))["versions"] == expected
+    assert _names(_endpoint_json(old, new)["versions"]) == expected
+    assert _names(json.loads(_cli_json(tmp_path, old, new))["versions"]) == expected
 
     with open(old, "rb") as start, open(new, "rb") as end:
         response = TestClient(app).post(

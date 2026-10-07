@@ -622,14 +622,3 @@ def test_compare_api_returns_html():
     assert resp.status_code == 200
     assert "text/html" in resp.headers.get("content-type", "")
     assert 'id="change-0"' in resp.text
-
-
-def test_derive_congress_from_cover():
-    from deltatrack.compare.pdf import _derive_congress
-    from deltatrack.parsers.pdf_text import Line, Page
-
-    page = Page(1, (Line(None, "118TH CONGRESS"), Line(None, "1ST SESSION H. R. 4366")))
-    assert _derive_congress([page]) == "118"
-    # No cover match → empty (renderer then omits the "th Congress" suffix).
-    assert _derive_congress([Page(1, (Line(None, "AN ACT"),))]) == ""
-    assert _derive_congress([]) == ""

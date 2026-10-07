@@ -18,6 +18,7 @@ producers or the parsers and differs they import (#801).
 from __future__ import annotations
 
 from deltatrack.amounts import extract_amounts
+from deltatrack.bill_identity import BillIdentity, combined
 from deltatrack.diff_pdf import PdfDiff, PdfHunk
 from deltatrack.formatters.schema_version import SCHEMA_VERSION
 from deltatrack.parsers.pdf_anchors import Anchor, anchor_positions, breadcrumb_for
@@ -140,6 +141,33 @@ def _search_span(
     return {"v1": _find("v1", text_old, id_old), "v2": _find("v2", text_new, id_new)}
 
 
+def _bill_payload(bill_type: str, bill_number: int | str, congress: int | str, title: str | None) -> dict:
+    """A `bill` object: an unstated field is `""`, or `null` for the title."""
+    return {"type": bill_type or "", "number": bill_number or "", "congress": congress or "", "title": title or None}
+
+
+def _settled_bill(identities: dict[str, BillIdentity] | None, given: tuple) -> dict:
+    """`bill`: ``bill_identity.combined`` of the versions' own readings when the caller read
+    them (#808), so the rule is applied here, once, for both pipelines; else the fields the
+    caller passed, for a caller that built its own."""
+    if identities is not None:
+        b = combined(identities["v1"], identities["v2"])
+        return _bill_payload(b.bill_type, b.bill_number, b.congress, b.title)
+    return _bill_payload(*given)
+
+
+def _versions_payload(source: str, labels: dict, numbers: dict, identities: dict[str, BillIdentity] | None) -> dict:
+    """`versions`, each carrying what that version states about the bill when it was read."""
+    versions = {}
+    for side in ("v1", "v2"):
+        version = {"label": labels[side], "version_number": numbers[side], "source": source}
+        if identities is not None:
+            i = identities[side]
+            version["bill"] = _bill_payload(i.bill_type, i.bill_number, i.congress, i.title)
+        versions[side] = version
+    return versions
+
+
 def _xml_move(change: dict) -> dict:
     """Move kind from the display paths, mirroring ``_pdf_move`` (#188).
 
@@ -170,8 +198,13 @@ def xml_diff_to_canonical(
     tree: dict | None = None,
     node_ids: dict | None = None,
     title: str | None = None,
+    version_identities: dict[str, BillIdentity] | None = None,
 ) -> dict:
     """Convert a bill-diff dict (from bill_diff_to_dict) into canonical JSON.
+
+    `version_identities`, when provided, is each version's own reading, `{"v1"|"v2":
+    BillIdentity}`: it is published under `versions`, and `bill` is the two combined (#808).
+    Without it, `bill` is the dict's type, number and Congress with `title`.
 
     Drops `unchanged` entries: bill_diff_to_dict emits a card per matched node,
     but the canonical JSON only carries actual diffs.
@@ -199,24 +232,16 @@ def xml_diff_to_canonical(
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": {"name": GENERATOR_NAME, "version": "0"},
-        "bill": {
-            "type": diff_dict.get("bill_type", "") or "",
-            "number": diff_dict.get("bill_number", "") or "",
-            "congress": diff_dict.get("congress", "") or "",
-            "title": title or None,
-        },
-        "versions": {
-            "v1": {
-                "label": diff_dict.get("old_version", "") or "",
-                "version_number": diff_dict.get("old_version_number"),
-                "source": "xml",
-            },
-            "v2": {
-                "label": diff_dict.get("new_version", "") or "",
-                "version_number": diff_dict.get("new_version_number"),
-                "source": "xml",
-            },
-        },
+        "bill": _settled_bill(
+            version_identities,
+            (diff_dict.get("bill_type", ""), diff_dict.get("bill_number", ""), diff_dict.get("congress", ""), title),
+        ),
+        "versions": _versions_payload(
+            "xml",
+            {"v1": diff_dict.get("old_version", "") or "", "v2": diff_dict.get("new_version", "") or ""},
+            {"v1": diff_dict.get("old_version_number"), "v2": diff_dict.get("new_version_number")},
+            version_identities,
+        ),
         "summary": dict(diff_dict.get("summary") or {}),
         "full_text": normalized_full_text,
         "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
@@ -482,9 +507,9 @@ def _rows_span(rng: tuple[int, int, int, int] | None, offsets: dict | None) -> d
 def pdf_diff_to_canonical(
     diff: PdfDiff,
     *,
-    bill_type: str,
-    bill_number: int | str,
-    congress: int | str,
+    bill_type: str = "",
+    bill_number: int | str = "",
+    congress: int | str = "",
     title: str | None = None,
     v1_label: str = "v1",
     v2_label: str = "v2",
@@ -493,8 +518,13 @@ def pdf_diff_to_canonical(
     full_text: dict | None = None,
     line_offsets: dict | None = None,
     print_breaks: dict | None = None,
+    version_identities: dict[str, BillIdentity] | None = None,
 ) -> dict:
     """Produce canonical JSON from a PdfDiff.
+
+    `version_identities`, when provided, is each version's own reading, `{"v1"|"v2":
+    BillIdentity}`: it is published under `versions`, and `bill` is the two combined (#808).
+    Without it, `bill` is the `bill_type`, `bill_number`, `congress` and `title` passed.
 
     `print_breaks`, when provided, carries per side where the printer broke a line of
     the whole-word `full_text`, so a consumer can lay it out as printed. See
@@ -531,11 +561,13 @@ def pdf_diff_to_canonical(
     return {
         "schema_version": SCHEMA_VERSION,
         "generator": {"name": GENERATOR_NAME, "version": "0"},
-        "bill": {"type": bill_type, "number": bill_number, "congress": congress, "title": title or None},
-        "versions": {
-            "v1": {"label": v1_label, "version_number": v1_version_number, "source": "pdf"},
-            "v2": {"label": v2_label, "version_number": v2_version_number, "source": "pdf"},
-        },
+        "bill": _settled_bill(version_identities, (bill_type, bill_number, congress, title)),
+        "versions": _versions_payload(
+            "pdf",
+            {"v1": v1_label, "v2": v2_label},
+            {"v1": v1_version_number, "v2": v2_version_number},
+            version_identities,
+        ),
         "summary": dict(diff.summary),
         "full_text": normalized_full_text,
         "full_text_layout": "numbered_lines" if normalized_full_text is not None else None,
