@@ -140,6 +140,7 @@ def test_xml_moved_change_emits_relocated_move():
         "old_text": "same body",
         "new_text": "same body",
         "section_number": "",
+        "move_kind": "relocated",
     }
     canonical = xml_diff_to_canonical(_xml_diff_dict(changes=[change]))
     c = canonical["changes"][0]
@@ -147,10 +148,9 @@ def test_xml_moved_change_emits_relocated_move():
     assert c["move"] == {"kind": "relocated", "body_unchanged": True}
 
 
-def test_xml_same_parent_label_change_emits_renumbered_move():
-    # #188 review fix: a subsection (or section) whose match key IS its label
-    # reconciles a rename/renumber as a move — same parent, different tail is a
-    # "renumbered" identifier change, not a relocation (mirrors _pdf_move).
+@pytest.mark.parametrize("kind", ["renumbered", "relocated_and_renumbered"])
+def test_xml_move_carries_the_differs_kind_and_labels(kind):
+    """The kind is the differ's (#807); a renumbering, relocated or not, names its labels."""
     change = {
         "change_type": "moved",
         "display_path_old": ["TITLE V", "sec. 5", "(a) In general"],
@@ -158,14 +158,26 @@ def test_xml_same_parent_label_change_emits_renumbered_move():
         "old_text": "same body",
         "new_text": "same body",
         "section_number": "Sec. 5",
+        "move_kind": kind,
     }
     canonical = xml_diff_to_canonical(_xml_diff_dict(changes=[change]))
     assert canonical["changes"][0]["move"] == {
-        "kind": "renumbered",
+        "kind": kind,
         "old_label": "(a) In general",
         "new_label": "(b) In general",
         "body_unchanged": True,
     }
+
+
+def test_a_move_without_the_differs_kind_is_refused():
+    """The producer does not decide a move's kind, so a moved change without one fails
+    loudly rather than defaulting to an answer nobody made."""
+    change = {"change_type": "moved", "display_path_old": ["A"], "display_path_new": ["B"], "section_number": ""}
+    with pytest.raises(ValueError, match="move kind"):
+        xml_diff_to_canonical(_xml_diff_dict(changes=[change]))
+    hunk = PdfHunk("moved", SEC_101, SEC_201, (1, 10, 1, 20), (5, 1, 5, 12), "same", "same")
+    with pytest.raises(ValueError, match="move kind"):
+        pdf_diff_to_canonical(PdfDiff(hunks=(hunk,), v1_anchors=(SEC_101,), v2_anchors=(SEC_201,)), **_pdf_meta())
 
 
 def test_xml_unchanged_changes_are_dropped():
@@ -446,6 +458,7 @@ def test_pdf_renumbered_move_emits_kind_and_labels():
         v2_range=(5, 1, 5, 12),
         v1_text="same body",
         v2_text="same body",
+        move_kind="renumbered",
     )
     diff = PdfDiff(hunks=(hunk,), v1_anchors=(SEC_101,), v2_anchors=(SEC_201,))
     canonical = pdf_diff_to_canonical(diff, **_pdf_meta())
@@ -468,6 +481,7 @@ def test_pdf_relocated_move_when_anchor_text_unchanged():
         v2_range=(8, 1, 8, 12),
         v1_text="same body",
         v2_text="same body",
+        move_kind="relocated",
     )
     diff = PdfDiff(hunks=(hunk,), v1_anchors=(SEC_101,), v2_anchors=(SEC_101,))
     canonical = pdf_diff_to_canonical(diff, **_pdf_meta())
@@ -535,6 +549,16 @@ def test_xml_canonical_validates_against_json_schema():
                 "old_text": "s",
                 "new_text": "s",
                 "section_number": "",
+                "move_kind": "relocated",
+            },
+            {
+                "change_type": "moved",
+                "display_path_old": ["T I", "sec. 2"],
+                "display_path_new": ["T II", "sec. 202"],
+                "old_text": "s",
+                "new_text": "s",
+                "section_number": "",
+                "move_kind": "relocated_and_renumbered",
             },
         ]
     )
@@ -981,7 +1005,7 @@ def test_full_text_invalid_shape_rejected():
 def test_pdf_canonical_validates_against_json_schema():
     hunks = (
         PdfHunk("modified", SEC_101, SEC_101, (1, 10, 1, 20), (2, 5, 2, 8), "x", "y"),
-        PdfHunk("moved", SEC_101, SEC_201, (1, 10, 1, 20), (5, 1, 5, 12), "same", "same"),
+        PdfHunk("moved", SEC_101, SEC_201, (1, 10, 1, 20), (5, 1, 5, 12), "same", "same", move_kind="renumbered"),
         PdfHunk("modified", None, None, (3, 1, 3, 4), (3, 1, 3, 4), "a", "b"),
         PdfHunk("added", None, SEC_201, None, (5, 1, 5, 12), "", "new"),
     )

@@ -103,6 +103,14 @@ Top-level field: `schema_version: "3.0"`.
   integer, as the XML pipeline's is, and its title starts with a capital letter where an
   amendment quotes it in lower case ("entitled ‘‘An Act making…’’").
 
+  Also added `move.kind` `"relocated_and_renumbered"` (#807), and `move.kind` is now
+  decided by one rule on both pipelines, by the differ that found the move (see
+  [`move`](#move)). The XML producer used to call a move renumbered when its last
+  breadcrumb changed under the same parent, which called an unnumbered section that
+  gained a number renumbered from its division's label; the PDF producer when its
+  heading text changed at all, which called a heading that only wrapped differently
+  across two printed lines renumbered.
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -533,18 +541,33 @@ Object when `change_type == "moved"`, `null` otherwise.
 
 ```jsonc
 "move": {
-  "kind": "renumbered" | "relocated",
-  "old_label": string,   // present iff kind == "renumbered"
-  "new_label": string,   // present iff kind == "renumbered"
+  "kind": "renumbered" | "relocated_and_renumbered" | "relocated",
+  "old_label": string,   // present iff kind != "relocated"
+  "new_label": string,   // present iff kind != "relocated"
   "body_unchanged": boolean
 }
 ```
 
-- `"renumbered"` — the section's anchor identifier changed (e.g., `"Sec. 401"`
-  became `"Sec. 501"`). `old_label` and `new_label` carry the anchor texts.
-- `"relocated"` — the section moved within the bill's hierarchy without an
-  identifier change. Use the `path` arrays to describe the move; labels are
-  omitted.
+The differ that found the move decides its kind, by one rule on both pipelines, and
+records it on the change; the producer writes that answer here. Each side has a unit
+(section, subsection, title, division, …, or an unnumbered heading), a number (`401`,
+`(a)`, `IV`; none for a heading such as `FAMILY HOUSING, ARMY`), and a structural
+parent: the headings above it, titles with their numbers, with division labels left
+out and case and spacing ignored, so a re-lettered, recased or newly added division
+does not change it, and a move between two titles headed alike does.
+
+- `"renumbered"` — the same kind of unit, with a different number, under the same
+  structural parent (e.g., `"Sec. 401"` became `"Sec. 405"` in the same title).
+  `old_label` and `new_label` carry the two heading labels.
+- `"relocated_and_renumbered"` — the same kind of unit, with a different number,
+  under a different structural parent (e.g., `"SEC. 2"` became `"SEC. 202"` of
+  Division G, Title II). `old_label` and `new_label` carry the two heading labels;
+  use the `path` arrays to describe where it went.
+- `"relocated"` — anything else: the provision kept its number, changed kind of unit
+  (a title that became a section), or has no number on one side (a heading that only
+  wrapped differently across printed lines, or a section printed without one). Use the `path` arrays to describe the move;
+  labels are omitted. A heading reworded in place under the same number is
+  `"relocated"` too: no number changed.
 - `body_unchanged` — `true` when `text.old == text.new`. Renderers may use
   this to suppress redundant body display on pure renumber/relocate moves.
 

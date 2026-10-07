@@ -33,6 +33,8 @@ from deltatrack.matching import (
     ObservationRef,
     RetrieverInvocation,
 )
+from deltatrack.move_kind import Placement
+from deltatrack.move_kind import move_kind as kind_of_move
 from deltatrack.similarity import (
     MOVE_THRESHOLD,
     SIMILARITY_THRESHOLD,
@@ -1052,6 +1054,11 @@ class NodeDiff:
     # side the change has no node on, and on records built outside classification.
     ordinal_old: int | None = None
     ordinal_new: int | None = None
+    # --- What kind of move a `moved` record is (#807) ------------------------------
+    # Decided here, from the two nodes this round paired, by the rule both pipelines share
+    # (`move_kind.move_kind`); None on every other change type. The canonical document
+    # carries it rather than deciding again from the breadcrumbs.
+    move_kind: str | None = None
 
     @property
     def amount_source_old(self) -> str | None:
@@ -1748,7 +1755,26 @@ def _moved_record(old_node: BillNode, new_node: BillNode) -> NodeDiff:
         # amounts stay readable (#365).
         old_amount_text=amount_text(old_node),
         new_amount_text=amount_text(new_node),
+        move_kind=kind_of_move(_placement(old_node), _placement(new_node)),
     )
+
+
+def _placement(node: BillNode) -> Placement:
+    """Where a node sits, for its move kind: its own heading label, its tag, and the
+    display path above it.
+
+    The display path, not the match path: the match path keys a title on its heading words
+    alone ("TITLE VII—GENERAL PROVISIONS" is ``general provisions``, a bare "TITLE IV" adds
+    nothing), so two different titles would read as one parent. ``structural_parent`` leaves
+    out the division and ignores case, which is all the normalization a parent needs.
+
+    A node with no heading of its own, such as a section with no `<enum>` directly in a
+    division, has the division's label as its whole display path; that label is not the
+    node's, so the node is placed with no label rather than read as a division.
+    """
+    path = node.display_path
+    own = bool(path) and not (node.division_label and path[-1] == node.division_label)
+    return Placement.of(path[-1] if own else None, node.tag, path[:-1] if own else path)
 
 
 def _classified(item: SettledCorrespondence, registry: ObservationRegistry) -> NodeDiff:
@@ -1873,6 +1899,7 @@ def bill_diff_to_dict(diff: BillDiff, *, financial: bool = False) -> dict:
             "element_id_new": c.element_id_new,
             "ordinal_old": c.ordinal_old,
             "ordinal_new": c.ordinal_new,
+            "move_kind": c.move_kind,
         }
         if financial:
             # Amounts come from the display rendering, not body_text (#365).

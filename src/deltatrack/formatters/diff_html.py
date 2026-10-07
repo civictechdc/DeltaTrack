@@ -707,7 +707,7 @@ def _view_toggle_html(canonical: dict | None) -> str:
 def _move_note(change: dict) -> str:
     """Tooltip text for a moved span: a relocation note, with renumbering if known."""
     move = change.get("move") or {}
-    if move.get("kind") == "renumbered":
+    if move.get("kind") in ("renumbered", "relocated_and_renumbered"):
         return (
             f"moved here (renumbered {escape(str(move.get('old_label', '')))}"
             f" → {escape(str(move.get('new_label', '')))})"

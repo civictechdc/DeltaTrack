@@ -153,6 +153,7 @@ def test_moved_change_renders_move_info_html():
         "old_text": "same text",
         "new_text": "same text",
         "section_number": "",
+        "move_kind": "relocated",
     }
     view = xml_dict_to_view(_diff_dict(changes=[change]))
     cv = view.changes[0]
