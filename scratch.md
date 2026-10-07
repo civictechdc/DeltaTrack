@@ -10,7 +10,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 
 ## Contents
 
-1. [Resume here: status as of 2026-10-07](#resume-here-status-as-of-2026-10-07) (work queue: [the five follow-ups](#resume-here-the-five-follow-ups-agreed-2026-10-07))
+1. [Resume here: status as of 2026-10-07 (evening)](#resume-here-status-as-of-2026-10-07-evening) (work queue: [Next, in order](#next-in-order-agreed-with-the-user-2026-10-07))
 1. [Targeted review register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) (G1–G9)
 1. [Current register](#current-register) (authoritative evidence per finding)
 1. [Decisions](#decisions) (principle; F4b)
@@ -34,134 +34,123 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 
 ---
 
-## Resume here: status as of 2026-10-07
+## Resume here: status as of 2026-10-07 (evening)
 
 **Goal:** each pipeline stage (parse → diff → canonical document → viewer) can be changed by a
 different person without touching or importing another stage, and without one stage
 re-deciding what another settled.
+
+**State:** `develop` = `7076771` (#827 merged). `main` still ships schema 2.0; `develop` holds the one
+unreleased version, **3.0**. All five follow-ups agreed on 2026-10-07 are merged, #810 is closed, and
+no PR of ours is open. The worktrees `/home/user/dt-*` and `/home/user/u-*` are disposable.
+
+### Next, in order (agreed with the user 2026-10-07)
+
+1. **#456 (High): 80 false `modified` cards.** Measured on `bf401b4` (comment on #456): 80 XML
+   `modified` changes have `text.old == text.new`. They sit in 4 pairs: 114-hr-2029 6→7 (71), 113-hr-3547 5→6 (5),
+   113-hr-83 6→7 (2 of 6), and 114-hr-2029 3→4 (2). Each is one space after an enumerator in the
+   collapsed form (`(a) None` vs `(a)None`, from `<enum>(a)</enum> <text>` pretty-printing).
+   - The issue's probed fix: drop the whitespace gap after a `(…)` `<enum>` in `_itertext_block_spaced`
+     (85 → 16 whitespace-only). It is a parser change, so regenerate the round-1 sentinel.
+   - Alternative, unprobed: decide `modified` in `diff_bill._paired_record` on `display_text`. `text_diff` comes
+     from the same call (ADR 0020 notes the two `diff_text` calls).
+   - Report the count of `modified` with `text.old == text.new`, before (80) and after.
+2. **#816, the remaining items (1–3, 5–7),** then **#555, promote `develop` to `main`**. Item 4 is done (#818).
+   1–3 are contract-enforcement gaps (`node_ids` required with a tree; JSON Schema per-side `TreeNode`,
+   non-empty spans; widen the span-search scan). 5–7 are doc and report nits. Land these before 3.0 ships.
+3. **#648: re-scope, then push #734 toward review.** Measured on `bf401b4`: 161 PDF moves =
+   113 renumbered + 17 relocated_and_renumbered + 31 relocated. **0 non-section labels are "renumbered"** (#820 fixed
+   the title complaint). The wrap fragments (`NAVY AND MARINE CORPS → AND MARINE CORPS`, `ARMY →
+   FAMILY HOUSING … ARMY`, in 115-hr-5895 and 118-hr-4366 3→4) are now `relocated`, which still shows a
+   false "Moved" card. That is #648's other cause, headings read from one printed line, which PR #734
+   (mattzamora, open since 9/30, changes requested, then fixed, awaiting re-review, base stale at `c636448`) addresses.
+   Action: comment these numbers on #648 and re-scope it to "false moved cards from wrapped headings,
+   blocked on #734".
+4. **#826, then #825.**
+   - #826: v5's enacting clause as `<continuation-text>` opening an amendment block is dropped. A trial patch in
+     `_walk_one_body` (synthesize an undesignated section) worked: v4→v5 `c-0005` disappears, the House copy
+     stays removed, and v5→v6 gains a `moved` pairing with v6 `Sec. 5`. Pin the pairing, since both v4 copies share
+     match key `()`. Replace `test_a_headingless_node_outside_front_matter_keeps_no_path`. Regenerate the sentinel.
+   - #825: the PDF long title ends at "purposes." only, so 7 of 52 dual versions drop it. End it at "Be it
+     enacted", "Resolved", or the closing `’’`, not at the first period ("H. Con. Res. 14.").
+5. **#811, #706, #698:** the rest of the separation and parity theme (epic #691). #823 added
+   `structure_tree.FRONT_MATTER_LABEL`, which #811 builds on.
+
+The full re-audit is now due: its trigger, #807, #808 and #810 landing, has happened. It has not been started
+or scheduled; ask the user. Still undecided: whether to keep this notes branch, move the notes to `docs/`, or delete them.
 
 ### Done (merged to `develop`)
 
 | What | Where | Effect |
 |---|---|---|
 | Audit converged (round 4) | this file, [Current register](#current-register) | 16 open findings, F2/F14 dismissed, F4d resolved by decision |
-| ADR rules | civictechdc/DeltaTrack#782 (merged) | ADR 0007: the view faithfully represents the diff and decides nothing the document leaves open. ADR 0006: the document names the structure its changes sit in (node ids, `changes[].node`, heading/body spans; deterministic, not persistent; absent stays absent). ADR 0019: scope note separating these ids from stored-artifact identity |
-| Issues filed | #784 (removed provisions misfiled), #785 (node identity) | #784 closed by #791; #785 open |
-| F4b fixed | civictechdc/DeltaTrack#791 (merged, `e89e8b1`) | Removed section under `path.v1`, exact-path pointers, `_remap_removed_path` and `_v2_label_lookup` deleted. 711/711 XML, 202/202 PDF removals placed; 0 misfiled (was 93 / 26) |
-| PR B: node identity in the document | civictechdc/DeltaTrack#800 (merged, `40149e9`) | `tree[].id`, `heading_span`, `body_span`, `changes[].node`; schema stays 3.1 |
-| F1 + F15: viewer apart from engine | #801 → civictechdc/DeltaTrack#802 (merged, `5b9fcb3`) | `canonical_view.py`, import-direction gate |
-| PR C: view applies node facts | civictechdc/DeltaTrack#806 (merged, `ea7227c`) | Closes #785, #701; unplaced 1,548 → 0 XML, 39 → 0 PDF |
-| Issues filed for untracked findings | #807 (F7a move kind), #808 (F7b bill identity), #809 (F9 `--filter`), #810 (F3 + F17 + F11's front-matter path and `""` label), #811 (F11: front matter recognized by label, under #552), #812 (F5: one owner for the PDF layout); #751 scope extended (F12) | #807 and #808 linked as XML/PDF parity; F6 resolved without an issue |
-| Targeted review of #800/#802/#806 | [register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) | 2 rounds, converged; G1 → #814, G2 → #815, G3–G9 → #816 |
+| ADR rules | #782 | ADR 0007 fidelity; ADR 0006 node identity; ADR 0019 scope note |
+| F4b fixed | #791 (`e89e8b1`) | Removed section under `path.v1`, exact-path pointers |
+| Node identity | #800, #806 | `tree[].id`, spans, `changes[].node`; view groups by node (unplaced 1,548 → 0 XML, 39 → 0 PDF) |
+| F1 + F15 viewer apart from engine | #802 | `canonical_view.py`, import-direction gate |
+| Targeted review G1–G9 | [register](#targeted-review-register-g-findings-converged-2026-10-06-develop-5a7cb20) | G1 → #814, G2 → #815, G3–G9 → #816 |
+| #814 import gate hardened (incl. aliased `builtins.__import__`) | #817 | AST scan of every viewer-loadable file |
+| #816 item 4: schema 3.1 folded into 3.0 | #818 | `SCHEMA_VERSION = "3.0"`; doc ↔ constant test |
+| #808 bill identity | #819 | `bill_identity.combined` (v2 else v1); `versions.vN.bill`; PDF reader moved to `parsers/pdf_identity.py` |
+| #807 move kind decided by the differ | #820 | `move_kind.py`; adds `relocated_and_renumbered`; XML placement uses `section_number` (#820 review fix) |
+| #810 (a) readable `text`, no `source` branch | #821 | `old/new_readable_text`; flip-`source` test; `body_unchanged` on readable text |
+| #810 (b) `Sec. N` labels | #822 | `bill_tree._section_label`; sentinel: 27 revisions, 0 streams |
+| #810 (c) Front Matter path, `""` label | #823 | 57 XML sides `null` → `["Front Matter"]` |
+| Division change on renumbered cards (user asked) | #824 | " · Division C → Division F" (80 XML, 51 PDF cards) |
+| pip-audit runs when a PR's base changes | #827 | `security.yml` `types: [opened, synchronize, reopened, edited]` + guard test |
+| Closed #810 with a mapping comment | issue #810 | — |
+| Filed / commented | #825, #826 (new); comments on #456, #186 (the "(unknown)" node is #186's second-text boundary) | — |
 
-### Resume here: the five follow-ups (agreed 2026-10-07)
+### Lessons from this session
 
-**Status 2026-10-07 (all five have PRs; each had an independent review agent, fixes folded in):**
+- **Stacked PRs:**
+  - `security.yml` used to filter on the base branch with default types, so a stacked PR never got
+    `pip-audit` until a push. A manual `workflow_dispatch` run on the head does **not** satisfy the PR.
+    #827 fixed it.
+  - The repo prefers unstacked PRs (CONTRIBUTING "Branch workflow"). When unstacking, cherry-pick each PR's own
+    commit onto `develop`, regenerate its generated files from its own code, and replace the branch with
+    `--force-with-lease`.
+  - PRs that each regenerate the baselines or examples conflict in the merge queue. The second one is dropped
+    with `MERGE_CONFLICT`. Merge `develop` in, regenerate, push, and re-queue. A trial merge done ahead of time
+    makes this quick.
+- **`git fetch origin develop <deleted-branch>` fails as a whole.** Hiding stderr hid it, and a stale `develop`
+  got merged. Fetch only branches that exist.
+- **Commit work in progress before any mutation script.** A mutation script's `git checkout -- src` reverted
+  real edits twice.
+- **Read the PR template and the existing issue before filing.** #456 already covered the 80 `modified` finding,
+  so it got a comment instead of a duplicate.
 
-| Item | PR | Branch | State |
-|---|---|---|---|
-| #814 import gate | #817 | `claude/import-gate` | merged |
-| #816 item 4 schema fold 3.1→3.0 (user confirmed 3.0) | #818 | `claude/schema-fold` | merged |
-| #808 bill identity: v2-else-v1 + `versions.vN.bill` (user chose option 1) | #819 | `claude/bill-identity` | open, CI green, base `develop` |
-| #807 move kind R3s, `relocated_and_renumbered` (user chose) | #820 | `claude/move-kind` | open, stacked on #819 |
-| #810 (a) readable `text`, no `source` branch | #821 | `claude/readable-text` | open, stacked on #820 |
-| #810 (b) `Sec. N` labels (sentinel regen: 27 revisions / 0 streams) | #822 | `claude/section-labels` | open, stacked on #821 |
-| #810 (c) front-matter path, `""` label; closes #810 | #823 | `claude/front-matter-path` | open, stacked on #822 |
+### Working conventions in this effort
 
-As each stacked PR's base merges: retarget the next to `develop`, merge `develop` in, regenerate baselines/examples (and the
-sentinel for #822), re-run gates, push. Open question to the user: should a `renumbered` card also show paths when division
-labels differ (117-hr-2471 Sec. 5 → Div V Sec. 105)? Follow-ups noticed, not filed: 80 XML `modified` changes whose readable
-text is identical (whitespace-only collapsed diffs); PDF title reader needs "purposes." and misses 113-hr-3547; #739 conflicts
-with #822 (`_build_paths`, lowercase test literals).
-
-The user agreed to work these five, in the priority order below. `develop` was still at `5a7cb20` on 2026-10-07
-(nothing landed since the targeted review); `main` is `3fc85ca` (schema 2.0). Re-check both before starting.
-
-**Priority (reader impact, then structure):** 1. #808 · 2. #807 · 3. #814 · 4. #810 · 5. #816 item 4.
-
-| # | Issue | Why it ranks here |
-|---|---|---|
-| 1 | #808 bill identity read from opposite sides | Only audit item that is visibly wrong on the report (empty bill number / Congress, on the report most likely to be shared). Gates the full re-audit. |
-| 2 | #807 "Renumbered" decided by two rules | Same pair, different verdict by input format; XML calls a division→section move "renumbered". Gates the re-audit. |
-| 3 | #814 import-direction gate defeatable | Cheap; protects the viewer/engine split. **Must land before #810**, the next PR to rework the viewer. |
-| 4 | #810 XML document carries matcher text and labels; viewer branches on `source` | Last open separation-of-concerns violation (F3/F17). Gates the re-audit. |
-| 5 | #816 item 4: fold schema 3.0 + 3.1 | Small, but deadline-bound: before the next promotion of `develop` to `main` (#555). |
-
-**Execution order (dependencies, not priority).** The three producer issues (#808, #807, #810) each regenerate
-the canonical baselines and examples, and each adds to the schema changelog, so they merge one at a time.
-
-1. **#814 and the schema fold first, in parallel.** Both are small, and neither touches the others' files except
-   the fold's version string. Doing the fold first means #808, #807 and #810 all add to the one unreleased
-   changelog entry instead of conflicting over it.
-2. **#808**, then **#807**, then **#810**, each branched off the latest `develop` after the previous one merges.
-
-#### Per-item notes
-
-**#814, test-only PR** (`claude/import-gate`). Read the issue's "What to do"; it is the converged spec:
-- Viewer side: static AST scan of every file in `VIEWER_MAY_LOAD` (including the package `__init__`s). Read
-  `from X import Y` as `X.Y`; flag `importlib.import_module` / `__import__` calls whose argument isn't a literal.
-- Engine side: no import at any depth of a viewer-only module or `compare.*`, except the three CLI imports
-  (`diff_bill.py:2075`, `diff_pdf.py:1306`, `:1325`; the #62 cycle).
-- Runtime: add a saved PDF document **with `print_breaks`** to the blocked render; check `sys.modules` after
-  `format_diff_html`. Find or build a small fixture.
-- Proof: each of the issue's four mutations must turn the gate red (show this in the PR).
-
-**Schema fold, #816 item 4** (`claude/schema-fold`; PR says `Refs #816`, not `Closes`):
-- Decide the number in the PR: under the rule in `schema/canonical-diff.md`, the one unreleased version after
-  `main`'s 2.0 is **3.0** (the #671 break). 3.1 never shipped (`main` and the hosted app are at 2.0).
-- Touches:
-  - `formatters/schema_version.py`;
-  - the changelog, merging 3.1's entries into 3.0;
-  - the JSON schema, if it pins a version;
-  - `tests/test_formatters_canonical.py:38`, which hardcodes `"3.1"`;
-  - any other `"3.1"` in tests and docs (grep).
-- Add a test tying the markdown's current version to `SCHEMA_VERSION`.
-- Regenerate the canonical baselines (`UPDATE_BASELINE=1`, `UPDATE_PDF_BASELINE=1`) and the examples; only the
-  version string should move.
-- **Confirm with the user before opening the PR:** the version going *down* (3.1 → 3.0) is the visible choice.
-
-**#808, one identity rule** (`claude/bill-identity`):
-- Today XML reads identity from the earlier version (`diff_bills`), and PDF from the later one, by regexes in
-  `compare/pdf.py` (`_derive_congress`, `_bill_identity`), in the orchestration layer.
-- Target: one rule for both pipelines, e.g. take each field from whichever version states it. Move the PDF readers
-  to the parser layer.
-- Done-when checks:
-  - 4 XML pairs (113-hr-3547 5→6, 113-hr-83 6→7, 114-hr-2029 6→7, 118-hr-4366 5→6) get type and number;
-  - 4 PDF pairs (113-hr-3547 3→4, 115-hr-5895 3→4, 118-hr-2882 1→4, 118-hr-4366 3→4) get the Congress;
-  - the PDF identity reader gets tests on a cover page and on an engrossed-amendment first page;
-  - only `bill` fields move in the baselines.
-- **Open design question for the user:** when both versions state a field and disagree, how is that "said"? A
-  schema field such as `bill.conflicts`, a warning, or pick-later-and-log? Ask before building.
-
-**#807, one move-kind rule owned by the differ** (`claude/move-kind`):
-- Today `_xml_move` (same parent, different last segment) and `_pdf_move` (anchor texts differ) in
-  `formatters/canonical.py` re-decide what the differ already recorded (`move_basis` in `diff_pdf.py`,
-  `_moved_record` in `diff_bill.py`).
-- Target: the differ emits the kind (or the facts it rests on). The canonicalizer copies it, and the rule is stated
-  in `schema/canonical-diff.md`.
-- Done-when checks:
-  - a division→section move is never "renumbered";
-  - unit tests cover the 4 cases (parent same/changed × last label same/changed) on both pipelines;
-  - the PR lists the moves whose kind changed (census probe:
-    `docs/research/pdf-matching-convergence/probes/pdf_move_user_facing.py`).
-- Out of scope: wrap-fragment false renumberings (#648, #732, PR #734).
-- **Open design question for the user:** the rule itself. Write the options with corpus counts (167 of 496 XML
-  and 85 of 161 PDF flip between today's two rules) before implementing.
-
-**#810, readable XML document, no `source` branches** (likely 2–3 PRs):
-- (a) `changes[].text` is the readable text, and `_card_texts` / `_heading_and_nav` lose their `source` branch. Add
-  a test that flips `source` and gets an identical report.
-- (b) `Sec. N` as the one display form in `path` and the outline (`bill_tree._build_paths` callers around lines
-  910 and 951).
-- (c) Front-matter `path` agrees with the tree. The schema defines a `""` label as "no heading of its own".
-- Before starting, check whether #698 (removing the XML intermediate dictionary) has an open PR: they rewrite the
-  same adapter, and whichever lands second rebases.
-- Requires #814 merged first.
-
-**After all five:**
-- The full re-audit becomes due (its trigger was #810, #807 and #808 landing).
-- Rebases of #736, #734, #739 and #731 remain their authors'.
-- Still undecided by the user: whether to keep this notes branch, move the notes to `docs/`, or delete it.
+- An independent review agent on every diff before opening a PR. The user reviews too, and sometimes
+  "Request changes" with a P-level finding: fix it, add a regression that fails on the old code, then merge
+  in their stated order.
+- Tests first, shown failing on `develop`. Every design-decision test is proven by a mutation that turns it red.
+- The PR body follows `.github/pull_request_template.md`, discloses AI assistance, and ends with the session link.
+  Model names stay out of commits and PRs.
+- Local CI gates:
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run pytest -m "not slow and not browser"`
+  - `PLAYWRIGHT_BROWSERS_PATH=<scratchpad>/pwb uv run pytest -m browser --run-browser -n0`
+  - `uv run pytest -m slow --deselect tests/test_govinfo_corpus_parity.py`
+- Regenerating:
+  - `UPDATE_BASELINE=1 uv run pytest tests/test_canonical_baseline.py -k regenerate_baseline`
+  - `UPDATE_PDF_BASELINE=1 uv run pytest tests/test_pdf_canonical_baseline.py`
+  - `UPDATE_ROUND1_SENTINEL=1 uv run pytest tests/test_round1_pairing_sentinel.py -k regenerate` (any change to
+    `bill_tree` or its imports changes the parser revision, ADR 0019)
+  - `uv run python scripts/render_examples.py && cp examples/hr8752_pdf_diff.html web/webapp/sample/example.html`
+- A new slow test module must be named in a `.github/workflows/ci.yml` slow shard and added to `CI_SLOW_MODULES`.
+- **Browser tier in this container:** the project's Playwright wants chromium_headless_shell-1223, but /opt has 1194.
+  The workaround lives outside the repo, in a scratch dir:
+  - `pwb/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell`, symlinked to
+    `/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`;
+  - plus `INSTALLATION_COMPLETE` and `DEPENDENCIES_VALIDATED` files;
+  - then `PLAYWRIGHT_BROWSERS_PATH=<scratch>/pwb`.
+- Scratch probes need `PYTHONPATH=.` to import `tests.*`. `tests.pdf_corpus.cached_pages` and `cached_print_pages`
+  serve PDF reads from cache. Monkeypatch `deltatrack.compare.pdf.extract_print_pages`, and skip
+  `UnsupportedLayoutError` pairs (enrolled prints are declined).
+- A new worktree needs `uv sync` once. Remove a worktree and its local branch once its PR merges.
 
 ### Done: targeted review of the new surfaces (agreed 2026-10-06; converged, filed as #814, #815, #816)
 
@@ -223,7 +212,7 @@ place changes; degrade paths (pre-identity, null/empty tree, `node: {}`, id-less
 crash and leave no dead TOC links; nav counts equal descendant items; print layout keeps ids, nullness
 and bounds; fast tests pin `data-node` and group order.
 
-### Next, in order (agreed with the user)
+### History: the 2026-10-05 plan (PR B/C and the F1 + F15 split, all merged)
 
 1. **PR B, #785: node identity in the document.** Spec: [implementation-plan.md § PR B](implementation-plan.md). **Merged as #800** (`40149e9`, 2026-10-06). **PR C merged as #806** (closes #785, #701): groups by `node.v2`, TOC by `heading_span`; unplaced 1,548→0 XML, 39→0 PDF. As-built notes in the plan.
    - Branch `claude/node-identity` off `origin/develop` (`77027f7` or later), in its own worktree.
@@ -245,17 +234,6 @@ and bounds; fast tests pin `data-node` and group order.
 ### Open findings after #806 (see register for evidence)
 
 F7a (#807), F7b (#808): XML/PDF parity · F3 + F17 (#810, with the `sec.`/`Sec.` label leak) · F9 (#809) · F11 (#811 + #810) · F5 (#812), F12 (#751) · F8 (#698), F10 (#706, PR #731 open), F16 (#471). F13 resolved by decision. Every finding now has an owning issue or is resolved. Resolved since #791: F1, F15 (#802); F4a, F4c (#806); F6 (no issue).
-
-### Working conventions in this effort
-
-- External ChatGPT review of each ADR/plan/PR as we go; an independent Claude review agent on every diff before opening a PR.
-- Tests first, shown failing on `develop`; every design-decision test proven by a mutation that turns it red (AGENTS.md "Gate the decision you had to argue for").
-- PR body follows `.github/pull_request_template.md`; `Closes #N`; disclose AI assistance.
-- Local CI gates: `uv run ruff check .`, `uv run ruff format --check .`, `uv run pytest -m "not slow and not browser"`, `uv run pytest -m browser --run-browser`, `uv run pytest -m slow --deselect tests/test_govinfo_corpus_parity.py`.
-- Renderer changes: `uv run python scripts/render_examples.py` then `cp examples/hr8752_pdf_diff.html web/webapp/sample/example.html`.
-- **Browser tier in this container:** the project's Playwright wants chromium_headless_shell-1223 but /opt has 1194. Workaround (outside the repo): a scratch dir `pwb/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell` symlinked to `/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`, plus `INSTALLATION_COMPLETE` and `DEPENDENCIES_VALIDATED` files, then `PLAYWRIGHT_BROWSERS_PATH=<scratch>/pwb`.
-- New worktrees need `uv run` (or `source ./init`) once to build their own `.venv`. Remove a worktree and its local branch once its PR merges.
-- Corpus probes used for measurements live in the session scratchpad (`pra_effect.py` etc.), not the repo.
 
 ---
 
@@ -2247,6 +2225,9 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-05 | PR B opened as #800: node ids, `changes[].node`, heading/body spans; schema stays 3.1 (unreleased). 0 unresolved refs both pipelines; 10 mutations fire. Next: PR C, F1 + F15 split. | F4a, F4c, F6 |
 | 2026-10-06 | #800 merged. F1 + F15 filed as #801, opened as #802 (independent review: roster widened to every engine module). Next: PR C. | F1, F15 |
 | 2026-10-06 | #802 merged. PR C opened as #806 after independent review (mixed-id crash, ambiguous pointers, circular gate fixed). Next: untracked findings F7a, F7b, F9, F6 → issues. | F4a, F4c, F6, F11 |
+| 2026-10-06 | Targeted review G1–G9 converged; filed #814, #815, #816. | G1–G9 |
+| 2026-10-07 | Five follow-ups shipped: #817 (#814), #818 (schema fold 3.0), #819 (#808), #820 (#807; user-requested fix: place an XML node by its own `section_number`), #821–#823 (#810 a/b/c), plus #824 (division change on renumbered cards, user-requested). Unstacked #822–#824 onto `develop` at the user's request; the merge queue dropped #823/#824 on generated-file conflicts, fixed by merging `develop` and regenerating. #810 closed. | F3, F7a, F7b, F11, F17 |
+| 2026-10-07 | pip-audit never ran on retargeted stacked PRs → #827 (`edited` type + guard). Filed #825 (PDF title "purposes."), #826 (engrossed amendment's opening clause dropped; trial patch measured); commented #456 (80 false `modified`) and #186 (the "(unknown)" node). Measured #648: 0 non-section "renumbered" left. Next plan agreed (see Resume here). | F7a, F11 |
 
 ## Open questions
 
