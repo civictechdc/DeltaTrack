@@ -12,7 +12,8 @@ and that the slow tier's hand-maintained partition stays a partition (#672) -- n
 listed explicitly by two pytest invocations, and every `CI_SLOW_MODULES` entry
 explicitly selected by a slow step -- that ci.yml runs only the interpreter
 `.python-version` pins, and that its non-browser test steps run from outside the
-checkout (#404).
+checkout (#404). Also pinned: the required audit in security.yml reports when a pull
+request's base is changed to a protected branch, not only when one is opened there.
 
 
 Nothing ran the test suite when a commit landed on ``develop``, so a broken integration
@@ -445,6 +446,50 @@ def test_security_push_guard_detects_a_mainless_trigger(tmp_path: Path) -> None:
     failures = _security_push_failures(mainless)
     assert failures, "the security validator accepted a workflow that does not run on pushes to main"
     assert "main" in failures[0], "the failure does not name the missing branch"
+
+
+# The pull_request activity types the security workflow must answer. GitHub's defaults
+# are the first three; naming `types` replaces them, so each has to be listed.
+_SECURITY_PR_TYPES = ("opened", "synchronize", "reopened", "edited")
+
+
+def _security_retarget_failures(path: Path) -> list[str]:
+    """Why `path` would leave the required audit unreported on a pull request, as
+    failures; empty when it reports on opening, on every push, on reopening, and when
+    the base is changed to a protected branch."""
+    pull_request = _triggers(path).get("pull_request") or {}
+    types = pull_request.get("types", ["opened", "synchronize", "reopened"])
+    return [f"pull_request types {types!r} leave out {t!r}" for t in _SECURITY_PR_TYPES if t not in types]
+
+
+def test_security_runs_when_a_pull_request_is_retargeted() -> None:
+    """The required audit reports when a pull request's base is changed to `develop`.
+
+    The workflow's `branches` filter reads the base, so a pull request stacked on
+    another branch never ran it. Changing the base fires `edited`, which the default
+    types leave out, so the required check went unreported until the next push and the
+    pull request sat waiting with every other check green (#821). Listing `types` to
+    add `edited` replaces the defaults, so dropping any of the other three would stop
+    the audit on new pull requests or new pushes instead.
+    """
+    failures = _security_retarget_failures(WORKFLOWS / "security.yml")
+    assert not failures, (
+        f"security.yml would leave 'pip-audit (production deps)' unreported on a pull request ({'; '.join(failures)})."
+    )
+
+
+def test_security_retarget_guard_detects_the_default_types(tmp_path: Path) -> None:
+    """The validator rejects the defaults, which miss a retarget, and a `types` list that
+    adds `edited` but drops a default."""
+    defaults = tmp_path / "defaults.yml"
+    defaults.write_text("on:\n  pull_request:\n    branches: [develop]\n", encoding="utf-8")
+    assert _security_retarget_failures(defaults) == [
+        "pull_request types ['opened', 'synchronize', 'reopened'] leave out 'edited'"
+    ]
+
+    edited_only = tmp_path / "edited_only.yml"
+    edited_only.write_text("on:\n  pull_request:\n    types: [opened, edited]\n", encoding="utf-8")
+    assert len(_security_retarget_failures(edited_only)) == 2, "dropping synchronize and reopened went unnoticed"
 
 
 def test_ci_does_not_cancel_in_progress_runs() -> None:
