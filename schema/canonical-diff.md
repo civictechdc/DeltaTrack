@@ -123,6 +123,11 @@ Top-level field: `schema_version: "3.0"`.
   `move` labels (#810), as one outside a title already was; it used to carry the
   matcher's lowercased key, `sec. 101` (`sec. 119a` for `Sec. 119A`).
 
+  Also, an XML change in the bill's opening with no heading of its own has the path
+  `["Front Matter"]`, as the PDF pipeline's does and as `tree` places its node (#810);
+  it used to be `null`. And a `tree` label of `""` is defined as a node with no heading
+  of its own, not only an empty-path root.
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -281,7 +286,7 @@ A `TreeNode`:
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `label` | string | The node's own heading text (`""` for an empty-path root). |
+| `label` | string | The node's own heading text; `""` when the node has no heading of its own (masthead and enacting-clause boilerplate, a section printed without a heading). A renderer skips an empty label in a breadcrumb or outline but keeps the node. |
 | `level` | enum | Shared GPO vocabulary: `division`, `title`, `major`, `agency`, `account`, `section`, `subsection`, `grouping`, `preamble`, `heading`. Leaf level is typed from the source tag/kind; interior levels are positional (`heading` when an interior container has no typed source). `subsection` nests under its `section` on both pipelines: XML emits every direct non-quoted `<subsection>` (#188), the PDF the catchline-bearing run-in subset (#96). |
 | `own_amounts` | int[] | Dollar amounts in **this node's own block only** (never its children's). The union over all nodes conserves the bill's amounts exactly. |
 | `id` | string | Optional (v3.0+). See [Node identity](#node-identity-optional-v30). |
@@ -430,11 +435,19 @@ title or not; `tree` labels use the same form.
 |------|-----------------------------------------------------|
 | `v1` | Pure additions (`change_type: "added"`).            |
 | `v2` | Pure removals (`change_type: "removed"`).           |
+| either | XML: the side's node has no heading of its own and sits outside Front Matter (e.g. an enacting clause after a title). Nothing in `tree` names a place for it. |
 
 For `change_type: "moved"`, both sides are present and may differ.
 
 For PDF diffs where neither anchor resolved, both sides are `null` and
 `anchor_resolution` is `"degraded"`.
+
+A change in the bill's opening that has no heading of its own (masthead,
+enacting-clause boilerplate) has the path `["Front Matter"]` on both pipelines, the
+node `tree` groups it under. A section in the opening that has its own number keeps
+its own path (`["Sec. 2"]`, `["SEC. 2"]`), without a Front Matter prefix, on both
+pipelines: `tree` still groups its node under Front Matter, and its label there may be
+the section's heading ("Table of contents") rather than its number.
 
 Renderers MUST escape segments individually before joining (a literal `>` in a
 segment must not collide with a `>` separator).

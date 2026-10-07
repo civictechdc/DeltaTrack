@@ -25,13 +25,11 @@ from deltatrack.compare.xml import compare_xml, compare_xml_html
 from deltatrack.diff_bill import extract_amounts
 from deltatrack.formatters.diff_html import _build_tree_nav
 from deltatrack.parsers.pdf_anchors import Anchor
-from deltatrack.structure_tree import TreeNode, build_pdf_tree, build_xml_tree
+from deltatrack.structure_tree import FRONT_MATTER_LABEL, TreeNode, build_pdf_tree, build_xml_tree
 from tests.corpus_paths import FIXTURES_DIR, fixture_path
 
 ROOT = Path(__file__).parent.parent
 _BILL_8752 = FIXTURES_DIR / "118-hr-8752"
-
-FRONT_MATTER_LABEL = "Front Matter"
 
 
 def _node(display_path: tuple[str, ...], tag: str, display_text: str = "") -> BillNode:
