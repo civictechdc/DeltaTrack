@@ -56,6 +56,24 @@ re-deciding what another settled.
 
 ### Resume here: the five follow-ups (agreed 2026-10-07)
 
+**Status 2026-10-07 (all five have PRs; each had an independent review agent, fixes folded in):**
+
+| Item | PR | Branch | State |
+|---|---|---|---|
+| #814 import gate | #817 | `claude/import-gate` | merged |
+| #816 item 4 schema fold 3.1→3.0 (user confirmed 3.0) | #818 | `claude/schema-fold` | merged |
+| #808 bill identity: v2-else-v1 + `versions.vN.bill` (user chose option 1) | #819 | `claude/bill-identity` | open, CI green, base `develop` |
+| #807 move kind R3s, `relocated_and_renumbered` (user chose) | #820 | `claude/move-kind` | open, stacked on #819 |
+| #810 (a) readable `text`, no `source` branch | #821 | `claude/readable-text` | open, stacked on #820 |
+| #810 (b) `Sec. N` labels (sentinel regen: 27 revisions / 0 streams) | #822 | `claude/section-labels` | open, stacked on #821 |
+| #810 (c) front-matter path, `""` label; closes #810 | #823 | `claude/front-matter-path` | open, stacked on #822 |
+
+As each stacked PR's base merges: retarget the next to `develop`, merge `develop` in, regenerate baselines/examples (and the
+sentinel for #822), re-run gates, push. Open question to the user: should a `renumbered` card also show paths when division
+labels differ (117-hr-2471 Sec. 5 → Div V Sec. 105)? Follow-ups noticed, not filed: 80 XML `modified` changes whose readable
+text is identical (whitespace-only collapsed diffs); PDF title reader needs "purposes." and misses 113-hr-3547; #739 conflicts
+with #822 (`_build_paths`, lowercase test literals).
+
 The user agreed to work these five, in the priority order below. `develop` was still at `5a7cb20` on 2026-10-07
 (nothing landed since the targeted review); `main` is `3fc85ca` (schema 2.0). Re-check both before starting.
 
