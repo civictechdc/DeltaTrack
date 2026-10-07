@@ -136,7 +136,7 @@ def canonical(change_list=None, *, later_tree=None):
                 "v2": resolve("v2", c["path"]["v2"]) if v2_applies else None,
             }
     return {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": {"type": "hr", "number": 1, "congress": 119},
         "versions": {
             "v1": {"label": "v1", "version_number": 1, "source": "xml"},

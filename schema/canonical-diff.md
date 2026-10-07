@@ -1,4 +1,4 @@
-# Canonical Diff JSON — v3.1
+# Canonical Diff JSON — v3.0
 
 This document specifies the canonical JSON shape produced when comparing two
 versions of a bill. It is the public contract between the diff engine and any
@@ -8,7 +8,7 @@ XML inputs and a diff produced from PDF inputs share this shape.
 
 ## Versioning
 
-Top-level field: `schema_version: "3.1"`.
+Top-level field: `schema_version: "3.0"`.
 
 - A consumer claiming support for this contract MUST reject a document whose major
   version it does not support, rather than interpreting it as the current shape. This
@@ -28,9 +28,36 @@ Top-level field: `schema_version: "3.1"`.
 
 ## Changelog
 
-- **3.1** — Added optional top-level `print_breaks: { v1, v2 } | null` (#653): where
+- **3.0** — **Breaking:** removed `amount_entries` from each change object and from
+  its `required` list (#671). No field replaces it: a change object now carries no
+  money at all. The field paired a dollar figure on one side with a figure on the
+  other and published the difference as a change, and the pipeline has no
+  account-level model to say what either figure *is*. An appropriations paragraph
+  carries several kinds of number — a top-line appropriation, sub-allocations carved
+  out of that same top line ("of which, $X shall be for..."), ceilings ("not to
+  exceed $X"), loan and guarantee commitment limitations, and incidental figures
+  that are not appropriations in any sense — and `amount_entries` represented all of
+  them identically. ADR 0018 defers the layer that would interpret what an amount
+  means to #115, and that layer does not exist, so the field was publishing
+  account-level conclusions the producer cannot compute. Removing it rather than
+  caveating it is deliberate: the export is built to be read by a machine (the
+  report ships prompts telling a staffer to upload `diff.json` to an AI assistant),
+  and a caveat in prose does not reach that reader. Consumers MUST NOT read
+  `amount_entries`; a 2.x document that carries it is rejected by major version, so
+  its money is never silently dropped. **What is unaffected:** `tree[].own_amounts`
+  is untouched — it is per-side and unpaired, makes no change claim, and its
+  conservation invariant is tested against real bills, so it remains the substrate
+  a future financial-typing layer reads. The `--financial` CLI filter and its
+  `old_amounts` / `new_amounts` / `amounts_changed` multiset facts are also
+  untouched: "the set of dollar figures in this section differs between versions" is
+  a true statement that needs no type model. A financial view is still wanted; what
+  it needs first is #115 and #175, so an amount can be attached to an account and
+  classified as appropriation, sub-allocation, ceiling or limitation before it is
+  shown as a number in a Change column.
+
+  Also added optional top-level `print_breaks: { v1, v2 } | null` (#653): where
   the printer broke a line inside each whole-word line of `full_text`, so a consumer
-  can lay the text out as printed. Additive, backward compatible.
+  can lay the text out as printed.
 
   It exists because the printed layout is not recoverable from the whole-word text,
   and the PDF pipeline used to ship a second, print-faithful document beside this one
@@ -64,32 +91,6 @@ Top-level field: `schema_version: "3.1"`.
   The spans state where the producer printed a node's heading and body, so a consumer
   no longer searches the text for a label. `full_text_span` keeps its meaning.
 
-- **3.0** — **Breaking:** removed `amount_entries` from each change object and from
-  its `required` list (#671). No field replaces it: a change object now carries no
-  money at all. The field paired a dollar figure on one side with a figure on the
-  other and published the difference as a change, and the pipeline has no
-  account-level model to say what either figure *is*. An appropriations paragraph
-  carries several kinds of number — a top-line appropriation, sub-allocations carved
-  out of that same top line ("of which, $X shall be for..."), ceilings ("not to
-  exceed $X"), loan and guarantee commitment limitations, and incidental figures
-  that are not appropriations in any sense — and `amount_entries` represented all of
-  them identically. ADR 0018 defers the layer that would interpret what an amount
-  means to #115, and that layer does not exist, so the field was publishing
-  account-level conclusions the producer cannot compute. Removing it rather than
-  caveating it is deliberate: the export is built to be read by a machine (the
-  report ships prompts telling a staffer to upload `diff.json` to an AI assistant),
-  and a caveat in prose does not reach that reader. Consumers MUST NOT read
-  `amount_entries`; a 2.x document that carries it is rejected by major version, so
-  its money is never silently dropped. **What is unaffected:** `tree[].own_amounts`
-  is untouched — it is per-side and unpaired, makes no change claim, and its
-  conservation invariant is tested against real bills, so it remains the substrate
-  a future financial-typing layer reads. The `--financial` CLI filter and its
-  `old_amounts` / `new_amounts` / `amounts_changed` multiset facts are also
-  untouched: "the set of dollar figures in this section differs between versions" is
-  a true statement that needs no type model. A financial view is still wanted; what
-  it needs first is #115 and #175, so an amount can be attached to an account and
-  classified as appropriation, sub-allocation, ceiling or limitation before it is
-  shown as a number in a Change column.
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
@@ -146,7 +147,7 @@ Top-level field: `schema_version: "3.1"`.
 
 ```jsonc
 {
-  "schema_version": "3.1",
+  "schema_version": "3.0",
   "generator": { "name": "deltatrack", "version": "0.x" },
   "bill":      { "type": "hr", "number": 4366, "congress": 118, "title": "Making appropriations…" },
   "versions": {
@@ -158,7 +159,7 @@ Top-level field: `schema_version: "3.1"`.
     "v1": "TITLE I—…\n\nSECTION 101. …",
     "v2": "TITLE I—…\n\nSECTION 101. …"
   },
-  "print_breaks": {                         // optional, v3.1+ (PDF only)
+  "print_breaks": {                         // optional, v3.0+ (PDF only)
     "v1": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" },
     "v2": { "at": [1274, 331, 402], "drop": "101", "line": [9, 4, 1], "seam": "001" }
   },
@@ -184,7 +185,7 @@ fragments in `changes[].text` — `full_text` is the document; `text.old`/
 rendering should compute the diff at render time over the full strings,
 not try to splice the change fragments into the document.
 
-### `full_text_layout` (optional, v3.1+)
+### `full_text_layout` (optional, v3.0+)
 
 How `full_text` is laid out, so a consumer reads rows and line numbers by rule
 instead of guessing them from the pipeline. `null` (or absent) exactly when
@@ -195,11 +196,11 @@ instead of guessing them from the pipeline. `null` (or absent) exactly when
 | `"numbered_lines"` | PDF | One row per line: its printed line number right-aligned in 5 characters (5 spaces when the line is unnumbered), then 2 spaces, then the line's text. An empty row separates one page from the next; pages count from 1. A line row is never empty, so the separator cannot be mistaken for a line. |
 | `"paragraphs"` | XML | Plain text with no line numbers or pages. An empty row is a paragraph break. |
 
-A 3.0 document has no `full_text_layout`. Its PDF text is `"numbered_lines"` and
-its XML text `"paragraphs"`, which a reader may take from `versions.v2.source`;
-that fallback exists for those documents only.
+A document that carries `full_text` without `full_text_layout` lays out its PDF
+text as `"numbered_lines"` and its XML text as `"paragraphs"`, which a reader may
+take from `versions.v2.source`; that fallback exists for those documents only.
 
-### `print_breaks` (optional, v3.1+)
+### `print_breaks` (optional, v3.0+)
 
 Per side, every place the printer broke a line inside one of `full_text`'s
 whole-word lines (`numbered_lines` layout). The PDF pipeline joins a word the printer
@@ -233,7 +234,7 @@ it produces, can differ for the same PDF compared against a different version. T
 same holds for the whole-word `full_text` the PDF pipeline ships.
 
 **Why the producer carries this.** Whether a break hyphen belongs to the word is not
-decidable from the break — see the 3.1 changelog entry. A consumer may apply these
+decidable from the break — see the 3.0 changelog entry. A consumer may apply these
 breaks; it may not re-infer them.
 
 ### `tree` (optional, v1.3+)
@@ -251,10 +252,10 @@ A `TreeNode`:
 | `label` | string | The node's own heading text (`""` for an empty-path root). |
 | `level` | enum | Shared GPO vocabulary: `division`, `title`, `major`, `agency`, `account`, `section`, `subsection`, `grouping`, `preamble`, `heading`. Leaf level is typed from the source tag/kind; interior levels are positional (`heading` when an interior container has no typed source). `subsection` nests under its `section` on both pipelines: XML emits every direct non-quoted `<subsection>` (#188), the PDF the catchline-bearing run-in subset (#96). |
 | `own_amounts` | int[] | Dollar amounts in **this node's own block only** (never its children's). The union over all nodes conserves the bill's amounts exactly. |
-| `id` | string | Optional (v3.1+). See [Node identity](#node-identity-optional-v31). |
+| `id` | string | Optional (v3.0+). See [Node identity](#node-identity-optional-v30). |
 | `full_text_span` | Offset \| null | `{ start, end }` char range into `full_text[side]` locating this node; `null` when it can't be located. Reference only — never duplicates the text. |
-| `heading_span` | Offset \| null | Optional (v3.1+). The whole row of `full_text[side]` the node's heading is printed on. See below. |
-| `body_span` | Offset \| null | Optional (v3.1+). The node's own body in `full_text[side]`, never its children's. See below. |
+| `heading_span` | Offset \| null | Optional (v3.0+). The whole row of `full_text[side]` the node's heading is printed on. See below. |
+| `body_span` | Offset \| null | Optional (v3.0+). The node's own body in `full_text[side]`, never its children's. See below. |
 | `children` | TreeNode[] | Ordered child nodes. |
 
 The tree is **per-side, independently built, not paired** — cross-version
@@ -265,7 +266,7 @@ derivable from this tree, and since #462 it is the renderer's only source for
 the navigation: the separate flat `sections` jump-list and the builder that read
 it were removed.
 
-#### Node identity (optional, v3.1+)
+#### Node identity (optional, v3.0+)
 
 `id` is `"<side>.<n>"`, for example `"v1.17"`: the node's side, then its 0-based
 position in a preorder walk of that side's tree, counting every node, unlabeled ones
@@ -303,7 +304,7 @@ slicing.
 | `type`     | string            | Lowercase bill type code, e.g., `"hr"`, `"s"`, `"hjres"`. May be empty. The PDF pipeline reads it from the printed designator (`H.R.` → `"hr"`). |
 | `number`   | integer \| string | Integer for canonical bills (e.g., `4366`); string for drafts or non-numeric identifiers. |
 | `congress` | integer \| string | Congress number, e.g., `118`. May be empty string when unknown. |
-| `title`    | string \| null    | Optional (v3.1+). The bill's long title, e.g. `"Making appropriations for…"`; `null` when none was found. XML takes it from the bill's official title; PDF reads it, best-effort, from the text after "AN ACT" / "A BILL". |
+| `title`    | string \| null    | Optional (v3.0+). The bill's long title, e.g. `"Making appropriations for…"`; `null` when none was found. XML takes it from the bill's official title; PDF reads it, best-effort, from the text after "AN ACT" / "A BILL". |
 
 ### `versions.v1` and `versions.v2`
 
@@ -341,7 +342,7 @@ that need a different order MUST resort.
   "anchor_resolution": "resolved",
   "text":    { "old": "...", "new": "..." },
   "move":    null,
-  "node":    { "v1": "v1.42", "v2": "v2.40" },  // optional, v3.1+
+  "node":    { "v1": "v1.42", "v2": "v2.40" },  // optional, v3.0+
   "full_text_span": {                            // optional, v1.2+
     "v1": { "start": 4823, "end": 4961 },
     "v2": { "start": 4823, "end": 4972 }
@@ -393,7 +394,7 @@ For PDF diffs where neither anchor resolved, both sides are `null` and
 Renderers MUST escape segments individually before joining (a literal `>` in a
 segment must not collide with a `>` separator).
 
-### `node` (optional, v3.1+)
+### `node` (optional, v3.0+)
 
 The `id` of the `tree` node that holds this change, per side.
 

@@ -74,7 +74,7 @@ def _change(change_type="modified", *, node=None, v2_span=None):
 
 def _canonical(changes, *, tree_v2=None):
     return {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": {"type": "hr", "number": 1, "congress": 119},
         "versions": {
             "v1": {"label": "v1", "version_number": 1, "source": "xml"},

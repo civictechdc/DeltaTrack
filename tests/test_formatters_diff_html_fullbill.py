@@ -54,7 +54,7 @@ def _no_full_text() -> dict:
     """A document carrying no full text — the report the renderer produces without
     a full-text pane, an embed, find, navigation or export."""
     return {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": _BILL,
         "versions": _versions("xml"),
         "summary": _SUMMARY,
@@ -70,7 +70,7 @@ def _canonical() -> dict:
     v2 = "    1  ADD0\n    2  MOD1\n    3  KEEP"
     v1 = "    1  OLD0\n    2  OLD1\n    3  GONE"  # "GONE" content at 31..35
     return {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": _BILL,
         "versions": _versions("pdf"),
         "summary": _SUMMARY,
@@ -236,7 +236,7 @@ def _xml_canonical() -> dict:
     v2 = "DEPARTMENT OF DEFENSE\n\nMilitary construction, army"
     v1 = "DEPARTMENT OF DEFENSE\n\narmy construction"
     return {
-        "schema_version": "3.1",
+        "schema_version": "3.0",
         "bill": _BILL,
         "versions": _versions("xml"),
         "summary": _SUMMARY,
@@ -376,7 +376,7 @@ def test_canonical_json_embedded_and_valid():
     m = re.search(r'<script type="application/json" id="diff-data">(.*?)</script>', html, re.DOTALL)
     assert m, "embed missing"
     data = json.loads(m.group(1).replace("<\\/", "</"))
-    assert data["schema_version"] == "3.1"
+    assert data["schema_version"] == "3.0"
     assert len(data["changes"]) == 3
 
 
