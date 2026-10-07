@@ -256,7 +256,8 @@ def xml_diff_to_canonical(
     `node_ids`, when provided with `tree`, maps `{"v1"|"v2": {ordinal: node id}}`, the
     fourth value of `build_xml_full_text`, so each change names its tree nodes through the
     ordinals `bill_diff_to_dict` carries (#785). Like `full_text_spans`, it is a build-time
-    input and never serialized. Without a tree, `changes[].node` is null.
+    input and never serialized. Without a tree, `changes[].node` is null. A tree without
+    `node_ids` raises: the schema makes `node` null only when there is no tree (#816).
     """
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
     normalized_full_text = _normalize_full_text(full_text)
@@ -264,6 +265,8 @@ def xml_diff_to_canonical(
     front_matter = _front_matter_node_ids(normalized_tree)
     if normalized_tree is None:
         node_ids = None
+    elif node_ids is None:
+        raise ValueError("a tree needs its node_ids: without them every change's node would be null beside it")
     search_state: dict = {}
     return {
         "schema_version": SCHEMA_VERSION,
@@ -562,8 +565,9 @@ def pdf_diff_to_canonical(
 
     `line_offsets`, when provided, is a dict with keys "v1" and "v2" each
     mapping (page_number, line_number) -> (start_char, end_char) into the
-    corresponding full_text string. Required if you want full_text_span
-    populated on changes; without it, full_text_span is null on each.
+    corresponding full_text string. Required with `full_text`, for both sides: the
+    structure tree and every change's `node` and `full_text_span` are built from it, so
+    without it the tree would come out empty and every change unresolved (#816).
 
     The version numbers are the bill's legislative ordinals. A PDF carries no such
     index, so an upload leaves them None and the renderer drops the "vN: " prefix
@@ -574,6 +578,8 @@ def pdf_diff_to_canonical(
     line_offsets_v1 = (line_offsets or {}).get("v1")
     line_offsets_v2 = (line_offsets or {}).get("v2")
     normalized_full_text = _normalize_full_text(full_text)
+    if normalized_full_text is not None and (line_offsets_v1 is None or line_offsets_v2 is None):
+        raise ValueError("full_text needs line_offsets for both sides: the tree and each change's node come from them")
     # The structure tree's spans index into full_text, so it only ships when
     # full_text does (co-presence rule, enforced by _normalize_tree).
     tree = node_ids = None

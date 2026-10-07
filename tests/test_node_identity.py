@@ -189,6 +189,34 @@ def test_a_document_without_a_tree_names_no_nodes():
     assert all(c["node"] is None for c in doc["changes"])
 
 
+def test_a_tree_without_node_ids_is_refused():
+    """The schema makes `node` null only when there is no tree (#816 item 1).
+
+    A tree given without `node_ids` used to publish `node: null` beside it, a document the
+    schema's rule says cannot exist. The producer refuses it rather than emit it.
+    """
+    old, new = (make_bill_tree(nodes) for nodes in _versions())
+    full_text, spans, tree, _ = build_xml_full_text(old, new)
+    diff_dict = bill_diff_to_dict(diff_bills(old, new))
+    with pytest.raises(ValueError, match="node_ids"):
+        xml_diff_to_canonical(diff_dict, full_text=full_text, full_text_spans=spans, tree=tree)
+
+
+@pytest.mark.parametrize("missing", ["both", "v1", "v2"])
+def test_pdf_full_text_without_line_offsets_is_refused(missing):
+    """Without a side's line offsets the PDF tree for that side comes out empty, so every
+    change on it reads as unresolved: the PDF form of the gap above (#816 item 1)."""
+    title = Anchor(1, 1, "title", "TITLE I")
+    offsets = {"v1": {(1, 1): (0, 14)}, "v2": {(1, 1): (0, 14)}}
+    line_offsets = None if missing == "both" else {side: o for side, o in offsets.items() if side != missing}
+    with pytest.raises(ValueError, match="line_offsets"):
+        pdf_diff_to_canonical(
+            PdfDiff(hunks=(), v1_anchors=(title,), v2_anchors=(title,)),
+            full_text={"v1": "    1  TITLE I", "v2": "    1  TITLE I"},
+            line_offsets=line_offsets,
+        )
+
+
 # ---------- Heading and body spans: XML -------------------------------------------------
 
 
