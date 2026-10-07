@@ -15,9 +15,19 @@ name: security
 # BOTH required checks need this trigger, not just the test suite: a queue waits on every
 # required context, so leaving it off either workflow stalls the queue just as completely.
 # `ci.yml` carries it for `test`.
+#
+# `edited` re-runs the audit when a pull request's base is changed to main or develop.
+# The `branches` filter reads the base, so a stacked pull request opened against another
+# branch never ran this check, and changing its base fires `edited`, which the default
+# types (opened, synchronize, reopened) leave out. Until the next push the required check
+# was never reported, and the pull request sat waiting on it with every other check
+# green (#821). Naming `types` replaces the defaults, so all four are listed.
+# Why not run only on a base change: a job skipped by an `if:` reports the required
+# check as passed, so a title edit after a failed audit would turn it green.
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main, develop]
   merge_group:
