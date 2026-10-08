@@ -468,7 +468,9 @@ The `id` of the `tree` node that holds this change, per side.
 - An inapplicable side is `null`.
 - An applicable side that is `null` is **unresolved**: the producer could not name the
   node. A consumer MUST NOT guess one from `path` or labels.
-- The whole field is `null` when the document has no `tree`.
+- The whole field is `null` exactly when the document has no `tree`: a document with a
+  `tree` gives every change a `node` object, and the producer refuses to build one
+  otherwise (#816).
 
 The producer resolves it from the same parse the tree was built from, never from
 labels, so two headings with the same name cannot be confused. It names one node in
