@@ -323,6 +323,59 @@ class TestExtractTextContent:
         el = ET.fromstring("<paragraph><enum>(1)</enum><text>None of the funds.</text></paragraph>")
         assert extract_text_content(el) == "(1)None of the funds."
 
+    @pytest.mark.parametrize(
+        "pretty",
+        [
+            "<paragraph><enum>(1)</enum> <text>paragraph 2 of article 16.7</text></paragraph>",
+            "<paragraph><enum>(1)</enum>\n\t\t\t\t<text>paragraph 2 of article 16.7</text></paragraph>",
+            "<paragraph><enum>(1) </enum><text>paragraph 2 of article 16.7</text></paragraph>",
+            "<paragraph><enum>(1)</enum><text> paragraph 2 of article 16.7</text></paragraph>",
+            "<paragraph> <enum>(1)</enum> <text> <quote>paragraph 2</quote> of article 16.7</text></paragraph>",
+        ],
+        ids=["enum-tail-space", "enum-tail-newline", "inside-enum", "start-of-text", "nested-quote"],
+    )
+    def test_whitespace_after_enum_marker_dropped(self, pretty):
+        # #456: one version puts whitespace after the marker element, the other doesn't.
+        # The two say the same thing, so they must extract the same, or the section reads
+        # as modified. Shapes from the corpus: the enum's tail (114-hr-2029 v6 -> v7, Sec.
+        # 519), inside the enum (v3 -> v4, "<enum>(3) </enum>"), and the start of the next
+        # element (v6, "<text> <quote>Working Capital Fund").
+        compact = ET.fromstring("<paragraph><enum>(1)</enum><text>paragraph 2 of article 16.7</text></paragraph>")
+        assert extract_text_content(compact) == "(1)paragraph 2 of article 16.7"
+        assert extract_text_content(ET.fromstring(pretty)) == extract_text_content(compact)
+
+    def test_pretty_printed_gap_before_header_dropped(self):
+        el = ET.fromstring(
+            "<subsection><enum>(a)</enum> <header>In general</header><text>The Secretary.</text></subsection>"
+        )
+        assert extract_text_content(el) == "(a)In general The Secretary."
+
+    def test_pretty_printed_gap_after_numbered_enum_keeps_one_space(self):
+        # A section number is not an attaching marker, so it keeps its separator
+        # either way: pretty and compact both read "701. Military".
+        pretty = ET.fromstring("<section><enum>701.</enum> <header>Military</header></section>")
+        compact = ET.fromstring("<section><enum>701.</enum><header>Military</header></section>")
+        assert extract_text_content(pretty) == extract_text_content(compact) == "701. Military"
+
+    def test_citation_followed_by_word_keeps_its_space(self):
+        # The fix is keyed on the <enum> element, not on the "(b)" pattern, so a citation
+        # in prose keeps the space after it (the regex-widening alternative in #456 welded
+        # these: "403(b)grandfathered").
+        el = ET.fromstring("<text>section 403(b) grandfathered plans</text>")
+        assert extract_text_content(el) == "section 403(b) grandfathered plans"
+
+    def test_a_line_break_after_the_marker_ends_the_attachment(self):
+        # The break is a space of its own, so the text after it is not the marker's: an
+        # inline element there keeps its leading space ("x foo", not "xfoo").
+        el = ET.fromstring("<paragraph><enum>(1)</enum><linebreak/>x<term> foo</term></paragraph>")
+        assert extract_text_content(el) == "(1) x foo"
+
+    def test_enum_tail_with_words_keeps_the_words(self):
+        # A tail carrying words is text: only its leading space goes, and the element
+        # after it is not stripped, since the marker no longer precedes it.
+        el = ET.fromstring("<text>Suicidology.(b) <enum>(1)</enum> None of<quote> the funds</quote></text>")
+        assert extract_text_content(el) == "Suicidology.(b)(1)None of the funds"
+
     def test_punctuation_starting_block_not_pushed_off_anchor(self):
         # A block whose text starts with punctuation does not get a leading
         # space ("(1)." stays "(1).", not "(1) ." or "(1). .").

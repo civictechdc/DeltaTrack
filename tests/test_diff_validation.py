@@ -10,6 +10,7 @@ Test categories:
   shift as the parser improves
 """
 
+import re
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -26,6 +27,9 @@ from deltatrack.similarity import MOVE_THRESHOLD, SIMILARITY_THRESHOLD, text_sim
 from tests.conftest import assert_manifest_committed, manifest_version_pairs
 from tests.division_labels import cross_division_mismatches
 from tests.parsed_bills import parsed_bill
+
+# A list marker and the whitespace after it: the oracle for the #456 smoke test.
+_SPACE_AFTER_MARKER_RE = re.compile(r"(\((?:[0-9]{1,3}|[a-zA-Z]{1,5})\))\s+")
 
 
 @lru_cache(maxsize=None)
@@ -435,6 +439,27 @@ class TestCorpusDiffSmoke:
                     _normalize_text(c.new_text),
                 )
                 assert sim >= SIMILARITY_THRESHOLD, f"False match leaked through (sim={sim:.2f}): {c.match_path}"
+
+    def test_no_modified_from_space_after_a_marker(self, old_path, new_path):
+        """No section is modified only by whitespace after a list marker like ``(1)`` (#456).
+
+        One version's XML puts whitespace after the ``<enum>`` and the other doesn't, so
+        before the fix 80 sections that read the same came out modified: 71 of them in
+        114-hr-2029 v6 -> v7, among them Sec. 519. The oracle here is a regex on the
+        compared text, independent of the parser's ``<enum>``-keyed fix.
+        """
+        _skip_pair_if_absent(old_path, new_path)
+        result = _cached_diff(old_path, new_path)
+
+        def without_gap(text: str) -> str:
+            return _SPACE_AFTER_MARKER_RE.sub(r"\1", text)
+
+        false = [
+            c.match_path
+            for c in result.changes
+            if c.change_type == "modified" and without_gap(c.old_text or "") == without_gap(c.new_text or "")
+        ]
+        assert not false, f"{len(false)} modified only by a space after a marker: {false[:5]}"
 
     def test_unique_element_id_pairs(self, old_path, new_path):
         """Every change should have a unique (element_id_old, element_id_new) pair.
