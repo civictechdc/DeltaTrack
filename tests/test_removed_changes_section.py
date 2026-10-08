@@ -164,3 +164,32 @@ def test_two_later_groups_with_one_label_path_carry_no_pointer():
     assert view.cards[0]["nodes"][-1] != view.cards[1]["nodes"][-1]
     assert view.cards[0]["path"] == view.cards[1]["path"] == ("TITLE I", "KEPT ACCOUNT")
     assert not any(path == ("TITLE I", "KEPT ACCOUNT") for path, _ in view.pointer_list)
+
+
+def test_a_same_name_heading_without_changes_also_suppresses_the_pointer():
+    """The count is over the later tree, not over the groups that have changes (#816).
+
+    A second "TITLE I > KEPT ACCOUNT" heading with nothing changed under it is still a
+    heading the pointer could mean, so the pointer can't say which; on PDF 118-hr-8774 a
+    TITLE IV heading occurs 5 times, 4 of them childless, and the pointer still rendered.
+    """
+    later = tree_v2() + [node("TITLE I", "title", span(120, 127), [node("KEPT ACCOUNT", "account", span(130, 150))])]
+    kept, *rest = changes()
+    kept["node"] = {"v1": "v1.2", "v2": "v2.1"}  # the first of the two; the second has no change
+    view = changes_view(format_diff_html(canonical([kept, *rest], later_tree=later)))
+    assert view.cards[0]["path"] == ("TITLE I", "KEPT ACCOUNT")
+    assert not any(path == ("TITLE I", "KEPT ACCOUNT") for path, _ in view.pointer_list)
+    assert ("TITLE I",) not in {path for path, _ in view.pointer_list}, "TITLE I occurs twice too"
+
+
+def test_a_heading_without_an_id_is_counted_where_the_outline_puts_it():
+    """A labeled node without an id is no step in the outline's breadcrumbs, so it is
+    no step in the count either: a second "TITLE I" without an id puts its account at
+    ("KEPT ACCOUNT",), and the one "TITLE I > KEPT ACCOUNT" heading keeps its pointer."""
+    later = tree_v2() + [node("TITLE I", "title", span(120, 127), [node("KEPT ACCOUNT", "account", span(130, 150))])]
+    kept, *rest = changes()
+    kept["node"] = {"v1": "v1.2", "v2": "v2.1"}
+    doc = canonical([kept, *rest], later_tree=later)
+    del doc["tree"]["v2"][-1]["id"]
+    view = changes_view(format_diff_html(doc))
+    assert any(path == ("TITLE I", "KEPT ACCOUNT") for path, _ in view.pointer_list)
