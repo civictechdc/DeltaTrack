@@ -265,12 +265,15 @@ def _itertext_block_spaced(element: ET.Element) -> str:
 
     Empty break elements (``_BREAK_TAGS``) are emitted as a space.
 
-    The result only ever *adds* spaces; it never removes or reorders text.
+    The one thing it removes is whitespace right after a parenthetical ``enum``
+    (#456), so a pretty-printed version and a compact one extract the same. Otherwise
+    it only ever *adds* spaces; it never removes or reorders text.
     """
     parts: list[str] = []
     if element.text:
         parts.append(element.text)
     prev_paren_enum = False
+    attach_next = False
     for child in element:
         if child.tag in _BREAK_TAGS:
             # Emit the break as whitespace; the final split()/join collapses any
@@ -278,9 +281,11 @@ def _itertext_block_spaced(element: ET.Element) -> str:
             parts.append(" ")
             if child.tail:
                 parts.append(child.tail)
-            prev_paren_enum = False
+            prev_paren_enum = attach_next = False
             continue
         child_text = _itertext_block_spaced(child)
+        if attach_next:
+            child_text = child_text.lstrip()
         if (
             child.tag in _BLOCK_TAGS
             and not prev_paren_enum
@@ -290,12 +295,23 @@ def _itertext_block_spaced(element: ET.Element) -> str:
             and child_text[:1].isalnum()
         ):
             parts.append(" ")
-        parts.append(child_text)
-        if child.tail:
-            parts.append(child.tail)
         # A parenthetical enum like "(c)" attaches to the following text; a
         # number/roman enum like "701." or "I" does not.
         prev_paren_enum = child.tag == "enum" and child_text.lstrip()[:1] == "("
+        tail = child.tail or ""
+        if prev_paren_enum:
+            child_text = child_text.rstrip()
+            tail = tail.lstrip()
+        parts.append(child_text)
+        # Whitespace between an attaching enum and what follows it is layout, in the
+        # three places the corpus puts it: inside the marker ("<enum>(3) </enum>"), in its
+        # tail ("<enum>(1)</enum> <text>"), and at the start of the next element
+        # ("<enum>(1)</enum><text> <quote>"). All read "(1)paragraph", as the compact
+        # source does (#456). Anything between the marker and its text ends this,
+        # including an empty element: "<enum>(1)</enum><text/> <text>" keeps its space.
+        attach_next = prev_paren_enum and not tail
+        if tail:
+            parts.append(tail)
     return "".join(parts)
 
 
@@ -1166,11 +1182,10 @@ def _extract_section_text(section: ET.Element, exclude: frozenset[int] = frozens
     # siblings. The second pass is intentional, not redundant: it only touches the new
     # join boundaries, and _LIST_MARKER_RE is idempotent on the already-clean parts.
     #
-    # It normalizes only the space BEFORE a marker, not the one after, so two versions
-    # that differ in whether the source XML puts whitespace after an enum still read as
-    # a textual change ("(1) paragraph" vs "(1)paragraph"). That is a separate defect in
-    # this normalizer, tracked in #456; it predates #422 and is merely more visible now
-    # that the payload holding those markers reaches body_text at all.
+    # It normalizes only the space BEFORE a marker. The space AFTER an <enum> marker is
+    # dropped earlier, by _itertext_block_spaced, which knows where the marker element
+    # ends (#456). A regex here can't: widening it to the space after "(b)" also welded
+    # citations in prose ("403(b) grandfathered").
     text = _LIST_MARKER_RE.sub("", " ".join(part for part in parts if part)).strip()
     return text
 
