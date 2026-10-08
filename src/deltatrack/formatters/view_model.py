@@ -95,3 +95,7 @@ class DiffView:
     v2_version_number: int | None
     summary: dict[str, int]
     changes: tuple[ChangeView, ...] = field(default_factory=tuple)
+    node_order: dict[str, int] = field(default_factory=dict)
+    """Later-version node id -> its position in the walk of ``tree.v2``, recorded as the
+    view is built. The renderer orders groups by it, so it never reads a position out of
+    an id's text (#816). Empty for a document without node identity."""
