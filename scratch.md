@@ -40,44 +40,38 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 different person without touching or importing another stage, and without one stage
 re-deciding what another settled.
 
-**State:** `develop` = `7076771` (#827 merged). `main` still ships schema 2.0; `develop` holds the one
-unreleased version, **3.0**. All five follow-ups agreed on 2026-10-07 are merged, #810 is closed, and
-no PR of ours is open. The worktrees `/home/user/dt-*` and `/home/user/u-*` are disposable.
+**State (2026-10-08):** `develop` = `7076771`. `main` still ships schema 2.0; `develop` holds the one
+unreleased version, **3.0**. Seven PRs of ours are open, each on its own branch off `develop`, each
+independently reviewed before opening, CI green on the first five at last check, all waiting on reviewers:
 
-### Next, in order (agreed with the user 2026-10-07)
+| PR | Issue | Branch / worktree | What |
+|---|---|---|---|
+| #828 | Closes #456 | `claude/enum-space`, `/home/user/dt-enum` | Whitespace after a `(…)` `<enum>` is layout: identical-text `modified` 80 → 8 (rest are `(II)`/`(III)`) |
+| #829 | #816 item 1 | `claude/node-ids-required`, `dt-816a` | Producers raise on a tree without `node_ids` / `full_text` without `line_offsets` |
+| #830 | #816 item 3 | `claude/span-scan`, `dt-816c` | Span-producer scan bans `partition`/`split`, follows same-module helpers |
+| #831 | #816 item 2 | `claude/tree-node-per-side`, `dt-816b` | `TreeNodeShape` + `TreeNodeV1/V2`; `DiffView.node_order` replaces id parsing |
+| #832 | #816 items 5–7 | `claude/report-nits`, `dt-816d` | Pointer counted over later tree; "(not placed in the outline)"; whole-word row |
+| #833 | Closes #826 | `claude/amendment-enacting-clause`, `dt-826` | Amendment block's opening `<continuation-text>` read as a section (id `amendment-opening-clause`) |
+| #834 | Closes #825 | `claude/pdf-title-end`, `dt-825` | PDF long title ends at "Be it enacted" / closing `’’`; first opener wins |
 
-1. **#456 (High): 80 false `modified` cards.** Measured on `bf401b4` (comment on #456): 80 XML
-   `modified` changes have `text.old == text.new`. They sit in 4 pairs: 114-hr-2029 6→7 (71), 113-hr-3547 5→6 (5),
-   113-hr-83 6→7 (2 of 6), and 114-hr-2029 3→4 (2). Each is one space after an enumerator in the
-   collapsed form (`(a) None` vs `(a)None`, from `<enum>(a)</enum> <text>` pretty-printing).
-   - The issue's probed fix: drop the whitespace gap after a `(…)` `<enum>` in `_itertext_block_spaced`
-     (85 → 16 whitespace-only). It is a parser change, so regenerate the round-1 sentinel.
-   - Alternative, unprobed: decide `modified` in `diff_bill._paired_record` on `display_text`. `text_diff` comes
-     from the same call (ADR 0020 notes the two `diff_text` calls).
-   - Report the count of `modified` with `text.old == text.new`, before (80) and after.
-2. **#816, the remaining items (1–3, 5–7),** then **#555, promote `develop` to `main`**. Item 4 is done (#818).
-   1–3 are contract-enforcement gaps (`node_ids` required with a tree; JSON Schema per-side `TreeNode`,
-   non-empty spans; widen the span-search scan). 5–7 are doc and report nits. Land these before 3.0 ships.
-3. **#648: re-scope, then push #734 toward review.** Measured on `bf401b4`: 161 PDF moves =
-   113 renumbered + 17 relocated_and_renumbered + 31 relocated. **0 non-section labels are "renumbered"** (#820 fixed
-   the title complaint). The wrap fragments (`NAVY AND MARINE CORPS → AND MARINE CORPS`, `ARMY →
-   FAMILY HOUSING … ARMY`, in 115-hr-5895 and 118-hr-4366 3→4) are now `relocated`, which still shows a
-   false "Moved" card. That is #648's other cause, headings read from one printed line, which PR #734
-   (mattzamora, open since 9/30, changes requested, then fixed, awaiting re-review, base stale at `c636448`) addresses.
-   Action: comment these numbers on #648 and re-scope it to "false moved cards from wrapped headings,
-   blocked on #734".
-4. **#826, then #825.**
-   - #826: v5's enacting clause as `<continuation-text>` opening an amendment block is dropped. A trial patch in
-     `_walk_one_body` (synthesize an undesignated section) worked: v4→v5 `c-0005` disappears, the House copy
-     stays removed, and v5→v6 gains a `moved` pairing with v6 `Sec. 5`. Pin the pairing, since both v4 copies share
-     match key `()`. Replace `test_a_headingless_node_outside_front_matter_keeps_no_path`. Regenerate the sentinel.
-   - #825: the PDF long title ends at "purposes." only, so 7 of 52 dual versions drop it. End it at "Be it
-     enacted", "Resolved", or the closing `’’`, not at the first period ("H. Con. Res. 14.").
-5. **#811, #706, #698:** the rest of the separation and parity theme (epic #691). #823 added
-   `structure_tree.FRONT_MATTER_LABEL`, which #811 builds on.
+- **Merge-order conflict:** #828 and #833 both touch `bill_tree.py`, so both rewrite every sentinel
+  `parser_revision`. The second to merge needs `develop` merged in and `regen.sh` re-run. #831 and #832 both
+  touch `diff_html.py` but merge cleanly (pairwise `git merge-tree` checked). Re-check pairwise before merging.
+- **#816 closes** when #829–#832 merge (item 4 was #818). Then **#555** (promote `develop` to `main`).
+- **#648** re-scoped 2026-10-08: title now "false Moved card"; cause 2 fixed by #820; 18 wrap fragments remain,
+  blocked on #734.
+- **Found, not filed (ask the user):** 114-hr-2029 v6's *second* amendment ("(2) At the end of House amendment
+  numbered 1, insert…": Division Q, the PATH Act, 135 sections) is dropped. `find_bill_body` reads only the first
+  `engrossed-amendment-body/amendment/amendment-block`; `find_bill_bodies` calls amendment docs single-body.
+  0 of its 135 section ids become nodes. No existing issue (searched).
 
-The full re-audit is now due: its trigger, #807, #808 and #810 landing, has happened. It has not been started
-or scheduled; ask the user. Still undecided: whether to keep this notes branch, move the notes to `docs/`, or delete them.
+### Next, in order
+
+1. Drive #828–#834 to merge (reviews, the sentinel re-regen above), then #555.
+2. **#811, #706, #698:** the rest of the separation and parity theme (epic #691). #731 (rocks737, open) is a PR
+   for #706's summary parity; read it before starting #706.
+3. The full re-audit is due (its trigger, #807/#808/#810 landing, happened); ask the user. Still undecided:
+   the fate of this notes branch.
 
 ### Done (merged to `develop`)
 
@@ -2228,6 +2222,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-06 | Targeted review G1–G9 converged; filed #814, #815, #816. | G1–G9 |
 | 2026-10-07 | Five follow-ups shipped: #817 (#814), #818 (schema fold 3.0), #819 (#808), #820 (#807; user-requested fix: place an XML node by its own `section_number`), #821–#823 (#810 a/b/c), plus #824 (division change on renumbered cards, user-requested). Unstacked #822–#824 onto `develop` at the user's request; the merge queue dropped #823/#824 on generated-file conflicts, fixed by merging `develop` and regenerating. #810 closed. | F3, F7a, F7b, F11, F17 |
 | 2026-10-07 | pip-audit never ran on retargeted stacked PRs → #827 (`edited` type + guard). Filed #825 (PDF title "purposes."), #826 (engrossed amendment's opening clause dropped; trial patch measured); commented #456 (80 false `modified`) and #186 (the "(unknown)" node). Measured #648: 0 non-section "renumbered" left. Next plan agreed (see Resume here). | F7a, F11 |
+| 2026-10-08 | Opened #828 (#456, 80 → 8), #829–#832 (#816 items 1–3, 5–7), #833 (#826), #834 (#825); each reviewed by an independent agent first, every finding fixed or noted. Re-scoped #648. Found v6's dropped second amendment (not filed). | — |
 
 ## Open questions
 
