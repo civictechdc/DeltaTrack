@@ -291,7 +291,7 @@ A `TreeNode`:
 | `own_amounts` | int[] | Dollar amounts in **this node's own block only** (never its children's). The union over all nodes conserves the bill's amounts exactly. |
 | `id` | string | Optional (v3.0+). See [Node identity](#node-identity-optional-v30). |
 | `full_text_span` | Offset \| null | `{ start, end }` char range into `full_text[side]` locating this node; `null` when it can't be located. Reference only — never duplicates the text. |
-| `heading_span` | Offset \| null | Optional (v3.0+). The whole row of `full_text[side]` the node's heading is printed on. See below. |
+| `heading_span` | Offset \| null | Optional (v3.0+). The whole row of `full_text[side]` the node's heading is printed on: for PDF, a whole-word row, which can cover several printed lines. See below. |
 | `body_span` | Offset \| null | Optional (v3.0+). The node's own body in `full_text[side]`, never its children's. See below. |
 | `children` | TreeNode[] | Ordered child nodes. |
 
@@ -327,7 +327,7 @@ the node's first row.
 
 | | XML (`paragraphs`) | PDF (`numbered_lines`) |
 |---|---|---|
-| `heading_span` | The earliest row printed as this node's heading: a heading line printed for its path while writing it or anything inside it, its run-in `SEC. NN.` or `(a)` row (which also starts its body), or a pathless node's header line. `null` where no row was printed for the node: the synthesized Front Matter group, boilerplate without a header, and a node whose whole path was already in the heading run printed for the node before it. A later node on a repeated path whose heading *is* printed again takes that row, never the first occurrence | The anchor's printed row, gutter included. `null` where no anchor backs the node (a heading reconstructed from breadcrumbs), for the synthesized Front Matter anchor, and for an anchor whose row is outside the line-offset table |
+| `heading_span` | The earliest row printed as this node's heading: a heading line printed for its path while writing it or anything inside it, its run-in `SEC. NN.` or `(a)` row (which also starts its body), or a pathless node's header line. `null` where no row was printed for the node: the synthesized Front Matter group, boilerplate without a header, and a node whose whole path was already in the heading run printed for the node before it. A later node on a repeated path whose heading *is* printed again takes that row, never the first occurrence | The anchor's whole-word row, gutter included: one row of `full_text`, which holds the printed line and any continuation lines the producer joined to it, so laid out with `print_breaks` it can cover several printed lines (114-hr-2029 `v1.29`, `SEC. 102`, covers 3). `null` where no anchor backs the node (a heading reconstructed from breadcrumbs), for the synthesized Front Matter anchor, and for an anchor whose row is outside the line-offset table |
 | `body_span` | The node's own body text. `null` for a node with no text of its own: a container built from a path, or a section whose body is empty | The node's block rows after heading lines are trimmed, first row to last, gutter included. `null` where no anchor backs the node, when the anchor's block is empty, or when an end row is outside the line-offset table (an unnumbered line is never in it) |
 
 A PDF span covers printed rows, so it includes the line-number gutter. A consumer

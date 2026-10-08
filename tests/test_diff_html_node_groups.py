@@ -101,9 +101,9 @@ def test_cards_render_flat_when_no_change_has_a_node_path():
 
 def test_degraded_card_falls_back_to_group_label_group():
     html = _cards_section_html(_view([_change(node_path=TITLE), _change(group_label="TITLE IX")]))
-    assert ">TITLE IX<" in html
+    assert ">TITLE IX (not placed in the outline)<" in html
     # Fallback groups trail the node groups.
-    assert html.find(">TITLE I<") < html.find(">TITLE IX<")
+    assert html.find(">TITLE I<") < html.find(">TITLE IX (not placed")
 
 
 def test_cards_fallback_groups_first_appearance_and_uncategorized_last():
@@ -119,7 +119,34 @@ def test_cards_fallback_groups_first_appearance_and_uncategorized_last():
             ]
         )
     )
-    assert html.find(">TITLE I<") < html.find(">TITLE IX<") < html.find(">TITLE II<") < html.find(">Uncategorized<")
+    assert (
+        html.find(">TITLE I<")
+        < html.find(">TITLE IX (not placed")
+        < html.find(">TITLE II (not placed")
+        < html.find(">Uncategorized<")
+    )
+
+
+def test_an_unplaced_change_beside_its_titles_group_gets_a_heading_of_its_own():
+    """A change whose node the document can't name groups under its path's top label.
+    Beside the real "TITLE I" group that made a second "TITLE I" heading; the fallback
+    now says it is not that group, in both panes (#816)."""
+    view = _view([_change(node_path=TITLE), _change(group_label="TITLE I")])
+    cards = _cards_section_html(view)
+    assert cards.count(">TITLE I</summary>") == 1
+    assert '<summary class="change-group__label disclosure">TITLE I (not placed in the outline)</summary>' in cards
+    assert 'data-node="v2.0"' in cards
+    sidebar = _build_change_groups(view)
+    assert sidebar.count(">TITLE I <span") == 1
+    assert ">TITLE I (not placed in the outline) <span" in sidebar
+
+
+def test_without_an_outline_a_fallback_group_keeps_its_plain_label():
+    """A document without node identity groups every change this way, and there is no
+    outline heading to confuse a group with, so nothing is added."""
+    view = _view([_change(group_label="TITLE I"), _change(group_label="TITLE II")])
+    sidebar = _build_change_groups(view)
+    assert ">TITLE I <span" in sidebar and "not placed" not in sidebar
 
 
 def test_degraded_card_without_group_label_lands_in_uncategorized():
