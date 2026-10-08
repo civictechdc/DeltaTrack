@@ -64,10 +64,38 @@ def _designator_and_title(pages: list[Page]) -> tuple[str, int | str, str | None
         bill_type = re.sub(r"[^a-z]", "", m.group(1).lower())
         bill_number = int(m.group(2))
 
-    m2 = re.search(r"\bAN ACT\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE) or re.search(
-        r"\bA BILL\b\s+(.+?\bpurposes\.)", head, re.IGNORECASE
-    )
-    title = re.sub(r"\s+", " ", m2.group(1)).strip() if m2 else None
+    title = _long_title(head)
     if title:
         title = title[0].upper() + title[1:]
     return bill_type, bill_number, title
+
+
+def _long_title(head: str) -> str | None:
+    """The long title after the first "AN ACT" or "A BILL", ended by what follows it.
+
+    The first opener, not "AN ACT" before "A BILL": a bill's cover reads "A BILL", and its
+    title or the text after it can quote another Act ("the Act entitled ‘‘An Act to…’’").
+
+    A cover prints the title and then the enacting clause, "Be it enacted…". An engrossed
+    amendment quotes it ("entitled ‘‘An Act to…’’, do pass…"), so its closing marks end it;
+    on a cover they can't, since a title can quote an Act's name. A quotation nested in the
+    title closes with a single mark, so ’’’ ends a nested quotation and then the title.
+    Neither ends at the first period: 119-hr-1's title ends "H. Con. Res. 14." (#825). When
+    neither end is in the opening text read, the title is taken to end at "purposes.", the
+    ending nearly every appropriations title has, as it was read before.
+    """
+    m = re.search(r"(‘‘\s*)?\b(?:AN ACT|A BILL)\b\s+", head, re.IGNORECASE)
+    if not m:
+        return None
+    rest = head[m.end() :]
+    if m.group(1):
+        closing = re.search(r"’’(?!’)", rest)
+        end = closing.start() if closing else -1
+    else:
+        enacting = re.search(r"\bBe it enacted\b", rest)
+        end = enacting.start() if enacting else -1
+    if end == -1:
+        fallback = re.match(r".+?\bpurposes\.", rest, re.IGNORECASE)
+        end = fallback.end() if fallback else -1
+    title = re.sub(r"\s+", " ", rest[:end]).strip() if end > 0 else ""
+    return title or None
