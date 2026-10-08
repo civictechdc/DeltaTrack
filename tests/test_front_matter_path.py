@@ -80,20 +80,34 @@ def test_a_front_matter_section_with_its_own_heading_keeps_its_own_path(pipeline
     assert all(path and path[0] != FRONT_MATTER_LABEL and path[0].upper().startswith("SEC.") for path in headed), headed
 
 
-def test_a_headingless_node_outside_front_matter_keeps_no_path():
-    """A known gap, pinned so it is not mistaken for front matter: 114-hr-2029 4→5 removes the
-    Senate amendment's enacting clause ("That the following sums are appropriated…"), a
-    headingless section after TITLE V. Nothing in the tree names a place for it, so its path
-    stays null and its card reads "(unknown)"."""
-    from deltatrack.compare.xml import compare_xml
+_CLAUSE = "That the following sums are appropriated, "
 
-    old = fixture_path("114-hr-2029", "4_reported-in-senate.xml").read_bytes()
-    new = fixture_path("114-hr-2029", "5_engrossed-amendment-senate.xml").read_bytes()
-    document = compare_xml(old, new)
-    under = _front_matter_labels(document["tree"]["v1"])
-    loose = [
-        c
-        for c in document["changes"]
-        if c["change_type"] == "removed" and c["node"]["v1"] not in under and not c["path"]["v1"]
+
+def test_the_amendments_enacting_clause_pairs_with_the_substitutes_copy():
+    """114-hr-2029 v5's amendment block opens with its enacting clause as continuation
+    text, which the parser used to drop, so v4's copy of it read as removed with no path:
+    the last "(unknown)" card (#826).
+
+    v4 holds the clause twice with the same text and the same empty match key: under the
+    struck House text's Front Matter, and as the Senate substitute's `<section id="S1">`.
+    The substitute's copy is the one the amendment carries forward, and it pairs; the
+    struck House copy stays removed. The tie is broken by `assign_group`'s policy (the later
+    old observation wins on equal similarity), so this pins it rather than assuming it.
+    """
+    from deltatrack.bill_tree import normalize_bill
+    from deltatrack.compare.xml import compare_xml
+    from deltatrack.diff_bill import diff_bills
+
+    old_path = fixture_path("114-hr-2029", "4_reported-in-senate.xml")
+    new_path = fixture_path("114-hr-2029", "5_engrossed-amendment-senate.xml")
+    pairs = [
+        (c.change_type, c.element_id_old)
+        for c in diff_bills(normalize_bill(old_path), normalize_bill(new_path)).changes
+        if (c.old_text or c.new_text or "").startswith(_CLAUSE)
     ]
-    assert [c["text"]["old"][:42] for c in loose] == ["That the following sums are appropriated, "]
+    assert sorted(pairs) == [("removed", "ID79993566F894480FBAE9AE6C63CC75EA"), ("unchanged", "S1")]
+
+    document = compare_xml(old_path.read_bytes(), new_path.read_bytes())
+    clause = [c for c in document["changes"] if (c["text"]["old"] or c["text"]["new"] or "").startswith(_CLAUSE)]
+    assert [(c["change_type"], c["path"]["v1"]) for c in clause] == [("removed", [FRONT_MATTER_LABEL])]
+    assert _CLAUSE in document["full_text"]["v2"]

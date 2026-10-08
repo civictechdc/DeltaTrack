@@ -794,7 +794,7 @@ EXPECTED_SIMILARITY_CALLS = {
     "113-hr-83/6_engrossed-amendment-house->7_enrolled-bill": 177,
     "114-hr-2029/1_reported-in-house->3_referred-in-senate": 0,
     "114-hr-2029/3_referred-in-senate->4_reported-in-senate": 238,
-    "114-hr-2029/4_reported-in-senate->5_engrossed-amendment-senate": 236,
+    "114-hr-2029/4_reported-in-senate->5_engrossed-amendment-senate": 238,
     "114-hr-2029/5_engrossed-amendment-senate->6_engrossed-amendment-house": 27,
     "114-hr-2029/6_engrossed-amendment-house->7_enrolled-bill": 150,
     "115-hr-5895/1_reported-in-house->2_engrossed-in-house": 24,
@@ -816,7 +816,7 @@ EXPECTED_SIMILARITY_CALLS = {
 }
 
 #: The floor that keeps the table above from passing while describing nothing.
-_TOTAL_SIMILARITY_CALLS = 1108
+_TOTAL_SIMILARITY_CALLS = 1110
 
 
 def production_similarity_calls(old_tree, new_tree) -> int:

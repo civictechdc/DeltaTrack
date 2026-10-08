@@ -1478,9 +1478,56 @@ def normalize_bill(xml_path: Path) -> BillTree:
     return BillTree(congress, bill_type, bill_number, version, all_nodes, official_title)
 
 
+AMENDMENT_OPENING_CLAUSE_ID = "amendment-opening-clause"
+
+
+def _amendment_opening_clause(body: ET.Element) -> list[BillNode]:
+    """The section-level ``<continuation-text>`` that opens an amendment block, as a node.
+
+    An engrossed amendment that strikes all after the enacting clause inserts its
+    replacement as an ``<amendment-block>``, and that replacement can open with its own
+    enacting clause ("That the following sums are appropriated…") as continuation text
+    rather than as a ``<section>``. It is read the way the same clause reads when it is an
+    undesignated section (114-hr-2029 v4's ``<section id="S1">``): no number, no heading,
+    its text as the body. Dropping it made the report say the clause was removed (#826).
+
+    The source gives the continuation text no ``id``, so the node takes a fixed one: the
+    full text anchors a node's span by its element id, and an empty one left the clause
+    and its Front Matter group with no span. An amendment block holds one such opening.
+
+    Only the block's first element is read, and only when ``find_bill_body`` returns the
+    block itself. A block that wraps a nested ``<legis-body>`` is returned as that body,
+    so an opening clause before it would still be dropped; no committed bill has one.
+    """
+    first = next(iter(body), None)
+    if (
+        body.tag != "amendment-block"
+        or first is None
+        or first.tag != "continuation-text"
+        or first.attrib.get("continuation-text-level") != "section"
+    ):
+        return []
+    body_text = extract_text_content(first)
+    if not body_text:
+        return []
+    return [
+        BillNode(
+            match_path=(),
+            display_path=(),
+            tag="section",
+            element_id=first.attrib.get("id") or AMENDMENT_OPENING_CLAUSE_ID,
+            header_text="",
+            body_text=body_text,
+            display_text=extract_display_text(first),
+            section_number="",
+            division_label="",
+        )
+    ]
+
+
 def _walk_one_body(body: ET.Element) -> list[BillNode]:
     """Every content node under one top-level body, in document order."""
-    all_nodes: list[BillNode] = []
+    all_nodes: list[BillNode] = _amendment_opening_clause(body)
 
     # Check for divisions first
     divisions = body.findall("division")
