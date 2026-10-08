@@ -89,7 +89,9 @@ Top-level field: `schema_version: "3.0"`.
   which node a change sits in by joining spans and matching labels, which misfiled
   changes wherever two headings share a name; it can now read the producer's answer.
   The spans state where the producer printed a node's heading and body, so a consumer
-  no longer searches the text for a label. `full_text_span` keeps its meaning.
+  no longer searches the text for a label. `full_text_span` keeps its meaning. The
+  JSON Schema checks each side's tree separately, so a `tree.v1` node's `id` must
+  carry the `v1` prefix (#816).
 
   Also added optional `versions.v1.bill` and `versions.v2.bill` (#808): what each
   version itself states about the bill. `bill` is now the two combined by one rule on
@@ -322,6 +324,10 @@ included.
 
 `heading_span` and `body_span` are facts the producer recorded while writing
 `full_text`, never found by searching it for a label. A present span is never empty.
+JSON Schema can't state that, or that `end` is not before `start`, so the JSON Schema
+accepts `{5, 5}` and `{9, 3}`; the producer's tests enforce both. Nor can it check that
+an `id`'s number is the node's preorder position. It checks the side prefix, per side,
+and a consumer that needs the order counts it while walking the tree, as the report does.
 **`null` means the producer does not have the fact**; it is never a substitute such as
 the node's first row.
 

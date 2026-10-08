@@ -126,28 +126,40 @@ def _group_label_from_path(canonical_change: dict) -> str:
     return parts[0] if parts else ""
 
 
-def _node_chains(nodes: list[dict]) -> dict[str, tuple[tuple[str, str, str], ...]]:
-    """Node id -> the ``(id, label, level)`` chain of labeled nodes from the root to it.
+def _node_chains(nodes: list[dict]) -> tuple[dict[str, tuple[tuple[str, str, str], ...]], dict[str, int]]:
+    """Node id -> the ``(id, label, level)`` chain of labeled nodes from the root to it,
+    and node id -> its position in this walk.
 
     The chain is the breadcrumb a change named against that node is grouped under
     (#785). An unlabeled node adds no step, so its changes group under its nearest
     labeled ancestor, as the table of contents hoists its children. A node without an
     ``id`` (a document from before node identity, or one mixing the two) is hoisted the
     same way: a group is keyed on the node's id, so one without an id cannot be one.
+
+    The position is counted here, in document order, rather than read back out of the
+    id: the schema states that an id's number is its preorder position, but JSON Schema
+    can't check that, so the renderer doesn't rely on it (#816).
     """
     chains: dict[str, tuple[tuple[str, str, str], ...]] = {}
+    order: dict[str, int] = {}
+    position = 0
 
     def walk(ns: list[dict], chain: tuple) -> None:
+        nonlocal position
         for n in ns:
             label = (n.get("label") or "").strip()
             node_id = n.get("id")
             step = chain + ((node_id, label, n.get("level") or ""),) if label and node_id else chain
             if node_id:
+                # A repeated id (the schema can't forbid one) keeps its last node in both
+                # maps, so a group's place and its breadcrumb come from the same node.
                 chains[node_id] = step
+                order[node_id] = position
+                position += 1
             walk(n.get("children") or [], step)
 
     walk(nodes, ())
-    return chains
+    return chains, order
 
 
 def _node_path_for_change(canonical_change: dict, chains: dict) -> tuple:
@@ -233,7 +245,7 @@ def _reject_unknown_major(canonical: dict) -> None:
 def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
-    chains = _node_chains(tree.get("v2") or [])
+    chains, node_order = _node_chains(tree.get("v2") or [])
     return DiffView(
         bill_type=canonical["bill"]["type"],
         bill_number=canonical["bill"]["number"],
@@ -244,4 +256,5 @@ def view_from_canonical(canonical: dict) -> DiffView:
         v2_version_number=canonical["versions"]["v2"]["version_number"],
         summary=dict(canonical.get("summary") or {}),
         changes=tuple(_change_view_from_canonical(c, chains) for c in canonical.get("changes") or ()),
+        node_order=node_order,
     )

@@ -372,8 +372,19 @@ def test_documents_with_node_identity_validate():
         lambda doc: doc["tree"]["v1"][0].update(id="17"),
         lambda doc: doc["tree"]["v1"][0].update(id="v1.00"),
         lambda doc: doc["tree"]["v1"][0].update(heading_span={"start": 0}),
+        lambda doc: doc["tree"]["v1"][0].update(id="v2.0"),
+        lambda doc: doc["tree"]["v2"][0]["children"][0].update(id="v1.1"),
+        lambda doc: doc["tree"]["v1"][0]["children"][0].update(id="v2.1"),
     ],
-    ids=["reference-to-the-wrong-side", "identifier-without-side", "identifier-with-leading-zero", "span-without-end"],
+    ids=[
+        "reference-to-the-wrong-side",
+        "identifier-without-side",
+        "identifier-with-leading-zero",
+        "span-without-end",
+        "node-in-the-wrong-sides-tree",
+        "v1-child-in-the-v2-tree",
+        "v2-child-in-the-v1-tree",
+    ],
 )
 def test_schema_rejects_malformed_node_identity(corrupt):
     jsonschema = pytest.importorskip("jsonschema")

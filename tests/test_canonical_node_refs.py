@@ -156,3 +156,17 @@ def test_a_labeled_node_without_an_id_is_hoisted_and_the_report_renders():
     canonical = _canonical([_change(node={"v1": None, "v2": "v2.3"})], tree_v2=tree)
     assert view_from_canonical(canonical).changes[0].node_path == (("v2.3", "SALARIES AND EXPENSES", "account"),)
     assert 'id="change-0"' in format_diff_html(canonical)
+
+
+def test_the_view_records_each_node_position_as_it_walks():
+    """The renderer orders groups by these positions, not by parsing ids (#816), so the
+    view counts them itself: every node with an id, unlabeled ones included, in preorder."""
+    view = view_from_canonical(_canonical([_change(node={"v1": None, "v2": "v2.3"})]))
+    assert view.node_order == {f"v2.{n}": n for n in range(7)}
+
+
+def test_node_positions_follow_the_walk_whatever_the_ids_say():
+    tree = _tree_v2()
+    tree[0]["id"], tree[1]["id"] = "v2.2", "v2.0"  # ids that disagree with their position
+    view = view_from_canonical(_canonical([_change(node={"v1": None, "v2": "v2.3"})], tree_v2=tree))
+    assert view.node_order["v2.2"] < view.node_order["v2.0"]

@@ -39,7 +39,7 @@ def _change(**overrides) -> ChangeView:
     return ChangeView(**base)
 
 
-def _view(changes) -> DiffView:
+def _view(changes, node_order=None) -> DiffView:
     return DiffView(
         bill_type="hr",
         bill_number=1,
@@ -50,6 +50,7 @@ def _view(changes) -> DiffView:
         v2_version_number=None,
         summary={},
         changes=tuple(changes),
+        node_order=node_order or {},
     )
 
 
@@ -151,15 +152,50 @@ def test_group_labels_are_escaped_in_cards_and_sidebar():
 
 def test_groups_follow_tree_document_order_not_change_order():
     # A change filed in a LATE v2 group can appear FIRST in the change list;
-    # insertion order would hoist TITLE II above TITLE I in both panes. Ids are
-    # preorder positions, so "v2.10" sorts after "v2.2" numerically, not as text.
+    # insertion order would hoist TITLE II above TITLE I in both panes.
     view = _view(
-        [_change(node_path=(("v2.10", "TITLE II", "title"),)), _change(node_path=(("v2.2", "TITLE I", "title"),))]
+        [_change(node_path=(("v2.10", "TITLE II", "title"),)), _change(node_path=(("v2.2", "TITLE I", "title"),))],
+        node_order={"v2.2": 2, "v2.10": 10},
     )
     cards = _cards_section_html(view)
     assert -1 < cards.find(">TITLE I</summary>") < cards.find(">TITLE II</summary>")
     sidebar = _build_change_groups(view)
     assert -1 < sidebar.find(">TITLE I <span") < sidebar.find(">TITLE II <span")
+
+
+def test_group_order_comes_from_the_walk_not_the_id_text():
+    # The order the view recorded while walking the tree decides, even where the ids'
+    # numbers say otherwise: the renderer never parses a position out of an id (#816).
+    view = _view(
+        [_change(node_path=(("v2.1", "TITLE II", "title"),)), _change(node_path=(("v2.5", "TITLE I", "title"),))],
+        node_order={"v2.5": 0, "v2.1": 1},
+    )
+    cards = _cards_section_html(view)
+    assert -1 < cards.find(">TITLE I</summary>") < cards.find(">TITLE II</summary>")
+    sidebar = _build_change_groups(view)
+    assert -1 < sidebar.find(">TITLE I <span") < sidebar.find(">TITLE II <span")
+
+
+def test_an_id_without_a_number_still_renders():
+    view = _view(
+        [_change(node_path=(("v2.1", "TITLE I", "title"),)), _change(node_path=(("x", "TITLE II", "title"),))],
+        node_order={"x": 0, "v2.1": 1},
+    )
+    cards = _cards_section_html(view)
+    assert -1 < cards.find(">TITLE II</summary>") < cards.find(">TITLE I</summary>")
+
+
+def test_a_group_the_walk_did_not_see_trails_in_first_appearance_order():
+    view = _view(
+        [
+            _change(node_path=(("v2.9", "LATE", "title"),)),
+            _change(node_path=(("v2.1", "KNOWN", "title"),)),
+            _change(node_path=(("v2.5", "ALSO LATE", "title"),)),
+        ],
+        node_order={"v2.1": 0},
+    )
+    cards = _cards_section_html(view)
+    assert -1 < cards.find(">KNOWN</summary>") < cards.find(">LATE</summary>") < cards.find(">ALSO LATE</summary>")
 
 
 def test_two_headings_with_one_label_stay_separate_groups():

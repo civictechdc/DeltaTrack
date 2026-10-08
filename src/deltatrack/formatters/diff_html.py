@@ -280,13 +280,16 @@ def _removed_order_map(tree_nodes: list[dict] | None) -> dict[tuple[str, ...], i
     return order
 
 
-def _in_tree_order(node: dict) -> list:
+def _in_tree_order(node: dict, order: dict[str, int]) -> list:
     """A later-version group's children in the tree's preorder.
 
-    A node's id is its preorder position (``"v2.<n>"``, #785), so sorting by ``n``
-    is document order without any map from labels to positions.
+    ``order`` is ``DiffView.node_order``: each node id's position, counted while the
+    view walked the tree, so nothing here reads a position out of an id's text (#816).
+    A group whose id the walk didn't see keeps its first-appearance order, after the
+    rest.
     """
-    return sorted(node["children"].items(), key=lambda item: int(item[0][0].rsplit(".", 1)[1]))
+    last = len(order)
+    return sorted(node["children"].items(), key=lambda item: order.get(item[0][0], last))
 
 
 def _ordered_children(node: dict, path: tuple, order_map: dict[tuple, int] | None):
@@ -327,10 +330,10 @@ def _build_change_groups(
     def render(seg: tuple[str, str, str], node: dict) -> str:
         _id, label, _level = seg
         items = "".join(_build_nav_item(view.changes[i], i) for i in node["items"])
-        kids = "".join(render(s, c) for s, c in _in_tree_order(node))
+        kids = "".join(render(s, c) for s, c in _in_tree_order(node, view.node_order))
         return _nav_group_html(label, _subtree_count(node), f"<ul>{items}</ul>{kids}")
 
-    blocks = [render(seg, node) for seg, node in _in_tree_order(root)]
+    blocks = [render(seg, node) for seg, node in _in_tree_order(root, view.node_order)]
     for label in _fallback_labels(fallback):
         items = "".join(_build_nav_item(view.changes[i], i) for i in fallback[label])
         blocks.append(_nav_group_html(label, len(fallback[label]), f"<ul>{items}</ul>"))
@@ -618,10 +621,10 @@ def _cards_section_html(
         unique = shared.get(labels) == 1
         pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers and unique else ""
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
-        kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node))
+        kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node, view.node_order))
         return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part), node_id=seg[0])
 
-    blocks = [render(seg, node, ()) for seg, node in _in_tree_order(root)]
+    blocks = [render(seg, node, ()) for seg, node in _in_tree_order(root, view.node_order)]
     for label in _fallback_labels(fallback):
         cards = "\n".join(_build_card(view.changes[i], i) for i in fallback[label])
         blocks.append(_card_group_html(label, cards))
