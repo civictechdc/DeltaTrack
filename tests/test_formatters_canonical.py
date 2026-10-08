@@ -668,7 +668,9 @@ def test_pdf_full_text_default_null():
 
 def test_pdf_full_text_passes_through():
     diff = PdfDiff(hunks=(), v1_anchors=(), v2_anchors=())
-    canonical = pdf_diff_to_canonical(diff, **_pdf_meta(), full_text={"v1": "x", "v2": "y"})
+    canonical = pdf_diff_to_canonical(
+        diff, **_pdf_meta(), full_text={"v1": "x", "v2": "y"}, line_offsets={"v1": {}, "v2": {}}
+    )
     assert canonical["full_text"] == {"v1": "x", "v2": "y"}
 
 

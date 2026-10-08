@@ -90,6 +90,115 @@ def test_pdf_with_no_front_matter_states_nothing():
     assert pdf_identity(_page("SEC. 2. REFERENCES.")) == BillIdentity()
 
 
+# --- where the long title ends (#825) ---------------------------------------------------
+#
+# A cover's title runs to "Be it enacted"; an engrossed amendment quotes it, and the
+# quotation's closing marks end it. Neither ends at the first period, and few titles end
+# "purposes.".
+
+
+def _cover(*title_lines: str) -> list[Page]:
+    return _page(
+        "113TH CONGRESS",
+        "1ST SESSION H. R. 3547",
+        "A BILL",
+        *title_lines,
+        "Be it enacted by the Senate and House of Representatives of the United States of",
+        "America in Congress assembled,",
+        "SECTION 1. SHORT TITLE.",
+    )
+
+
+def test_a_cover_title_ends_at_the_enacting_clause():
+    pages = _cover("To extend the application of certain space launch liability provisions", "through 2014.")
+    assert pdf_identity(pages).title == (
+        "To extend the application of certain space launch liability provisions through 2014."
+    )
+
+
+def test_a_period_inside_the_title_does_not_end_it():
+    pages = _cover("To provide for reconciliation pursuant to title II of H. Con. Res. 14.")
+    assert pdf_identity(pages).title == "To provide for reconciliation pursuant to title II of H. Con. Res. 14."
+
+
+def test_a_quotation_inside_a_cover_title_does_not_end_it():
+    """Closing quotation marks end the title only where the title is itself quoted."""
+    pages = _cover("To amend the ‘‘Foreign Assistance Act of 1961’’ to extend a program.")
+    assert pdf_identity(pages).title == "To amend the ‘‘Foreign Assistance Act of 1961’’ to extend a program."
+
+
+def test_a_quoted_title_ends_at_its_closing_marks():
+    pages = _page(
+        "Resolved, That the bill from the House of Representatives (H.R. 3547) entitled",
+        "‘‘An Act to extend the application of certain space launch liability provisions",
+        "through 2014.’’, do pass with the following AMENDMENTS:",
+        "Strike all after the enacting clause and insert the following:",
+        "SECTION 1. LAUNCH LIABILITY EXTENSION.",
+    )
+    assert pdf_identity(pages).title == (
+        "To extend the application of certain space launch liability provisions through 2014."
+    )
+
+
+def test_a_cover_title_that_quotes_an_act_is_read_from_the_covers_opener():
+    """ "A BILL" opens the cover; the ‘‘An Act…’’ it quotes is part of its title."""
+    pages = _cover(
+        "To amend the Act entitled ‘‘An Act to provide for the establishment of the Morristown",
+        "National Historical Park’’, approved March 2, 1933, to extend the boundary.",
+    )
+    assert pdf_identity(pages).title == (
+        "To amend the Act entitled ‘‘An Act to provide for the establishment of the Morristown "
+        "National Historical Park’’, approved March 2, 1933, to extend the boundary."
+    )
+
+
+def test_a_quotation_nested_at_the_end_of_a_quoted_title_is_kept():
+    pages = _page(
+        "Resolved, That the bill from the House of Representatives (H.R. 1) entitled",
+        "‘‘An Act to amend the Act entitled ‘An Act to provide for a park’’’, do pass",
+        "with the following AMENDMENT:",
+    )
+    assert pdf_identity(pages).title == "To amend the Act entitled ‘An Act to provide for a park’"
+
+
+def test_a_title_with_no_end_in_the_text_read_is_not_guessed():
+    assert pdf_identity(_page("H. R. 1", "A BILL", "To do a thing")).title is None
+
+
+_SPACE_LAUNCH = "To extend the application of certain space launch liability provisions through 2014."
+
+
+@pytest.mark.parametrize(
+    ("bill", "version", "title"),
+    [
+        ("113-hr-3547", "1_introduced-in-house", _SPACE_LAUNCH),
+        ("113-hr-3547", "2_engrossed-in-house", _SPACE_LAUNCH),
+        ("113-hr-3547", "3_received-in-senate", _SPACE_LAUNCH),
+        ("113-hr-3547", "4_engrossed-amendment-senate", _SPACE_LAUNCH),
+        (
+            "117-hr-2471",
+            "1_introduced-in-house",
+            "To measure the progress of post-disaster recovery and efforts to address corruption, "
+            "governance, rule of law, and media freedoms in Haiti.",
+        ),
+        (
+            "118-hr-8282",
+            "1_introduced-in-house",
+            "To impose sanctions with respect to the International Criminal Court engaged in any effort "
+            "to investigate, arrest, detain, or prosecute any protected person of the United States and "
+            "its allies.",
+        ),
+        ("119-hr-1", "1_reported-in-house", "To provide for reconciliation pursuant to title II of H. Con. Res. 14."),
+    ],
+)
+def test_corpus_titles_not_ending_purposes_are_read(bill, version, title):
+    """The seven PDF titles #825 found dropped. Each literal is that version's XML title,
+    except v4's: its XML carries none, and the PDF quotes the House title."""
+    from tests.pdf_corpus import cached_pages
+
+    assert pdf_identity(cached_pages(fixture_path(bill, f"{version}.pdf"))).title == title
+
+
 # --- the canonicalizer applies the rule, once, for both pipelines -----------------------
 
 _HAITI = BillIdentity("hr", 2471, 117, "To measure the progress of recovery in Haiti.")

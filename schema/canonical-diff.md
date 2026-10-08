@@ -89,7 +89,9 @@ Top-level field: `schema_version: "3.0"`.
   which node a change sits in by joining spans and matching labels, which misfiled
   changes wherever two headings share a name; it can now read the producer's answer.
   The spans state where the producer printed a node's heading and body, so a consumer
-  no longer searches the text for a label. `full_text_span` keeps its meaning.
+  no longer searches the text for a label. `full_text_span` keeps its meaning. The
+  JSON Schema checks each side's tree separately, so a `tree.v1` node's `id` must
+  carry the `v1` prefix (#816).
 
   Also added optional `versions.v1.bill` and `versions.v2.bill` (#808): what each
   version itself states about the bill. `bill` is now the two combined by one rule on
@@ -291,7 +293,7 @@ A `TreeNode`:
 | `own_amounts` | int[] | Dollar amounts in **this node's own block only** (never its children's). The union over all nodes conserves the bill's amounts exactly. |
 | `id` | string | Optional (v3.0+). See [Node identity](#node-identity-optional-v30). |
 | `full_text_span` | Offset \| null | `{ start, end }` char range into `full_text[side]` locating this node; `null` when it can't be located. Reference only — never duplicates the text. |
-| `heading_span` | Offset \| null | Optional (v3.0+). The whole row of `full_text[side]` the node's heading is printed on. See below. |
+| `heading_span` | Offset \| null | Optional (v3.0+). The whole row of `full_text[side]` the node's heading is printed on: for PDF, a whole-word row, which can cover several printed lines. See below. |
 | `body_span` | Offset \| null | Optional (v3.0+). The node's own body in `full_text[side]`, never its children's. See below. |
 | `children` | TreeNode[] | Ordered child nodes. |
 
@@ -322,12 +324,16 @@ included.
 
 `heading_span` and `body_span` are facts the producer recorded while writing
 `full_text`, never found by searching it for a label. A present span is never empty.
+JSON Schema can't state that, or that `end` is not before `start`, so the JSON Schema
+accepts `{5, 5}` and `{9, 3}`; the producer's tests enforce both. Nor can it check that
+an `id`'s number is the node's preorder position. It checks the side prefix, per side,
+and a consumer that needs the order counts it while walking the tree, as the report does.
 **`null` means the producer does not have the fact**; it is never a substitute such as
 the node's first row.
 
 | | XML (`paragraphs`) | PDF (`numbered_lines`) |
 |---|---|---|
-| `heading_span` | The earliest row printed as this node's heading: a heading line printed for its path while writing it or anything inside it, its run-in `SEC. NN.` or `(a)` row (which also starts its body), or a pathless node's header line. `null` where no row was printed for the node: the synthesized Front Matter group, boilerplate without a header, and a node whose whole path was already in the heading run printed for the node before it. A later node on a repeated path whose heading *is* printed again takes that row, never the first occurrence | The anchor's printed row, gutter included. `null` where no anchor backs the node (a heading reconstructed from breadcrumbs), for the synthesized Front Matter anchor, and for an anchor whose row is outside the line-offset table |
+| `heading_span` | The earliest row printed as this node's heading: a heading line printed for its path while writing it or anything inside it, its run-in `SEC. NN.` or `(a)` row (which also starts its body), or a pathless node's header line. `null` where no row was printed for the node: the synthesized Front Matter group, boilerplate without a header, and a node whose whole path was already in the heading run printed for the node before it. A later node on a repeated path whose heading *is* printed again takes that row, never the first occurrence | The anchor's whole-word row, gutter included: one row of `full_text`, which holds the printed line and any continuation lines the producer joined to it, so laid out with `print_breaks` it can cover several printed lines (114-hr-2029 `v1.29`, `SEC. 102`, covers 3). `null` where no anchor backs the node (a heading reconstructed from breadcrumbs), for the synthesized Front Matter anchor, and for an anchor whose row is outside the line-offset table |
 | `body_span` | The node's own body text. `null` for a node with no text of its own: a container built from a path, or a section whose body is empty | The node's block rows after heading lines are trimmed, first row to last, gutter included. `null` where no anchor backs the node, when the anchor's block is empty, or when an end row is outside the line-offset table (an unnumbered line is never in it) |
 
 A PDF span covers printed rows, so it includes the line-number gutter. A consumer
@@ -468,7 +474,9 @@ The `id` of the `tree` node that holds this change, per side.
 - An inapplicable side is `null`.
 - An applicable side that is `null` is **unresolved**: the producer could not name the
   node. A consumer MUST NOT guess one from `path` or labels.
-- The whole field is `null` when the document has no `tree`.
+- The whole field is `null` exactly when the document has no `tree`: a document with a
+  `tree` gives every change a `node` object, and the producer refuses to build one
+  otherwise (#816).
 
 The producer resolves it from the same parse the tree was built from, never from
 labels, so two headings with the same name cannot be confused. It names one node in

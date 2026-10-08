@@ -54,8 +54,8 @@
           "required": ["v1", "v2"],
           "additionalProperties": false,
           "properties": {
-            "v1": { "type": "array", "items": { "$ref": "#/$defs/TreeNode" } },
-            "v2": { "type": "array", "items": { "$ref": "#/$defs/TreeNode" } }
+            "v1": { "type": "array", "items": { "$ref": "#/$defs/TreeNodeV1" } },
+            "v2": { "type": "array", "items": { "$ref": "#/$defs/TreeNodeV2" } }
           }
         }
       ],
@@ -120,6 +120,28 @@
       }
     },
     "TreeNode": {
+      "description": "A structure-tree node of either side. Its fields are TreeNodeShape's; each child is a TreeNode.",
+      "allOf": [{ "$ref": "#/$defs/TreeNodeShape" }],
+      "properties": { "children": { "items": { "$ref": "#/$defs/TreeNode" } } }
+    },
+    "TreeNodeV1": {
+      "description": "A node of tree.v1: its id, and each descendant's, carries the v1 prefix.",
+      "allOf": [{ "$ref": "#/$defs/TreeNodeShape" }],
+      "properties": {
+        "id": { "pattern": "^v1\\." },
+        "children": { "items": { "$ref": "#/$defs/TreeNodeV1" } }
+      }
+    },
+    "TreeNodeV2": {
+      "description": "A node of tree.v2: its id, and each descendant's, carries the v2 prefix.",
+      "allOf": [{ "$ref": "#/$defs/TreeNodeShape" }],
+      "properties": {
+        "id": { "pattern": "^v2\\." },
+        "children": { "items": { "$ref": "#/$defs/TreeNodeV2" } }
+      }
+    },
+    "TreeNodeShape": {
+      "description": "A tree node's fields. `children` is only typed here: each of TreeNode, TreeNodeV1 and TreeNodeV2 names what its children are, so a subtree is validated once rather than once per wrapper.",
       "type": "object",
       "required": ["label", "level", "own_amounts", "full_text_span", "children"],
       "additionalProperties": false,
@@ -142,13 +164,13 @@
         "full_text_span": { "$ref": "#/$defs/Offset" },
         "heading_span": {
           "$ref": "#/$defs/Offset",
-          "description": "Optional (v3.0+) the whole row of full_text[side] that the node's heading is printed on; null when the producer has no such row for this node. Never found by searching for the label."
+          "description": "Optional (v3.0+) the whole row of full_text[side] that the node's heading is printed on (for PDF a whole-word row, which can cover several printed lines once print_breaks are applied); null when the producer has no such row for this node. Never found by searching for the label."
         },
         "body_span": {
           "$ref": "#/$defs/Offset",
           "description": "Optional (v3.0+) the node's own body in full_text[side], not its children's; null when the node has no text of its own or the producer cannot place it."
         },
-        "children": { "type": "array", "items": { "$ref": "#/$defs/TreeNode" } }
+        "children": { "type": "array" }
       }
     },
     "VersionInfo": {

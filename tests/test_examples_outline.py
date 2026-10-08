@@ -13,6 +13,7 @@ import re
 
 import pytest
 
+from deltatrack.formatters.diff_html import UNPLACED_SUFFIX
 from tests.corpus_paths import PROJECT_ROOT
 from tests.removed_changes_report import changes_view
 
@@ -42,7 +43,9 @@ def test_the_examples_are_present():
 
 @pytest.mark.parametrize("example", EXAMPLES, ids=lambda p: p.name)
 def test_no_top_level_heading_repeats(example):
-    tops = _top_groups(example.read_text())
+    # A fallback group says it is not placed in the outline (#816); it still must not
+    # repeat an outline heading, which was #701's "Title V twice".
+    tops = [top.removesuffix(UNPLACED_SUFFIX) for top in _top_groups(example.read_text())]
     assert tops and len(tops) == len(set(tops)), tops
 
 

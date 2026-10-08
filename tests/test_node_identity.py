@@ -189,6 +189,34 @@ def test_a_document_without_a_tree_names_no_nodes():
     assert all(c["node"] is None for c in doc["changes"])
 
 
+def test_a_tree_without_node_ids_is_refused():
+    """The schema makes `node` null only when there is no tree (#816 item 1).
+
+    A tree given without `node_ids` used to publish `node: null` beside it, a document the
+    schema's rule says cannot exist. The producer refuses it rather than emit it.
+    """
+    old, new = (make_bill_tree(nodes) for nodes in _versions())
+    full_text, spans, tree, _ = build_xml_full_text(old, new)
+    diff_dict = bill_diff_to_dict(diff_bills(old, new))
+    with pytest.raises(ValueError, match="node_ids"):
+        xml_diff_to_canonical(diff_dict, full_text=full_text, full_text_spans=spans, tree=tree)
+
+
+@pytest.mark.parametrize("missing", ["both", "v1", "v2"])
+def test_pdf_full_text_without_line_offsets_is_refused(missing):
+    """Without a side's line offsets the PDF tree for that side comes out empty, so every
+    change on it reads as unresolved: the PDF form of the gap above (#816 item 1)."""
+    title = Anchor(1, 1, "title", "TITLE I")
+    offsets = {"v1": {(1, 1): (0, 14)}, "v2": {(1, 1): (0, 14)}}
+    line_offsets = None if missing == "both" else {side: o for side, o in offsets.items() if side != missing}
+    with pytest.raises(ValueError, match="line_offsets"):
+        pdf_diff_to_canonical(
+            PdfDiff(hunks=(), v1_anchors=(title,), v2_anchors=(title,)),
+            full_text={"v1": "    1  TITLE I", "v2": "    1  TITLE I"},
+            line_offsets=line_offsets,
+        )
+
+
 # ---------- Heading and body spans: XML -------------------------------------------------
 
 
@@ -372,8 +400,19 @@ def test_documents_with_node_identity_validate():
         lambda doc: doc["tree"]["v1"][0].update(id="17"),
         lambda doc: doc["tree"]["v1"][0].update(id="v1.00"),
         lambda doc: doc["tree"]["v1"][0].update(heading_span={"start": 0}),
+        lambda doc: doc["tree"]["v1"][0].update(id="v2.0"),
+        lambda doc: doc["tree"]["v2"][0]["children"][0].update(id="v1.1"),
+        lambda doc: doc["tree"]["v1"][0]["children"][0].update(id="v2.1"),
     ],
-    ids=["reference-to-the-wrong-side", "identifier-without-side", "identifier-with-leading-zero", "span-without-end"],
+    ids=[
+        "reference-to-the-wrong-side",
+        "identifier-without-side",
+        "identifier-with-leading-zero",
+        "span-without-end",
+        "node-in-the-wrong-sides-tree",
+        "v1-child-in-the-v2-tree",
+        "v2-child-in-the-v1-tree",
+    ],
 )
 def test_schema_rejects_malformed_node_identity(corrupt):
     jsonschema = pytest.importorskip("jsonschema")
@@ -386,8 +425,21 @@ def test_schema_rejects_malformed_node_identity(corrupt):
 # ---------- No manufactured spans -----------------------------------------------------
 
 # The functions that produce heading and body spans and node references. None may search
-# the text: the only search allowed is for the newline that ends a row the producer
-# already located.
+# the text: the only search allowed is for a newline, which ends a row the producer
+# already located (so `split("\n")` passes too).
+#
+# What this scan can claim, and what it leaves to the corpus pins (#816 item 3):
+# - It reads each producer and every plain function it calls by name from its own module,
+#   so a search moved into a private helper is still seen. A method, a cached or aliased
+#   helper, or a bare `search(...)` imported from `re` is not followed or flagged.
+#   Code in other modules is not read: there, regexes over labels and `list.index` are
+#   legitimate (structure_tree, pdf_anchors), and telling those apart from a text
+#   search is not something a syntax scan can do.
+# - It bans the string searches by every name, `partition` and `split` included. It does
+#   not ban `in`: a membership test on a dict reads the same as a substring test.
+# - So it is a tripwire for the obvious regression, not a proof. The behaviour is pinned
+#   by `tests/test_node_identity_corpus.py`: a `str.partition(label)` fallback in
+#   `_xml_tree_payload` failed 11 of its cases when this scan did not yet ban `partition`.
 _SPAN_PRODUCERS = [
     text_serializer._serialize_layout,
     text_serializer._xml_tree_payload,
@@ -396,15 +448,46 @@ _SPAN_PRODUCERS = [
     canonical_module._rows_span,
     canonical_module._node_refs,
 ]
-_SEARCHES = {"find", "rfind", "index", "rindex", "search", "match", "fullmatch", "finditer", "findall", "count"}
+_SEARCHES = {
+    "find",
+    "rfind",
+    "index",
+    "rindex",
+    "search",
+    "match",
+    "fullmatch",
+    "finditer",
+    "findall",
+    "count",
+    "partition",
+    "rpartition",
+    "split",
+    "rsplit",
+}
+
+
+def _with_same_module_helpers(function) -> list:
+    """``function`` and every function it calls by name from its own module, transitively."""
+    found, pending = [], [function]
+    while pending:
+        f = pending.pop()
+        if f in found:
+            continue
+        found.append(f)
+        for node in ast.walk(ast.parse(textwrap.dedent(inspect.getsource(f)))):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                callee = f.__globals__.get(node.func.id)
+                if inspect.isfunction(callee) and callee.__module__ == function.__module__:
+                    pending.append(callee)
+    return found
 
 
 @pytest.mark.parametrize("function", _SPAN_PRODUCERS, ids=lambda f: f.__name__)
 def test_span_producers_never_search_the_text(function):
-    tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
     searches = [
-        ast.unparse(node)
-        for node in ast.walk(tree)
+        f"{f.__name__}: {ast.unparse(node)}"
+        for f in _with_same_module_helpers(function)
+        for node in ast.walk(ast.parse(textwrap.dedent(inspect.getsource(f))))
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr in _SEARCHES
@@ -413,13 +496,50 @@ def test_span_producers_never_search_the_text(function):
     assert not searches, f"{function.__name__} searches text: {searches}"
 
 
-def test_the_source_scan_fires_on_a_label_search():
-    """The scan above is proven to fire: a span found by looking for the label is caught."""
+# Spans manufactured by searching for the label, one per way of searching, for the scan's
+# firing test below.
+def _by_find(text, node):
+    start = text.find(node["label"])
+    return {"start": start, "end": start + len(node["label"])}
 
-    def manufactured(text, node):
-        start = text.find(node["label"])
-        return {"start": start, "end": start + len(node["label"])}
 
+def _by_partition(text, node):
+    start = len(text.partition(node["label"])[0])
+    return {"start": start, "end": start + len(node["label"])}
+
+
+def _by_split(text, node):
+    start = len(text.split(node["label"])[0])
+    return {"start": start, "end": start + len(node["label"])}
+
+
+def _label_start(text, label):
+    before, _, _ = text.partition(label)
+    return len(before)
+
+
+def _by_helper(text, node):
+    start = _label_start(text, node["label"])
+    return {"start": start, "end": start + len(node["label"])}
+
+
+def _found(text, label):
+    return text.find(label)
+
+
+def _by_find_in_a_helper(text, node):
+    start = _found(text, node["label"])
+    return {"start": start, "end": start + len(node["label"])}
+
+
+@pytest.mark.parametrize(
+    "manufactured",
+    [_by_find, _by_partition, _by_split, _by_helper, _by_find_in_a_helper],
+    ids=lambda f: f.__name__,
+)
+def test_the_source_scan_fires_on_a_label_search(manufactured):
+    """The scan above is proven to fire: a span found by looking for the label is caught,
+    by any of the search names and from inside a helper."""
     with pytest.raises(AssertionError, match="searches text"):
         test_span_producers_never_search_the_text(manufactured)
 

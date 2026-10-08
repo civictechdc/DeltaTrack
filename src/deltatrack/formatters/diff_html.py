@@ -181,6 +181,21 @@ def _fallback_labels(fallback: dict[str, list[int]]) -> list[str]:
     return labels
 
 
+UNPLACED_SUFFIX = " (not placed in the outline)"
+
+
+def _fallback_heading(label: str, outline: dict) -> str:
+    """The heading a fallback group shows (#816).
+
+    A change the document names no node for groups under its path's top label. Beside
+    an outline that label can be a real group's too ("TITLE I"), and two headings with
+    one name read as one heading split in two, so the fallback says it is not that
+    group. With no outline at all there is nothing to confuse it with, and
+    "Uncategorized" never names a heading.
+    """
+    return label if not outline["children"] or label == "Uncategorized" else label + UNPLACED_SUFFIX
+
+
 REMOVED_SECTION_LABEL = "Removed from the earlier version"
 NO_PATH_LABEL = "(no heading path recorded)"
 
@@ -254,6 +269,29 @@ def _pointer_html(count: int, target_id: str) -> str:
     )
 
 
+def _label_path_counts(tree_nodes: list[dict] | None) -> dict[tuple[str, ...], int]:
+    """Label breadcrumb -> how many nodes of the later tree carry it (#816).
+
+    Every heading counts, with changes under it or not, so a removed-section pointer
+    can tell whether its label path names one heading or several. A node is a step on
+    the path exactly when it is one in the outline's breadcrumbs
+    (``canonical_view._node_chains``): it has a label and an id. Others are hoisted.
+    """
+    counts: dict[tuple[str, ...], int] = {}
+
+    def walk(ns: list[dict], path: tuple[str, ...]) -> None:
+        for n in ns:
+            label = (n.get("label") or "").strip()
+            step = bool(label and n.get("id"))
+            p = (*path, label) if step else path
+            if step:
+                counts[p] = counts.get(p, 0) + 1
+            walk(n.get("children") or [], p)
+
+    walk(tree_nodes or [], ())
+    return counts
+
+
 def _subtree_count(node: dict) -> int:
     return len(node["items"]) + sum(_subtree_count(c) for c in node["children"].values())
 
@@ -280,13 +318,16 @@ def _removed_order_map(tree_nodes: list[dict] | None) -> dict[tuple[str, ...], i
     return order
 
 
-def _in_tree_order(node: dict) -> list:
+def _in_tree_order(node: dict, order: dict[str, int]) -> list:
     """A later-version group's children in the tree's preorder.
 
-    A node's id is its preorder position (``"v2.<n>"``, #785), so sorting by ``n``
-    is document order without any map from labels to positions.
+    ``order`` is ``DiffView.node_order``: each node id's position, counted while the
+    view walked the tree, so nothing here reads a position out of an id's text (#816).
+    A group whose id the walk didn't see keeps its first-appearance order, after the
+    rest.
     """
-    return sorted(node["children"].items(), key=lambda item: int(item[0][0].rsplit(".", 1)[1]))
+    last = len(order)
+    return sorted(node["children"].items(), key=lambda item: order.get(item[0][0], last))
 
 
 def _ordered_children(node: dict, path: tuple, order_map: dict[tuple, int] | None):
@@ -327,13 +368,13 @@ def _build_change_groups(
     def render(seg: tuple[str, str, str], node: dict) -> str:
         _id, label, _level = seg
         items = "".join(_build_nav_item(view.changes[i], i) for i in node["items"])
-        kids = "".join(render(s, c) for s, c in _in_tree_order(node))
+        kids = "".join(render(s, c) for s, c in _in_tree_order(node, view.node_order))
         return _nav_group_html(label, _subtree_count(node), f"<ul>{items}</ul>{kids}")
 
-    blocks = [render(seg, node) for seg, node in _in_tree_order(root)]
+    blocks = [render(seg, node) for seg, node in _in_tree_order(root, view.node_order)]
     for label in _fallback_labels(fallback):
         items = "".join(_build_nav_item(view.changes[i], i) for i in fallback[label])
-        blocks.append(_nav_group_html(label, len(fallback[label]), f"<ul>{items}</ul>"))
+        blocks.append(_nav_group_html(_fallback_heading(label, root), len(fallback[label]), f"<ul>{items}</ul>"))
     blocks.append(_removed_nav_html(view, removed_order))
     return "".join(blocks)
 
@@ -572,6 +613,7 @@ def _heading(bill: dict) -> str:
 def _cards_section_html(
     view: DiffView,
     removed_order: dict[tuple[str, ...], int] | None = None,
+    later_paths: dict[tuple[str, ...], int] | None = None,
 ) -> str:
     """Cards section: cards grouped under their tree-node headings (#172).
 
@@ -591,7 +633,9 @@ def _cards_section_html(
     A later-version group whose label path exactly matches removals' earlier
     parent path carries a pointer to that heading in the removed section
     (``_removed_pointers``). The pointer is looked up after the removed section is
-    built and only rendered.
+    built and only rendered. ``later_paths`` counts each label path over the whole
+    later tree (``_label_path_counts``); without it, the groups that have changes are
+    counted instead.
     """
     if not view.changes:
         return '<p class="no-changes">No changes found between these versions.</p>'
@@ -600,17 +644,19 @@ def _cards_section_html(
     root, fallback = _group_changes_by_node(view)
     removed_section, removed_ids = _removed_cards_html(view, removed_order)
     pointers = _removed_pointers(view)
-    # A pointer names a heading by its labels. Where two later groups share a label
+    # A pointer names a heading by its labels. Where two later headings share a label
     # path, either could be meant and both would claim the same removals, so neither
-    # carries one, as a label collision never does.
-    shared: dict[tuple[str, ...], int] = {}
+    # carries one, as a label collision never does. A heading with no changes under it
+    # still counts, so the count is over the later tree when there is one (#816).
+    shared: dict[tuple[str, ...], int] = dict(later_paths or {})
 
     def count(node: dict, labels: tuple[str, ...]) -> None:
         for (_id, label, _level), child in node["children"].items():
             shared[(*labels, label)] = shared.get((*labels, label), 0) + 1
             count(child, (*labels, label))
 
-    count(root, ())
+    if not later_paths:
+        count(root, ())
 
     def render(seg: tuple[str, str, str], node: dict, labels: tuple[str, ...]) -> str:
         _id, label, _level = seg
@@ -618,13 +664,13 @@ def _cards_section_html(
         unique = shared.get(labels) == 1
         pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers and unique else ""
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
-        kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node))
+        kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node, view.node_order))
         return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part), node_id=seg[0])
 
-    blocks = [render(seg, node, ()) for seg, node in _in_tree_order(root)]
+    blocks = [render(seg, node, ()) for seg, node in _in_tree_order(root, view.node_order)]
     for label in _fallback_labels(fallback):
         cards = "\n".join(_build_card(view.changes[i], i) for i in fallback[label])
-        blocks.append(_card_group_html(label, cards))
+        blocks.append(_card_group_html(_fallback_heading(label, root), cards))
     if removed_section:
         blocks.append(removed_section)
     return "\n".join(blocks)
@@ -983,8 +1029,9 @@ def _views_html(
     """
     if removed_order is None:
         removed_order = _removed_order_map(((canonical or {}).get("tree") or {}).get("v1"))
+    later_paths = _label_path_counts(((canonical or {}).get("tree") or {}).get("v2"))
     changes_inner = (
-        f"<h2>Changes</h2>\n{_cards_section_html(view, removed_order)}"
+        f"<h2>Changes</h2>\n{_cards_section_html(view, removed_order, later_paths)}"
         '\n<p class="filter-empty" id="filter-empty" hidden>No changes match this filter.</p>'
     )
     if not _has_full_bill(canonical):
