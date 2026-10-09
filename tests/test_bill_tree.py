@@ -10,6 +10,7 @@ from deltatrack.bill_tree import (
     _extract_appropriations_text,
     _extract_metadata,
     _extract_section_text,
+    _walk_one_body,
     amount_text,
     build_division_label,
     build_title_label,
@@ -1228,6 +1229,80 @@ class TestWalkTitle:
         assert nodes[1].match_path == ("dept", "tax provisions", "sec. 101")
         # Third node: should be back under Agency A, not Tax Provisions
         assert nodes[2].match_path == ("dept", "agency a", "another sub agency")
+
+
+class TestAmendmentOpeningClause:
+    """An amendment block whose replacement text opens with its enacting clause as
+    section-level continuation text reads it as an undesignated section (#826)."""
+
+    _CLAUSE = "That the following sums are appropriated, out of any money in the Treasury, namely:"
+
+    def _block(self, opening: str) -> ET.Element:
+        return ET.fromstring(
+            f'<amendment-block style="appropriations">{opening}'
+            '<title id="T1"><enum>I</enum><header>Department of defense</header>'
+            '<section id="S2"><enum>101.</enum><text>None of the funds.</text></section></title>'
+            "</amendment-block>"
+        )
+
+    def test_the_opening_clause_is_the_first_node(self):
+        block = self._block(f' <continuation-text continuation-text-level="section">{self._CLAUSE}</continuation-text>')
+        first, *rest = _walk_one_body(block)
+        assert (first.tag, first.match_path, first.display_path, first.section_number) == ("section", (), (), "")
+        assert first.body_text == self._CLAUSE
+        assert first.display_text == self._CLAUSE
+        assert [n.section_number for n in rest] == ["Sec. 101"]
+
+    def test_it_reads_as_the_same_clause_does_as_an_undesignated_section(self):
+        """114-hr-2029 v4 prints the clause as <section id="S1">; v5 as continuation text.
+        The two nodes must agree on everything the matcher reads, or the clause shows as
+        removed and added."""
+        block = self._block(f'<continuation-text continuation-text-level="section">{self._CLAUSE}</continuation-text>')
+        section = ET.fromstring(f'<legis-body><section id="S1"><text>{self._CLAUSE}</text></section></legis-body>')
+        (as_text,) = _walk_one_body(block)[:1]
+        (as_section,) = walk_body_sections(section)
+        for field in ("tag", "match_path", "display_path", "header_text", "body_text", "section_number"):
+            assert getattr(as_text, field) == getattr(as_section, field), field
+
+    @pytest.mark.parametrize(
+        "opening",
+        [
+            "",
+            '<continuation-text continuation-text-level="paragraph">That the sums.</continuation-text>',
+            '<continuation-text continuation-text-level="section"> </continuation-text>',
+            '<text continuation-text-level="section">That the sums.</text>',
+        ],
+        ids=["no-continuation-text", "not-section-level", "empty", "another-element-with-the-attribute"],
+    )
+    def test_nothing_else_becomes_a_node(self, opening):
+        nodes = _walk_one_body(self._block(opening))
+        assert [n.section_number for n in nodes] == ["Sec. 101"]
+
+    def test_continuation_text_after_the_first_element_is_left_alone(self):
+        """Only the clause that opens the block is its enacting clause."""
+        block = ET.fromstring(
+            '<amendment-block><section id="S2"><enum>101.</enum><text>None of the funds.</text></section>'
+            '<continuation-text continuation-text-level="section">That the sums.</continuation-text>'
+            "</amendment-block>"
+        )
+        assert [n.section_number for n in _walk_one_body(block)] == ["Sec. 101"]
+
+    def test_the_clause_has_an_element_id_the_full_text_can_anchor(self):
+        block = self._block(f'<continuation-text continuation-text-level="section">{self._CLAUSE}</continuation-text>')
+        assert _walk_one_body(block)[0].element_id == "amendment-opening-clause"
+
+    def test_continuation_text_outside_an_amendment_block_is_left_alone(self):
+        body = ET.fromstring(
+            '<legis-body><continuation-text continuation-text-level="section">That.</continuation-text>'
+            '<section id="S2"><enum>101.</enum><text>None of the funds.</text></section></legis-body>'
+        )
+        assert [n.section_number for n in _walk_one_body(body)] == ["Sec. 101"]
+
+    def test_114_hr_2029_v5_has_its_clause(self):
+        tree = normalize_bill(fixture_path("114-hr-2029", "5_engrossed-amendment-senate.xml"))
+        first = tree.nodes[0]
+        assert first.body_text.startswith("That the following sums are appropriated, out of any money")
+        assert first.match_path == ()
 
 
 class TestWalkBodySections:

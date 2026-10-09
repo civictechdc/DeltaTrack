@@ -68,8 +68,8 @@ XML_COUNTS = {
     "113-hr-83/6_engrossed-amendment-house->7_enrolled-bill": (61, 1182, 15),
     "114-hr-2029/1_reported-in-house->3_referred-in-senate": (10, 44, 31),
     "114-hr-2029/3_referred-in-senate->4_reported-in-senate": (11, 52, 148),
-    "114-hr-2029/4_reported-in-senate->5_engrossed-amendment-senate": (6, 56, 200),
-    "114-hr-2029/5_engrossed-amendment-senate->6_engrossed-amendment-house": (25, 737, 3053),
+    "114-hr-2029/4_reported-in-senate->5_engrossed-amendment-senate": (8, 57, 199),
+    "114-hr-2029/5_engrossed-amendment-senate->6_engrossed-amendment-house": (27, 738, 3054),
     "114-hr-2029/6_engrossed-amendment-house->7_enrolled-bill": (53, 1571, 353),
     "115-hr-5895/1_reported-in-house->2_engrossed-in-house": (9, 118, 299),
     "115-hr-5895/2_engrossed-in-house->4_engrossed-amendment-senate": (4, 187, 553),
@@ -193,6 +193,11 @@ def test_pinned_counts_cover_exactly_the_pairs():
 def test_xml_node_identity(key, old, new):
     doc = _xml_doc(old, new)
     assert _check_document(doc) == XML_COUNTS[key]
+    # Every change has a breadcrumb on at least one side, so no card reads "(unknown)".
+    # 114-hr-2029 v4 -> v5's enacting clause was the last without one (#826). Checked here
+    # rather than in its own test so the document is built once per pair.
+    pathless = [c["id"] for c in doc["changes"] if not c["path"]["v1"] and not c["path"]["v2"]]
+    assert not pathless, f"changes with no path on either side: {pathless}"
 
 
 @pytest.mark.parametrize(("key", "old", "new"), PDF_PAIRS, ids=[p[0] for p in PDF_PAIRS])
