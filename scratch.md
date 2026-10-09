@@ -40,9 +40,7 @@ stage. Not a published doc; findings graduate to issues/ADRs from here.
 different person without touching or importing another stage, and without one stage
 re-deciding what another settled.
 
-**State (2026-10-08):** `develop` = `7076771`. `main` still ships schema 2.0; `develop` holds the one
-unreleased version, **3.0**. Seven PRs of ours are open, each on its own branch off `develop`, each
-independently reviewed before opening, CI green on the first five at last check, all waiting on reviewers:
+**State (2026-10-09):** `develop` = `424f996`. All seven PRs below **merged** (2026-10-08/09); #456, #825, #826 closed by them. `main` still ships schema 2.0; `develop` holds the one unreleased version, **3.0**.
 
 | PR | Issue | Branch / worktree | What |
 |---|---|---|---|
@@ -67,7 +65,7 @@ independently reviewed before opening, CI green on the first five at last check,
 
 ### Next, in order
 
-1. Drive #828–#834 to merge (reviews, the sentinel re-regen above), then #555.
+1. Close #816 (ask; all items merged: 4 in #818, 1–3 and 5–7 in #829–#832), then #555.
 2. **#811, #706, #698:** the rest of the separation and parity theme (epic #691). #731 (rocks737, open) is a PR
    for #706's summary parity; read it before starting #706.
 3. The full re-audit is due (its trigger, #807/#808/#810 landing, happened); ask the user. Still undecided:
@@ -2223,6 +2221,7 @@ correspondence gets its own ADR only if and when it is adopted.
 | 2026-10-07 | Five follow-ups shipped: #817 (#814), #818 (schema fold 3.0), #819 (#808), #820 (#807; user-requested fix: place an XML node by its own `section_number`), #821–#823 (#810 a/b/c), plus #824 (division change on renumbered cards, user-requested). Unstacked #822–#824 onto `develop` at the user's request; the merge queue dropped #823/#824 on generated-file conflicts, fixed by merging `develop` and regenerating. #810 closed. | F3, F7a, F7b, F11, F17 |
 | 2026-10-07 | pip-audit never ran on retargeted stacked PRs → #827 (`edited` type + guard). Filed #825 (PDF title "purposes."), #826 (engrossed amendment's opening clause dropped; trial patch measured); commented #456 (80 false `modified`) and #186 (the "(unknown)" node). Measured #648: 0 non-section "renumbered" left. Next plan agreed (see Resume here). | F7a, F11 |
 | 2026-10-08 | Opened #828 (#456, 80 → 8), #829–#832 (#816 items 1–3, 5–7), #833 (#826), #834 (#825); each reviewed by an independent agent first, every finding fixed or noted. Re-scoped #648. Found v6's dropped second amendment (not filed). | — |
+| 2026-10-09 | All seven merged via the queue. #833 dropped once for the sentinel conflict with #828: merged develop, regenerated (streams unchanged), re-queued. | — |
 
 ## Open questions
 
