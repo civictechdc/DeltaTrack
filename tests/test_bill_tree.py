@@ -16,6 +16,7 @@ from deltatrack.bill_tree import (
     build_title_label,
     extract_display_text,
     extract_text_content,
+    find_bill_bodies,
     find_bill_body,
     get_header_text,
     normalize_bill,
@@ -624,6 +625,40 @@ class TestFindBillBody:
             pytest.skip("Bill XML not available locally")
         tree = normalize_bill(xml_path)
         assert len(tree.nodes) >= 5
+
+    def test_every_amendment_block_is_a_body(self):
+        """An engrossed amendment can carry several amendments, each inserting its own
+        text. Every block is read, in document order, and a block wrapping a
+        <legis-body> is read as that body (#836)."""
+        root = ET.fromstring(
+            '<amendment-doc amend-type="engrossed-amendment">'
+            "<engrossed-amendment-body>"
+            "<amendment><amendment-instruction><text>(1) Insert:</text></amendment-instruction>"
+            '<amendment-block><section id="A"><text>First.</text></section></amendment-block></amendment>'
+            "<amendment><amendment-instruction><text>(2) At the end, insert:</text></amendment-instruction>"
+            '<amendment-block><legis-body><section id="B"><text>Second.</text></section></legis-body>'
+            "</amendment-block></amendment>"
+            "</engrossed-amendment-body>"
+            "</amendment-doc>"
+        )
+        bodies = find_bill_bodies(root)
+        assert [b.tag for b in bodies] == ["amendment-block", "legis-body"]
+        assert [b.find("section").get("id") for b in bodies] == ["A", "B"]
+        assert find_bill_body(root) is bodies[0], "find_bill_body still names the first"
+
+    def test_114_hr_2029_v6_reads_its_second_amendment(self):
+        """v6's second amendment appends Division Q (the PATH Act, 135 sections) at the end
+        of its first; it used to be dropped, so v6 -> v7 called the division added (#836)."""
+        xml_path = fixture_path("114-hr-2029", "6_engrossed-amendment-house.xml")
+        second = ET.parse(xml_path).getroot().findall(".//engrossed-amendment-body/amendment/amendment-block")[1]
+        # A section quoted inside another's amendment ("139F." of the Internal Revenue
+        # Code) is that section's text, not a node, here as in the first block.
+        quoted = {s.get("id") for q in second.iter("quoted-block") for s in q.iter("section")}
+        own = {s.get("id") for s in second.iter("section")} - quoted
+        nodes = [n for n in normalize_bill(xml_path).nodes if n.element_id in own]
+        assert (len(own), len(quoted)) == (128, 7)
+        assert {n.element_id for n in nodes} == own
+        assert {n.body_index for n in nodes} == {1}
 
     def test_missing_body_raises(self):
         root = ET.fromstring("<bill><metadata/></bill>")
@@ -1290,6 +1325,35 @@ class TestAmendmentOpeningClause:
     def test_the_clause_has_an_element_id_the_full_text_can_anchor(self):
         block = self._block(f'<continuation-text continuation-text-level="section">{self._CLAUSE}</continuation-text>')
         assert _walk_one_body(block)[0].element_id == "amendment-opening-clause"
+
+    def test_each_blocks_opening_clause_has_its_own_id(self):
+        """Every amendment block is a body (#836); two openings sharing one id would share
+        one full-text span, so a later block's takes its body index."""
+        block = self._block(f'<continuation-text continuation-text-level="section">{self._CLAUSE}</continuation-text>')
+        ids = [_walk_one_body(block, index)[0].element_id for index in (0, 1, 2)]
+        assert ids == ["amendment-opening-clause", "amendment-opening-clause-1", "amendment-opening-clause-2"]
+
+    def test_a_document_with_two_opening_clauses_reads_both_with_distinct_ids(self, tmp_path):
+        clause = '<continuation-text continuation-text-level="section">{}</continuation-text>'
+        xml = (
+            '<amendment-doc amend-type="engrossed-amendment"><engrossed-amendment-body>'
+            "<amendment><amendment-block>"
+            + clause.format(self._CLAUSE)
+            + '<section id="S2"><enum>101.</enum><text>None of the funds.</text></section>'
+            "</amendment-block></amendment>"
+            "<amendment><amendment-block>"
+            + clause.format("Provided further, the following shall apply.")
+            + '<section id="S3"><enum>201.</enum><text>Some of the funds.</text></section>'
+            "</amendment-block></amendment>"
+            "</engrossed-amendment-body></amendment-doc>"
+        )
+        path = tmp_path / "5_engrossed-amendment-senate.xml"
+        path.write_text(xml)
+        clauses = [n for n in normalize_bill(path).nodes if n.element_id.startswith("amendment-opening-clause")]
+        assert [(n.element_id, n.body_index) for n in clauses] == [
+            ("amendment-opening-clause", 0),
+            ("amendment-opening-clause-1", 1),
+        ]
 
     def test_continuation_text_outside_an_amendment_block_is_left_alone(self):
         body = ET.fromstring(

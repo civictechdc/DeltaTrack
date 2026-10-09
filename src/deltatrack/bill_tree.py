@@ -116,7 +116,8 @@ def find_bill_body(root: ET.Element) -> ET.Element:
     """Find the effective body element from a bill, resolution or amendment-doc root.
 
     Returns legis-body for bills, resolution-body for resolutions, or
-    amendment-block for amendment-docs.
+    the first amendment block (or the ``<legis-body>`` it wraps) for amendment-docs;
+    ``find_bill_bodies`` returns every one.
     Raises ValueError if no body can be found, or if the document carries paired
     committee-amendment variants we cannot choose between (see below).
     """
@@ -146,12 +147,21 @@ def find_bill_body(root: ET.Element) -> ET.Element:
         return resolution_bodies[0]
 
     # Amendment doc: <amendment-doc><engrossed-amendment-body><amendment><amendment-block>
-    block = root.find(".//engrossed-amendment-body/amendment/amendment-block")
-    if block is not None:
-        nested = block.find("legis-body")
-        return nested if nested is not None else block
+    blocks = _amendment_bodies(root)
+    if blocks:
+        return blocks[0]
 
     raise ValueError("Could not find bill body in XML")
+
+
+def _amendment_bodies(root: ET.Element) -> list[ET.Element]:
+    """Each amendment's inserted text, in document order: its block, or the
+    ``<legis-body>`` the block wraps."""
+    bodies = []
+    for block in root.findall(".//engrossed-amendment-body/amendment/amendment-block"):
+        nested = block.find("legis-body")
+        bodies.append(nested if nested is not None else block)
+    return bodies
 
 
 def find_bill_bodies(root: ET.Element) -> list[ET.Element]:
@@ -182,12 +192,25 @@ def find_bill_bodies(root: ET.Element) -> list[ET.Element]:
     Which of two alternative texts is authoritative, and how to mark where the second
     begins, is #186's question. This function only guarantees no text is dropped.
 
-    Falls back to ``find_bill_body`` for the resolution and amendment-doc shapes, which
-    are single-body (and, for paired resolution variants, still fail loudly per #427).
+    An engrossed amendment can carry several amendments, each inserting its own text
+    ("(2) At the end of House amendment numbered 1, insert the following:"). Every
+    amendment block is a body, in document order, for the same reason: taking the first
+    dropped the rest (#836; 114-hr-2029 v6 lost Division Q, 128 sections of its own).
+    Each block is read as text following the one before it; its instruction is not
+    interpreted. That is right for "insert" and "At the end of … insert", the only
+    instructions in the committed corpus. A later amendment that strikes or replaces part
+    of an earlier one would read as both texts, with nothing marking the struck one, as
+    #434's two-text bills read today. Like #434, this only guarantees no text is dropped.
+
+    Falls back to ``find_bill_body`` for the resolution shape, which is single-body (and,
+    for paired resolution variants, still fails loudly per #427).
     """
     bodies = root.findall("legis-body")
     if bodies:
         return bodies
+    blocks = _amendment_bodies(root)
+    if blocks:
+        return blocks
     return [find_bill_body(root)]
 
 
@@ -1485,7 +1508,7 @@ def normalize_bill(xml_path: Path) -> BillTree:
     all_nodes: list[BillNode] = extract_front_matter_nodes(root, bodies[0])
 
     for index, body in enumerate(bodies):
-        body_nodes = _walk_one_body(body)
+        body_nodes = _walk_one_body(body, index)
         # Stamped here rather than threaded through the ~10 BillNode construction sites
         # in the walk, so a new site cannot silently ship without it.
         all_nodes.extend(replace(node, body_index=index) for node in body_nodes)
@@ -1496,7 +1519,7 @@ def normalize_bill(xml_path: Path) -> BillTree:
 AMENDMENT_OPENING_CLAUSE_ID = "amendment-opening-clause"
 
 
-def _amendment_opening_clause(body: ET.Element) -> list[BillNode]:
+def _amendment_opening_clause(body: ET.Element, body_index: int = 0) -> list[BillNode]:
     """The section-level ``<continuation-text>`` that opens an amendment block, as a node.
 
     An engrossed amendment that strikes all after the enacting clause inserts its
@@ -1508,11 +1531,13 @@ def _amendment_opening_clause(body: ET.Element) -> list[BillNode]:
 
     The source gives the continuation text no ``id``, so the node takes a fixed one: the
     full text anchors a node's span by its element id, and an empty one left the clause
-    and its Front Matter group with no span. An amendment block holds one such opening.
+    and its Front Matter group with no span. Each amendment block is a body of its own
+    (#836), so a later block's opening takes the id suffixed with its body index: two
+    nodes sharing one id would share one span.
 
-    Only the block's first element is read, and only when ``find_bill_body`` returns the
-    block itself. A block that wraps a nested ``<legis-body>`` is returned as that body,
-    so an opening clause before it would still be dropped; no committed bill has one.
+    Only the block's first element is read, and only when the body is the block itself. A
+    block that wraps a nested ``<legis-body>`` is read as that body, so an opening clause
+    before it would still be dropped; no committed bill has one.
     """
     first = next(iter(body), None)
     if (
@@ -1530,7 +1555,8 @@ def _amendment_opening_clause(body: ET.Element) -> list[BillNode]:
             match_path=(),
             display_path=(),
             tag="section",
-            element_id=first.attrib.get("id") or AMENDMENT_OPENING_CLAUSE_ID,
+            element_id=first.attrib.get("id")
+            or (AMENDMENT_OPENING_CLAUSE_ID if body_index == 0 else f"{AMENDMENT_OPENING_CLAUSE_ID}-{body_index}"),
             header_text="",
             body_text=body_text,
             display_text=extract_display_text(first),
@@ -1540,9 +1566,9 @@ def _amendment_opening_clause(body: ET.Element) -> list[BillNode]:
     ]
 
 
-def _walk_one_body(body: ET.Element) -> list[BillNode]:
+def _walk_one_body(body: ET.Element, body_index: int = 0) -> list[BillNode]:
     """Every content node under one top-level body, in document order."""
-    all_nodes: list[BillNode] = _amendment_opening_clause(body)
+    all_nodes: list[BillNode] = _amendment_opening_clause(body, body_index)
 
     # Check for divisions first
     divisions = body.findall("division")

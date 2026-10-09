@@ -197,13 +197,20 @@ def test_every_dollar_amount_appears_in_a_node(xml_path: Path) -> None:
     tree = ET.parse(xml_path)
     root = tree.getroot()
 
+    # Every body, selected here rather than through the parser's own selector, so a body
+    # the parser skips is still counted: a reported bill's two texts (#434), an engrossed
+    # amendment's several blocks (#836).
     try:
-        body = find_bill_body(root)
+        bodies = (
+            root.findall("legis-body")
+            or root.findall(".//engrossed-amendment-body/amendment/amendment-block")
+            or [find_bill_body(root)]
+        )
     except ValueError:
         pytest.skip("No bill body found")
 
     # Collect dollar amounts from raw XML, excluding quote/header subtrees
-    raw_text = _collect_body_text_excluding(body, _SKIP_TAGS)
+    raw_text = " ".join(_collect_body_text_excluding(body, _SKIP_TAGS) for body in bodies)
     raw_matches = _extract_dollar_matches(raw_text)
 
     if not raw_matches:
@@ -444,7 +451,10 @@ _KNOWN_DUPLICATE_COUNTS: dict[str, int] = {
     # body they came from -- pairing on the body position is a false cross-version
     # match, see diff_bill._match_collision_group.
     "114-hr-2029/4_reported-in-senate.xml": 119,
-    "114-hr-2029/6_engrossed-amendment-house.xml": 152,
+    # #836: the House amendment's second amendment block (Division Q, the PATH Act) is
+    # now read as a second body. Its sections restate Sec. 1, 2, ... as every division
+    # does, which brings this version to the enrolled bill's count: same text, same 154.
+    "114-hr-2029/6_engrossed-amendment-house.xml": 154,
     "114-hr-2029/7_enrolled-bill.xml": 154,
     "115-hr-1625/6_enrolled-bill.xml": 171,
     "115-hr-244/6_enrolled-bill.xml": 147,

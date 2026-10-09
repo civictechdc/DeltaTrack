@@ -108,11 +108,11 @@
     }
   },
   "114-hr-2029/5_engrossed-amendment-senate->6_engrossed-amendment-house": {
-    "bytes": 7217698,
-    "changes": 3285,
-    "sha256": "9efe9bdf802d94eba341828aa4523f8ad35a51e6448a051a4d8b9b2f90c8f9c2",
+    "bytes": 7996270,
+    "changes": 3752,
+    "sha256": "083f13da5e364092dc292cc0c8843d2baef02c8be94c4c36f2df887385b56b26",
     "summary": {
-      "added": 3151,
+      "added": 3618,
       "modified": 39,
       "moved": 43,
       "removed": 52,
@@ -120,11 +120,11 @@
     }
   },
   "114-hr-2029/6_engrossed-amendment-house->7_enrolled-bill": {
-    "bytes": 7301207,
-    "changes": 473,
-    "sha256": "b8faa2b04399fd0396988e5361fc14f13ad1f75322693e8072749c26ddbf8cc8",
+    "bytes": 7212205,
+    "changes": 6,
+    "sha256": "34cdccaf9de02969d6c91414100f033885111c508a8544fbd48f2b5794ea98bd",
     "summary": {
-      "added": 470,
+      "added": 3,
       "modified": 3,
       "moved": 0,
       "removed": 0,
