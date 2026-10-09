@@ -228,14 +228,18 @@ def _raw_xml_body_amounts(path: Path) -> Counter:
 
     So BODY SELECTION, the thing #434 changed, is done here with a direct ``findall``
     rather than through production code: if ``find_bill_bodies`` ever starts skipping a
-    body again, this reference still counts it and the gate fails. Only the resolution
-    and amendment-doc shapes, which have no top-level ``legis-body`` at all, fall back to
-    production traversal -- reimplementing that lookup here would be a second copy free
-    to drift, and those shapes carry exactly one body, so the failure this guards against
-    cannot arise in them.
+    body again, this reference still counts it and the gate fails. An engrossed
+    amendment's bodies are its amendment blocks, selected the same way: it can carry
+    several, and reading only the first dropped 114-hr-2029 v6's Division Q (#836). Only
+    the resolution shape, which carries exactly one body, falls back to production
+    traversal -- reimplementing that lookup here would be a second copy free to drift.
     """
     root = ET.parse(path).getroot()
-    bodies = root.findall("legis-body") or find_bill_bodies(root)
+    bodies = (
+        root.findall("legis-body")
+        or root.findall(".//engrossed-amendment-body/amendment/amendment-block")
+        or find_bill_bodies(root)
+    )
     return Counter(amount for body in bodies for amount in extract_amounts(extract_text_content(body)))
 
 
