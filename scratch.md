@@ -58,14 +58,13 @@ re-deciding what another settled.
 - **#816 closes** when #829–#832 merge (item 4 was #818). Then **#555** (promote `develop` to `main`).
 - **#648** re-scoped 2026-10-08: title now "false Moved card"; cause 2 fixed by #820; 18 wrap fragments remain,
   blocked on #734.
-- **Found, not filed (ask the user):** 114-hr-2029 v6's *second* amendment ("(2) At the end of House amendment
-  numbered 1, insert…": Division Q, the PATH Act, 135 sections) is dropped. `find_bill_body` reads only the first
-  `engrossed-amendment-body/amendment/amendment-block`; `find_bill_bodies` calls amendment docs single-body.
-  0 of its 135 section ids become nodes. No existing issue (searched).
+- **Filed #836** (2026-10-09): an engrossed amendment's second amendment is dropped. `find_bill_body` reads only the first
+  amendment block; 114-hr-2029 v6's Division Q (PATH Act, 135 sections) is missing, so 467 of v6 -> v7's 470 `added` cards are false.
+- **#816 closed** 2026-10-09 with an item-to-PR mapping comment; #555 is unblocked.
 
 ### Next, in order
 
-1. Close #816 (ask; all items merged: 4 in #818, 1–3 and 5–7 in #829–#832), then #555.
+1. #555 (promote `develop` to `main`); #836 (dropped second amendment) is a candidate before it.
 2. **#811, #706, #698:** the rest of the separation and parity theme (epic #691). #731 (rocks737, open) is a PR
    for #706's summary parity; read it before starting #706.
 3. The full re-audit is due (its trigger, #807/#808/#810 landing, happened); ask the user. Still undecided:
