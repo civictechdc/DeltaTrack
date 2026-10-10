@@ -71,6 +71,49 @@ class TestCheckCoverage:
         assert not dropped
 
 
+class TestBuildFinancialDf:
+    def test_department_and_account_columns_populated(self):
+        pytest.importorskip("pandas")
+        from dataclasses import dataclass
+        from types import SimpleNamespace
+
+        @dataclass(frozen=True)
+        class _NodeWithPath:
+            body_text: str
+            display_path: tuple
+            match_path: tuple = ()
+            tag: str = ""
+            element_id: str = ""
+            header_text: str = ""
+            section_number: str = ""
+            division_label: str = ""
+            display_text: str = ""
+
+        tree = SimpleNamespace(
+            congress=118,
+            bill_type="hr",
+            bill_number=0,
+            version="test",
+            nodes=[
+                _NodeWithPath(
+                    body_text="For necessary expenses, $1,000,000",
+                    display_path=("TITLE I", "DEPT OF DEFENSE", "Army", "SALARIES"),
+                ),
+            ],
+        )
+        df = build_financial_df(tree)
+        assert "department" in df.columns
+        assert "account" in df.columns
+        assert df["department"].iloc[0] == "TITLE I"
+        assert df["account"].iloc[0] == "SALARIES"
+
+    def test_empty_display_path_fallback(self):
+        pytest.importorskip("pandas")
+        df = build_financial_df(_make_tree(["For necessary expenses, $1,000,000"]))
+        assert df["department"].iloc[0] == ""
+        assert df["account"].iloc[0] == ""
+
+
 class TestRestriction:
     def test_plain_none_of_funds(self):
         text = "None of the funds made available in this Act may be used to pay"

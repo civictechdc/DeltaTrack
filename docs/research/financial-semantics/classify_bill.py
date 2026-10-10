@@ -99,7 +99,8 @@ def build_financial_df(tree):
     for node_idx, n in enumerate(tree.nodes):
         if not DOLLAR.search(n.body_text or ""):
             continue
-        account = " > ".join(n.display_path[-2:]) if n.display_path else ""
+        department = n.display_path[0] if n.display_path else ""
+        account = n.display_path[-1] if n.display_path else ""
         node_label = classify_text(n.body_text)
         for clause_text, level in split_clauses(n.body_text):
             if not DOLLAR.search(clause_text):
@@ -110,6 +111,7 @@ def build_financial_df(tree):
             rows.append(
                 {
                     "node_idx": node_idx,
+                    "department": department,
                     "account": account,
                     "level": level,
                     "type": node_label if level == "primary" else classify_text(clause_text),
