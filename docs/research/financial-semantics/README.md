@@ -60,6 +60,7 @@ claim that these exit criteria have been met; adopting the ADR would not make th
 | `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, proposed, #796) |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
+| `typed_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
 
 ## Notebook appropriation summary
 
@@ -272,3 +273,64 @@ So 121 of the resolver's 154 complete roll-ups reproduce the report's agency tot
   catches this; no single account's figure disagreed with a report line.
 - **The report groups accounts the bill heads differently.** Agriculture's "Total, Executive
   Operations" sums thirteen offices; the bill's "Executive Operations" heading carries three.
+
+## Of everything typed as an appropriation, how much does the report confirm?
+
+`committee_agreement.py` starts from the report's accounts: for each one, was its paragraph typed
+with the report's figure? That is recall's direction, and it only sees the paragraphs an answer-key
+line maps to (1,163 of 1,267). `typed_precision.py` starts from the other end: every paragraph the
+resolver types with a figure in the thirteen Senate-reported bills, and what that bill's report
+says about the figure. The two directions see different errors.
+
+```bash
+uv run python docs/research/financial-semantics/typed_precision.py
+uv run python docs/research/financial-semantics/typed_precision.py --resolver summed --details unkeyed/text
+```
+
+A typed figure is **confirmed** when it equals the report's figure for its answer-key account, or,
+where no key line maps to the paragraph, when it is one of the report's account figures (a
+committee-recommendation row or summary block). Reproduced by the first command, on the 971
+figures `summed` types:
+
+| | `classify_bill` | `structured` | `summed` |
+|---|---|---|---|
+| Figures typed | 985 | 971 | 971 |
+| Confirmed: the key's figure for the account | 636 | 648 | 658 |
+| Confirmed: no key line, but a report account figure | 257 | 252 | 249 |
+| Not the key's figure for the account | 59 | 47 | 37 |
+| No key line, printed in the report but as no account's figure | 30 | 22 | 22 |
+| No key line, printed nowhere in the report | 3 | 2 | 5 |
+| **Precision** (confirmed / typed) | 90.7% | 92.7% | 93.4% |
+| **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 74.6% | 76.0% | 77.1% |
+
+**What the precision direction finds that recall cannot.** The FDA's Salaries and Expenses
+appropriates $6,872,405,000 after a long purpose clause that allows "not to exceed $25,000" for
+enforcement expenses on the Secretary's certificate. The baseline strips the cap phrase and types
+$6,872,405,000, which the report's comparative statement carries as a row. The structured and
+summed resolvers type the $25,000: it is the first figure after a semicolon that another semicolon
+closes, and the cap phrase is further back than the forty characters the closing-figure rule looks.
+The answer-key builder never mapped that account (its `bureau` field is narrative text), so
+`committee_agreement.py` cannot see the regression. Here it is one of the 22 figures printed in the
+report as no account's figure. `tests/test_typed_precision.py` pins both readings.
+
+**How far to trust the numbers.**
+
+- "A report account figure" is matched by figure alone, without the account's name, which is
+  ADR 0009's recall strength, not ADR 0025's. The 249 confirmed that way are mostly accounts the
+  builder could not map by name (the Under Secretaries' offices, FAA research, transit formula
+  grants); each is a figure the report states for some account, not necessarily this one.
+- The 22 "printed, but as no account's figure" split between resolver errors (the FDA allowance;
+  PHMSA's "not more than $46,825,000 shall remain available" limitation) and rows the report
+  parser does not read (VA Compensation and Pensions, $214,302,452,000, is in the report's text
+  and not in `parse_summary_blocks`' output). Separating them is a `parsers/committee_report.py`
+  question as much as a resolver one.
+- The 5 printed nowhere include liquidating and contract-authority payments ("For payment of
+  obligations incurred ... to be derived from the Highway Trust Fund") that a report keeps out of
+  new budget authority: the roll-up found the FTA one; this direction lists the FMCSA and NHTSA
+  ones beside it.
+- Recall here is `committee_agreement.py`'s 658 of 752 against committee reports (87.5%) with
+  the denominator widened to every answer-key line of these thirteen jurisdictions, including
+  the 101 with no paragraph to score (99 the builder could not map, two mapped to a node with
+  no text). The Legislative Branch spreadsheet key is left out, as it has no report to check
+  the other direction against.
+
