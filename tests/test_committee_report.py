@@ -187,6 +187,59 @@ def test_parse_summary_blocks_ignores_run_in_directive_heading():
     assert block.bureau == "Federal Bureau of Investigation"
 
 
+# A run-in heading too long for one line wraps before its ".--" marker, leaving a first line
+# that is indented and Title-Cased like a bureau (Senate Report 118-198 has dozens). Read as
+# the bureau, it steered every Legal Activities account after it by the narrative's words,
+# and the builder mapped the $2.66 billion United States Attorneys line to the Commission on
+# Civil Rights. It is the first line of a paragraph, not a header standing alone.
+WRAPPED_RUN_IN_BLOCK = """\
+                                TITLE II
+
+                         DEPARTMENT OF JUSTICE
+
+                            Legal Activities
+
+    Civil Rights Violations in State and Local Prisons and
+Jails.--The Committee continues to be concerned by reports of
+civil rights violations in State and local prisons and jails.
+
+               SALARIES AND EXPENSES, ANTITRUST DIVISION
+
+Appropriations, 2024....................................    $233,000,000
+Budget estimate, 2025...................................     288,000,000
+Committee recommendation................................     288,000,000
+"""
+
+
+def test_parse_summary_blocks_ignores_wrapped_run_in_heading_as_bureau():
+    block = parse_summary_blocks(WRAPPED_RUN_IN_BLOCK)[0]
+    assert block.bureau == "Legal Activities"
+
+
+# A bureau name too long for one line wraps onto a second, centered line; the two are one
+# header (Interior's report, the Institute of American Indian Arts account).
+WRAPPED_BUREAU_BLOCK = """\
+              Office of Navajo and Hopi Indian Relocation
+
+    Institute of American Indian and Alaska Native Culture and Arts
+                              Development
+
+    The Institute of American Indian and Alaska Native Culture
+and Arts Development was established in 1962.
+
+                        PAYMENT TO THE INSTITUTE
+
+Appropriations, 2024....................................     $13,482,000
+Budget estimate, 2025...................................      13,642,000
+Committee recommendation................................      13,642,000
+"""
+
+
+def test_parse_summary_blocks_joins_wrapped_bureau_header():
+    block = parse_summary_blocks(WRAPPED_BUREAU_BLOCK)[0]
+    assert block.bureau == "Institute of American Indian and Alaska Native Culture and Arts Development"
+
+
 # A parenthetical qualifier line sits between the heading and the summary rows; the
 # reader must walk past it to the real ALL-CAPS heading.
 PARENTHETICAL_BLOCK = """\

@@ -22,6 +22,7 @@ Those (heading, amount) pairs feed `validation_cjs.json` (see scripts/build_vali
 from __future__ import annotations
 
 import html as _html
+import itertools
 import re
 from dataclasses import dataclass
 
@@ -105,8 +106,9 @@ def parse_summary_blocks(text: str) -> list[ReportAccount]:
             current_title = _title_name_after(lines, i) or current_title
             current_bureau = None  # bureau context resets at each new title/agency
             continue
-        if _is_bureau_header(line):
-            current_bureau = line.strip()
+        bureau = _bureau_header(lines, i)
+        if bureau:
+            current_bureau = bureau
             continue
         m = _COMMITTEE_REC_RE.match(line.strip())
         if not m:
@@ -125,28 +127,46 @@ def parse_summary_blocks(text: str) -> list[ReportAccount]:
     return accounts
 
 
-def _is_bureau_header(line: str) -> bool:
-    """True if a line is an indented, mixed-case bureau header (e.g. "Federal Bureau of
-    Investigation") — the sub-agency context between a title and an ALL-CAPS account.
+def _bureau_header(lines: list[str], idx: int) -> str | None:
+    """The bureau header that starts at `lines[idx]` (e.g. "Federal Bureau of
+    Investigation"), or None — the sub-agency context between a title and an ALL-CAPS account.
 
-    Distinguished from: titles/accounts (ALL-CAPS, no lowercase), qualifier lines
+    A bureau header is an indented, mixed-case block of one or two lines set off by blank
+    lines; a name too long for one line wraps onto a second, centered one ("Institute of
+    American Indian and Alaska Native Culture and Arts" over "Development"), and the two are
+    joined. Distinguished from: titles/accounts (ALL-CAPS, no lowercase), qualifier lines
     (parenthesized), and narrative prose (flush-left or only lightly indented, and long).
+    The block test is what separates a header from the first line of a paragraph that opens
+    with a wrapped run-in heading ("    Civil Rights Violations in State and Local Prisons
+    and" over "Jails.--The Committee ..."), from a stacked column label ("Committee" over
+    "recommendation") and from a wrapped table cell: each is indented and Title-Cased like
+    a header, but none is a short block of indented lines between blank lines.
     """
-    indent = len(line) - len(line.lstrip())
-    s = line.strip()
-    if indent < 4 or not s or "...." in s or _is_qualifier(s):
-        return False
+    if idx > 0 and lines[idx - 1].strip():
+        return None  # not the first line of a block
+    block: list[str] = []
+    for line in itertools.islice(lines, idx, None):
+        if not line.strip():
+            break
+        if len(block) == 2:
+            return None  # longer than a header
+        block.append(line)
+    if not block or any(len(line) - len(line.lstrip()) < 4 for line in block):
+        return None
+    s = " ".join(line.strip() for line in block)
+    if "...." in s or _is_qualifier(s):
+        return None
     if not (s[0].isupper() and any(c.islower() for c in s)):
-        return False
+        return None
     if _TABLE_HEADER_RE.search(s) or any(c.isdigit() for c in s):
-        return False  # embedded table header / data row, not a bureau name
+        return None  # embedded table header / data row, not a bureau name
     if re.search(r"\.\s*[-—–]", s):
-        return False  # GPO run-in directive heading ("Topic.--The Committee ...")
+        return None  # GPO run-in directive heading ("Topic.--The Committee ...")
     if len(s.split()) > 12 or s.endswith((".", ":", ";", ",")):
-        return False
+        return None
     # Title case (every content word capitalized) separates a bureau name from a sentence
     # of narrative prose, which long bureau names share the light indentation of.
-    return _is_title_case(s)
+    return s if _is_title_case(s) else None
 
 
 _BUREAU_FUNCTION_WORDS = {"of", "and", "the", "for", "to", "in", "a", "an", "on", "at", "by", "or", "with"}
@@ -198,8 +218,10 @@ def parse_comparative_statement(text: str) -> list[ComparativeRow]:
         if not m:
             # A non-data section header (ALL-CAPS agency or Title-Case bureau) refines the
             # agency context below the title; track the most recent one.
-            if _is_heading(line) or _is_bureau_header(line):
+            if _is_heading(line):
                 current_bureau = line.strip()
+            else:
+                current_bureau = _bureau_header(lines, i) or current_bureau
             continue
         cells = _parse_cells(m.group(2))
         if len(cells) >= 3 and cells[2] is not None:
