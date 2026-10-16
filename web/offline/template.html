@@ -1,0 +1,348 @@
+<!doctype html>
+<!--
+  DeltaTrack offline page. scripts/build_offline_html.py fills the {{...}} placeholders and
+  writes one self-contained file; this template is not served or opened on its own.
+
+  Everything runs in this page: Pyodide (Python compiled to WebAssembly) boots from the
+  inlined assets, the DeltaTrack engine compares the two files the user picks, and the
+  report is shown in a frame and saved through a Blob download. The page makes no network
+  requests: the fetch wrapper below answers Pyodide's two asset requests from memory and
+  refuses everything else (ADR 0011).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DeltaTrack — Compare two bill versions on your computer</title>
+  <style>
+{{STYLES}}
+  </style>
+  <style>
+    .offline-status { margin: 0 0 20px; padding: 10px 14px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--card); color: var(--muted-foreground);
+      font-size: 0.95rem; }
+    .offline-status.is-ready { background: var(--diff-add); color: var(--diff-add-foreground); }
+    .offline-status.is-error { background: var(--diff-remove); color: var(--diff-remove-foreground); }
+    .offline-save { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 28px;
+      padding-top: 20px; border-top: 1px solid var(--border); }
+    .offline-save[hidden] { display: none; }
+    .offline-save .button { text-decoration: none; }
+    .offline-help { margin-top: 24px; color: var(--muted-foreground); }
+    .offline-help summary { cursor: pointer; color: var(--foreground); font-weight: 600; }
+    .offline-help li { margin: 6px 0; }
+    .report-view { position: fixed; inset: 0; display: flex; flex-direction: column;
+      background: var(--background); }
+    .report-view[hidden] { display: none; }
+    .report-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px;
+      border-bottom: 1px solid var(--border); background: var(--card); }
+    .report-bar__title { flex: 1; min-width: 0; color: var(--muted-foreground); font-size: 0.9rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .report-frame { flex: 1; width: 100%; border: 0; background: var(--card); }
+    .site-footer__build { color: var(--muted-foreground); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <header class="app-bar" role="banner">
+    <div class="app-bar__brand">
+      <span class="app-bar__logo" aria-hidden="true">▮▯</span>
+      <span class="app-bar__name">DeltaTrack</span>
+    </div>
+  </header>
+
+  <main class="page" id="picker">
+    <section class="upload-panel">
+      <h1 class="upload-panel__title">Compare two versions of a bill</h1>
+      <p class="upload-panel__lead">
+        Pick the <strong>older</strong> and <strong>newer</strong> version of a bill's XML text.
+        The comparison runs <strong>entirely on this computer</strong>: your files are never
+        uploaded, and it works with no internet connection.
+      </p>
+
+      <div class="offline-status" id="status" role="status">Starting the comparison engine…</div>
+
+      <div class="upload-grid">
+        <div class="upload-slot" id="start-slot" tabindex="0" role="button" aria-label="Choose the older version">
+          <div class="upload-slot__label">Older version</div>
+          <div class="upload-slot__hint">Drop a bill XML file here or click to browse</div>
+          <div class="upload-slot__name" id="start-name"></div>
+          <input type="file" id="start-input" accept=".xml,application/xml,text/xml" hidden />
+        </div>
+
+        <div class="upload-arrow" aria-hidden="true">→</div>
+
+        <div class="upload-slot" id="end-slot" tabindex="0" role="button" aria-label="Choose the newer version">
+          <div class="upload-slot__label">Newer version</div>
+          <div class="upload-slot__hint">Drop a bill XML file here or click to browse</div>
+          <div class="upload-slot__name" id="end-name"></div>
+          <input type="file" id="end-input" accept=".xml,application/xml,text/xml" hidden />
+        </div>
+      </div>
+
+      <div class="upload-error" id="upload-error" role="alert" hidden></div>
+
+      <div class="upload-actions">
+        <button class="button button--primary" id="compare-btn" disabled>Compare</button>
+        <span class="upload-note">Bill XML · the report opens on this page</span>
+      </div>
+
+      <div class="offline-save" id="save-tool" hidden>
+        <a class="button" id="save-tool-link" href="#" download="deltatrack-offline.html">Download for offline use</a>
+        <span class="upload-note">
+          Saves this page as one file. Open it from your computer any time, even with no
+          internet. Use the downloaded copy for drafts and other non-public text.
+        </span>
+      </div>
+
+      <details class="offline-help">
+        <summary>Where do I get a bill's XML?</summary>
+        <ol>
+          <li>Go to <a href="https://www.govinfo.gov/app/collection/bills" rel="noopener noreferrer">govinfo.gov's Congressional Bills collection</a> and find the bill (for example H.R. 4366, 118th Congress).</li>
+          <li>Open each version you want to compare (for example "Reported in House" and "Engrossed in House") and download its <strong>XML</strong>.</li>
+          <li>Pick the older file on the left and the newer one on the right.</li>
+        </ol>
+        <p>
+          PDFs can't be compared in this offline version yet. For PDFs, use the
+          <a href="https://github.com/civictechdc/DeltaTrack#quickstart" rel="noopener noreferrer">command-line tool</a>.
+        </p>
+      </details>
+    </section>
+  </main>
+
+  <section class="report-view" id="report-view" hidden>
+    <div class="report-bar">
+      <button class="button button--small" id="back-btn">← Compare other files</button>
+      <span class="report-bar__title" id="report-title"></span>
+      <button class="button button--primary button--small" id="save-report-btn">Save report</button>
+    </div>
+    <iframe class="report-frame" id="report-frame" title="Comparison report"></iframe>
+  </section>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>
+      Provided by
+      <a href="https://www.civictechdc.org/" rel="noopener noreferrer">Civic Tech DC</a>,
+      a 501(c)(3) nonpartisan nonprofit.
+      For questions, email
+      <a href="mailto:team@civictechdc.org">team@civictechdc.org</a>.
+    </p>
+    <p class="site-footer__build">Built from {{BUILD_ID}} · Pyodide {{PYODIDE_VERSION}}</p>
+  </footer>
+
+{{ASSETS}}
+
+  <script type="module">
+    const $ = (id) => document.getElementById(id);
+    const files = { start: null, end: null };
+    let compare = null; // the Python dt_compare function, once the engine has loaded
+    let report = null; // { html, filename } of the report on screen
+
+    function setStatus(text, kind) {
+      const el = $('status');
+      el.textContent = text;
+      el.classList.toggle('is-ready', kind === 'ready');
+      el.classList.toggle('is-error', kind === 'error');
+    }
+
+    function showError(text) {
+      const el = $('upload-error');
+      el.textContent = text;
+      el.hidden = !text;
+    }
+
+    function updateButton() {
+      $('compare-btn').disabled = !(compare && files.start && files.end);
+    }
+
+    // --- Inlined assets ------------------------------------------------------
+    // Each <script id="asset-*"> holds gzip-compressed bytes as base64, written by
+    // scripts/build_offline_html.py. The element is removed once read to free its text.
+
+    async function unpack(id) {
+      const el = $(`asset-${id}`);
+      const raw = atob(el.textContent.trim());
+      el.remove();
+      const packed = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) packed[i] = raw.charCodeAt(i);
+      const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+
+    const unpackText = async (id) => new TextDecoder().decode(await unpack(id));
+    const moduleUrl = (source) => URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+
+    // --- No network ----------------------------------------------------------
+    // Pyodide fetches its wasm binary and standard library by URL, and a page opened from
+    // disk may not fetch a file beside it. Answer those two by file name from memory and
+    // refuse every other request, so nothing this page does can reach the network.
+
+    const bundled = new Map();
+    globalThis.fetch = async (input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      const hit = bundled.get(url.split(/[?#]/)[0].split('/').pop());
+      if (hit) return new Response(hit.bytes, { headers: { 'Content-Type': hit.type } });
+      throw new TypeError(`DeltaTrack makes no network requests (refused ${url})`);
+    };
+
+    const SETUP = `
+import sys
+sys.path.insert(0, "/offline")
+from deltatrack.compare.xml import compare_xml_html
+from deltatrack.version_stems import version_identity_from_filename
+
+def dt_compare(start_name, start_data, end_name, end_data):
+    start = version_identity_from_filename(start_name, fallback="Start version")
+    end = version_identity_from_filename(end_name, fallback="End version")
+    return compare_xml_html(
+        start_data.to_bytes(),
+        end_data.to_bytes(),
+        start_label=start.label,
+        end_label=end.label,
+        start_version_number=start.ordinal,
+        end_version_number=end.ordinal,
+    )
+`;
+
+    async function boot() {
+      if (typeof DecompressionStream === 'undefined' || typeof WebAssembly === 'undefined') {
+        throw new Error('This browser is too old to run DeltaTrack. Try a current Chrome, Edge, Firefox or Safari.');
+      }
+      const started = performance.now();
+      const [mjs, asmMjs, wasm, stdlib, lock, engine] = await Promise.all([
+        unpackText('pyodide-mjs'),
+        unpackText('pyodide-asm-mjs'),
+        unpack('pyodide-asm-wasm'),
+        unpack('python-stdlib'),
+        unpackText('pyodide-lock'),
+        unpack('engine'),
+      ]);
+      bundled.set('pyodide.asm.wasm', { bytes: wasm, type: 'application/wasm' });
+      bundled.set('python_stdlib.zip', { bytes: stdlib, type: 'application/zip' });
+
+      const { loadPyodide } = await import(moduleUrl(mjs));
+      const createPyodideModule = (await import(moduleUrl(asmMjs))).default;
+      const pyodide = await loadPyodide({
+        indexURL: './',
+        createPyodideModule,
+        lockFileContents: lock,
+      });
+      bundled.clear(); // Pyodide has copied both; don't hold ~12 MB for the page's lifetime
+      pyodide.unpackArchive(engine, 'zip', { extractDir: '/offline' });
+      pyodide.runPython(SETUP);
+      compare = pyodide.globals.get('dt_compare');
+      return Math.round(performance.now() - started);
+    }
+
+    // --- File slots ------------------------------------------------------------
+
+    function looksLikeXml(bytes) {
+      let i = 0;
+      if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) i = 3;
+      while (i < bytes.length && ' \t\r\n'.includes(String.fromCharCode(bytes[i]))) i++;
+      return bytes[i] === 0x3c; // '<'
+    }
+
+    function wireSlot(which) {
+      const slot = $(`${which}-slot`);
+      const input = $(`${which}-input`);
+      const accept = (file) => {
+        files[which] = file || null;
+        $(`${which}-name`).textContent = file ? file.name : '';
+        slot.classList.toggle('has-file', !!file);
+        showError('');
+        updateButton();
+      };
+      slot.addEventListener('click', () => input.click());
+      slot.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+      });
+      input.addEventListener('change', () => accept(input.files[0]));
+      ['dragenter', 'dragover'].forEach((ev) =>
+        slot.addEventListener(ev, (e) => { e.preventDefault(); slot.classList.add('is-dragover'); }));
+      ['dragleave', 'drop'].forEach((ev) =>
+        slot.addEventListener(ev, (e) => { e.preventDefault(); slot.classList.remove('is-dragover'); }));
+      slot.addEventListener('drop', (e) => accept(e.dataTransfer.files[0]));
+    }
+
+    // --- Compare and show the report ------------------------------------------
+
+    const stem = (name) => name.replace(/\.[^.]+$/, '').replace(/[^\w.-]+/g, '_');
+
+    async function readXml(which) {
+      const file = files[which];
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (/\.pdf$/i.test(file.name)) {
+        throw new Error(`${file.name} is a PDF. This offline version compares bill XML only.`);
+      }
+      if (!looksLikeXml(bytes)) {
+        throw new Error(`${file.name} doesn't look like an XML file.`);
+      }
+      return bytes;
+    }
+
+    async function runCompare() {
+      $('compare-btn').disabled = true;
+      showError('');
+      setStatus('Comparing… large bills can take a few seconds.');
+      // The engine runs on this thread, so let the message paint before it starts.
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      try {
+        const [startBytes, endBytes] = [await readXml('start'), await readXml('end')];
+        const started = performance.now();
+        const html = compare(files.start.name, startBytes, files.end.name, endBytes);
+        const seconds = ((performance.now() - started) / 1000).toFixed(1);
+        report = { html, filename: `deltatrack_${stem(files.start.name)}_vs_${stem(files.end.name)}.html` };
+        $('report-title').textContent = `${files.start.name} → ${files.end.name} (compared in ${seconds} s)`;
+        $('report-frame').srcdoc = html;
+        $('picker').hidden = true;
+        $('report-view').hidden = false;
+        setStatus('Ready. Pick two versions of a bill.', 'ready');
+      } catch (err) {
+        const detail = String(err && err.message ? err.message : err).trim().split('\n').pop();
+        showError(err.name === 'PythonError'
+          ? `Could not compare these files. Are both bill-text XML files? (${detail})`
+          : detail);
+        setStatus('Ready. Pick two versions of a bill.', 'ready');
+      } finally {
+        updateButton();
+      }
+    }
+
+    function saveReport() {
+      const url = URL.createObjectURL(new Blob([report.html], { type: 'text/html' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: report.filename });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function closeReport() {
+      $('report-view').hidden = true;
+      $('report-frame').removeAttribute('srcdoc');
+      $('picker').hidden = false;
+      report = null;
+    }
+
+    wireSlot('start');
+    wireSlot('end');
+    $('compare-btn').addEventListener('click', runCompare);
+    $('save-report-btn').addEventListener('click', saveReport);
+    $('back-btn').addEventListener('click', closeReport);
+
+    // Opened from a web address rather than from disk: offer to save this same file.
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      $('save-tool-link').href = location.href.split('#')[0];
+      $('save-tool').hidden = false;
+    }
+
+    try {
+      const ms = await boot();
+      setStatus(`Ready (started in ${(ms / 1000).toFixed(1)} s). Pick two versions of a bill.`, 'ready');
+      updateButton();
+    } catch (err) {
+      console.error(err);
+      setStatus(`DeltaTrack couldn't start: ${err && err.message ? err.message : err}`, 'error');
+    }
+  </script>
+</body>
+</html>

@@ -8,14 +8,15 @@ either public surface, and it is a deliberate, human-initiated step.
 pull request" is a description of the sequence, not standing authorization to run it.
 Raise it as a question and let the maintainer decide.
 
-## Two surfaces, both keyed off `main`
+## Three surfaces, all keyed off `main`
 
-Promotion updates both at once. Neither tracks `develop`.
+Promotion updates all three at once. None tracks `develop`.
 
 | Surface | What it is | How it updates |
 |---|---|---|
 | The hosted comparison app | The FastAPI upload app | `.github/workflows/deploy.yml`, on push to `main`. What it builds and where it deploys: [deployment.md](deployment.md) |
 | The example reports | Static reports linked from the README's "See it in action" | `.github/workflows/update-examples.yml`, on push to `main`. Copies the already-committed `examples/` directory into a Pages artifact and deploys it |
+| The offline page | One HTML file that compares bill XML in the browser, linked from the hosted app's home page | `.github/workflows/publish-offline.yml`, on push to `main`. Tests the page from disk in a browser, builds it with `scripts/build_offline_html.py` and attaches it to the `offline-latest` release |
 
 **The workflow does not render anything.** It used to, and that is worth stating plainly
 because the older behaviour is still what is running on `main` today and is the version
@@ -69,9 +70,9 @@ attributable.
 3. **Open the promotion pull request** from `develop` to `main`. `main` is protected; the
    maintainer merges.
 
-4. **Watch every post-merge run on `main` finish.** Four workflows land: CI,
-   security, `update-examples.yml`, and `deploy.yml`. Confirm all four against the actual
-   merge commit before treating the promotion as done.
+4. **Watch every post-merge run on `main` finish.** Five workflows land: CI,
+   security, `update-examples.yml`, `deploy.yml` and `publish-offline.yml`. Confirm all
+   five against the actual merge commit before treating the promotion as done.
 
    CI and security are the ones easiest to skip, because both already reported green on
    the pull request. That green describes a *preview* merge, not the commit that landed.
@@ -97,9 +98,10 @@ attributable.
    and security workflows, so a red CI run on `main` does not stop it. Reading a failed
    deploy run, and the host prerequisites, are in [deployment.md](deployment.md).
 
-5. **Verify both surfaces manually.** Run one real comparison on the hosted app, then
-   open the README's "See it in action" links to confirm they serve the promoted reports.
-   Checking only one surface leaves the other unverified, and they fail independently.
+5. **Verify every surface manually.** Run one real comparison on the hosted app, open
+   the README's "See it in action" links to confirm they serve the promoted reports, and
+   download the offline page from the home page and run one comparison with it. Checking
+   only one surface leaves the others unverified, and they fail independently.
 
 6. **Leave a rollback window.** Do not start unrelated work on `main` inside it.
 
