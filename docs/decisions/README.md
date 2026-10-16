@@ -103,3 +103,4 @@ presents itself as the architecture in force.
 | [0019](0019-observation-identity.md) | Accepted | Identify a parsed observation by its source, its parser revision and its ordinal; never by its text |
 | [0020](0020-matching-stages.md) | Accepted | Separate retrieval, correspondence evidence, correspondence assignment and change classification |
 | [0021](0021-naming-authority-and-boundaries.md) | Accepted | Name things in the vocabulary an outside reader already speaks, scoped to the boundary being named |
+| [0025](0025-financial-confidence-criteria.md) | Proposed | Bring dollar figures back only when each one is typed and its type agrees with an official source |

@@ -44,10 +44,18 @@ table.
 
 Parse each bill version into the bill's own section structure and diff that, which
 answers question 1 for any bill type: added, removed, modified, and moved sections,
-with formatting noise suppressed. For appropriations bills, parse a structured
-model of accounts and amounts on top and diff it too, answering question 2: an
-account-level table of paired old → new amounts with a breadcrumb path to each
-account, plus flags for floor-amendment annotations.
+with formatting noise suppressed. For appropriations bills, a structured model of
+accounts and amounts sits on top and is diffed too, answering question 2: an
+account-level table of old → new amounts with a path to each account.
+
+Question 2 is the goal, not yet the product. The paired-amount table was removed in
+#681 (#671), because a paragraph's figures (appropriations, sub-allocations,
+ceilings, rescissions) could not be told apart, and a figure with the wrong meaning
+makes every total built on it wrong. The export now carries each node's dollar
+figures per version and unpaired, which states what a version contains without
+claiming what changed ([0006](0006-canonical-diff-contract.md)). The money model
+returns in stages, each gated on every figure being typed and its type agreeing with
+an official source ([0025](0025-financial-confidence-criteria.md), proposed).
 
 This splits the system into two layers, one per question:
 
@@ -56,19 +64,23 @@ This splits the system into two layers, one per question:
    reconstruct the section structure, then diff sections. Most parser effort lives
    here. It is unavoidable for PDF-only inputs (draft and pre-introduction bills
    have no XML upstream), where the noise is severe.
-2. **Money model (question 2)**: map normalized text to accounts and paired
-   amounts. A smaller slice of code, and the appropriations-specific layer.
+2. **Money model (question 2)**: attach each dollar figure to its account, type
+   what it means, and pair amounts across versions. The appropriations-specific
+   layer, and the one whose correctness is hardest to establish.
 
 ## Consequences
 
-- The tool answers both questions that generic differs cannot: a clean
-  section-level diff for any bill, and the account-level money table for
-  appropriations. This is the core capability and the reason the project exists.
+- The tool can answer both questions that generic differs cannot: a clean
+  section-level diff for any bill, which ships today, and the account-level money
+  table for appropriations, which is gated as above. The second is the reason the
+  project exists, so the bar for shipping it is set by evidence rather than by
+  how much of it is built.
 - Extraction noise that a generic PDF redline would surface is the extraction
   layer's job list, not a defect of the approach. Suppressing it is required
   work, especially for PDF-only bills.
 - Fidelity effort should go where it is **load-bearing for correctness**, since a
-  misread or misattributed amount is a money error and the worst failure mode. The
+  misread, mistyped or misattributed amount is a money error and the worst failure
+  mode. The
   next priority is **verifiability**: link each amount to its exact source
   location so a reader can confirm it. Cosmetic reproduction of the source
   document's typography and layout is lower value, since the reader already has
