@@ -1,4 +1,5 @@
-"""Tests for the comparative-statement ground-truth selection in scripts/build_validation.py.
+"""Tests for scripts/build_validation.py: the comparative-statement ground-truth selection,
+the name mapping to a bill node (`map_account_path`), and the command line.
 
 For tabular jurisdictions (source="comparative"), the builder turns the report's comparative
 statement into ground-truth account rows. The selection rules are load-bearing — they decide
@@ -56,6 +57,43 @@ def test_comparative_ground_truth_drops_totals_and_negative_offsets():
     assert "Total, title I, Military Personnel" not in items  # rollup total
     assert "Offsetting collections" not in items  # negative reduction line
     assert items == {"Military Personnel, Army", "Military Personnel, Navy"}
+
+
+def _nodes(*paths):
+    return [SimpleNamespace(match_path=p) for p in paths]
+
+
+# The bill tree carries subsection nodes labelled only by their enumerator. Normalized to a
+# single letter, "(a)" is a substring of nearly any account name, so the name-substring tier
+# must not consider them: they tied out Defense's general-provision accounts, which map to
+# their section, and won Energy-Water's "(Civil Works)" account outright on agency overlap.
+_GENERAL_PROVISIONS = _nodes(
+    ("revolving and management funds", "national defense stockpile transaction fund"),
+    ("general provisions", "sec. 8034"),
+    ("general provisions", "sec. 8034", "(a)"),
+    ("general provisions", "sec. 8035", "(c)"),
+    ("corps of engineers", "general provisions", "sec. 101", "(a)"),
+)
+
+
+def test_map_account_path_maps_a_general_provision_to_its_section():
+    path = bv.map_account_path(
+        _GENERAL_PROVISIONS,
+        "GENERAL PROVISIONS",
+        "GENERAL PROVISIONS",
+        "National Defense Stockpile Transaction Fund (Sec. 8034)",
+    )
+    assert path == ["general provisions", "sec. 8034"]
+
+
+def test_map_account_path_never_maps_to_a_bare_enumerator():
+    path = bv.map_account_path(
+        _GENERAL_PROVISIONS,
+        "TITLE I--CORPS OF ENGINEERS",
+        "Corps of Engineers",
+        "Office of Assistant Secretary of the Army (Civil Works)",
+    )
+    assert path is None
 
 
 def test_help_exits_zero_and_documents_both_arguments(capsys):

@@ -40,6 +40,8 @@ _NON_LEAF_ITEM_RE = re.compile(
     r"^(?:total|subtotal|grand total|net grand total|less\b|available from prior)",
     re.IGNORECASE,
 )
+# A match_path element that is nothing but a subsection enumerator: "(a)", "(1)", "(iv)".
+_BARE_ENUMERATOR_RE = re.compile(r"^\(\w+\)$")
 
 
 def _norm(s: str | None) -> str:
@@ -74,7 +76,18 @@ def map_account_path(nodes, title, bureau, heading) -> list[str] | None:
         # sends whoever triages the miss to the wrong node.
         return None
     if not cands:
-        cands = [n for n in nodes if nh and (nh in _norm(n.match_path[-1]) or _norm(n.match_path[-1]) in nh)]
+        # A subsection labelled only by its enumerator ("(a)") names nothing, yet its
+        # one-letter normal form is a substring of nearly every account name; letting it in
+        # ties out real matches (Defense's "... (Sec. 8034)" against its "sec. 8034") and,
+        # where there are none, wins on agency overlap alone (Energy-Water's "Office of
+        # Assistant Secretary of the Army (Civil Works)" against a "sec. 101 > (a)").
+        cands = [
+            n
+            for n in nodes
+            if nh
+            and not _BARE_ENUMERATOR_RE.match(n.match_path[-1])
+            and (nh in _norm(n.match_path[-1]) or _norm(n.match_path[-1]) in nh)
+        ]
     if not cands:
         return None
     if len(cands) == 1:
