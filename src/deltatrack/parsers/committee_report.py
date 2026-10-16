@@ -271,12 +271,21 @@ def _is_heading(line: str) -> bool:
 
 def _heading_before(lines: list[str], idx: int) -> str | None:
     """Walk back from a summary block to its ALL-CAPS heading, skipping the dotted
-    summary rows, blank lines, and qualifier lines."""
+    summary rows, blank lines, and qualifier lines.
+
+    A heading too long for one line wraps, and GPO ends the line it wraps with a space, so
+    a heading line above that ends in one is joined on: "CONTRIBUTION TO THE INTERNATIONAL
+    BANK FOR RECONSTRUCTION AND " over "DEVELOPMENT" is one account, not "DEVELOPMENT".
+    """
     for j in range(idx - 1, max(idx - 8, -1), -1):
         s = lines[j].strip()
         if not s or "...." in s or _is_qualifier(s):
             continue
         if _is_heading(lines[j]):
-            return s
+            parts = [s]
+            while j > 0 and lines[j - 1].endswith(" ") and _is_heading(lines[j - 1]):
+                j -= 1
+                parts.insert(0, lines[j].strip())
+            return " ".join(parts)
         break
     return None

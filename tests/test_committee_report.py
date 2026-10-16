@@ -240,6 +240,26 @@ def test_parse_summary_blocks_joins_wrapped_bureau_header():
     assert block.bureau == "Institute of American Indian and Alaska Native Culture and Arts Development"
 
 
+# An account name too long for one line wraps too, and GPO ends the line it wraps with a
+# space. Reading only the last line named the World Bank contribution "DEVELOPMENT", which
+# the builder then matched to Development Assistance. Two stacked headings with no such
+# space are a parent over its account instead (TITLED_BLOCK), and stay apart.
+WRAPPED_HEADING_BLOCK = (
+    "     CONTRIBUTION TO THE INTERNATIONAL BANK FOR RECONSTRUCTION AND \n"
+    "                              DEVELOPMENT\n"
+    "\n"
+    "Appropriations, 2024....................................    $206,500,000\n"
+    "Budget estimate, 2025...................................     233,322,000\n"
+    "Committee recommendation................................     206,500,000\n"
+)
+
+
+def test_parse_summary_blocks_joins_wrapped_heading():
+    block = parse_summary_blocks(WRAPPED_HEADING_BLOCK)[0]
+    assert block.heading == "CONTRIBUTION TO THE INTERNATIONAL BANK FOR RECONSTRUCTION AND DEVELOPMENT"
+    assert block.committee_recommendation == 206_500_000
+
+
 # A parenthetical qualifier line sits between the heading and the summary rows; the
 # reader must walk past it to the real ALL-CAPS heading.
 PARENTHETICAL_BLOCK = """\
