@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
       "bureau": "Office of the Secretary and Executive Management",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "departmental management, intelligence, situational awareness, and oversight",
@@ -24,6 +25,7 @@
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
       "bureau": "Management Directorate",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "departmental management, intelligence, situational awareness, and oversight",
@@ -39,6 +41,7 @@
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
       "bureau": "Management Directorate",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "departmental management, intelligence, situational awareness, and oversight",
@@ -54,10 +57,11 @@
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
       "bureau": "Management Directorate",
+      "office": "INTELLIGENCE, ANALYSIS, AND SITUATIONAL AWARENESS",
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "departmental management, intelligence, situational awareness, and oversight",
-        "management directorate",
+        "intelligence, analysis, and situational awareness",
         "operations and support"
       ],
       "expected_amount": 341497000
@@ -69,10 +73,11 @@
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
       "bureau": "Management Directorate",
+      "office": "OFFICE OF INSPECTOR GENERAL",
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "departmental management, intelligence, situational awareness, and oversight",
-        "management directorate",
+        "office of the inspector general",
         "operations and support"
       ],
       "expected_amount": 237000000
@@ -84,6 +89,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "U.S. Customs and Border Protection",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -99,6 +105,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "U.S. Customs and Border Protection",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
@@ -114,6 +121,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "U.S. Immigration and Customs Enforcement",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -129,6 +137,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "U.S. Immigration and Customs Enforcement",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
@@ -144,6 +153,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Transportation Security Administration",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -159,6 +169,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Transportation Security Administration",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
@@ -174,6 +185,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Coast Guard",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -189,6 +201,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Coast Guard",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
@@ -204,6 +217,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Coast Guard",
+      "office": null,
       "excel_name": "HEALTH CARE FUND CONTRIBUTION",
       "match_path": null,
       "expected_amount": 277000000
@@ -215,6 +229,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "Coast Guard",
+      "office": null,
       "excel_name": "RETIRED PAY",
       "match_path": [
         "security, enforcement, and investigations",
@@ -230,6 +245,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "United States Secret Service",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -245,6 +261,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "United States Secret Service",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
@@ -260,6 +277,7 @@
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
       "bureau": "United States Secret Service",
+      "office": null,
       "excel_name": "RESEARCH AND DEVELOPMENT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -275,6 +293,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Cybersecurity and Infrastructure Security Agency",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -290,6 +309,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Cybersecurity and Infrastructure Security Agency",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -305,6 +325,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Federal Emergency Management Agency",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -320,6 +341,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Federal Emergency Management Agency",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -335,6 +357,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Federal Emergency Management Agency",
+      "office": null,
       "excel_name": "FEDERAL ASSISTANCE",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -350,6 +373,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Federal Emergency Management Agency",
+      "office": null,
       "excel_name": "DISASTER RELIEF FUND",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -365,6 +389,7 @@
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
       "bureau": "Federal Emergency Management Agency",
+      "office": null,
       "excel_name": "NATIONAL FLOOD INSURANCE FUND",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -380,6 +405,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "United States Citizenship and Immigration Services",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "research, development, training, and services",
@@ -395,6 +421,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Federal Law Enforcement Training Centers",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "research, development, training, and services",
@@ -410,6 +437,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Federal Law Enforcement Training Centers",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "research, development, training, and services",
@@ -425,6 +453,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Science and Technology",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "research, development, training, and services",
@@ -440,6 +469,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Science and Technology",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "research, development, training, and services",
@@ -455,6 +485,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Science and Technology",
+      "office": null,
       "excel_name": "RESEARCH AND DEVELOPMENT",
       "match_path": [
         "research, development, training, and services",
@@ -470,6 +501,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Countering Weapons of Mass Destruction Office",
+      "office": null,
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "research, development, training, and services",
@@ -485,6 +517,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Countering Weapons of Mass Destruction Office",
+      "office": null,
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "research, development, training, and services",
@@ -500,6 +533,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Countering Weapons of Mass Destruction Office",
+      "office": null,
       "excel_name": "RESEARCH AND DEVELOPMENT",
       "match_path": [
         "research, development, training, and services",
@@ -515,6 +549,7 @@
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
       "bureau": "Countering Weapons of Mass Destruction Office",
+      "office": null,
       "excel_name": "FEDERAL ASSISTANCE",
       "match_path": [
         "research, development, training, and services",

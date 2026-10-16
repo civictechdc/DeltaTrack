@@ -198,13 +198,13 @@ from tests.validation_sources import JURISDICTIONS  # noqa: E402
 _MAX_UNVALIDATED = {
     "cjs": 2,
     "agriculture": 3,
-    "transportation_hud": 3,
+    "transportation_hud": 2,
     "state_foreign_ops": 1,
     "interior_environment": 8,
     "financial_services": 2,
-    # Labor-HHS (summary source): all 15 are program totals the bill itemizes (CDC/SAMHSA
+    # Labor-HHS (summary source): all 14 are program totals the bill itemizes (CDC/SAMHSA
     # accounts funded via transfers) or indefinite funds — verified absent from the bill XML.
-    "labor_hhs": 15,
+    "labor_hhs": 14,
     # Defense (comparative source): every leaf appropriation account recalls.
     "defense": 0,
     # Energy-Water (comparative source): 6 structural misses — accounts the bill itemizes
@@ -218,11 +218,10 @@ _MAX_UNVALIDATED = {
     # MilCon-VA (summary source): 1 miss — VA Medical Care Collection Fund (offsetting/
     # mandatory), absent from the bill.
     "milcon_va": 1,
-    # Homeland Security FY2024 (the Senate didn't report FY2025): 5 non-bug misses — 3 are
-    # the report's Title I worded "...Operations..." vs the bill's "...Situational Awareness..."
-    # (amount correctly extracted under the right agency), 2 absent (Coast Guard mandatory
-    # health-care accrual, fee-funded USCIS Operations and Support).
-    "homeland_security": 5,
+    # Homeland Security FY2024 (the Senate didn't report FY2025): 2 non-bug misses, both
+    # absent from the bill (Coast Guard mandatory health-care accrual, fee-funded USCIS
+    # Operations and Support).
+    "homeland_security": 2,
     # Legislative Branch FY2025: 2 unvalidated, both arithmetic the recall check cannot do,
     # each confirmed against the bill XML rather than inferred from the fixture's `bureau`
     # (which carries the nearest preceding report heading, not the account's actual bureau):

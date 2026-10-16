@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "TRAINING AND EMPLOYMENT SERVICES",
       "match_path": [
         "department of labor",
@@ -24,6 +25,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "JOB CORPS",
       "match_path": [
         "department of labor",
@@ -39,6 +41,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "COMMUNITY SERVICE EMPLOYMENT FOR OLDER AMERICANS",
       "match_path": [
         "department of labor",
@@ -54,6 +57,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "FEDERAL UNEMPLOYMENT BENEFITS AND ALLOWANCES",
       "match_path": [
         "department of labor",
@@ -69,6 +73,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "STATE UNEMPLOYMENT INSURANCE AND EMPLOYMENT SERVICE OPERATIONS",
       "match_path": [
         "department of labor",
@@ -84,6 +89,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employment and Training Administration",
+      "office": null,
       "excel_name": "PROGRAM ADMINISTRATION",
       "match_path": [
         "department of labor",
@@ -99,6 +105,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Employee Benefits Security Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -114,6 +121,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Wage and Hour Division",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -129,6 +137,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Office of Labor-Management Standards",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -144,6 +153,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Office of Federal Contract Compliance Programs",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -159,6 +169,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Office of Workers' Compensation Programs",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -174,6 +185,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Office of Workers' Compensation Programs",
+      "office": null,
       "excel_name": "SPECIAL BENEFITS",
       "match_path": [
         "department of labor",
@@ -189,6 +201,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Office of Workers' Compensation Programs",
+      "office": null,
       "excel_name": "SPECIAL BENEFITS FOR DISABLED COAL MINERS",
       "match_path": [
         "department of labor",
@@ -204,6 +217,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Division of Energy Employees Occupational Illness Compensation",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 66966000
@@ -215,6 +229,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Division of Energy Employees Occupational Illness Compensation",
+      "office": null,
       "excel_name": "BLACK LUNG DISABILITY TRUST FUND",
       "match_path": [
         "department of labor",
@@ -230,6 +245,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Occupational Safety and Health Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -245,6 +261,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Mine Safety and Health Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -260,6 +277,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Bureau of Labor Statistics",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -275,6 +293,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of labor",
@@ -290,6 +309,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "INFORMATION TECHNOLOGY MODERNIZATION",
       "match_path": null,
       "expected_amount": 29269000
@@ -301,6 +321,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "OFFICE OF THE INSPECTOR GENERAL",
       "match_path": null,
       "expected_amount": 97028000
@@ -312,6 +333,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "PRIMARY HEALTH CARE",
       "match_path": [
         "department of health and human services",
@@ -327,6 +349,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "HEALTH WORKFORCE",
       "match_path": [
         "department of health and human services",
@@ -342,6 +365,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "MATERNAL AND CHILD HEALTH",
       "match_path": [
         "department of health and human services",
@@ -357,6 +381,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "RYAN WHITE HIV/AIDS PROGRAM",
       "match_path": [
         "department of health and human services",
@@ -372,6 +397,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "HEALTH SYSTEMS",
       "match_path": [
         "department of health and human services",
@@ -387,6 +413,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "RURAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -402,6 +429,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "FAMILY PLANNING",
       "match_path": [
         "department of health and human services",
@@ -417,6 +445,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "HRSA-WIDE ACTIVITIES AND PROGRAM SUPPORT",
       "match_path": [
         "department of health and human services",
@@ -432,6 +461,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Health Resources and Services Administration",
+      "office": null,
       "excel_name": "VACCINE INJURY COMPENSATION PROGRAM TRUST FUND",
       "match_path": [
         "department of health and human services",
@@ -447,6 +477,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "IMMUNIZATION AND RESPIRATORY DISEASES",
       "match_path": [
         "department of health and human services",
@@ -462,6 +493,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "HIV, VIRAL HEPATITIS, SEXUALLY TRANSMITTED DISEASES, AND TUBERCULOSIS PREVENTION",
       "match_path": null,
       "expected_amount": 1394056000
@@ -473,6 +505,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "EMERGING AND ZOONOTIC INFECTIOUS DISEASES",
       "match_path": [
         "department of health and human services",
@@ -488,6 +521,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "CHRONIC DISEASE PREVENTION AND HEALTH PROMOTION",
       "match_path": [
         "department of health and human services",
@@ -503,6 +537,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "NATIONAL CENTER ON BIRTH DEFECTS, DEVELOPMENTAL DISABILITIES, DISABILITY AND HEALTH",
       "match_path": null,
       "expected_amount": 210060000
@@ -514,6 +549,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "PUBLIC HEALTH AND SCIENTIFIC SERVICES",
       "match_path": null,
       "expected_amount": 774497000
@@ -525,6 +561,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "ENVIRONMENTAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -540,6 +577,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "INJURY PREVENTION AND CONTROL",
       "match_path": [
         "department of health and human services",
@@ -555,6 +593,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "OCCUPATIONAL SAFETY AND HEALTH",
       "match_path": [
         "department of health and human services",
@@ -570,6 +609,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "ENERGY EMPLOYEES OCCUPATIONAL INJURY COMPENSATION ACT",
       "match_path": null,
       "expected_amount": 55358000
@@ -581,6 +621,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "GLOBAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -596,6 +637,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "PUBLIC HEALTH PREPAREDNESS AND RESPONSE",
       "match_path": [
         "department of health and human services",
@@ -611,6 +653,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "department of health and human services",
@@ -626,6 +669,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
+      "office": null,
       "excel_name": "CDC-WIDE ACTIVITIES",
       "match_path": [
         "department of health and human services",
@@ -641,6 +685,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL CANCER INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -656,6 +701,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL HEART, LUNG, AND BLOOD INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -671,6 +717,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF DENTAL AND CRANIOFACIAL RESEARCH",
       "match_path": [
         "department of health and human services",
@@ -686,6 +733,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF DIABETES AND DIGESTIVE AND KIDNEY DISEASES",
       "match_path": [
         "department of health and human services",
@@ -701,6 +749,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF NEUROLOGICAL DISORDERS AND STROKE",
       "match_path": [
         "department of health and human services",
@@ -716,6 +765,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF ALLERGY AND INFECTIOUS DISEASES",
       "match_path": [
         "department of health and human services",
@@ -731,6 +781,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF GENERAL MEDICAL SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -746,6 +797,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "EUNICE KENNEDY SHRIVER NATIONAL INSTITUTE OF CHILD HEALTH AND HUMAN DEVELOPMENT",
       "match_path": [
         "department of health and human services",
@@ -761,6 +813,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL EYE INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -776,6 +829,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF ENVIRONMENTAL HEALTH SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -791,6 +845,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE ON AGING",
       "match_path": [
         "department of health and human services",
@@ -806,6 +861,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF ARTHRITIS AND MUSCULOSKELETAL AND SKIN DISEASES",
       "match_path": [
         "department of health and human services",
@@ -821,6 +877,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF DEAFNESS AND OTHER COMMUNICATION DISORDERS",
       "match_path": null,
       "expected_amount": 534333000
@@ -832,6 +889,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF NURSING RESEARCH",
       "match_path": [
         "department of health and human services",
@@ -847,6 +905,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE ON ALCOHOL ABUSE AND ALCOHOLISM",
       "match_path": [
         "department of health and human services",
@@ -862,6 +921,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE ON DRUG ABUSE",
       "match_path": [
         "department of health and human services",
@@ -877,6 +937,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF MENTAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -892,6 +953,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL HUMAN GENOME RESEARCH INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -907,6 +969,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE OF BIOMEDICAL IMAGING AND BIOENGINEERING",
       "match_path": [
         "department of health and human services",
@@ -922,6 +985,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL CENTER FOR COMPLEMENTARY AND INTEGRATIVE HEALTH",
       "match_path": [
         "department of health and human services",
@@ -937,6 +1001,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL INSTITUTE ON MINORITY HEALTH AND HEALTH DISPARITIES",
       "match_path": [
         "department of health and human services",
@@ -952,6 +1017,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "JOHN E. FOGARTY INTERNATIONAL CENTER FOR ADVANCED STUDY IN THE HEALTH SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -967,6 +1033,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL LIBRARY OF MEDICINE",
       "match_path": [
         "department of health and human services",
@@ -982,6 +1049,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NATIONAL CENTER FOR ADVANCING TRANSLATIONAL SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -997,6 +1065,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "OFFICE OF THE DIRECTOR",
       "match_path": [
         "department of health and human services",
@@ -1012,6 +1081,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "department of health and human services",
@@ -1027,6 +1097,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "NIH INNOVATION ACCOUNT, CURES ACT",
       "match_path": [
         "department of health and human services",
@@ -1042,6 +1113,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "National Institutes of Health",
+      "office": null,
       "excel_name": "ADVANCED RESEARCH PROJECTS AGENCY FOR HEALTH",
       "match_path": [
         "department of health and human services",
@@ -1057,6 +1129,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Substance Abuse And Mental Health Services Administration",
+      "office": null,
       "excel_name": "MENTAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -1072,6 +1145,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Substance Abuse And Mental Health Services Administration",
+      "office": null,
       "excel_name": "SUBSTANCE ABUSE TREATMENT",
       "match_path": [
         "department of health and human services",
@@ -1087,6 +1161,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Substance Abuse And Mental Health Services Administration",
+      "office": null,
       "excel_name": "SUBSTANCE ABUSE PREVENTION",
       "match_path": [
         "department of health and human services",
@@ -1102,6 +1177,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Substance Abuse And Mental Health Services Administration",
+      "office": null,
       "excel_name": "HEALTH SURVEILLANCE AND PROGRAM SUPPORT",
       "match_path": [
         "department of health and human services",
@@ -1117,6 +1193,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Medicare and Medicaid Services",
+      "office": null,
       "excel_name": "GRANTS TO STATES FOR MEDICAID",
       "match_path": [
         "department of health and human services",
@@ -1132,6 +1209,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Medicare and Medicaid Services",
+      "office": null,
       "excel_name": "PAYMENTS TO HEALTHCARE TRUST FUNDS",
       "match_path": null,
       "expected_amount": 521757000000
@@ -1143,6 +1221,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Medicare and Medicaid Services",
+      "office": null,
       "excel_name": "PROGRAM MANAGEMENT",
       "match_path": [
         "department of health and human services",
@@ -1158,6 +1237,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Medicare and Medicaid Services",
+      "office": null,
       "excel_name": "HEALTHCARE FRAUD AND ABUSE CONTROL",
       "match_path": null,
       "expected_amount": 941000000
@@ -1169,6 +1249,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "PAYMENTS TO STATES FOR CHILD SUPPORT SERVICES AND FAMILY SUPPORT PROGRAMS",
       "match_path": [
         "department of health and human services",
@@ -1184,6 +1265,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "LOW INCOME HOME ENERGY ASSISTANCE PROGRAM",
       "match_path": [
         "department of health and human services",
@@ -1199,6 +1281,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "REFUGEE AND ENTRANT ASSISTANCE",
       "match_path": [
         "department of health and human services",
@@ -1214,6 +1297,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "PAYMENTS TO STATES FOR THE CHILD CARE AND DEVELOPMENT BLOCK GRANT",
       "match_path": [
         "department of health and human services",
@@ -1229,6 +1313,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "SOCIAL SERVICES BLOCK GRANT",
       "match_path": [
         "department of health and human services",
@@ -1244,6 +1329,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "CHILDREN AND FAMILIES SERVICES PROGRAMS",
       "match_path": [
         "department of health and human services",
@@ -1259,6 +1345,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "PROMOTING SAFE AND STABLE FAMILIES",
       "match_path": [
         "department of health and human services",
@@ -1274,6 +1361,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
+      "office": null,
       "excel_name": "PAYMENTS FOR FOSTER CARE AND PERMANENCY",
       "match_path": [
         "department of health and human services",
@@ -1289,6 +1377,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Community Living",
+      "office": null,
       "excel_name": "AGING AND DISABILITY SERVICES PROGRAMS",
       "match_path": [
         "department of health and human services",
@@ -1304,6 +1393,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Strategic Preparedness and Response",
+      "office": null,
       "excel_name": "RESEARCH, DEVELOPMENT, AND PROCUREMENT",
       "match_path": [
         "department of health and human services",
@@ -1319,6 +1409,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Strategic Preparedness and Response",
+      "office": null,
       "excel_name": "OPERATIONS, PREPAREDNESS, AND EMERGENCY RESPONSE",
       "match_path": [
         "department of health and human services",
@@ -1334,6 +1425,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "GENERAL DEPARTMENTAL MANAGEMENT",
       "match_path": [
         "department of health and human services",
@@ -1349,6 +1441,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "OFFICE OF MEDICARE HEARINGS AND APPEALS",
       "match_path": [
         "department of health and human services",
@@ -1364,6 +1457,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "OFFICE OF THE NATIONAL COORDINATOR FOR HEALTH INFORMATION TECHNOLOGY",
       "match_path": [
         "department of health and human services",
@@ -1379,6 +1473,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of health and human services",
@@ -1394,6 +1489,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "OFFICE FOR CIVIL RIGHTS",
       "match_path": [
         "department of health and human services",
@@ -1409,6 +1505,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "RETIREMENT PAY AND MEDICAL BENEFITS FOR COMMISSIONED OFFICERS",
       "match_path": [
         "department of health and human services",
@@ -1424,6 +1521,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Special Institutions for Persons with Disabilities",
+      "office": null,
       "excel_name": "AMERICAN PRINTING HOUSE FOR THE BLIND",
       "match_path": [
         "department of education",
@@ -1439,6 +1537,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Special Institutions for Persons with Disabilities",
+      "office": null,
       "excel_name": "NATIONAL TECHNICAL INSTITUTE FOR THE DEAF",
       "match_path": [
         "department of education",
@@ -1454,6 +1553,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Special Institutions for Persons with Disabilities",
+      "office": null,
       "excel_name": "GALLAUDET UNIVERSITY",
       "match_path": [
         "department of education",
@@ -1469,6 +1569,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "College Housing and Academic Facilities Loans Program",
+      "office": null,
       "excel_name": "HISTORICALLY BLACK COLLEGE AND UNIVERSITY CAPITAL FINANCING PROGRAM ACCOUNT",
       "match_path": [
         "department of education",
@@ -1483,6 +1584,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "PROGRAM ADMINISTRATION",
       "match_path": [
         "department of education",
@@ -1498,6 +1600,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "OFFICE FOR CIVIL RIGHTS",
       "match_path": [
         "department of education",
@@ -1513,6 +1616,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of education",
@@ -1528,6 +1632,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 13124000
@@ -1539,6 +1644,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Corporation for National and Community Service",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "related agencies",
@@ -1554,6 +1660,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Corporation for National and Community Service",
+      "office": null,
       "excel_name": "THE NATIONAL SERVICE TRUST",
       "match_path": [
         "related agencies",
@@ -1569,6 +1676,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Corporation for National and Community Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1584,6 +1692,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Corporation for National and Community Service",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "related agencies",
@@ -1599,6 +1708,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Federal Mediation and Conciliation Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1614,6 +1724,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Federal Mine Safety and Health Review Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1629,6 +1740,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Institute of Museum and Library Services",
+      "office": null,
       "excel_name": "OFFICE OF MUSEUM AND LIBRARIES: GRANTS AND ADMINISTRATION",
       "match_path": null,
       "expected_amount": 294800000
@@ -1640,6 +1752,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Medicaid and Chip Payment and Access Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1655,6 +1768,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Medicare Payment Advisory Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1670,6 +1784,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Council on Disability",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1685,6 +1800,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Labor Relations Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1700,6 +1816,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Mediation Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1715,6 +1832,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Occupational Safety and Health Review Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1730,6 +1848,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Railroad Retirement Board",
+      "office": null,
       "excel_name": "DUAL BENEFITS PAYMENTS ACCOUNT",
       "match_path": [
         "related agencies",
@@ -1745,6 +1864,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Railroad Retirement Board",
+      "office": null,
       "excel_name": "FEDERAL PAYMENTS TO THE RAILROAD RETIREMENT ACCOUNTS",
       "match_path": [
         "related agencies",
@@ -1760,6 +1880,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Social Security Administration",
+      "office": null,
       "excel_name": "PAYMENTS TO SOCIAL SECURITY TRUST FUNDS",
       "match_path": [
         "related agencies",
@@ -1775,6 +1896,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Social Security Administration",
+      "office": null,
       "excel_name": "SUPPLEMENTAL SECURITY INCOME PROGRAM",
       "match_path": [
         "related agencies",
@@ -1790,6 +1912,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Social Security Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "related agencies",

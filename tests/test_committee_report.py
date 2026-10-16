@@ -260,6 +260,92 @@ def test_parse_summary_blocks_joins_wrapped_heading():
     assert block.committee_recommendation == 206_500_000
 
 
+# Some reports head an office in ALL-CAPS, like an account. Stacked directly over the
+# account heading, it names the office the account belongs to; the mixed-case bureau above
+# is kept beside it (the bill names this account "Salaries and Expenses, United States
+# Attorneys", under Legal Activities).
+STACKED_OFFICE_BLOCK = """\
+                            Legal Activities
+
+                        UNITED STATES ATTORNEYS
+
+                         SALARIES AND EXPENSES
+
+Appropriations, 2024....................................  $2,624,000,000
+Budget estimate, 2025...................................   2,800,000,000
+Committee recommendation................................   2,664,000,000
+"""
+
+
+def test_parse_summary_blocks_reads_a_stacked_office_heading():
+    block = parse_summary_blocks(STACKED_OFFICE_BLOCK)[0]
+    assert block.office == "UNITED STATES ATTORNEYS"
+    assert block.bureau == "Legal Activities"
+
+
+# The Homeland Security report instead introduces an office: its heading stands alone, the
+# paragraph under it opens by naming it, and the account heading follows the narrative. The
+# bureau left over from earlier ("Management Directorate") is a sibling office, not its parent,
+# and steered the builder to the wrong paragraph.
+INTRODUCED_OFFICE_BLOCK = """\
+                         Management Directorate
+
+                         OPERATIONS AND SUPPORT
+
+Appropriations, 2023....................................  $1,630,000,000
+Budget estimate, 2024...................................   1,700,000,000
+Committee recommendation................................   1,690,000,000
+
+                      OFFICE OF INSPECTOR GENERAL
+
+    The Office of Inspector General [OIG] conducts audits,
+inspections, investigations, and other reviews of the
+Department's programs and operations.
+
+                         OPERATIONS AND SUPPORT
+
+Appropriations, 2023....................................    $214,879,000
+Budget estimate, 2024...................................     228,371,000
+Committee recommendation................................     237,000,000
+"""
+
+
+def test_parse_summary_blocks_reads_an_introduced_office_heading():
+    management, inspector_general = parse_summary_blocks(INTRODUCED_OFFICE_BLOCK)
+    assert management.office is None
+    assert inspector_general.office == "OFFICE OF INSPECTOR GENERAL"
+    assert inspector_general.bureau == "Management Directorate"
+
+
+_BLOCK_UNDER = """
+                         {account}
+
+Appropriations, 2024....................................     $10,000,000
+Budget estimate, 2025...................................      10,000,000
+Committee recommendation................................      10,000,000
+"""
+
+
+# The other ALL-CAPS lines between two summary blocks are not offices: the last line of a
+# paragraph, a funding qualifier set as a heading, a sub-program whose paragraph does not
+# name it, and a list of sub-programs, any of which would otherwise be "the" office.
+@pytest.mark.parametrize(
+    "lines_above",
+    [
+        "    The Committee directs a report on the work of the\nCJCC.\n",
+        "\n                 LIQUIDATION OF CONTRACT AUTHORIZATION\n",
+        "\n                         NIST EXTERNAL PROJECTS\n\n"
+        "    The Committee's recommendation provides $50,000,000.\n",
+        "\n                      NOAA NATIONAL OCEAN SERVICE\n\n    The NOAA National Ocean Service is funded.\n"
+        "\n                     NOAA NATIONAL WEATHER SERVICE\n\n    The NOAA National Weather Service is funded.\n",
+    ],
+    ids=["paragraph-tail", "qualifier", "unnamed-sub-program", "sub-program-list"],
+)
+def test_parse_summary_blocks_reads_no_office_from_other_capitals(lines_above):
+    block = parse_summary_blocks(lines_above + _BLOCK_UNDER.format(account="HIGHWAY TRUST FUND"))[0]
+    assert block.office is None
+
+
 # A parenthetical qualifier line sits between the heading and the summary rows; the
 # reader must walk past it to the real ALL-CAPS heading.
 PARENTHETICAL_BLOCK = """\

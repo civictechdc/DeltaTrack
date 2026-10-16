@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Agricultural Research Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "agricultural programs",
@@ -24,6 +25,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Agricultural Research Service",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "agricultural programs",
@@ -39,6 +41,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "National Institute of Food and Agriculture",
+      "office": null,
       "excel_name": "RESEARCH AND EDUCATION ACTIVITIES",
       "match_path": [
         "agricultural programs",
@@ -54,6 +57,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "National Institute of Food and Agriculture",
+      "office": null,
       "excel_name": "NATIVE AMERICAN INSTITUTIONS ENDOWMENT FUND",
       "match_path": [
         "agricultural programs",
@@ -69,6 +73,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "National Institute of Food and Agriculture",
+      "office": null,
       "excel_name": "EXTENSION ACTIVITIES",
       "match_path": [
         "agricultural programs",
@@ -84,6 +89,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "National Institute of Food and Agriculture",
+      "office": null,
       "excel_name": "INTEGRATED ACTIVITIES",
       "match_path": [
         "agricultural programs",
@@ -99,6 +105,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Animal and Plant Health Inspection Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "agricultural programs",
@@ -114,6 +121,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Animal and Plant Health Inspection Service",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "agricultural programs",
@@ -129,6 +137,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Agricultural Marketing Service",
+      "office": null,
       "excel_name": "MARKETING SERVICES",
       "match_path": [
         "agricultural programs",
@@ -144,6 +153,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Agricultural Marketing Service",
+      "office": null,
       "excel_name": "FUNDS FOR STRENGTHENING MARKETS, INCOME, AND SUPPLY (SECTION 32)",
       "match_path": [
         "agricultural programs",
@@ -159,6 +169,7 @@
       "chamber": "senate",
       "title": "AGRICULTURAL PROGRAMS",
       "bureau": "Agricultural Marketing Service",
+      "office": null,
       "excel_name": "PAYMENTS TO STATES AND POSSESSIONS",
       "match_path": [
         "agricultural programs",
@@ -174,6 +185,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Farm Production and Conservation Business Center",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "farm production and conservation programs",
@@ -189,6 +201,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Farm Service Agency",
+      "office": null,
       "excel_name": "STATE MEDIATION GRANTS",
       "match_path": [
         "farm production and conservation programs",
@@ -204,6 +217,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Farm Service Agency",
+      "office": null,
       "excel_name": "GRASSROOTS SOURCE WATER PROTECTION PROGRAM",
       "match_path": [
         "farm production and conservation programs",
@@ -219,6 +233,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Farm Service Agency",
+      "office": null,
       "excel_name": "DAIRY INDEMNITY PROGRAM",
       "match_path": [
         "farm production and conservation programs",
@@ -234,6 +249,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Farm Service Agency",
+      "office": null,
       "excel_name": "GEOGRAPHICALLY DISADVANTAGED FARMERS AND RANCHERS",
       "match_path": [
         "farm production and conservation programs",
@@ -249,6 +265,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Risk Management Agency",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "farm production and conservation programs",
@@ -264,6 +281,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Natural Resources Conservation Service",
+      "office": null,
       "excel_name": "CONSERVATION OPERATIONS",
       "match_path": [
         "farm production and conservation programs",
@@ -279,6 +297,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Natural Resources Conservation Service",
+      "office": null,
       "excel_name": "WATERSHED AND FLOOD PREVENTION OPERATIONS",
       "match_path": [
         "farm production and conservation programs",
@@ -294,6 +313,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Natural Resources Conservation Service",
+      "office": null,
       "excel_name": "WATERSHED REHABILITATION PROGRAM",
       "match_path": [
         "farm production and conservation programs",
@@ -309,6 +329,7 @@
       "chamber": "senate",
       "title": "FARM PRODUCTION AND CONSERVATION PROGRAMS",
       "bureau": "Commodity Credit Corporation Fund",
+      "office": null,
       "excel_name": "REIMBURSEMENT FOR NET REALIZED LOSSES",
       "match_path": [
         "corporations",
@@ -324,6 +345,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Housing Service",
+      "office": null,
       "excel_name": "RENTAL ASSISTANCE PROGRAM",
       "match_path": [
         "rural development programs",
@@ -339,6 +361,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Housing Service",
+      "office": null,
       "excel_name": "RURAL HOUSING VOUCHER ACCOUNT",
       "match_path": [
         "rural development programs",
@@ -354,6 +377,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Housing Service",
+      "office": null,
       "excel_name": "MUTUAL AND SELF-HELP HOUSING GRANTS",
       "match_path": [
         "rural development programs",
@@ -369,6 +393,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Housing Service",
+      "office": null,
       "excel_name": "RURAL HOUSING ASSISTANCE GRANTS",
       "match_path": [
         "rural development programs",
@@ -384,6 +409,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Housing Service",
+      "office": null,
       "excel_name": "RURAL COMMUNITY FACILITIES PROGRAM ACCOUNT",
       "match_path": [
         "rural development programs",
@@ -399,6 +425,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Business-Cooperative Service",
+      "office": null,
       "excel_name": "RURAL BUSINESS PROGRAM ACCOUNT",
       "match_path": [
         "rural development programs",
@@ -414,6 +441,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Business-Cooperative Service",
+      "office": null,
       "excel_name": "RURAL COOPERATIVE DEVELOPMENT GRANTS",
       "match_path": [
         "rural development programs",
@@ -429,6 +457,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Business-Cooperative Service",
+      "office": null,
       "excel_name": "RURAL MICROENTREPRENEUR ASSISTANCE PROGRAM",
       "match_path": [
         "rural development programs",
@@ -444,6 +473,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Business-Cooperative Service",
+      "office": null,
       "excel_name": "HEALTHY FOOD FINANCING INITIATIVE",
       "match_path": [
         "rural development programs",
@@ -459,6 +489,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Utilities Service",
+      "office": null,
       "excel_name": "RURAL WATER AND WASTE DISPOSAL PROGRAM ACCOUNT",
       "match_path": [
         "rural development programs",
@@ -474,6 +505,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Utilities Service",
+      "office": null,
       "excel_name": "RURAL ELECTRIFICATION AND TELECOMMUNICATIONS LOANS PROGRAM ACCOUNT",
       "match_path": [
         "rural development programs",
@@ -489,6 +521,7 @@
       "chamber": "senate",
       "title": "RURAL DEVELOPMENT PROGRAMS",
       "bureau": "Rural Utilities Service",
+      "office": null,
       "excel_name": "DISTANCE LEARNING, TELEMEDICINE, AND BROADBAND PROGRAM",
       "match_path": [
         "rural development programs",
@@ -504,6 +537,7 @@
       "chamber": "senate",
       "title": "DOMESTIC FOOD PROGRAMS",
       "bureau": "Food and Nutrition Service",
+      "office": null,
       "excel_name": "CHILD NUTRITION PROGRAMS",
       "match_path": [
         "domestic food programs",
@@ -519,6 +553,7 @@
       "chamber": "senate",
       "title": "DOMESTIC FOOD PROGRAMS",
       "bureau": "Food and Nutrition Service",
+      "office": null,
       "excel_name": "SPECIAL SUPPLEMENTAL NUTRITION PROGRAM FOR WOMEN, INFANTS, AND CHILDREN [WIC]",
       "match_path": [
         "domestic food programs",
@@ -534,6 +569,7 @@
       "chamber": "senate",
       "title": "DOMESTIC FOOD PROGRAMS",
       "bureau": "Food and Nutrition Service",
+      "office": null,
       "excel_name": "SUPPLEMENTAL NUTRITION ASSISTANCE PROGRAM",
       "match_path": [
         "domestic food programs",
@@ -549,6 +585,7 @@
       "chamber": "senate",
       "title": "DOMESTIC FOOD PROGRAMS",
       "bureau": "Food and Nutrition Service",
+      "office": null,
       "excel_name": "COMMODITY ASSISTANCE PROGRAM",
       "match_path": [
         "domestic food programs",
@@ -564,6 +601,7 @@
       "chamber": "senate",
       "title": "DOMESTIC FOOD PROGRAMS",
       "bureau": "Food and Nutrition Service",
+      "office": null,
       "excel_name": "NUTRITION PROGRAMS ADMINISTRATION",
       "match_path": [
         "domestic food programs",
@@ -579,6 +617,7 @@
       "chamber": "senate",
       "title": "FOREIGN ASSISTANCE AND RELATED PROGRAMS",
       "bureau": null,
+      "office": null,
       "excel_name": "OFFICE OF CODEX ALIMENTARIUS",
       "match_path": [
         "foreign assistance and related programs",
@@ -594,6 +633,7 @@
       "chamber": "senate",
       "title": "FOREIGN ASSISTANCE AND RELATED PROGRAMS",
       "bureau": "Foreign Agricultural Service",
+      "office": null,
       "excel_name": "FOOD FOR PEACE TITLE II GRANTS",
       "match_path": [
         "foreign assistance and related programs",
@@ -609,6 +649,7 @@
       "chamber": "senate",
       "title": "FOREIGN ASSISTANCE AND RELATED PROGRAMS",
       "bureau": "Foreign Agricultural Service",
+      "office": null,
       "excel_name": "MCGOVERN-DOLE INTERNATIONAL FOOD FOR EDUCATION AND CHILD NUTRITION PROGRAM GRANTS",
       "match_path": [
         "foreign assistance and related programs",
@@ -624,6 +665,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCY AND FOOD AND DRUG ADMINISTRATION",
       "bureau": "Department of Health and Human Services",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "related agencies and food and drug administration",
@@ -639,6 +681,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCY AND FOOD AND DRUG ADMINISTRATION",
       "bureau": "Department of Health and Human Services",
+      "office": null,
       "excel_name": "FDA INNOVATION ACCOUNT, CURES ACT",
       "match_path": [
         "related agencies and food and drug administration",
@@ -654,6 +697,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCY AND FOOD AND DRUG ADMINISTRATION",
       "bureau": "Department of Health and Human Services",
+      "office": "INDEPENDENT AGENCY",
       "excel_name": "FARM CREDIT ADMINISTRATION",
       "match_path": null,
       "expected_amount": 100430000

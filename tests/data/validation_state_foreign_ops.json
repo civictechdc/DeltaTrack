@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "DIPLOMATIC PROGRAMS",
       "match_path": [
         "department of state and related agency",
@@ -25,6 +26,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "CAPITAL INVESTMENT FUND",
       "match_path": [
         "department of state and related agency",
@@ -41,6 +43,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of state and related agency",
@@ -57,6 +60,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "EDUCATIONAL AND CULTURAL EXCHANGE PROGRAMS",
       "match_path": [
         "department of state and related agency",
@@ -73,6 +77,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "REPRESENTATION EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -89,6 +94,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "PROTECTION OF FOREIGN MISSIONS AND OFFICIALS",
       "match_path": [
         "department of state and related agency",
@@ -105,6 +111,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "EMBASSY SECURITY, CONSTRUCTION, AND MAINTENANCE",
       "match_path": [
         "department of state and related agency",
@@ -121,6 +128,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "EMERGENCIES IN THE DIPLOMATIC AND CONSULAR SERVICE",
       "match_path": [
         "department of state and related agency",
@@ -137,6 +145,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "REPATRIATION LOANS PROGRAM ACCOUNT",
       "match_path": [
         "department of state and related agency",
@@ -153,6 +162,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "PAYMENT TO THE AMERICAN INSTITUTE IN TAIWAN",
       "match_path": [
         "department of state and related agency",
@@ -169,6 +179,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "INTERNATIONAL CENTER, WASHINGTON, DISTRICT OF COLUMBIA",
       "match_path": [
         "department of state and related agency",
@@ -185,6 +196,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Administration of Foreign Affairs",
+      "office": null,
       "excel_name": "PAYMENT TO THE FOREIGN SERVICE RETIREMENT AND DISABILITY FUND",
       "match_path": [
         "department of state and related agency",
@@ -201,6 +213,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Organizations",
+      "office": null,
       "excel_name": "CONTRIBUTIONS TO INTERNATIONAL ORGANIZATIONS",
       "match_path": [
         "department of state and related agency",
@@ -217,6 +230,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Organizations",
+      "office": null,
       "excel_name": "CONTRIBUTIONS FOR INTERNATIONAL PEACEKEEPING ACTIVITIES",
       "match_path": [
         "department of state and related agency",
@@ -233,6 +247,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Commissions",
+      "office": "INTERNATIONAL BOUNDARY AND WATER COMMISSION, UNITED STATES AND MEXICO",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 69300000
@@ -244,6 +259,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Commissions",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "department of state and related agency",
@@ -260,6 +276,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Commissions",
+      "office": null,
       "excel_name": "AMERICAN SECTIONS, INTERNATIONAL COMMISSIONS",
       "match_path": [
         "department of state and related agency",
@@ -276,6 +293,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "International Commissions",
+      "office": null,
       "excel_name": "INTERNATIONAL FISHERIES COMMISSIONS",
       "match_path": [
         "department of state and related agency",
@@ -292,6 +310,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "United States Agency for Global Media",
+      "office": null,
       "excel_name": "INTERNATIONAL BROADCASTING OPERATIONS",
       "match_path": [
         "department of state and related agency",
@@ -308,6 +327,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "United States Agency for Global Media",
+      "office": null,
       "excel_name": "BROADCASTING CAPITAL IMPROVEMENTS",
       "match_path": [
         "department of state and related agency",
@@ -324,6 +344,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Commission for the Preservation of America's Heritage Abroad",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -340,6 +361,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "United States Commission on International Religious Freedom",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -356,6 +378,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Commission on Security and Cooperation In Europe",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -372,6 +395,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Commission on Security and Cooperation In Europe",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -388,6 +412,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF STATE AND RELATED AGENCY",
       "bureau": "Commission on Security and Cooperation In Europe",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of state and related agency",
@@ -404,6 +429,7 @@
       "chamber": "senate",
       "title": "UNITED STATES AGENCY FOR INTERNATIONAL DEVELOPMENT",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "united states agency for international development",
@@ -419,6 +445,7 @@
       "chamber": "senate",
       "title": "UNITED STATES AGENCY FOR INTERNATIONAL DEVELOPMENT",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CAPITAL INVESTMENT FUND",
       "match_path": [
         "united states agency for international development",
@@ -434,6 +461,7 @@
       "chamber": "senate",
       "title": "UNITED STATES AGENCY FOR INTERNATIONAL DEVELOPMENT",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "united states agency for international development",
@@ -449,6 +477,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "GLOBAL HEALTH PROGRAMS",
       "match_path": [
         "bilateral economic assistance",
@@ -464,6 +493,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "DEVELOPMENT ASSISTANCE",
       "match_path": [
         "bilateral economic assistance",
@@ -479,6 +509,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "INTERNATIONAL DISASTER ASSISTANCE",
       "match_path": [
         "bilateral economic assistance",
@@ -494,6 +525,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "TRANSITION INITIATIVES",
       "match_path": [
         "bilateral economic assistance",
@@ -509,6 +541,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "COMPLEX CRISES FUND",
       "match_path": [
         "bilateral economic assistance",
@@ -524,6 +557,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "ECONOMIC SUPPORT FUND",
       "match_path": [
         "bilateral economic assistance",
@@ -539,6 +573,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "DEMOCRACY FUND",
       "match_path": [
         "bilateral economic assistance",
@@ -554,6 +589,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "ASSISTANCE FOR EUROPE, EURASIA AND CENTRAL ASIA",
       "match_path": [
         "bilateral economic assistance",
@@ -569,6 +605,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "MIGRATION AND REFUGEE ASSISTANCE",
       "match_path": [
         "bilateral economic assistance",
@@ -584,6 +621,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "UNITED STATES EMERGENCY REFUGEE AND MIGRATION ASSISTANCE FUND",
       "match_path": [
         "bilateral economic assistance",
@@ -599,6 +637,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": "INDEPENDENT AGENCIES",
       "excel_name": "PEACE CORPS",
       "match_path": [
         "bilateral economic assistance",
@@ -614,6 +653,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "MILLENNIUM CHALLENGE CORPORATION",
       "match_path": [
         "bilateral economic assistance",
@@ -629,6 +669,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "INTER-AMERICAN FOUNDATION",
       "match_path": [
         "bilateral economic assistance",
@@ -644,6 +685,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "UNITED STATES AFRICAN DEVELOPMENT FOUNDATION",
       "match_path": [
         "bilateral economic assistance",
@@ -659,6 +701,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of the Treasury",
+      "office": null,
       "excel_name": "INTERNATIONAL AFFAIRS TECHNICAL ASSISTANCE",
       "match_path": [
         "bilateral economic assistance",
@@ -674,6 +717,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of the Treasury",
+      "office": null,
       "excel_name": "DEBT RESTRUCTURING",
       "match_path": [
         "bilateral economic assistance",
@@ -689,6 +733,7 @@
       "chamber": "senate",
       "title": "BILATERAL ECONOMIC ASSISTANCE",
       "bureau": "Department of the Treasury",
+      "office": null,
       "excel_name": "TROPICAL FOREST AND CORAL REEF CONSERVATION",
       "match_path": [
         "bilateral economic assistance",
@@ -704,6 +749,7 @@
       "chamber": "senate",
       "title": "INTERNATIONAL SECURITY ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "INTERNATIONAL NARCOTICS CONTROL AND LAW ENFORCEMENT",
       "match_path": [
         "international security assistance",
@@ -719,6 +765,7 @@
       "chamber": "senate",
       "title": "INTERNATIONAL SECURITY ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "NONPROLIFERATION, ANTI-TERRORISM, DEMINING AND RELATED PROGRAMS",
       "match_path": [
         "international security assistance",
@@ -734,6 +781,7 @@
       "chamber": "senate",
       "title": "INTERNATIONAL SECURITY ASSISTANCE",
       "bureau": "Department of State",
+      "office": null,
       "excel_name": "PEACEKEEPING OPERATIONS",
       "match_path": [
         "international security assistance",
@@ -749,6 +797,7 @@
       "chamber": "senate",
       "title": "INTERNATIONAL SECURITY ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "INTERNATIONAL MILITARY EDUCATION AND TRAINING",
       "match_path": [
         "international security assistance",
@@ -764,6 +813,7 @@
       "chamber": "senate",
       "title": "INTERNATIONAL SECURITY ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "FOREIGN MILITARY FINANCING PROGRAM",
       "match_path": [
         "international security assistance",
@@ -779,6 +829,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "INTERNATIONAL ORGANIZATIONS AND PROGRAMS",
       "match_path": [
         "multilateral assistance",
@@ -794,6 +845,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "GLOBAL ENVIRONMENT FACILITY",
       "match_path": [
         "multilateral assistance",
@@ -809,6 +861,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE CLEAN TECHNOLOGY FUND",
       "match_path": [
         "multilateral assistance",
@@ -824,6 +877,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE INTERNATIONAL BANK FOR RECONSTRUCTION AND DEVELOPMENT",
       "match_path": [
         "multilateral assistance",
@@ -839,6 +893,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE INTERNATIONAL DEVELOPMENT ASSOCIATION",
       "match_path": [
         "multilateral assistance",
@@ -854,6 +909,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE ASIAN DEVELOPMENT FUND",
       "match_path": [
         "multilateral assistance",
@@ -869,6 +925,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE AFRICAN DEVELOPMENT BANK",
       "match_path": [
         "multilateral assistance",
@@ -884,6 +941,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE AFRICAN DEVELOPMENT FUND",
       "match_path": [
         "multilateral assistance",
@@ -899,6 +957,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE INTER-AMERICAN DEVELOPMENT BANK",
       "match_path": [
         "multilateral assistance",
@@ -914,6 +973,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE EUROPEAN BANK FOR RECONSTRUCTION AND DEVELOPMENT",
       "match_path": [
         "multilateral assistance",
@@ -929,6 +989,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "CONTRIBUTION TO THE INTERNATIONAL FUND FOR AGRICULTURAL DEVELOPMENT",
       "match_path": [
         "multilateral assistance",
@@ -944,6 +1005,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "GLOBAL AGRICULTURE AND FOOD SECURITY PROGRAM",
       "match_path": [
         "multilateral assistance",
@@ -959,6 +1021,7 @@
       "chamber": "senate",
       "title": "MULTILATERAL ASSISTANCE",
       "bureau": "Funds Appropriated to the President",
+      "office": null,
       "excel_name": "TREASURY INTERNATIONAL ASSISTANCE PROGRAMS",
       "match_path": [
         "multilateral assistance",
@@ -974,6 +1037,7 @@
       "chamber": "senate",
       "title": "EXPORT AND INVESTMENT ASSISTANCE",
       "bureau": "Export-Import Bank of the United States",
+      "office": null,
       "excel_name": "INSPECTOR GENERAL",
       "match_path": [
         "export and investment assistance",
@@ -989,6 +1053,7 @@
       "chamber": "senate",
       "title": "EXPORT AND INVESTMENT ASSISTANCE",
       "bureau": "Export-Import Bank of the United States",
+      "office": null,
       "excel_name": "ADMINISTRATIVE EXPENSES",
       "match_path": [
         "export and investment assistance",
@@ -1004,6 +1069,7 @@
       "chamber": "senate",
       "title": "EXPORT AND INVESTMENT ASSISTANCE",
       "bureau": "Export-Import Bank of the United States",
+      "office": null,
       "excel_name": "PROGRAM BUDGET APPROPRIATIONS",
       "match_path": [
         "export and investment assistance",
@@ -1019,6 +1085,7 @@
       "chamber": "senate",
       "title": "EXPORT AND INVESTMENT ASSISTANCE",
       "bureau": "United States International Development Finance Corporation",
+      "office": null,
       "excel_name": "INSPECTOR GENERAL",
       "match_path": [
         "export and investment assistance",
@@ -1034,6 +1101,7 @@
       "chamber": "senate",
       "title": "EXPORT AND INVESTMENT ASSISTANCE",
       "bureau": "Corporate Capital Account",
+      "office": null,
       "excel_name": "TRADE AND DEVELOPMENT AGENCY",
       "match_path": [
         "export and investment assistance",

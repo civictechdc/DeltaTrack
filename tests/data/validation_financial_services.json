@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 312294000
@@ -20,6 +21,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": null,
       "excel_name": "COMMITTEE ON FOREIGN INVESTMENT IN THE UNITED STATES FUND",
       "match_path": [
         "department of the treasury",
@@ -35,6 +37,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": "OFFICE OF TERRORISM AND FINANCIAL INTELLIGENCE",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 235333000
@@ -46,6 +49,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": null,
       "excel_name": "CYBERSECURITY ENHANCEMENT ACCOUNT",
       "match_path": [
         "department of the treasury",
@@ -61,6 +65,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": null,
       "excel_name": "DEPARTMENT-WIDE SYSTEMS AND CAPITAL INVESTMENTS PROGRAMS",
       "match_path": [
         "department of the treasury",
@@ -76,6 +81,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": "OFFICE OF INSPECTOR GENERAL",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 48878000
@@ -87,6 +93,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Departmental Offices",
+      "office": "TREASURY INSPECTOR GENERAL FOR TAX ADMINISTRATION",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 174250000
@@ -98,6 +105,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Financial Crimes Enforcement Network",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of the treasury",
@@ -113,6 +121,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Bureau of the Fiscal Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of the treasury",
@@ -128,6 +137,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Alcohol and Tobacco Tax and Trade Bureau",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of the treasury",
@@ -143,6 +153,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Internal Revenue Service",
+      "office": null,
       "excel_name": "TAXPAYER SERVICES",
       "match_path": [
         "department of the treasury",
@@ -158,6 +169,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Internal Revenue Service",
+      "office": null,
       "excel_name": "ENFORCEMENT",
       "match_path": [
         "department of the treasury",
@@ -173,6 +185,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
       "bureau": "Internal Revenue Service",
+      "office": null,
       "excel_name": "TECHNOLOGY AND OPERATIONS SUPPORT",
       "match_path": [
         "department of the treasury",
@@ -187,6 +200,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "The White House",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 77681000
@@ -198,6 +212,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Executive Residence at the White House",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -213,6 +228,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Council of Economic Advisers",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -228,6 +244,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "National Security Council and Homeland Security Council",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -243,6 +260,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -258,6 +276,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of Pandemic Preparedness and Response",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -273,6 +292,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of Pandemic Preparedness and Response",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -288,6 +308,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of the National Cyber Director",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -303,6 +324,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of National Drug Control Policy",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -318,6 +340,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of National Drug Control Policy",
+      "office": "FEDERAL DRUG CONTROL PROGRAMS",
       "excel_name": "HIGH INTENSITY DRUG TRAFFICKING AREAS PROGRAM",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -333,6 +356,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Office of National Drug Control Policy",
+      "office": null,
       "excel_name": "OTHER FEDERAL DRUG CONTROL PROGRAMS",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -348,6 +372,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Special Assistance to the President",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -363,6 +388,7 @@
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
       "bureau": "Official Residence of the Vice President",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -378,6 +404,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Supreme Court of the United States",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -393,6 +420,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Supreme Court of the United States",
+      "office": null,
       "excel_name": "CARE OF THE BUILDING AND GROUNDS",
       "match_path": [
         "the judiciary",
@@ -408,6 +436,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "United States Court of Appeals for the Federal Circuit",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -423,6 +452,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "United States Court of International Trade",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -438,6 +468,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -453,6 +484,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
+      "office": null,
       "excel_name": "VACCINE INJURY COMPENSATION TRUST FUND",
       "match_path": null,
       "expected_amount": 11686000
@@ -464,6 +496,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
+      "office": null,
       "excel_name": "DEFENDER SERVICES",
       "match_path": [
         "the judiciary",
@@ -479,6 +512,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
+      "office": null,
       "excel_name": "FEES OF JURORS AND COMMISSIONERS",
       "match_path": [
         "the judiciary",
@@ -494,6 +528,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
+      "office": null,
       "excel_name": "COURT SECURITY",
       "match_path": [
         "the judiciary",
@@ -509,6 +544,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Administrative Office of the United States Courts",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -524,6 +560,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "Federal Judicial Center",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -539,6 +576,7 @@
       "chamber": "senate",
       "title": "THE JUDICIARY",
       "bureau": "United States Sentencing Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "the judiciary",
@@ -554,6 +592,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR RESIDENT TUITION SUPPORT",
       "match_path": [
         "district of columbia",
@@ -569,6 +608,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR EMERGENCY PLANNING AND SECURITY COSTS IN THE DISTRICT OF COLUMBIA",
       "match_path": [
         "district of columbia",
@@ -584,6 +624,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT TO THE DISTRICT OF COLUMBIA COURTS",
       "match_path": [
         "district of columbia",
@@ -599,6 +640,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR DEFENDER SERVICES IN DISTRICT OF COLUMBIA COURTS",
       "match_path": [
         "district of columbia",
@@ -614,6 +656,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT TO THE COURT SERVICES AND OFFENDER SUPERVISION AGENCY FOR THE DISTRICT OF COLUMBIA",
       "match_path": [
         "district of columbia",
@@ -629,6 +672,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT TO THE DISTRICT OF COLUMBIA PUBLIC DEFENDER SERVICE",
       "match_path": [
         "district of columbia",
@@ -644,6 +688,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT TO THE CRIMINAL JUSTICE COORDINATING COUNCIL",
       "match_path": [
         "district of columbia",
@@ -659,6 +704,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR JUDICIAL COMMISSIONS",
       "match_path": [
         "district of columbia",
@@ -674,6 +720,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR SCHOOL IMPROVEMENT",
       "match_path": [
         "district of columbia",
@@ -689,6 +736,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR THE DISTRICT OF COLUMBIA NATIONAL GUARD",
       "match_path": [
         "district of columbia",
@@ -704,6 +752,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT FOR TESTING AND TREATMENT OF HIV/AIDS",
       "match_path": [
         "district of columbia",
@@ -719,6 +768,7 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
+      "office": null,
       "excel_name": "FEDERAL PAYMENT TO THE DISTRICT OF COLUMBIA WATER AND SEWER AUTHORITY",
       "match_path": [
         "district of columbia",
@@ -734,6 +784,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Administrative Conference of the United States",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -749,6 +800,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Commodity Futures Trading Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -764,6 +816,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Consumer Product Safety Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -779,10 +832,11 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Consumer Product Safety Commission",
+      "office": "COUNCIL OF THE INSPECTORS GENERAL ON INTEGRITY AND EFFICIENCY",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
-        "consumer product safety commission",
+        "council of the inspectors general on integrity and efficiency",
         "salaries and expenses"
       ],
       "expected_amount": 8000000
@@ -794,10 +848,11 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Consumer Product Safety Commission",
+      "office": "ELECTION ASSISTANCE COMMISSION",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
-        "consumer product safety commission",
+        "election assistance commission",
         "salaries and expenses"
       ],
       "expected_amount": 30000000
@@ -809,6 +864,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Consumer Product Safety Commission",
+      "office": null,
       "excel_name": "ELECTION SECURITY GRANTS",
       "match_path": [
         "independent agencies",
@@ -824,6 +880,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Communications Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -839,6 +896,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Deposit Insurance Corporation",
+      "office": null,
       "excel_name": "OFFICE OF THE INSPECTOR GENERAL",
       "match_path": [
         "independent agencies",
@@ -854,6 +912,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Election Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -869,6 +928,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Labor Relations Authority",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -884,6 +944,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Trade Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -899,6 +960,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "FEDERAL BUILDINGS FUND--LIMITATIONS ON AVAILABILITY OF REVENUE",
       "match_path": [
         "independent agencies",
@@ -914,6 +976,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "CONSTRUCTION AND ACQUISITION",
       "match_path": null,
       "expected_amount": 552120000
@@ -925,6 +988,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "REPAIRS AND ALTERATIONS",
       "match_path": null,
       "expected_amount": 392572000
@@ -936,6 +1000,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "RENTAL OF SPACE",
       "match_path": null,
       "expected_amount": 5586122000
@@ -947,6 +1012,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "BUILDING OPERATIONS",
       "match_path": null,
       "expected_amount": 3200000000
@@ -958,6 +1024,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "GOVERNMENT-WIDE POLICY",
       "match_path": [
         "independent agencies",
@@ -973,6 +1040,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "independent agencies",
@@ -988,6 +1056,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "CIVILIAN BOARD OF CONTRACT APPEALS",
       "match_path": [
         "independent agencies",
@@ -1003,6 +1072,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "independent agencies",
@@ -1018,6 +1088,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "ALLOWANCES AND OFFICE STAFF FOR FORMER PRESIDENTS",
       "match_path": [
         "independent agencies",
@@ -1033,6 +1104,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "FEDERAL CITIZEN SERVICES FUND",
       "match_path": [
         "independent agencies",
@@ -1048,6 +1120,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "EXPENSES, PRESIDENTIAL TRANSITION",
       "match_path": [
         "independent agencies",
@@ -1063,6 +1136,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "TECHNOLOGY MODERNIZATION FUND",
       "match_path": [
         "independent agencies",
@@ -1078,6 +1152,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "General Services Administration",
+      "office": null,
       "excel_name": "WORKING CAPITAL FUND",
       "match_path": [
         "independent agencies",
@@ -1093,6 +1168,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Harry S Truman Scholarship Foundation",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1108,6 +1184,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Merit Systems Protection Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1123,6 +1200,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Morris K. Udall and Stewart L. Udall Foundation",
+      "office": null,
       "excel_name": "MORRIS K. UDALL AND STEWART L. UDALL TRUST FUND",
       "match_path": [
         "independent agencies",
@@ -1138,6 +1216,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Morris K. Udall and Stewart L. Udall Foundation",
+      "office": null,
       "excel_name": "ENVIRONMENTAL DISPUTE RESOLUTION FUND",
       "match_path": [
         "independent agencies",
@@ -1153,6 +1232,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Archives and Records Administration",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1168,6 +1248,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Archives and Records Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "independent agencies",
@@ -1183,6 +1264,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Archives and Records Administration",
+      "office": null,
       "excel_name": "REPAIRS AND RESTORATION",
       "match_path": [
         "independent agencies",
@@ -1198,6 +1280,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Credit Union Administration",
+      "office": null,
       "excel_name": "COMMUNITY DEVELOPMENT REVOLVING LOAN FUND",
       "match_path": [
         "independent agencies",
@@ -1213,6 +1296,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Office of Government Ethics",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1228,6 +1312,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Office of Personnel Management",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 205237000
@@ -1239,6 +1324,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Office of Personnel Management",
+      "office": "OFFICE OF INSPECTOR GENERAL",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 6908000
@@ -1250,6 +1336,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Office of Special Counsel",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1265,6 +1352,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Privacy and Civil Liberties Oversight Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1280,6 +1368,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Public Buildings Reform Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1295,6 +1384,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Securities and Exchange Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1310,6 +1400,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Selective Service System",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1325,6 +1416,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1340,6 +1432,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "ENTREPRENEURIAL DEVELOPMENT PROGRAMS",
       "match_path": [
         "independent agencies",
@@ -1355,6 +1448,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "independent agencies",
@@ -1370,6 +1464,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "OFFICE OF ADVOCACY",
       "match_path": [
         "independent agencies",
@@ -1385,6 +1480,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "BUSINESS LOANS PROGRAM ACCOUNT",
       "match_path": [
         "independent agencies",
@@ -1400,6 +1496,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Small Business Administration",
+      "office": null,
       "excel_name": "DISASTER LOANS PROGRAM ACCOUNT",
       "match_path": [
         "independent agencies",
@@ -1415,6 +1512,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "United States Postal Service",
+      "office": null,
       "excel_name": "PAYMENT TO THE POSTAL SERVICE FUND",
       "match_path": [
         "independent agencies",
@@ -1430,6 +1528,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "United States Postal Service",
+      "office": "OFFICE OF INSPECTOR GENERAL",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
@@ -1445,6 +1544,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "United States Tax Court",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",

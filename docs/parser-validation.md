@@ -15,7 +15,7 @@ report are written separately, by different people, for different purposes — s
 numbers match the report, that is real, independent evidence the tool got it right.
 
 Across **all 12 regular appropriations subcommittees**, the tool's amounts match the independent
-source about **94% of the time**. We then hand-checked every remaining case, and
+source about **95% of the time**. We then hand-checked every remaining case, and
 **none is a tool error.** Each is a spot where the report and the bill legitimately state a
 number differently — for example, the report gives one account total while the bill splits it
 into separate lines, or the amount is open-ended ("such sums as may be necessary") so there is
@@ -58,7 +58,7 @@ offsetting collections) are excluded — they are not leaf appropriation account
 |---|---|---:|---:|---:|
 | Commerce-Justice-Science | `118-s-4795` | 75 | 73 | 97% |
 | Agriculture-Rural Development-FDA | `118-s-4690` | 44 | 41 | 93% |
-| Transportation-HUD | `118-s-4796` | 67 | 64 | 96% |
+| Transportation-HUD | `118-s-4796` | 67 | 65 | 97% |
 | State-Foreign Operations | `118-s-4797` | 68 | 67 | 99% |
 | Interior-Environment | `118-s-4802` | 72 | 64 | 89% |
 | Financial Services-General Government | `118-s-4928` | 100 | 98 | 98% |
@@ -67,10 +67,10 @@ offsetting collections) are excluded — they are not leaf appropriation account
 | Defense | `118-s-4921` | 77 | 77 | 100% |
 | Energy-Water | `118-s-4927` | 67 | 61 | 91% |
 | Commerce-Justice-Science (FY2024) | `118-s-2321` | 75 | 73 | 97% |
-| Homeland Security (FY2024) | `118-s-2625` | 35 | 31 | 89% |
+| Homeland Security (FY2024) | `118-s-2625` | 35 | 33 | 94% |
 | Legislative Branch | `118-s-4678` | 31 | 29 | 94% |
 
-**Overall: 805 / 853 accounts recalled (94.4%).**
+**Overall: 808 / 853 accounts recalled (94.7%).**
 
 ## Why the remainder is not a parser problem
 
@@ -98,10 +98,9 @@ The full current remainder:
   - FARM PRODUCTION AND CONSERVATION PROGRAMS / DAIRY INDEMNITY PROGRAM — $500,000
   - FARM PRODUCTION AND CONSERVATION PROGRAMS / REIMBURSEMENT FOR NET REALIZED LOSSES — $12,650,463,000
   - RELATED AGENCY AND FOOD AND DRUG ADMINISTRATION / FARM CREDIT ADMINISTRATION — $100,430,000
-**Transportation-HUD** (3)
+**Transportation-HUD** (2)
   - DEPARTMENT OF TRANSPORTATION / THE NATIONAL RAILROAD PASSENGER CORPORATION — $2,638,072,000
   - DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT / COMMUNITY DEVELOPMENT FUND — $4,614,317,000
-  - INDEPENDENT AGENCIES / SALARIES AND EXPENSES — $32,100,000
 **State-Foreign Operations** (1)
   - DEPARTMENT OF STATE AND RELATED AGENCY / PAYMENT TO THE FOREIGN SERVICE RETIREMENT AND DISABILITY FUND — $60,000,000
 **Interior-Environment** (8)
@@ -143,9 +142,7 @@ The full current remainder:
 **Commerce-Justice-Science (FY2024)** (2)
   - DEPARTMENT OF JUSTICE / SALARIES AND EXPENSES — $3,210,719,000
   - DEPARTMENT OF JUSTICE / PUBLIC SAFETY OFFICERS BENEFITS — $208,800,000
-**Homeland Security (FY2024)** (4)
-  - DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT / OPERATIONS AND SUPPORT — $341,497,000
-  - DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT / OPERATIONS AND SUPPORT — $237,000,000
+**Homeland Security (FY2024)** (2)
   - SECURITY, ENFORCEMENT, AND INVESTIGATIONS / HEALTH CARE FUND CONTRIBUTION — $277,000,000
   - RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES / OPERATIONS AND SUPPORT — $455,661,000
 **Legislative Branch** (2)
