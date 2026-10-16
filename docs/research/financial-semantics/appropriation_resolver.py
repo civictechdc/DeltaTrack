@@ -201,10 +201,14 @@ def resolve_named(text: str, name: str, heading: str) -> int | None:
 # addition", a second purpose ("$345,000,000 and, for carrying out ... section 437, $72,515,000"),
 # or an advance appropriation from last year's act that becomes available this year.
 # `resolve_total` adds those pieces, each by its own phrase, to the top line.
+# "together with $X" joins the account when it says where the money comes from: "which may be
+# expended from", "to be transferred from" a trust fund, or "from the amounts available under"
+# section 241 of the PHS Act (the evaluation tap).
 TOGETHER_WITH = re.compile(
     r"\btogether with\s+(?:not to exceed\s+)?"
     + _MONEY
-    + r",?\s+which\s+(?:may|shall)\s+be\s+(?:expended|available)\s+from\b",
+    + r",?\s+(?:which\s+(?:may|shall)\s+be\s+(?:expended|available)\s+from|to be transferred from"
+    r"|from the amounts available under)\b",
     re.IGNORECASE,
 )
 # Only "in addition" that continues the account's own sentence (", and in addition $X") joins it;
@@ -217,6 +221,49 @@ PREVIOUSLY = re.compile(
 SECOND_PURPOSE = re.compile(
     _MONEY + r",?\s+and,?\s+for\b[^$]{0,300}?,\s+" + _MONEY + r"(?=\s*(?:[,:;.]|$)|\s+to remain)", re.IGNORECASE
 )
+
+
+# A proviso that adds money to the account rather than qualifying it: "Provided further, That in
+# addition to amounts provided herein, $31,428,000 shall be available under section 241 of the
+# PHS Act ..." (or "the following amounts shall be available ...: (1) $79,200,000 ...; (2) ...").
+# The one exception to "nothing after the first proviso is the appropriation".
+HEREIN_PROVISO = re.compile(
+    r"^\s*in addition to (?:the )?amounts? (?:provided|made available|appropriated) (?:herein|under this heading)\b",
+    re.IGNORECASE,
+)
+# A later sentence of the same paragraph that appropriates more and says so: "In addition to other
+# funds appropriated for the Common Fund ..., $12,600,000 is appropriated to the Common Fund ...".
+#
+# Why not every "In addition, for <purpose>, $X." sentence: reports count some and not others by
+# budget-scoring convention. They leave out a trust-fund reimbursement ("..., $22,700,000, to be
+# appropriated from the Vaccine Injury Compensation Trust Fund"), next year's advance ("for the
+# first quarter of fiscal year 2026, $261,063,820,000"), a fee-offset amount and a payment to a
+# separate fund, while counting HHS's "In addition, for expenses necessary to ..., $118,983,000".
+# Read all of them and nine accounts that agreed became wrong figures; excluding those four kinds
+# recovers seven more agreements, but the exclusions were written from the same nine failures,
+# so they wait for a fresh answer key (README).
+ADDITIONAL_SENTENCE = re.compile(r"(?<=\.)\s+(?=In addition\b)")
+IN_ADDITION_TO_FUNDS = re.compile(r"^In addition to (?:other )?(?:funds|amounts)\b", re.IGNORECASE)
+
+
+def _added_by_provisos(flat: str) -> int:
+    added = 0
+    for proviso in cb.PROVIDED_RE.split(flat)[1:]:
+        if not HEREIN_PROVISO.match(proviso):
+            continue
+        for m in FIGURE.finditer(proviso):
+            if not LIMITED.search(proviso[max(0, m.start() - 40) : m.start()].rstrip(" ,:;")):
+                added += _value(m.group(1))
+    return added
+
+
+def _added_by_sentences(flat: str) -> int:
+    added = 0
+    for sentence in ADDITIONAL_SENTENCE.split(flat)[1:]:
+        explicit = EXPLICIT.search(sentence) if IN_ADDITION_TO_FUNDS.match(sentence) else None
+        if explicit:
+            added += _value(explicit.group(1) or explicit.group(2))
+    return added
 
 
 def resolve_total(text: str) -> int | None:
@@ -234,7 +281,7 @@ def resolve_total(text: str) -> int | None:
         total = _value(second.group(1)) + _value(second.group(2))
     for pattern in (TOGETHER_WITH, IN_ADDITION, PREVIOUSLY):
         total += sum(_value(m.group(1)) for m in pattern.finditer(operative))
-    return total
+    return total + _added_by_provisos(flat) + _added_by_sentences(flat)
 
 
 def select_named_total(text: str, name: str, heading: str) -> Selection:

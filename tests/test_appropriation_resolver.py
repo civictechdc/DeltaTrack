@@ -214,6 +214,54 @@ def test_an_advance_appropriation_available_this_year_is_added_and_an_in_all_tot
 
 SPREADSHEET = "House_and_Senate_Appropriations_FY_1994_to_present.xlsx"  # validation_leg_branch.json's source
 
+
+def test_a_proviso_that_adds_money_herein_is_part_of_the_account():
+    """The one proviso read for money: it adds to the account instead of qualifying it."""
+    single = (
+        "For program support, $201,492,000: Provided, That none of the funds shall be used for travel: Provided "
+        "further, That in addition to amounts provided herein, $31,428,000 shall be available under section 241 "
+        "of the PHS Act to supplement national surveys."
+    )
+    listed = (
+        "For substance abuse treatment, $4,154,098,000: Provided, That in addition to amounts provided herein, "
+        "the following amounts shall be available under section 241 of the PHS Act: (1) $79,200,000 to carry "
+        "out subpart II; and (2) $2,000,000 to evaluate substance abuse treatment programs."
+    )
+    assert resolve_total(single) == 232_920_000
+    assert resolve_total(listed) == 4_235_298_000
+    # A proviso that only qualifies the money still adds nothing.
+    assert resolve_total("For grants, $10,000,000: Provided, That $2,000,000 shall be for evaluation.") == 10_000_000
+
+
+def test_together_with_names_its_source_in_three_ways():
+    transferred = (
+        "For aging programs, $2,460,875,000, together with $55,242,000 to be transferred from the Federal "
+        "Hospital Insurance Trust Fund to carry out section 4360."
+    )
+    tap = (
+        "For general departmental management, $537,144,000, together with $64,828,000 from the amounts "
+        "available under section 241 of the PHS Act to carry out research and evaluation activities."
+    )
+    assert resolve_total(transferred) == 2_516_117_000
+    assert resolve_total(tap) == 601_972_000
+
+
+def test_a_later_sentence_adds_money_only_when_it_says_it_appropriates():
+    """ "$X is appropriated" says so; "In addition, for <purpose>, $X" is counted by some reports and not
+    others (a trust-fund reimbursement is not), so it is left out until a fresh answer key can judge."""
+    explicit = (
+        "For the Office of the Director, $3,096,914,000: Provided, That funds are available for research. In "
+        "addition to other funds appropriated for the Common Fund, $12,600,000 is appropriated to the Common Fund."
+    )
+    reimbursement = (
+        "For legal activities, $1,130,000,000: Provided, That funds are available for travel. In addition, for "
+        "reimbursement of expenses of the Department of Justice associated with processing cases, $22,700,000, "
+        "to be appropriated from the Vaccine Injury Compensation Trust Fund."
+    )
+    assert resolve_total(explicit) == 3_109_514_000
+    assert resolve_total(reimbursement) == 1_130_000_000
+
+
 # The two typing disagreements left where the report's figure is in the text. Neither is a
 # figure picked from the wrong place: each is a question the figure's type has to answer.
 KNOWN_WRONG_FIGURES = {
@@ -261,7 +309,7 @@ def test_summing_an_accounts_pieces_types_no_wrong_figure_but_gross_versus_net()
     # Held per evidence source, as the README reports them: the spreadsheet's itemised lines
     # must not be counted as committee-report agreement.
     agree = Counter(r.source for r in results if r.outcome == "agree")
-    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 658, "fewer accounts agree with their committee report"
+    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 661, "fewer accounts agree with their committee report"
     assert agree[SPREADSHEET] >= 403, "fewer accounts agree with the Legislative Branch spreadsheet"
 
 

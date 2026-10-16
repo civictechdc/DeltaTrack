@@ -260,23 +260,23 @@ On the 1,163 mapped accounts (of 1,267), reproduced by the first command:
 
 | | `classify_bill` (first figure of the primary clause) | `structured` (one figure per paragraph) | `ledger` (plus itemised lines) | `summed` (plus an account's added pieces) |
 |---|---|---|---|---|
-| Agrees with the answer key | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,061 (91.2%) |
+| Agrees with the answer key | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,064 (91.5%) |
 | Typed a different figure while the answer key's is in the text | 37 | 2 | 1 | 1 |
 | Typed nothing while the answer key's figure is in the text | 21 | 21 | 21 | 21 |
-| Typed a figure the answer key does not state (no single figure in the text matches) | 46 | 46 | 46 | 36 |
+| Typed a figure the answer key does not state (no single figure in the text matches) | 46 | 46 | 46 | 33 |
 | Answer key finer than the figure typed (several answer-key lines, one paragraph) | 122 | 122 | 27 | 27 |
 
 The same agreement by evidence source (the summary's last lines):
 
 | Agrees with the answer key | `classify_bill` | `structured` | `ledger` | `summed` |
 |---|---|---|---|---|
-| Committee reports (752 accounts) | 636 (84.6%) | 648 (86.2%) | 648 (86.2%) | 658 (87.5%) |
+| Committee reports (752 accounts) | 636 (84.6%) | 648 (86.2%) | 648 (86.2%) | 661 (87.9%) |
 | Legislative Branch spreadsheet (411 accounts) | 284 (69.1%) | 307 (74.7%) | 403 (98.1%) | 403 (98.1%) |
-| Combined (1,163 accounts) | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,061 (91.2%) |
+| Combined (1,163 accounts) | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,064 (91.5%) |
 
-Against committee reports alone, `summed` agrees on 87.5%. The step from 82.1% to 90.4% is
+Against committee reports alone, `summed` agrees on 87.9%. The step from 82.1% to 90.4% is
 entirely the spreadsheet's itemised lines, and every figure `summed` types that its source
-contradicts or does not confirm (37) is on a committee-report account.
+contradicts or does not confirm (34) is on a committee-report account.
 
 The resolver changes which figure is chosen, never which paragraphs count as appropriations, so it
 reads the paragraph as drafted: nothing after the first proviso (an "in all" there caps one use
@@ -375,6 +375,42 @@ the Oil Spill Liability Trust Fund to reimburse ..." is not counted by its repor
 now joins an account only within its own sentence. That distinction rests on one example each way,
 and these rules were written after the held-out keys had been read: HELD_OUT moves from 83.5% to
 85.5%, which is not an unbiased estimate.
+
+**Money a Labor-HHS account gets from elsewhere.** Fifteen Labor-HHS accounts typed a figure their
+committee report does not state, twelve of them health agencies whose report figure is the bill's
+top line plus a block of money from somewhere else. Reading them found three phrases that add
+money to an account and say so, now added by `resolve_total`:
+
+- a proviso that adds rather than qualifies: "Provided further, That in addition to amounts
+  provided herein, $31,428,000 shall be available under section 241 of the PHS Act ..." (the
+  evaluation tap), or "the following amounts shall be available ...: (1) $79,200,000 ...; (2)
+  $2,000,000 ...". It is the one exception to reading nothing after the first proviso;
+- "together with" naming its source in two more ways: "together with $55,242,000 to be
+  transferred from the Federal Hospital Insurance Trust Fund ..." and "together with $64,828,000
+  from the amounts available under section 241 of the PHS Act";
+- a later sentence that appropriates and says so: "In addition to other funds appropriated for
+  the Common Fund ..., $12,600,000 is appropriated to the Common Fund ...".
+
+Three accounts now agree (NIH Office of the Director, Substance Abuse Treatment, Health
+Surveillance and Program Support), no account that agreed is lost, and the wrong figures stay at
+the one gross-versus-net account; committee-report agreement goes from 658 to 661 of 752. Three
+more come closer without agreeing (Mental Health, Aging and Disability Services, General
+Departmental Management). HELD_OUT, where Labor-HHS sits, moves to 86.2%, after reading it.
+
+What the rest need is outside a paragraph or outside a rule:
+
+- The five CDC accounts carry no cue in their own text. Their report figure includes Prevention
+  and Public Health Fund transfers, which a general provision elsewhere in the bill assigns to
+  them; reading those needs a cross-paragraph step this research does not have.
+- "In addition, for <purpose>, $X." sentences are counted by some reports and not others, by
+  budget-scoring convention. HHS's "In addition, for expenses necessary to ..., $118,983,000" is
+  in its report figure; a trust-fund reimbursement ("..., $22,700,000, to be appropriated from the
+  Vaccine Injury Compensation Trust Fund"), next year's advance (Medicaid's "for the first quarter
+  of fiscal year 2026, $261,063,820,000"), a fee-offset amount and a payment to a separate fund are
+  not. Reading every such sentence lost nine agreements to wrong figures. Excluding those four
+  kinds would add seven agreements with no loss (668 of 752 against committee reports), but the
+  exclusions were written from the same nine failures, so they wait for a fresh answer key. They
+  are also what ADR 0025 proposes a figure's type should carry: its effect.
 
 ## Do typed figures add up to the report's agency totals?
 
