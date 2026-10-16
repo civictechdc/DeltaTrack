@@ -121,7 +121,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
-      "excel_name": "CONFERENCE OF THE MINORITY",
+      "excel_name": "OFFICES OF THE SECRETARIES OF THE CONFERENCE OF THE MAJORITY AND THE CONFERENCE OF THE MINORITY",
       "match_path": [
         "legislative branch",
         "senate",
@@ -200,7 +200,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Capitol Police Board and Chief Law Enforcement Officer",
+      "bureau": "Salaries, Officers, and Employees",
       "excel_name": "OFFICES OF THE SECRETARIES FOR THE MAJORITY AND MINORITY",
       "match_path": [
         "legislative branch",
@@ -216,7 +216,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Capitol Police Board and Chief Law Enforcement Officer",
+      "bureau": "Salaries, Officers, and Employees",
       "excel_name": "AGENCY CONTRIBUTIONS",
       "match_path": [
         "legislative branch",
@@ -280,7 +280,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Contractual Legal and Administrative Services and",
+      "bureau": "Contingent Expenses of the Senate",
       "excel_name": "SERGEANT AT ARMS AND DOORKEEPER OF THE SENATE",
       "match_path": [
         "legislative branch",
@@ -296,7 +296,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Enhancing Effectiveness of Constituent Casework",
+      "bureau": "Contingent Expenses of the Senate",
       "excel_name": "MISCELLANEOUS ITEMS",
       "match_path": [
         "legislative branch",
@@ -312,7 +312,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Senate Employees' Child Care Center: Training Classes and",
+      "bureau": "Contingent Expenses of the Senate",
       "excel_name": "SENATORS' OFFICIAL PERSONNEL AND OFFICE EXPENSE ACCOUNT",
       "match_path": [
         "legislative branch",
@@ -328,7 +328,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Administrative",
+      "bureau": "Contingent Expenses of the Senate",
       "excel_name": "OFFICIAL MAIL COSTS",
       "match_path": [
         "legislative branch",
@@ -436,7 +436,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Documents",
+      "bureau": "Public Information Programs of the Office of Superintendent of Documents",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "legislative branch",
@@ -452,7 +452,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "GAO Study on Agency Responsiveness to Congressional",
+      "bureau": "Salaries and Expenses",
       "excel_name": "CONGRESSIONAL OFFICE FOR INTERNATIONAL LEADERSHIP FUND",
       "match_path": [
         "legislative branch",
@@ -466,7 +466,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "GAO Study on Agency Responsiveness to Congressional",
+      "bureau": "Salaries and Expenses",
       "excel_name": "JOHN C. STENNIS CENTER FOR PUBLIC SERVICE TRAINING AND DEVELOPMENT",
       "match_path": [
         "legislative branch",

@@ -10,7 +10,12 @@
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
       "excel_name": "Investigations",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "investigations"
+      ],
       "expected_amount": 107800000
     },
     {
@@ -38,9 +43,10 @@
       "bureau": "Corps of Engineers--Civil",
       "excel_name": "Construction",
       "match_path": [
-        "department of energy",
-        "power marketing administrations",
-        "construction, rehabilitation, operation and maintenance, western area power administration"
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "construction"
       ],
       "expected_amount": 2979041000
     },
@@ -52,7 +58,12 @@
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
       "excel_name": "Mississippi River and Tributaries",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "mississippi river and tributaries"
+      ],
       "expected_amount": 375464000
     },
     {
@@ -63,7 +74,12 @@
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
       "excel_name": "Operation and Maintenance",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "operation and maintenance"
+      ],
       "expected_amount": 5849129000
     },
     {

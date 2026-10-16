@@ -1,6 +1,6 @@
 {
   "source": "CRPT-118srpt206, Financial Services-General Government explanatory statement for BILLS-118s4928rs",
-  "note": "Financial Services-General Government FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks and validated against the bill XML. Committee-recommendation amounts are in actual dollars. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
+  "note": "Financial Services-General Government FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks (committee-recommendation amounts, in actual dollars) and validated against the bill XML. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
   "accounts": [
     {
       "bill": "118-s-4928",
@@ -34,7 +34,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "The Foreign Investment Risk Review Modernization Act of",
+      "bureau": "Departmental Offices",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 235333000
@@ -45,7 +45,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "The Foreign Investment Risk Review Modernization Act of",
+      "bureau": "Departmental Offices",
       "excel_name": "CYBERSECURITY ENHANCEMENT ACCOUNT",
       "match_path": [
         "department of the treasury",
@@ -60,7 +60,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "The Foreign Investment Risk Review Modernization Act of",
+      "bureau": "Departmental Offices",
       "excel_name": "DEPARTMENT-WIDE SYSTEMS AND CAPITAL INVESTMENTS PROGRAMS",
       "match_path": [
         "department of the treasury",
@@ -75,7 +75,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "The Foreign Investment Risk Review Modernization Act of",
+      "bureau": "Departmental Offices",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 48878000
@@ -86,7 +86,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "The Foreign Investment Risk Review Modernization Act of",
+      "bureau": "Departmental Offices",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": null,
       "expected_amount": 174250000
@@ -157,7 +157,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "Employer Identification Number [EIN] Trusted Filer",
+      "bureau": "Internal Revenue Service",
       "excel_name": "ENFORCEMENT",
       "match_path": [
         "department of the treasury",
@@ -172,7 +172,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE TREASURY",
-      "bureau": "Employer Identification Number [EIN] Trusted Filer",
+      "bureau": "Internal Revenue Service",
       "excel_name": "TECHNOLOGY AND OPERATIONS SUPPORT",
       "match_path": [
         "department of the treasury",
@@ -272,7 +272,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE",
-      "bureau": "The Office of Pandemic Preparedness and Response Policy",
+      "bureau": "Office of Pandemic Preparedness and Response",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "executive office of the president and funds appropriated to the president",
@@ -452,7 +452,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "THE JUDICIARY",
-      "bureau": "Strengthening Collaboration to Ensure Effective Treatment",
+      "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
       "excel_name": "VACCINE INJURY COMPENSATION TRUST FUND",
       "match_path": null,
       "expected_amount": 11686000
@@ -463,7 +463,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "THE JUDICIARY",
-      "bureau": "Enacted by the National Childhood Vaccine Injury Act of",
+      "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
       "excel_name": "DEFENDER SERVICES",
       "match_path": [
         "the judiciary",
@@ -478,7 +478,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "THE JUDICIARY",
-      "bureau": "Enacted by the National Childhood Vaccine Injury Act of",
+      "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
       "excel_name": "FEES OF JURORS AND COMMISSIONERS",
       "match_path": [
         "the judiciary",
@@ -493,7 +493,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "THE JUDICIARY",
-      "bureau": "Enacted by the National Childhood Vaccine Injury Act of",
+      "bureau": "Courts of Appeals, District Courts, and Other Judicial Services",
       "excel_name": "COURT SECURITY",
       "match_path": [
         "the judiciary",
@@ -569,8 +569,12 @@
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
       "bureau": null,
-      "excel_name": "DISTRICT OF COLUMBIA",
-      "match_path": null,
+      "excel_name": "FEDERAL PAYMENT FOR EMERGENCY PLANNING AND SECURITY COSTS IN THE DISTRICT OF COLUMBIA",
+      "match_path": [
+        "district of columbia",
+        "federal funds",
+        "federal payment for emergency planning and security costs in the district of columbia"
+      ],
       "expected_amount": 97000000
     },
     {
@@ -594,7 +598,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "Pursuant to the National Capital Revitalization and Self-",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT FOR DEFENDER SERVICES IN DISTRICT OF COLUMBIA COURTS",
       "match_path": [
         "district of columbia",
@@ -609,8 +613,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "Pursuant to the National Capital Revitalization and Self-",
-      "excel_name": "FOR THE DISTRICT OF COLUMBIA",
+      "bureau": null,
+      "excel_name": "FEDERAL PAYMENT TO THE COURT SERVICES AND OFFENDER SUPERVISION AGENCY FOR THE DISTRICT OF COLUMBIA",
       "match_path": [
         "district of columbia",
         "federal funds",
@@ -624,7 +628,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Court Services and Offender Supervision Agency [CSOSA]",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT TO THE DISTRICT OF COLUMBIA PUBLIC DEFENDER SERVICE",
       "match_path": [
         "district of columbia",
@@ -639,7 +643,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Public Defender Service for the District of Columbia",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT TO THE CRIMINAL JUSTICE COORDINATING COUNCIL",
       "match_path": [
         "district of columbia",
@@ -654,7 +658,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Public Defender Service for the District of Columbia",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT FOR JUDICIAL COMMISSIONS",
       "match_path": [
         "district of columbia",
@@ -669,7 +673,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Public Defender Service for the District of Columbia",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT FOR SCHOOL IMPROVEMENT",
       "match_path": [
         "district of columbia",
@@ -684,7 +688,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Public Defender Service for the District of Columbia",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT FOR THE DISTRICT OF COLUMBIA NATIONAL GUARD",
       "match_path": [
         "district of columbia",
@@ -699,7 +703,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Major General David F. Wherley, Jr. District of",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT FOR TESTING AND TREATMENT OF HIV/AIDS",
       "match_path": [
         "district of columbia",
@@ -714,7 +718,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DISTRICT OF COLUMBIA",
-      "bureau": "The Major General David F. Wherley, Jr. District of",
+      "bureau": null,
       "excel_name": "FEDERAL PAYMENT TO THE DISTRICT OF COLUMBIA WATER AND SEWER AUTHORITY",
       "match_path": [
         "district of columbia",
@@ -789,11 +793,11 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "The Council of the Inspectors General on Integrity and",
+      "bureau": "Consumer Product Safety Commission",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "independent agencies",
-        "council of the inspectors general on integrity and efficiency",
+        "consumer product safety commission",
         "salaries and expenses"
       ],
       "expected_amount": 30000000
@@ -804,7 +808,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "The Council of the Inspectors General on Integrity and",
+      "bureau": "Consumer Product Safety Commission",
       "excel_name": "ELECTION SECURITY GRANTS",
       "match_path": [
         "independent agencies",
@@ -920,7 +924,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Archives at",
+      "bureau": "General Services Administration",
       "excel_name": "REPAIRS AND ALTERATIONS",
       "match_path": null,
       "expected_amount": 392572000
@@ -931,7 +935,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "RENTAL OF SPACE",
       "match_path": null,
       "expected_amount": 5586122000
@@ -942,7 +946,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "BUILDING OPERATIONS",
       "match_path": null,
       "expected_amount": 3200000000
@@ -953,7 +957,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "GOVERNMENT-WIDE POLICY",
       "match_path": [
         "independent agencies",
@@ -968,9 +972,13 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "OPERATING EXPENSES",
-      "match_path": null,
+      "match_path": [
+        "independent agencies",
+        "general services administration",
+        "operating expenses"
+      ],
       "expected_amount": 54478000
     },
     {
@@ -979,7 +987,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "CIVILIAN BOARD OF CONTRACT APPEALS",
       "match_path": [
         "independent agencies",
@@ -994,9 +1002,13 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
-      "match_path": null,
+      "match_path": [
+        "independent agencies",
+        "general services administration",
+        "office of inspector general"
+      ],
       "expected_amount": 74583000
     },
     {
@@ -1005,7 +1017,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "ALLOWANCES AND OFFICE STAFF FOR FORMER PRESIDENTS",
       "match_path": [
         "independent agencies",
@@ -1020,7 +1032,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "FEDERAL CITIZEN SERVICES FUND",
       "match_path": [
         "independent agencies",
@@ -1035,9 +1047,13 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "EXPENSES, PRESIDENTIAL TRANSITION",
-      "match_path": null,
+      "match_path": [
+        "independent agencies",
+        "general services administration",
+        "expenses, presidential transition"
+      ],
       "expected_amount": 19424177
     },
     {
@@ -1046,7 +1062,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "TECHNOLOGY MODERNIZATION FUND",
       "match_path": [
         "independent agencies",
@@ -1061,7 +1077,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Headquarters",
+      "bureau": "General Services Administration",
       "excel_name": "WORKING CAPITAL FUND",
       "match_path": [
         "independent agencies",
@@ -1121,7 +1137,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "The Morris K. Udall and Stewart L. Udall Trust Fund",
+      "bureau": "Morris K. Udall and Stewart L. Udall Foundation",
       "excel_name": "ENVIRONMENTAL DISPUTE RESOLUTION FUND",
       "match_path": [
         "independent agencies",
@@ -1222,13 +1238,9 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Providing Greater Awareness of Federal Job Opportunities",
+      "bureau": "Office of Personnel Management",
       "excel_name": "SALARIES AND EXPENSES",
-      "match_path": [
-        "the judiciary",
-        "united states court of appeals for the federal circuit",
-        "salaries and expenses"
-      ],
+      "match_path": null,
       "expected_amount": 6908000
     },
     {
@@ -1342,7 +1354,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Small Business Employee Ownership and Cooperatives",
+      "bureau": "Small Business Administration",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "independent agencies",
@@ -1357,7 +1369,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Small Business Employee Ownership and Cooperatives",
+      "bureau": "Small Business Administration",
       "excel_name": "OFFICE OF ADVOCACY",
       "match_path": [
         "independent agencies",
@@ -1372,7 +1384,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Small Business Employee Ownership and Cooperatives",
+      "bureau": "Small Business Administration",
       "excel_name": "BUSINESS LOANS PROGRAM ACCOUNT",
       "match_path": [
         "independent agencies",
@@ -1387,7 +1399,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
-      "bureau": "Small Business Employee Ownership and Cooperatives",
+      "bureau": "Small Business Administration",
       "excel_name": "DISASTER LOANS PROGRAM ACCOUNT",
       "match_path": [
         "independent agencies",

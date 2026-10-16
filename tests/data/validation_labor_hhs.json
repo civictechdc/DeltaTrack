@@ -23,7 +23,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "Congressionally Directed Spending",
+      "bureau": "Employment and Training Administration",
       "excel_name": "JOB CORPS",
       "match_path": [
         "department of labor",
@@ -38,7 +38,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "Congressionally Directed Spending",
+      "bureau": "Employment and Training Administration",
       "excel_name": "COMMUNITY SERVICE EMPLOYMENT FOR OLDER AMERICANS",
       "match_path": [
         "department of labor",
@@ -53,7 +53,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "Community Service Employment for Older Americans [CSEOA]",
+      "bureau": "Employment and Training Administration",
       "excel_name": "FEDERAL UNEMPLOYMENT BENEFITS AND ALLOWANCES",
       "match_path": [
         "department of labor",
@@ -68,7 +68,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "Community Service Employment for Older Americans [CSEOA]",
+      "bureau": "Employment and Training Administration",
       "excel_name": "STATE UNEMPLOYMENT INSURANCE AND EMPLOYMENT SERVICE OPERATIONS",
       "match_path": [
         "department of labor",
@@ -83,7 +83,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "Timely Processing of Permanent Labor Certification",
+      "bureau": "Employment and Training Administration",
       "excel_name": "PROGRAM ADMINISTRATION",
       "match_path": [
         "department of labor",
@@ -289,7 +289,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "The Departmental Management, Salaries and Expenses",
+      "bureau": "Departmental Management",
       "excel_name": "INFORMATION TECHNOLOGY MODERNIZATION",
       "match_path": null,
       "expected_amount": 29269000
@@ -300,7 +300,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF LABOR",
-      "bureau": "The Departmental Management, Salaries and Expenses",
+      "bureau": "Departmental Management",
       "excel_name": "OFFICE OF THE INSPECTOR GENERAL",
       "match_path": null,
       "expected_amount": 97028000
@@ -311,7 +311,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "The Health Resources and Services Administration [HRSA]",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "PRIMARY HEALTH CARE",
       "match_path": [
         "department of health and human services",
@@ -326,7 +326,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Federally Qualified Health Center [FQHC] Look-Alike",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "HEALTH WORKFORCE",
       "match_path": [
         "department of health and human services",
@@ -341,7 +341,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Nursing Workforce Diversity",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "MATERNAL AND CHILD HEALTH",
       "match_path": [
         "department of health and human services",
@@ -356,7 +356,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Disorders [MMHSUD]",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "RYAN WHITE HIV/AIDS PROGRAM",
       "match_path": [
         "department of health and human services",
@@ -371,7 +371,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Disorders [MMHSUD]",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "HEALTH SYSTEMS",
       "match_path": [
         "department of health and human services",
@@ -386,7 +386,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Organ Procurement and Transplantation Network [OPTN]",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "RURAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -401,7 +401,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Rural Maternity and Obstetrics Management Strategies",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "FAMILY PLANNING",
       "match_path": [
         "department of health and human services",
@@ -416,7 +416,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Rural Maternity and Obstetrics Management Strategies",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "HRSA-WIDE ACTIVITIES AND PROGRAM SUPPORT",
       "match_path": [
         "department of health and human services",
@@ -431,7 +431,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Rural Maternity and Obstetrics Management Strategies",
+      "bureau": "Health Resources and Services Administration",
       "excel_name": "VACCINE INJURY COMPENSATION PROGRAM TRUST FUND",
       "match_path": [
         "department of health and human services",
@@ -462,7 +462,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Centers for Disease Control and Prevention",
-      "excel_name": "PREVENTION",
+      "excel_name": "HIV, VIRAL HEPATITIS, SEXUALLY TRANSMITTED DISEASES, AND TUBERCULOSIS PREVENTION",
       "match_path": null,
       "expected_amount": 1394056000
     },
@@ -487,7 +487,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Myalgic Encephalomyelitis/Chronic Fatigue Syndrome [ME/",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "CHRONIC DISEASE PREVENTION AND HEALTH PROMOTION",
       "match_path": [
         "department of health and human services",
@@ -502,8 +502,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Myalgic Encephalomyelitis/Chronic Fatigue Syndrome [ME/",
-      "excel_name": "DISABILITY AND HEALTH",
+      "bureau": "Centers for Disease Control and Prevention",
+      "excel_name": "NATIONAL CENTER ON BIRTH DEFECTS, DEVELOPMENTAL DISABILITIES, DISABILITY AND HEALTH",
       "match_path": null,
       "expected_amount": 210060000
     },
@@ -513,7 +513,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Surveillance for Emerging Threats to Mothers and Babies",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "PUBLIC HEALTH AND SCIENTIFIC SERVICES",
       "match_path": null,
       "expected_amount": 774497000
@@ -524,7 +524,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Native Hawaiian and Pacific Islander National Health",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "ENVIRONMENTAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -539,7 +539,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Enhancing Data-Driven Disease Detection in Newborns",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "INJURY PREVENTION AND CONTROL",
       "match_path": [
         "department of health and human services",
@@ -554,7 +554,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Enhancing Data-Driven Disease Detection in Newborns",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "OCCUPATIONAL SAFETY AND HEALTH",
       "match_path": [
         "department of health and human services",
@@ -569,7 +569,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Coal Workers' Health Surveillance Program Mobile Medical",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "ENERGY EMPLOYEES OCCUPATIONAL INJURY COMPENSATION ACT",
       "match_path": null,
       "expected_amount": 55358000
@@ -580,7 +580,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Coal Workers' Health Surveillance Program Mobile Medical",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "GLOBAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -595,7 +595,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Soil Transmitted Helminth and Related Diseases of",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "PUBLIC HEALTH PREPAREDNESS AND RESPONSE",
       "match_path": [
         "department of health and human services",
@@ -610,9 +610,13 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Public Health Emergency Preparedness Cooperative",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "BUILDINGS AND FACILITIES",
-      "match_path": null,
+      "match_path": [
+        "department of health and human services",
+        "centers for disease control and prevention",
+        "buildings and facilities"
+      ],
       "expected_amount": 40000000
     },
     {
@@ -621,7 +625,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Public Health Emergency Preparedness Cooperative",
+      "bureau": "Centers for Disease Control and Prevention",
       "excel_name": "CDC-WIDE ACTIVITIES",
       "match_path": [
         "department of health and human services",
@@ -651,7 +655,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Surveillance, Epidemiology, and End Results [SEER]",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL HEART, LUNG, AND BLOOD INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -666,7 +670,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Surveillance, Epidemiology, and End Results [SEER]",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF DENTAL AND CRANIOFACIAL RESEARCH",
       "match_path": [
         "department of health and human services",
@@ -681,7 +685,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Advancing Head and Neck Cancer Early Detection Research",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF DIABETES AND DIGESTIVE AND KIDNEY DISEASES",
       "match_path": [
         "department of health and human services",
@@ -696,7 +700,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Advancing Head and Neck Cancer Early Detection Research",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF NEUROLOGICAL DISORDERS AND STROKE",
       "match_path": [
         "department of health and human services",
@@ -711,7 +715,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Preventive and Early-Treatment Cognitive and Brain Health",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF ALLERGY AND INFECTIOUS DISEASES",
       "match_path": [
         "department of health and human services",
@@ -726,7 +730,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Equipping NIH Research Programs to Target HIV/AIDS",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF GENERAL MEDICAL SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -741,12 +745,12 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "IDeA Networks for Clinical and Translational Research",
-      "excel_name": "DEVELOPMENT",
+      "bureau": "National Institutes of Health",
+      "excel_name": "EUNICE KENNEDY SHRIVER NATIONAL INSTITUTE OF CHILD HEALTH AND HUMAN DEVELOPMENT",
       "match_path": [
         "department of health and human services",
-        "administration for strategic preparedness and response",
-        "research, development, and procurement"
+        "national institutes of health",
+        "eunice kennedy shriver national institute of child health and human development"
       ],
       "expected_amount": 1779078000
     },
@@ -756,7 +760,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Learning Disabilities Research Centers and Learning",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL EYE INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -771,7 +775,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Learning Disabilities Research Centers and Learning",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF ENVIRONMENTAL HEALTH SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -786,7 +790,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Learning Disabilities Research Centers and Learning",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE ON AGING",
       "match_path": [
         "department of health and human services",
@@ -801,7 +805,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Alzheimer's Disease/Alzheimer's Disease-Related Dementias",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF ARTHRITIS AND MUSCULOSKELETAL AND SKIN DISEASES",
       "match_path": [
         "department of health and human services",
@@ -816,7 +820,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Alzheimer's Disease/Alzheimer's Disease-Related Dementias",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF DEAFNESS AND OTHER COMMUNICATION DISORDERS",
       "match_path": null,
       "expected_amount": 534333000
@@ -827,7 +831,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Alzheimer's Disease/Alzheimer's Disease-Related Dementias",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF NURSING RESEARCH",
       "match_path": [
         "department of health and human services",
@@ -842,7 +846,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Alzheimer's Disease/Alzheimer's Disease-Related Dementias",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE ON ALCOHOL ABUSE AND ALCOHOLISM",
       "match_path": [
         "department of health and human services",
@@ -857,7 +861,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Alzheimer's Disease/Alzheimer's Disease-Related Dementias",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE ON DRUG ABUSE",
       "match_path": [
         "department of health and human services",
@@ -872,7 +876,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF MENTAL HEALTH",
       "match_path": [
         "department of health and human services",
@@ -887,7 +891,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL HUMAN GENOME RESEARCH INSTITUTE",
       "match_path": [
         "department of health and human services",
@@ -902,7 +906,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE OF BIOMEDICAL IMAGING AND BIOENGINEERING",
       "match_path": [
         "department of health and human services",
@@ -917,7 +921,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL CENTER FOR COMPLEMENTARY AND INTEGRATIVE HEALTH",
       "match_path": [
         "department of health and human services",
@@ -932,7 +936,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL INSTITUTE ON MINORITY HEALTH AND HEALTH DISPARITIES",
       "match_path": [
         "department of health and human services",
@@ -947,12 +951,12 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
-      "excel_name": "SCIENCES",
+      "bureau": "National Institutes of Health",
+      "excel_name": "JOHN E. FOGARTY INTERNATIONAL CENTER FOR ADVANCED STUDY IN THE HEALTH SCIENCES",
       "match_path": [
         "department of health and human services",
         "national institutes of health",
-        "national institute of general medical sciences"
+        "john e. fogarty international center"
       ],
       "expected_amount": 95162000
     },
@@ -962,7 +966,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL LIBRARY OF MEDICINE",
       "match_path": [
         "department of health and human services",
@@ -977,7 +981,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "NATIONAL CENTER FOR ADVANCING TRANSLATIONAL SCIENCES",
       "match_path": [
         "department of health and human services",
@@ -992,7 +996,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Raising Awareness and Engaging the Medical Community in",
+      "bureau": "National Institutes of Health",
       "excel_name": "OFFICE OF THE DIRECTOR",
       "match_path": [
         "department of health and human services",
@@ -1007,9 +1011,13 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Women's Health Research Initiative and NIH-Wide SABV",
+      "bureau": "National Institutes of Health",
       "excel_name": "BUILDINGS AND FACILITIES",
-      "match_path": null,
+      "match_path": [
+        "department of health and human services",
+        "national institutes of health",
+        "buildings and facilities"
+      ],
       "expected_amount": 350000000
     },
     {
@@ -1018,7 +1026,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Women's Health Research Initiative and NIH-Wide SABV",
+      "bureau": "National Institutes of Health",
       "excel_name": "NIH INNOVATION ACCOUNT, CURES ACT",
       "match_path": [
         "department of health and human services",
@@ -1033,7 +1041,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Women's Health Research Initiative and NIH-Wide SABV",
+      "bureau": "National Institutes of Health",
       "excel_name": "ADVANCED RESEARCH PROJECTS AGENCY FOR HEALTH",
       "match_path": [
         "department of health and human services",
@@ -1063,7 +1071,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Primary and Behavioral Health Care Integration Grants and",
+      "bureau": "Substance Abuse And Mental Health Services Administration",
       "excel_name": "SUBSTANCE ABUSE TREATMENT",
       "match_path": [
         "department of health and human services",
@@ -1078,7 +1086,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Block Grant",
+      "bureau": "Substance Abuse And Mental Health Services Administration",
       "excel_name": "SUBSTANCE ABUSE PREVENTION",
       "match_path": [
         "department of health and human services",
@@ -1093,7 +1101,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Minority Fellowship Program Support for Prevention",
+      "bureau": "Substance Abuse And Mental Health Services Administration",
       "excel_name": "HEALTH SURVEILLANCE AND PROGRAM SUPPORT",
       "match_path": [
         "department of health and human services",
@@ -1149,7 +1157,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Merit-Based Incentive Payment System [MIPS] Feedback",
+      "bureau": "Centers for Medicare and Medicaid Services",
       "excel_name": "HEALTHCARE FRAUD AND ABUSE CONTROL",
       "match_path": null,
       "expected_amount": 941000000
@@ -1161,8 +1169,12 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
       "bureau": "Administration for Children and Families",
-      "excel_name": "PROGRAMS",
-      "match_path": null,
+      "excel_name": "PAYMENTS TO STATES FOR CHILD SUPPORT SERVICES AND FAMILY SUPPORT PROGRAMS",
+      "match_path": [
+        "department of health and human services",
+        "administration for children and families",
+        "payments to states for child support services and family support programs"
+      ],
       "expected_amount": 3924000000
     },
     {
@@ -1201,7 +1213,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Prioritization of Small-Scale, Community- and Family-Based",
+      "bureau": "Administration for Children and Families",
       "excel_name": "PAYMENTS TO STATES FOR THE CHILD CARE AND DEVELOPMENT BLOCK GRANT",
       "match_path": [
         "department of health and human services",
@@ -1216,7 +1228,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Prioritization of Small-Scale, Community- and Family-Based",
+      "bureau": "Administration for Children and Families",
       "excel_name": "SOCIAL SERVICES BLOCK GRANT",
       "match_path": [
         "department of health and human services",
@@ -1231,7 +1243,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Prioritization of Small-Scale, Community- and Family-Based",
+      "bureau": "Administration for Children and Families",
       "excel_name": "CHILDREN AND FAMILIES SERVICES PROGRAMS",
       "match_path": [
         "department of health and human services",
@@ -1246,7 +1258,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Disseminate Best Practices in the Child Welfare",
+      "bureau": "Administration for Children and Families",
       "excel_name": "PROMOTING SAFE AND STABLE FAMILIES",
       "match_path": [
         "department of health and human services",
@@ -1261,7 +1273,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Disseminate Best Practices in the Child Welfare",
+      "bureau": "Administration for Children and Families",
       "excel_name": "PAYMENTS FOR FOSTER CARE AND PERMANENCY",
       "match_path": [
         "department of health and human services",
@@ -1291,7 +1303,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Public Health Emergency Medical Countermeasures Enterprise",
+      "bureau": "Administration for Strategic Preparedness and Response",
       "excel_name": "RESEARCH, DEVELOPMENT, AND PROCUREMENT",
       "match_path": [
         "department of health and human services",
@@ -1306,7 +1318,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Antimicrobial Resistance Research Using Bispecific",
+      "bureau": "Administration for Strategic Preparedness and Response",
       "excel_name": "OPERATIONS, PREPAREDNESS, AND EMERGENCY RESPONSE",
       "match_path": [
         "department of health and human services",
@@ -1336,7 +1348,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Office of the Assistant Secretary for Administration",
+      "bureau": "Office of the Secretary",
       "excel_name": "OFFICE OF MEDICARE HEARINGS AND APPEALS",
       "match_path": [
         "department of health and human services",
@@ -1351,7 +1363,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Office of the Assistant Secretary for Administration",
+      "bureau": "Office of the Secretary",
       "excel_name": "OFFICE OF THE NATIONAL COORDINATOR FOR HEALTH INFORMATION TECHNOLOGY",
       "match_path": [
         "department of health and human services",
@@ -1366,7 +1378,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Office of the Assistant Secretary for Administration",
+      "bureau": "Office of the Secretary",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of health and human services",
@@ -1381,7 +1393,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Office of the Assistant Secretary for Administration",
+      "bureau": "Office of the Secretary",
       "excel_name": "OFFICE FOR CIVIL RIGHTS",
       "match_path": [
         "department of health and human services",
@@ -1396,7 +1408,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
-      "bureau": "Office of the Assistant Secretary for Administration",
+      "bureau": "Office of the Secretary",
       "excel_name": "RETIREMENT PAY AND MEDICAL BENEFITS FOR COMMISSIONED OFFICERS",
       "match_path": [
         "department of health and human services",
@@ -1457,7 +1469,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
       "bureau": "College Housing and Academic Facilities Loans Program",
-      "excel_name": "ACCOUNT",
+      "excel_name": "HISTORICALLY BLACK COLLEGE AND UNIVERSITY CAPITAL FINANCING PROGRAM ACCOUNT",
       "match_path": [
         "department of education",
         "historically black college and university capital financing program account"
@@ -1485,11 +1497,11 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
-      "bureau": "Reporting and Data Collection on Professional",
+      "bureau": "Departmental Management",
       "excel_name": "OFFICE FOR CIVIL RIGHTS",
       "match_path": [
-        "department of health and human services",
-        "office of the secretary",
+        "department of education",
+        "departmental management",
         "office for civil rights"
       ],
       "expected_amount": 150000000
@@ -1500,11 +1512,11 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF EDUCATION",
-      "bureau": "Reporting and Data Collection on Professional",
+      "bureau": "Departmental Management",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
-        "department of health and human services",
-        "office of the secretary",
+        "department of education",
+        "departmental management",
         "office of inspector general"
       ],
       "expected_amount": 67500000
@@ -1526,7 +1538,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Corporation for National and Community Service [CNCS]",
+      "bureau": "Corporation for National and Community Service",
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "related agencies",
@@ -1541,7 +1553,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Corporation for National and Community Service [CNCS]",
+      "bureau": "Corporation for National and Community Service",
       "excel_name": "THE NATIONAL SERVICE TRUST",
       "match_path": [
         "related agencies",
@@ -1556,7 +1568,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Corporation for National and Community Service [CNCS]",
+      "bureau": "Corporation for National and Community Service",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1571,7 +1583,7 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Corporation for National and Community Service [CNCS]",
+      "bureau": "Corporation for National and Community Service",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "related agencies",
@@ -1777,11 +1789,11 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "Work Incentives Planning and Assistance [WIPA] and",
+      "bureau": "Social Security Administration",
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "related agencies",
-        "corporation for national and community service",
+        "social security administration",
         "office of inspector general"
       ],
       "expected_amount": 114665000

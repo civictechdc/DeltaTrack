@@ -38,9 +38,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
-      "bureau": "Briefings on the Homeland Security Advanced Recognition",
+      "bureau": "Management Directorate",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "departmental management, intelligence, situational awareness, and oversight",
+        "management directorate",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 73365000
     },
     {
@@ -49,9 +53,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
-      "bureau": "The Intelligence, Analysis, and Situational Awareness",
+      "bureau": "Management Directorate",
       "excel_name": "OPERATIONS AND SUPPORT",
-      "match_path": null,
+      "match_path": [
+        "departmental management, intelligence, situational awareness, and oversight",
+        "management directorate",
+        "operations and support"
+      ],
       "expected_amount": 341497000
     },
     {
@@ -60,9 +68,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT",
-      "bureau": "The Intelligence, Analysis, and Situational Awareness",
+      "bureau": "Management Directorate",
       "excel_name": "OPERATIONS AND SUPPORT",
-      "match_path": null,
+      "match_path": [
+        "departmental management, intelligence, situational awareness, and oversight",
+        "management directorate",
+        "operations and support"
+      ],
       "expected_amount": 237000000
     },
     {
@@ -71,9 +83,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Prioritizing the Acquisition of Innovative and Emerging",
+      "bureau": "U.S. Customs and Border Protection",
       "excel_name": "OPERATIONS AND SUPPORT",
-      "match_path": null,
+      "match_path": [
+        "security, enforcement, and investigations",
+        "u.s. customs and border protection",
+        "operations and support"
+      ],
       "expected_amount": 16598076000
     },
     {
@@ -82,9 +98,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Identifying Fentanyl Analogues and Related Substances at",
+      "bureau": "U.S. Customs and Border Protection",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "security, enforcement, and investigations",
+        "u.s. customs and border protection",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 1152529000
     },
     {
@@ -108,11 +128,11 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Transportation Management Office [TMO] and the Juvenile and",
+      "bureau": "U.S. Immigration and Customs Enforcement",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
         "security, enforcement, and investigations",
-        "transportation security administration",
+        "u.s. immigration and customs enforcement",
         "procurement, construction, and improvements"
       ],
       "expected_amount": 50100000
@@ -138,11 +158,11 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Federal Flight Deck Officer [FFDO] and Flight Crew Training",
+      "bureau": "Transportation Security Administration",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
       "match_path": [
-        "research, development, training, and services",
-        "federal law enforcement training centers",
+        "security, enforcement, and investigations",
+        "transportation security administration",
         "procurement, construction, and improvements"
       ],
       "expected_amount": 13939000
@@ -168,9 +188,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Obstruction of Safe Navigation in U.S. Territorial",
+      "bureau": "Coast Guard",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "security, enforcement, and investigations",
+        "coast guard",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 1118322000
     },
     {
@@ -179,7 +203,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "The Coast Guard's Research and Development [R&D]",
+      "bureau": "Coast Guard",
       "excel_name": "HEALTH CARE FUND CONTRIBUTION",
       "match_path": null,
       "expected_amount": 277000000
@@ -190,7 +214,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "The Coast Guard's Research and Development [R&D]",
+      "bureau": "Coast Guard",
       "excel_name": "RETIRED PAY",
       "match_path": [
         "security, enforcement, and investigations",
@@ -220,9 +244,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Support for Missing and Exploited Children Investigations",
+      "bureau": "United States Secret Service",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "security, enforcement, and investigations",
+        "united states secret service",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 69098000
     },
     {
@@ -231,7 +259,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SECURITY, ENFORCEMENT, AND INVESTIGATIONS",
-      "bureau": "Support for Missing and Exploited Children Investigations",
+      "bureau": "United States Secret Service",
       "excel_name": "RESEARCH AND DEVELOPMENT",
       "match_path": [
         "security, enforcement, and investigations",
@@ -246,7 +274,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
-      "bureau": "The Cybersecurity and Infrastructure Security Agency [CISA]",
+      "bureau": "Cybersecurity and Infrastructure Security Agency",
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -261,9 +289,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
-      "bureau": "Strengthening National Positioning, Navigation, and Timing",
+      "bureau": "Cybersecurity and Infrastructure Security Agency",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "protection, preparedness, response, and recovery",
+        "cybersecurity and infrastructure security agency",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 605334000
     },
     {
@@ -317,7 +349,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
-      "bureau": "Law Enforcement Terrorism Prevention Activities [LETPA]",
+      "bureau": "Federal Emergency Management Agency",
       "excel_name": "DISASTER RELIEF FUND",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -332,7 +364,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "PROTECTION, PREPAREDNESS, RESPONSE, AND RECOVERY",
-      "bureau": "Law Enforcement Terrorism Prevention Activities [LETPA]",
+      "bureau": "Federal Emergency Management Agency",
       "excel_name": "NATIONAL FLOOD INSURANCE FUND",
       "match_path": [
         "protection, preparedness, response, and recovery",
@@ -347,7 +379,7 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
-      "bureau": "United States Citizenship and Immigration Services [USCIS]",
+      "bureau": "United States Citizenship and Immigration Services",
       "excel_name": "OPERATIONS AND SUPPORT",
       "match_path": [
         "research, development, training, and services",
@@ -407,9 +439,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
-      "bureau": "Projecting and Planning For Future Flow to U.S. Southwest",
+      "bureau": "Science and Technology",
       "excel_name": "PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS",
-      "match_path": null,
+      "match_path": [
+        "research, development, training, and services",
+        "science and technology directorate",
+        "procurement, construction, and improvements"
+      ],
       "expected_amount": 43579000
     },
     {
@@ -418,9 +454,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES",
-      "bureau": "Projecting and Planning For Future Flow to U.S. Southwest",
+      "bureau": "Science and Technology",
       "excel_name": "RESEARCH AND DEVELOPMENT",
-      "match_path": null,
+      "match_path": [
+        "research, development, training, and services",
+        "science and technology directorate",
+        "research and development"
+      ],
       "expected_amount": 352496000
     },
     {

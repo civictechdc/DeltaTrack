@@ -473,7 +473,8 @@
       "bureau": "PROCUREMENT",
       "excel_name": "Missile Procurement, Army",
       "match_path": [
-        "procurement"
+        "procurement",
+        "missile procurement, army"
       ],
       "expected_amount": 6316380000
     },
@@ -846,9 +847,7 @@
       "title": "OTHER DEPARTMENT OF DEFENSE PROGRAMS",
       "bureau": "OTHER DEPARTMENT OF DEFENSE PROGRAMS",
       "excel_name": "Procurement",
-      "match_path": [
-        "procurement"
-      ],
+      "match_path": null,
       "expected_amount": 398867000
     },
     {

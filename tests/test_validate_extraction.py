@@ -190,7 +190,7 @@ class TestLegBranchValidation:
 # `uv run python scripts/generate_validation_report.py` to refresh the doc and these counts.
 
 from tests.corpus_paths import resolve_bill_file  # noqa: E402
-from tests.validation_check import validate_jurisdiction  # noqa: E402
+from tests.validation_check import _bill_amounts, _normalize, validate_jurisdiction  # noqa: E402
 from tests.validation_sources import JURISDICTIONS  # noqa: E402
 
 # Max accounts whose report amount is not recalled from the bill, per jurisdiction. These
@@ -266,6 +266,53 @@ def test_report_amounts_recalled(jur):
         f"regressed, investigate for a parser bug:\n"
         + "\n".join(f"  {r.bureau} / {r.excel_name} ${r.expected_amount:,}" for r in unvalidated[:20])
     )
+
+
+# Mapped accounts whose bill node sits under a different title than the report files them
+# under, though the bill has a title of that name too: a real difference in how the two
+# group the account, checked against both documents. Keyed by (slug, excel_name).
+_KNOWN_TITLE_DIVERGENCES = {
+    ("agriculture", "REIMBURSEMENT FOR NET REALIZED LOSSES"): (
+        "the report files the Commodity Credit Corporation under Farm Production and "
+        "Conservation Programs; the bill places it under its own Corporations heading"
+    ),
+}
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("jur", _REPORT_JURISDICTIONS, ids=lambda j: j.slug)
+def test_mapped_accounts_sit_under_their_report_title(jur):
+    """An answer-key account maps to a node under the bill title the report files it under.
+
+    `match_path` comes from our builder, not the report, so a wrong one reads as a real
+    mapping and points whoever triages a miss at the wrong paragraph. The report's title is
+    the one piece of its own structure the mapping can be checked against: where the bill
+    has a title of that name, the node belongs under it. This caught the CJS answer keys
+    mapping Justice accounts into Related Agencies, after narrative text read as the bureau
+    steered the builder's tie-break.
+    """
+    _by_path, by_agency = _bill_amounts(str(jur.bill_xml_path))
+    accounts = json.loads(jur.fixture_path.read_text())["accounts"]
+    elsewhere = [
+        f"{a['excel_name']} ${a['expected_amount']:,}: report title {a['title']!r}, mapped to {a['match_path']}"
+        for a in accounts
+        if a["match_path"]
+        and _normalize(a["title"]) in by_agency
+        and _normalize(a["match_path"][0]) != _normalize(a["title"])
+        and (jur.slug, a["excel_name"]) not in _KNOWN_TITLE_DIVERGENCES
+    ]
+    assert elsewhere == [], f"{jur.slug}: accounts mapped outside their report title:\n" + "\n".join(
+        f"  {e}" for e in elsewhere
+    )
+
+
+def test_known_title_divergences_name_fixture_accounts():
+    """Each allowlisted divergence names an account its fixture still carries, so a stale
+    entry cannot quietly excuse a different account later."""
+    names = {
+        (j.slug, a["excel_name"]) for j in JURISDICTIONS for a in json.loads(j.fixture_path.read_text())["accounts"]
+    }
+    assert set(_KNOWN_TITLE_DIVERGENCES) <= names
 
 
 @pytest.mark.slow
