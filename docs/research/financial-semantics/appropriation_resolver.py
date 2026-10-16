@@ -25,8 +25,9 @@ line of an itemised total. This resolver reads the paragraph the way it is draft
 6. **Abstain otherwise.** No figure is better than a wrong one (ADR 0025, proposed): a figure
    typed as an appropriation is one a reader will add up.
 
-Only a paragraph `classify_bill` types as an appropriation is read, so this changes which
-figure is chosen, never what counts as an appropriating paragraph.
+A paragraph is read when `classify_bill` types it as an appropriation, or when it states that it
+appropriates in a form `classify_bill`'s opening rules do not reach (`appropriates` below). The
+resolver otherwise changes which figure is chosen, never what counts as an appropriating paragraph.
 
 Why not the net figure: a fee-funded account also states "a final fiscal year appropriation
 from the general fund estimated at $X", net of its collections. Committee reports are not
@@ -81,6 +82,34 @@ LOAN_LEVEL = re.compile(r"\b(?:principal amount of|gross obligations)\b", re.IGN
 SENTENCE_START = re.compile(r"(?:(?<=[.:])\s+|\n)(?=For\b)")
 
 
+# Paragraphs that appropriate in a form classify_bill's APPROP rule (a "For ..." opening, or
+# "there is appropriated") does not read. Each states it: an appropriating verb on the figure,
+# "is additional new budget authority", a purpose opening "To carry out / make / conduct ...", or
+# an opening that adds to other funds ("In addition to funds made available from any other source
+# ..., $423,000,000"). classify_bill's rules are #736's, copied into the package with a parity
+# check, so the wider reading lives here; the README records it for that classifier.
+STATES_APPROPRIATION = re.compile(
+    _MONEY + r"(?:,[^.;:$]{0,80},)?\s+(?:is|are)\s+(?:hereby\s+)?(?:appropriated|provided)\b"
+    r"|\bis additional new budget authority\b",
+    re.IGNORECASE,
+)
+PURPOSE_OPENING = re.compile(r"^\s*To\s+(?:carry out|make|conduct)\b", re.IGNORECASE)
+IN_ADDITION_OPENING = re.compile(r"^\s*In addition to (?:the )?(?:amounts|funds)\b", re.IGNORECASE)
+
+
+def appropriates(text: str) -> bool:
+    """Whether a paragraph appropriates: classify_bill's typing, or a form it states plainly."""
+    if not text:
+        return False
+    if cb.classify_text(text) == "appropriation":
+        return True
+    flat = " ".join(text.split())
+    operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
+    return bool(
+        STATES_APPROPRIATION.search(operative) or PURPOSE_OPENING.match(flat) or IN_ADDITION_OPENING.match(flat)
+    )
+
+
 def _value(digits: str) -> int:
     return int(digits.replace(",", ""))
 
@@ -101,7 +130,7 @@ def _closing_figure(sentence: str) -> int | None:
 
 
 def resolve(text: str) -> int | None:
-    if not text or cb.classify_text(text) != "appropriation":
+    if not appropriates(text):
         return None
     flat = " ".join(strip_amendment_annotations(text).split())
     operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
@@ -152,7 +181,7 @@ def _name_score(name: str, text: str) -> float:
 
 def ledger(text: str) -> list[tuple[str, int]]:
     """(line text, figure) for each itemised line of an appropriating paragraph."""
-    if not text or cb.classify_text(text) != "appropriation":
+    if not appropriates(text):
         return []
     flat = " ".join(strip_amendment_annotations(text).split())
     operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]

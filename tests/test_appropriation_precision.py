@@ -91,8 +91,8 @@ def test_precision_and_recall_match_the_measurement_the_readme_quotes():
     and update the README table and this expectation together."""
     for name, confirmed, unconfirmed, recalled in (
         ("baseline", 893, 92, 636),
-        ("structured", 900, 71, 648),
-        ("summed", 907, 64, 658),
+        ("structured", 915, 72, 662),
+        ("summed", 924, 63, 675),
     ):
         resolver = ca.TEXT_RESOLVERS[name]
         counts = Counter(r.outcome for r in ap.measure(resolver))

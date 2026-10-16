@@ -25,6 +25,7 @@ from appropriation_resolver import (  # noqa: E402
     LINE,
     PARAGRAPH,
     Selection,
+    appropriates,
     ledger,
     resolve,
     resolve_named,
@@ -262,6 +263,44 @@ def test_a_later_sentence_adds_money_only_when_it_says_it_appropriates():
     assert resolve_total(reimbursement) == 1_130_000_000
 
 
+@pytest.mark.parametrize(
+    ("text", "figure"),
+    [
+        (
+            "In addition to amounts made available elsewhere in this Act, $24,000,000 is hereby appropriated to the "
+            "Department of Defense: Provided, That upon enactment the Secretary shall make grants.",
+            24_000_000,
+        ),
+        ("Under the authorities of section 14 of the Watershed Protection Act, $2,000,000 is provided.", 2_000_000),
+        (
+            "In addition to the amounts provided under the heading Wildland Fire Management for wildfire suppression "
+            "operations, $360,000,000, to remain available until transferred, is additional new budget authority.",
+            360_000_000,
+        ),
+        (
+            "To make grants to qualified shipyards as authorized under section 54101 of title 46, United States Code, "
+            "$20,000,000, to remain available until expended.",
+            20_000_000,
+        ),
+        (
+            "In addition to funds made available from any other source to carry out the essential air service "
+            "program, $423,000,000, to be derived from the Airport and Airway Trust Fund, to remain available.",
+            423_000_000,
+        ),
+    ],
+)
+def test_a_paragraph_that_states_it_appropriates_is_read_though_classify_bill_does_not_type_it(text, figure):
+    """classify_bill's APPROP rule reads only "For ..." and "there is appropriated"; these say so otherwise."""
+    assert appropriates(text)
+    assert resolve(text) == figure
+
+
+def test_a_paragraph_that_only_limits_or_directs_is_still_not_read():
+    assert not appropriates("To the extent practicable, not more than $5,000,000 shall be used for travel.")
+    assert not appropriates("None of the funds made available in this Act may be used to exceed $1,000,000.")
+    assert resolve("The Secretary shall report on the use of $2,000,000 within 90 days.") is None
+
+
 # The two typing disagreements left where the report's figure is in the text. Neither is a
 # figure picked from the wrong place: each is a question the figure's type has to answer.
 KNOWN_WRONG_FIGURES = {
@@ -309,7 +348,7 @@ def test_summing_an_accounts_pieces_types_no_wrong_figure_but_gross_versus_net()
     # Held per evidence source, as the README reports them: the spreadsheet's itemised lines
     # must not be counted as committee-report agreement.
     agree = Counter(r.source for r in results if r.outcome == "agree")
-    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 661, "fewer accounts agree with their committee report"
+    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 675, "fewer accounts agree with their committee report"
     assert agree[SPREADSHEET] >= 403, "fewer accounts agree with the Legislative Branch spreadsheet"
 
 
