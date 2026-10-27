@@ -319,6 +319,18 @@ report as no account's figure. `tests/test_appropriation_precision.py` pins both
   ADR 0009's recall strength, not ADR 0025's. The 249 confirmed that way are mostly accounts the
   builder could not map by name (the Under Secretaries' offices, FAA research, transit formula
   grants); each is a figure the report states for some account, not necessarily this one.
+- The 37 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 36
+  `report_not_in_text/typed`: in 36 the key's figure appears nowhere in the paragraph, so the
+  resolver typed what the bill states and the key states something else. Four read against their
+  reports: TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
+  recommendation, where the key carries the $7,400,729,000 net of $2,620,000,000 in aviation
+  security fees; SAMHSA Mental Health is typed at the bill's $2,869,507,000 where the report's
+  $2,902,546,000 program level includes $21,039,000 in section 241 transfers; the Copyright Office
+  is typed at the bill's $106,133,000 total where the key carries the $60,238,000 direct
+  appropriation without receipts; and Nuclear Energy is typed at $1,675,000,000, the figure the
+  report's text recommends, where the key's $1,525,000,000 is the comparative statement's
+  non-defense line without the defense-function line beneath it. Three are the bill and the report
+  counting differently; the fourth is the key, not the resolver.
 - The 22 "printed, but as no account's figure" split between resolver errors (the FDA allowance;
   PHMSA's "not more than $46,825,000 shall remain available" limitation) and rows the report
   parser does not read (VA Compensation and Pensions, $214,302,452,000, is in the report's text
