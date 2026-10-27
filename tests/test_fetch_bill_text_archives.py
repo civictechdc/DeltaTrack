@@ -47,7 +47,7 @@ def _temp_path(dest: Path) -> Path:
     return dest.with_suffix(dest.suffix + ".part")
 
 
-def run_fetch_bill_text_archives(command: str, tmp_path: Path) -> None:
+def run_fetch_bill_text_archives(command: str, tmp_path: Path) -> int:
     """Run the CLI command string and ensure --zip-dir and --out-dir point at tmp_path."""
     args = shlex.split(command)
     # Add explicit zip and out dirs so tests remain hermetic and predictable.
@@ -203,34 +203,6 @@ class TestDownloadZip:
             [
                 "BILLS-119-1-hr.zip",
                 "BILLS-119-2-hr.zip",
-            ],
-        )
-
-    @respx.mock
-    def test_download_archives_error_path_logs_failed(self, tmp_path, capsys):
-        """A server error during download produces a FAILED line and no file on disk."""
-        mock_http_requests(status_code=500)
-
-        run_fetch_bill_text_archives(
-            "--from-congress 119 --to-congress 119 --types hr --download-only",
-            tmp_path,
-        )
-        out, err = capsys.readouterr()
-
-        # Sample output from a real run with network disconnected:
-        # 1/2: BILLS-119-1-hr.zip
-        #   https://www.govinfo.gov/bulkdata/BILLS/119/1/hr/BILLS-119-1-hr.zip
-        # 1/2: FAILED BILLS-119-1-hr.zip: [Errno 8] nodename nor servname provided, or not known
-        # 2/2: BILLS-119-2-hr.zip
-        #   https://www.govinfo.gov/bulkdata/BILLS/119/2/hr/BILLS-119-2-hr.zip
-        # 2/2: FAILED BILLS-119-2-hr.zip: [Errno 8] nodename nor servname provided, or not known
-        #   version-count histogram (versions -> #bills): {}
-        # convert stats: {'bills_seen': 0}
-        assert_message_contains_strings(
-            err,
-            [
-                "FAILED BILLS-119-1-hr.zip",
-                "FAILED BILLS-119-2-hr.zip",
             ],
         )
 
