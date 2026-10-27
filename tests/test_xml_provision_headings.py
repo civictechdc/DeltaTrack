@@ -136,6 +136,29 @@ def test_nested_containers_show_each_level_and_keep_same_named_parts_apart():
     assert transition["children"][0]["id"] == node_ids["v1"][nodes.index(by_id["s3"])]
 
 
+def test_account_that_takes_over_a_container_slot_keeps_its_breadcrumb():
+    title = ET.fromstring(
+        "<title><enum>IV</enum><header>Programs</header>"
+        "<subtitle><enum>D</enum><header>Health</header>"
+        '<section id="s1"><enum>1.</enum><text>Before the account.</text></section>'
+        '<appropriations-major id="a1"><header>Grants to States</header>'
+        "<text>For grants, $5,000,000.</text></appropriations-major>"
+        '<section id="s2"><enum>2.</enum><text>After the account.</text></section>'
+        "<part><enum>1</enum><header>General provisions</header>"
+        '<section id="s3"><enum>3.</enum><text>Inside a part.</text></section></part>'
+        "</subtitle>"
+        "</title>"
+    )
+    nodes = walk_title(title, "TITLE IV—Programs", NO_DIVISION)
+    by_id = {n.element_id: n for n in nodes}
+    root = ("TITLE IV—Programs",)
+    assert by_id["s1"].display_path == (*root, "Health", "Sec. 1")
+    # The account replaced the subtitle in the slot; the subtitle must not reclaim it.
+    assert by_id["a1"].display_path == (*root, "Grants to States")
+    assert by_id["s2"].display_path == (*root, "Grants to States", "Sec. 2")
+    assert by_id["s3"].display_path == (*root, "Grants to States", "General provisions", "Sec. 3")
+
+
 @pytest.mark.slow
 def test_medicaid_subparts_nest_under_their_part():
     bill = normalize_bill(fixture_path("119-hr-1", "1_reported-in-house.xml"))
