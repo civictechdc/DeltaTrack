@@ -185,6 +185,16 @@ def manifest_version_pairs() -> list[tuple[Path, Path]]:
                 versions = sorted(bill_dir.glob("[0-9]*_*.xml"), key=_stage_num)
                 pairs += [(versions[i], versions[i + 1]) for i in range(len(versions) - 1)]
         return pairs
+    return committed_version_pairs()
+
+
+def committed_version_pairs() -> list[tuple[Path, Path]]:
+    """Adjacent XML version pairs from the committed manifest, ignoring CORPUS_SWEEP.
+
+    Stored per-pair tables cover the committed corpus, so their checks and regeneration
+    use this set even when exploratory corpus tests sweep locally downloaded bills.
+    """
+    pairs: list[tuple[Path, Path]] = []
     for bill in _manifest_bills():
         versions = sorted(
             (FIXTURES_DIR / bill["id"] / f"{ver['stage']}.xml" for ver in bill["versions"] if "xml" in ver["formats"]),

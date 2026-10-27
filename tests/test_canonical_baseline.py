@@ -76,7 +76,7 @@ import pytest
 
 from deltatrack.compare.xml import compare_xml
 from deltatrack.version_stems import version_identity_from_filename
-from tests.conftest import assert_manifest_committed, manifest_xml_ids
+from tests.conftest import assert_manifest_committed, committed_version_pairs
 from tests.corpus_paths import DATA_DIR, FIXTURES_DIR
 
 pytestmark = pytest.mark.slow
@@ -86,52 +86,16 @@ _BASELINE = DATA_DIR / "canonical_baseline.json"
 REGENERATE = "Regenerate with `UPDATE_BASELINE=1 uv run pytest tests/test_canonical_baseline.py`."
 
 
-def _version_ordinal(stem: str) -> int:
-    """The per-bill version ordinal leading a fixture stem (``4_engrossed-... -> 4``).
-
-    "Version ordinal" is ADR 0013's term — *version is a per-bill ordinal, not a
-    universal one*. Not ``_stage_num``: ADR 0020 now uses "stage" for retrieval, identity
-    evidence, assignment and classification, so a second meaning inside the matching work
-    would collide with it (ADR 0021 §3).
-
-    Numeric, not lexicographic: a string sort puts ``10_`` before ``2_``. No corpus bill
-    reaches version 10 today, so this is a latent guard rather than a live fix.
-
-    Pre-existing debt, recorded rather than fixed here: ``tests/conftest._stage_num``
-    computes the same thing from a ``Path`` under the older name, and
-    ``tests/corpus_manifest.toml`` spells the field ``stage``. Renaming those reaches well
-    outside this pull request, so this one is named correctly and the older spelling is
-    left for a change that owns it.
-    """
-    return int(stem.split("_", 1)[0])
-
-
 def baseline_pairs() -> list[tuple[str, Path, Path]]:
     """``(key, old, new)`` for every adjacent manifested XML pair, sorted.
 
-    Built from ``manifest_xml_ids()`` rather than ``manifest_version_pairs()`` because
-    that helper widens under ``CORPUS_SWEEP=1``. A stored baseline is calibrated against
-    the committed corpus, so a swept pair would have no entry and the key-set assertion
-    below would fail on a machine where nothing is wrong. Same reasoning that made
-    ``manifest_xml_ids`` sweep-blind for the baseline-dict staleness guards (#496).
+    The shared ``committed_version_pairs()`` keeps stored-baseline checks and regeneration
+    scoped to the committed corpus, regardless of ``CORPUS_SWEEP``.
     """
-    by_bill: dict[str, list[str]] = {}
-    for fixture_id in manifest_xml_ids():
-        bill, name = fixture_id.split("/", 1)
-        by_bill.setdefault(bill, []).append(name.removesuffix(".xml"))
-
-    pairs: list[tuple[str, Path, Path]] = []
-    for bill in sorted(by_bill):
-        stems = sorted(by_bill[bill], key=_version_ordinal)
-        for old_stem, new_stem in zip(stems, stems[1:]):
-            pairs.append(
-                (
-                    f"{bill}/{old_stem}->{new_stem}",
-                    FIXTURES_DIR / bill / f"{old_stem}.xml",
-                    FIXTURES_DIR / bill / f"{new_stem}.xml",
-                )
-            )
-    return pairs
+    return [
+        (f"{old.parent.name}/{old.stem}->{new.stem}", old, new)
+        for old, new in sorted(committed_version_pairs(), key=lambda pair: pair[0].parent.name)
+    ]
 
 
 _PAIRS = baseline_pairs()

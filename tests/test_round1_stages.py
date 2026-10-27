@@ -74,7 +74,7 @@ from deltatrack.diff_bill import (
     retrieve_within_division_populations,
 )
 from deltatrack.matching import NEW, OLD, CandidateSet, CorrespondenceEvidence, RetrieverInvocation
-from tests.conftest import assert_manifest_committed, manifest_version_pairs
+from tests.conftest import assert_manifest_committed, committed_version_pairs, manifest_version_pairs
 from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
     complete_sequence_ordinals,
@@ -862,7 +862,7 @@ def test_production_measures_exactly_the_frozen_set_of_similarities():
     unique group through the collision path (ADR 0020 §13). History: #659 replaced a count read
     out of a generated artifact.
     """
-    assert set(EXPECTED_SIMILARITY_CALLS) == {pair_key(o, n) for o, n in manifest_version_pairs()}, (
+    assert set(EXPECTED_SIMILARITY_CALLS) == {pair_key(o, n) for o, n in committed_version_pairs()}, (
         "the call-count table drifted from the manifest; a pair with no entry would be measured "
         "against nothing while the loop below stayed green"
     )
@@ -872,7 +872,7 @@ def test_production_measures_exactly_the_frozen_set_of_similarities():
         "equality below while asserting nothing"
     )
 
-    for old_path, new_path in manifest_version_pairs():
+    for old_path, new_path in committed_version_pairs():
         old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         expected = EXPECTED_SIMILARITY_CALLS[key]
@@ -915,7 +915,7 @@ def test_the_call_count_gate_can_fire(monkeypatch):
     monkeypatch.setattr(db, "group_correspondence_evidence", scores_the_sole_candidate)
 
     inflated = []
-    for old_path, new_path in manifest_version_pairs():
+    for old_path, new_path in committed_version_pairs():
         old_tree, new_tree = parsed_bill(old_path), parsed_bill(new_path)
         key = pair_key(old_path, new_path)
         if production_similarity_calls(old_tree, new_tree) != EXPECTED_SIMILARITY_CALLS[key]:
@@ -2224,7 +2224,7 @@ def test_the_1x1_shortcut_computes_no_word_overlap(monkeypatch):
     """
     from deltatrack import diff_bill as db
 
-    trees = [(parsed_bill(old_path), parsed_bill(new_path)) for old_path, new_path in manifest_version_pairs()]
+    trees = [(parsed_bill(old_path), parsed_bill(new_path)) for old_path, new_path in committed_version_pairs()]
     assert trees, "the shortcut comparison ran over zero version pairs"
 
     shortcuts = 0

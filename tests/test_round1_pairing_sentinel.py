@@ -51,7 +51,7 @@ from pathlib import Path
 import pytest
 
 from deltatrack.diff_bill import match_nodes
-from tests.conftest import assert_manifest_committed, manifest_version_pairs
+from tests.conftest import assert_manifest_committed, committed_version_pairs, manifest_version_pairs
 from tests.corpus_paths import DATA_DIR, PROJECT_ROOT
 from tests.parsed_bills import parsed_bill
 from tests.round1_identity import (
@@ -106,7 +106,7 @@ def load_sentinel() -> dict:
     """
     assert _SENTINEL.exists(), f"{_SENTINEL} is missing. Generate it with:\n    {_REGENERATE}"
     stored = json.loads(_SENTINEL.read_text())
-    live = {pair_key(old_path, new_path) for old_path, new_path in manifest_version_pairs()}
+    live = {pair_key(old_path, new_path) for old_path, new_path in committed_version_pairs()}
     assert set(stored) == live, (
         f"the pairing sentinel drifted from the manifest: only-stored={sorted(set(stored) - live)}, "
         f"only-live={sorted(live - set(stored))}"
@@ -115,7 +115,7 @@ def load_sentinel() -> dict:
 
 
 def _regenerated() -> dict:
-    pairs = manifest_version_pairs()
+    pairs = committed_version_pairs()
     assert pairs, "refusing to write a sentinel over zero version pairs"
     return {pair_key(old_path, new_path): sentinel_record(old_path, new_path) for old_path, new_path in pairs}
 
@@ -137,7 +137,7 @@ def test_manifest_fixtures_committed():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("old_path,new_path", manifest_version_pairs(), ids=lambda p: p.stem)
+@pytest.mark.parametrize("old_path,new_path", committed_version_pairs(), ids=lambda p: p.stem)
 def test_the_pinned_correspondence_names_the_parse_it_was_made_about(old_path: Path, new_path: Path):
     """ADR 0019 provenance, checked BEFORE the correspondence digest. Fails closed.
 
@@ -182,7 +182,7 @@ def test_the_provenance_gate_can_fire(field: str, monkeypatch):
     this the check is an equality that has only ever been satisfied, and a typo in a field name
     would leave it comparing nothing while reading as protection.
     """
-    old_path, new_path = manifest_version_pairs()[0]
+    old_path, new_path = committed_version_pairs()[0]
     tampered = json.loads(_SENTINEL.read_text())
     tampered[pair_key(old_path, new_path)][field] = "0" * 64
     monkeypatch.setitem(globals(), "load_sentinel", lambda: tampered)
@@ -223,7 +223,7 @@ def test_editing_the_parser_moves_the_revision(tmp_path):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("old_path,new_path", manifest_version_pairs(), ids=lambda p: p.stem)
+@pytest.mark.parametrize("old_path,new_path", committed_version_pairs(), ids=lambda p: p.stem)
 def test_production_reproduces_the_pinned_pairing_stream(old_path: Path, new_path: Path):
     """THE CORRESPONDENCE GATE. Which observations round 1 pairs, and in what order.
 
