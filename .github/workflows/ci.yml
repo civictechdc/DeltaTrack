@@ -335,7 +335,7 @@ jobs:
           "$GITHUB_WORKSPACE/tests/test_research_financial_report.py"
           "$GITHUB_WORKSPACE/tests/test_appropriation_resolver.py"
           "$GITHUB_WORKSPACE/tests/test_rollup_agreement.py"
-          "$GITHUB_WORKSPACE/tests/test_typed_precision.py"
+          "$GITHUB_WORKSPACE/tests/test_appropriation_precision.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_corpus_smoke.py"
           "$GITHUB_WORKSPACE/tests/test_bill_tree.py"
           "$GITHUB_WORKSPACE/tests/test_pdf_compare.py"

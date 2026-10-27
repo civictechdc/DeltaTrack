@@ -29,8 +29,9 @@ count over every answer-key line, mapped or not. Only the thirteen committee-rep
 jurisdictions are scored; the Legislative Branch spreadsheet key has no report to check the
 other direction against.
 
-    uv run python docs/research/financial-semantics/typed_precision.py
-    uv run python docs/research/financial-semantics/typed_precision.py --resolver summed --details unkeyed/absent
+    uv run python docs/research/financial-semantics/appropriation_precision.py
+    uv run python docs/research/financial-semantics/appropriation_precision.py \
+        --resolver summed --details unkeyed/absent
 
 Reads only committed fixtures, so it needs no download.
 """

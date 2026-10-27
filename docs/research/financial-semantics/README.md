@@ -60,7 +60,7 @@ claim that these exit criteria have been met; adopting the ADR would not make th
 | `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, proposed, #796) |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
-| `typed_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
+| `appropriation_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
 
 ## Notebook appropriation summary
 
@@ -278,13 +278,13 @@ So 121 of the resolver's 154 complete roll-ups reproduce the report's agency tot
 
 `committee_agreement.py` starts from the report's accounts: for each one, was its paragraph typed
 with the report's figure? That is recall's direction, and it only sees the paragraphs an answer-key
-line maps to (1,163 of 1,267). `typed_precision.py` starts from the other end: every paragraph the
+line maps to (1,163 of 1,267). `appropriation_precision.py` starts from the other end: every paragraph the
 resolver types with a figure in the thirteen Senate-reported bills, and what that bill's report
 says about the figure. The two directions see different errors.
 
 ```bash
-uv run python docs/research/financial-semantics/typed_precision.py
-uv run python docs/research/financial-semantics/typed_precision.py --resolver summed --details unkeyed/text
+uv run python docs/research/financial-semantics/appropriation_precision.py
+uv run python docs/research/financial-semantics/appropriation_precision.py --resolver summed --details unkeyed/text
 ```
 
 A typed figure is **confirmed** when it equals the report's figure for its answer-key account, or,
@@ -311,7 +311,7 @@ summed resolvers type the $25,000: it is the first figure after a semicolon that
 closes, and the cap phrase is further back than the forty characters the closing-figure rule looks.
 The answer-key builder never mapped that account (its `bureau` field is narrative text), so
 `committee_agreement.py` cannot see the regression. Here it is one of the 22 figures printed in the
-report as no account's figure. `tests/test_typed_precision.py` pins both readings.
+report as no account's figure. `tests/test_appropriation_precision.py` pins both readings.
 
 **How far to trust the numbers.**
 
