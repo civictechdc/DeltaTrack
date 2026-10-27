@@ -94,8 +94,8 @@ not cross-version matching keys; `match_path`, content order and observation
 ordinals are unchanged. The canonical schema and renderer are unchanged.
 
 This recovery is deliberately partial. Same-level account-heading chains (NATO,
-FDA), headings inside a preceding section, split titles, deep container labels,
-and header-only sections remain separate work from #739 and #525. A parenthetical
+FDA), headings inside a preceding section, split titles and header-only sections
+remain separate work from #739 and #525. A parenthetical
 or a heading with its own body is not a recovered provision heading.
 
 ## Glossary
@@ -137,8 +137,10 @@ its values come from three places:
 It is not an exhaustive GPO taxonomy. The DTD's other structural units have no level of
 their own: above the section, the bill's own `subtitle`, `part`, `chapter`, `subchapter`
 and `subpart` surface in the XML tree as `heading` nodes labeled with their header text,
-and nested ones can be joined into a single node (units inside quoted amendatory text
-are not the bill's structure and get no node); below the subsection, `paragraph` through
+one per nesting level and keyed by source occurrence, so same-named containers stay
+apart. `match_path` still joins a third level into the second (`medicaid - preventing
+wasteful spending`), so pairing is unaffected. Units inside quoted amendatory text
+are not the bill's structure and get no node. Below the subsection, `paragraph` through
 `subitem` are not nodes at all. The two pipelines derive a level differently, and that
 asymmetry is real:
 
