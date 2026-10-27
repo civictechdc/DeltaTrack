@@ -193,3 +193,68 @@ def test_a_heading_without_an_id_is_counted_where_the_outline_puts_it():
     del doc["tree"]["v2"][-1]["id"]
     view = changes_view(format_diff_html(doc))
     assert any(path == ("TITLE I", "KEPT ACCOUNT") for path, _ in view.pointer_list)
+
+
+def _two_same_named_parts(first_child, second_child):
+    """An earlier TITLE I holding two parts both named "General provisions"."""
+    return [
+        node(
+            "TITLE I",
+            "title",
+            span(0, 7),
+            [
+                node("General provisions", "heading", span(10, 28), [first_child]),
+                node("General provisions", "heading", span(60, 78), [second_child]),
+            ],
+        )
+    ]
+
+
+def test_same_named_earlier_parts_stay_two_removed_groups():
+    """The earlier tree names each removal's node (``changes[].node.v1``), so two parts
+    that share a label are two groups in the removed section, as they are two headings
+    in the earlier outline. Grouping on labels alone merges them (#859)."""
+    earlier = _two_same_named_parts(
+        node("Financing", "heading", span(30, 39), [node("Sec. 1", "section", span(40, 50))]),
+        node("Eligibility", "heading", span(80, 91), [node("Sec. 2", "section", span(92, 100))]),
+    )
+    # Preorder ids: Sec. 1 is v1.3 and Sec. 2 is v1.6; the label paths differ below the
+    # part, but each removal still names its node, as a producer does.
+    first = change(
+        "c-0001", "removed", v1_path=["TITLE I", "General provisions", "Financing", "Sec. 1"], v1=span(40, 50)
+    )
+    second = change(
+        "c-0002", "removed", v1_path=["TITLE I", "General provisions", "Eligibility", "Sec. 2"], v1=span(92, 100)
+    )
+    first["node"], second["node"] = {"v1": "v1.3", "v2": None}, {"v1": "v1.6", "v2": None}
+    html = format_diff_html(canonical([first, second], earlier_tree=earlier))
+    section = removed_section(html)
+    assert section.count(">General provisions</summary>") == 2
+    split = section.index(">General provisions</summary>", section.index(">General provisions</summary>") + 1)
+    assert ">Financing</summary>" in section[:split] and ">Eligibility</summary>" not in section[:split]
+    assert ">Eligibility</summary>" in section[split:]
+    sidebar = html[html.index('<nav class="sidebar">') : html.index("</nav>")]
+    assert sidebar.count('General provisions <span class="nav-group__count">(1)</span>') == 2
+
+    # A removal naming no earlier node cannot say which part held it, so it is filed
+    # under neither: it keeps a label-only group of its own.
+    unplaced = change("c-0003", "removed", v1_path=["TITLE I", "General provisions", "Sec. 9"], v1=span(120, 130))
+    unplaced["node"] = {"v1": None, "v2": None}
+    html = format_diff_html(canonical([first, second, unplaced], earlier_tree=earlier))
+    assert removed_section(html).count(">General provisions</summary>") == 3
+
+
+def test_a_label_path_naming_two_removed_groups_carries_no_pointer():
+    """A pointer links one later heading to one removed group by name. Where the earlier
+    version has two same-named groups, the name cannot say which, so the later heading
+    carries no pointer: the rule two same-named later headings already follow."""
+    earlier = _two_same_named_parts(node("Sec. 1", "section", span(30, 40)), node("Sec. 2", "section", span(80, 90)))
+    later = [node("TITLE I", "title", span(0, 7), [node("General provisions", "heading", span(10, 28))])]
+    kept = change("c-0001", "modified", v1_path=None, v2_path=["TITLE I", "General provisions"])
+    kept["node"] = {"v1": None, "v2": "v2.1"}
+    first = change("c-0002", "removed", v1_path=["TITLE I", "General provisions", "Sec. 1"], v1=span(30, 40))
+    second = change("c-0003", "removed", v1_path=["TITLE I", "General provisions", "Sec. 2"], v1=span(80, 90))
+    first["node"], second["node"] = {"v1": "v1.2", "v2": None}, {"v1": "v1.4", "v2": None}
+    view = changes_view(format_diff_html(canonical([kept, first, second], later_tree=later, earlier_tree=earlier)))
+    assert view.cards[0]["path"] == ("TITLE I", "General provisions")
+    assert not any(path == ("TITLE I", "General provisions") for path, _ in view.pointer_list)
