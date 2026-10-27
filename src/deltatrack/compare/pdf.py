@@ -104,6 +104,11 @@ _DECLINE_MESSAGE = (
 )
 
 
+_SCAN_DECLINE_MESSAGE = (
+    "This PDF appears to contain images rather than extractable text and cannot currently be compared."
+)
+
+
 def _is_unnumbered_layout(pages: list[Page]) -> bool:
     """True when a non-trivial document has essentially no printed line numbers."""
     lines = [ln for page in pages for ln in page.lines]
@@ -120,8 +125,8 @@ def _extract_and_diff(
     """Parse both PDFs, diff them, return pages for downstream serializers.
 
     Temp files are deleted before return; callers work on in-memory Page lists.
-    Declines an unnumbered (enrolled) layout on either side before diffing, so
-    the refusal costs no diff work on a document we can't answer for.
+    Declines textless PDFs and unnumbered (enrolled) layouts on either side
+    before diffing, so the refusal costs no diff work on a document we can't answer for.
     """
     with tempfile.TemporaryDirectory(prefix="deltatrack-") as tmp:
         start_path = Path(tmp) / "start.pdf"
@@ -146,6 +151,10 @@ def _extract_and_diff(
         old_evidence, new_evidence = old_read.evidence(), new_read.evidence()
         old_pages = merge_print_pages(old_read, old_evidence.then(new_evidence))
         new_pages = merge_print_pages(new_read, new_evidence.then(old_evidence))
+
+    for pages in (old_pages, new_pages):
+        if not any(line.text.strip() for page in pages for line in page.lines):
+            raise UnsupportedLayoutError(_SCAN_DECLINE_MESSAGE)
 
     if _is_unnumbered_layout(old_pages) or _is_unnumbered_layout(new_pages):
         raise UnsupportedLayoutError(_DECLINE_MESSAGE)
