@@ -321,8 +321,8 @@ report as no account's figure. `tests/test_appropriation_precision.py` pins both
   grants); each is a figure the report states for some account, not necessarily this one.
 - The 37 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 36
   `report_not_in_text/typed`: in 36 the key's figure appears nowhere in the paragraph, so the
-  resolver typed what the bill states and the key states something else. Four read against their
-  reports: TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
+  resolver typed what the bill states and the key states something else. Four of the 36 were
+  spot-checked against their reports; the other 32 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
   recommendation, where the key carries the $7,400,729,000 net of $2,620,000,000 in aviation
   security fees; SAMHSA Mental Health is typed at the bill's $2,869,507,000 where the report's
   $2,902,546,000 program level includes $21,039,000 in section 241 transfers; the Copyright Office
