@@ -67,10 +67,10 @@ this experiment does not import its paragraph-level classifier, financial views 
 
 ### Independent sources, manually inspected
 
-CRS's $68.1 billion and the provision's $69.070887 billion are both correct, but they are
-on different bases. The $1.0 billion between them is a separate rescission in the same
-bill, which CRS adds into the account. Sources (amounts in thousands, as both tables
-print them):
+CRS's $68.1 billion and the provision's $69.070887 billion are both correct, but they
+cover different provisions. The $1.0 billion between them is a separate rescission in the
+same bill, which CRS includes in the account's subtotal. Sources (amounts in thousands,
+as both tables print them):
 
 - **Bill.** Senate amendment v4 SEC. 256 (printed p. 80, lines 1–14; element
   `id3887A33BE65840BBBAF6286558009337`) rescinds, "of the unobligated balances ... from
@@ -104,14 +104,18 @@ not used to find this, and it reconciles exactly the same way: 33,000,000 − 3,
 (its paragraph) − 976,005 (SEC. 256) = 28,864,411, CRS's subtotal (p. CRS-39), and
 3,159,584 + 976,005 = 4,135,589, CRS's rescission row.
 
-Inference, not stated by either source: CRS counts a rescission of prior-year balances
-enacted in this bill against the account's FY2024 total, which nets budget authority by
-the year of enactment. By its own terms, SEC. 256 does not reduce the $74.004 billion
-FY2024 advance. The report keeps the two apart, and CRS's "FY2024 appropriation" combines
-them. The two sources are also not independent of each other: CRS sources its Senate
-column to the committee report, and that report describes the committee bill, not the
-floor amendment. Agreement with v4 rests on matching figures; neither source describes
-floor changes.
+This establishes the arithmetic: the report lists SEC. 256 as a separate row, and CRS
+includes it in the account's FY2024 subtotal. It does not establish which funding years
+or balances SEC. 256 rescinds. "Unobligated balances ... from prior appropriations Acts"
+does not name the years, and it does not exclude the $74.004 billion FY2024 advance,
+which was itself appropriated in the 2023 Act. Neither source says why CRS counts SEC. 256
+in the FY2024 subtotal, and this one table does not show a general CRS rule. Both
+questions remain unresolved.
+
+The two sources are also not independent of each other: CRS sources its Senate column to
+the committee report, and that report describes the committee bill, not the floor
+amendment. Agreement with v4 rests on matching figures; neither source describes floor
+changes.
 
 What this corroborates for each occurrence in the experiment:
 
@@ -135,7 +139,10 @@ Only the text names the account each figure belongs to. A figure that took its a
 from the path would be filed under neither Medical Services nor Medical Community Care,
 which is a zero-tolerance error under ADR 0025. The report's Administrative Provisions
 rows name the account and section of each such figure, which makes them an official
-answer key for that attribution.
+answer key for that attribution. A record of these figures needs to keep three things
+apart: where the provision sits (its heading path), the account it explicitly names, and
+the funding years of the rescinded balances. The source leaves those years unresolved,
+and "prior Acts" alone does not settle them.
 
 ## Files
 
