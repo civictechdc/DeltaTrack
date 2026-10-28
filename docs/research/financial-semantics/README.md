@@ -62,19 +62,80 @@ The year in the availability clause is not its later expiration year. A printed 
 confirms placement, not financial correctness: Senate amendment pages 35–36 put the
 text under Veterans Health Administration / Medical Services.
 
-CRS [R48056](https://www.congress.gov/crs-product/R48056), pp. 24–25, states that the
-Senate-passed bill provides $71 billion for Medical Services as FY2025 advance
-appropriations. The report was inspected through [a mirror](https://www.everycrsreport.com/reports/R48056.html)
-after the official site returned HTTP 403. It does not establish an exact independent
-match for the other three figures. Its $68.1 billion Senate-passed FY2024 account amount
-does not reconcile directly with the cited $74.004 billion less the $4.933113 billion
-rescission, approximately $69.1 billion; the difference and accounting basis remain
-unresolved. The records accordingly say `not_checked` rather than claiming each figure
-is independently validated. This known development example is not a holdout or stage 1
-readiness evidence.
-
 History: Matt Zamora's #736 supplied per-version coverage and source drill-down ideas;
 this experiment does not import its paragraph-level classifier, financial views or export.
+
+### Independent sources, manually inspected
+
+CRS's $68.1 billion and the provision's $69.070887 billion are both correct, but they are
+on different bases. The $1.0 billion between them is a separate rescission in the same
+bill, which CRS adds into the account. Sources (amounts in thousands, as both tables
+print them):
+
+- **Bill.** Senate amendment v4 SEC. 256 (printed p. 80, lines 1–14; element
+  `id3887A33BE65840BBBAF6286558009337`) rescinds, "of the unobligated balances ... from
+  prior appropriations Acts", $1,000,000,000 from Medical Services and $976,005,000 from
+  Medical Community Care. It sits under Administrative Provisions, outside the Medical
+  Services paragraph.
+- **[S.Rept. 118-43](https://www.govinfo.gov/content/pkg/CRPT-118srpt43/html/CRPT-118srpt43.htm)**
+  (June 22, 2023, accompanying S. 2127 as reported). Medical Services account section:
+  FY2024 recommendation −4,933,113,000, "total budget authority of $69,070,887,000". The
+  comparative statement lists Medical services: budget year appropriations −4,933,113;
+  advance from prior year appropriations 74,004,000; "Subtotal, MS available in fiscal
+  year" 69,070,887; advance appropriations 71,000,000; "Total, MS appropriated in this
+  bill" 66,066,887. Its Administrative Provisions block has a separate row, "Medical
+  Services (MS) (Sec 238 (Req)/Sec 256) (rescission)", −1,000,000.
+- **[CRS R48056](https://www.congress.gov/crs_external_products/R/PDF/R48056/R48056.2.pdf)**,
+  retrieved from Congress.gov's official PDFs (`R48056.1.pdf` and `R48056.2.pdf`; the
+  Congress.gov API reports version 2 as current, and both are dated May 1, 2024).
+  Version 2 changes only editorial details, and the passages below are identical in
+  both. The HTML product page and `crsreports.congress.gov` return a bot challenge or
+  403. Page 24 (PDF p. 29) says the Senate bill "further decreased the FY2024
+  appropriation to $68.1 billion". Table 3 ($ in Thousands), column "Senate (Div. A of
+  H.R. 4366; S.Rept. 118-43)", p. CRS-38: Medical Services 74,004,000; "Administrative
+  rescission" (5,933,113); subtotal 68,070,887. No footnote breaks the rescission down
+  (notes a and b cover the Toxic Exposures Fund). The table cites S.Rept. 118-43
+  pp. 109–115 as a source.
+
+Arithmetic: 74,004,000 − 4,933,113 = 69,070,887 (the report's "available in fiscal
+year"). Subtracting SEC. 256's 1,000,000 gives 68,070,887, which is CRS's subtotal, and
+4,933,113 + 1,000,000 = 5,933,113 is CRS's rescission row. Medical Community Care was
+not used to find this, and it reconciles exactly the same way: 33,000,000 − 3,159,584
+(its paragraph) − 976,005 (SEC. 256) = 28,864,411, CRS's subtotal (p. CRS-39), and
+3,159,584 + 976,005 = 4,135,589, CRS's rescission row.
+
+Inference, not stated by either source: CRS counts a rescission of prior-year balances
+enacted in this bill against the account's FY2024 total, which nets budget authority by
+the year of enactment. By its own terms, SEC. 256 does not reduce the $74.004 billion
+FY2024 advance. The report keeps the two apart, and CRS's "FY2024 appropriation" combines
+them. The two sources are also not independent of each other: CRS sources its Senate
+column to the committee report, and that report describes the committee bill, not the
+floor amendment. Agreement with v4 rests on matching figures; neither source describes
+floor changes.
+
+What this corroborates for each occurrence in the experiment:
+
+| Occurrence | Experiment's reading | Independent statement | Status |
+|---|---|---|---|
+| $71,000,000,000 | adds, FY2025 | CRS p. 25 and Table 3 FY2025 column; report's FY2025 advance, counted in "appropriated in this bill" | Amount, account, year and adding effect corroborated |
+| $2,000,000,000 | neither, FY2025, available through FY2026 | None in either source | Unresolved |
+| $74,004,000,000 | neither (prior reference), FY2024 | Report's "advance from prior year appropriations", left out of "appropriated in this bill"; CRS Table 3 | Amount, account, year and non-adding effect corroborated by the report; CRS gives amount and year only |
+| $4,933,113,000 | removes, FY2024 | Report's FY2024 −4,933,113 for the account | Amount, sign, account and year corroborated by the report; CRS shows it only inside its combined row |
+
+Availability end years are not corroborated for any occurrence. The account-level
+reconciliation does not validate SEC. 256's own figures, which the experiment does not
+inspect. `independent_evidence` reports implemented checks only. None exists, so every
+record still says `not_checked`, and the manual findings are recorded here, not in the
+record. This known development example is not a holdout and is not stage 1 readiness
+evidence.
+
+**Gap this exposes.** The parser gives SEC. 256 one node, with a path ending
+`Administrative provisions › Sec. 256`, and both accounts' figures sit in that node.
+Only the text names the account each figure belongs to. A figure that took its account
+from the path would be filed under neither Medical Services nor Medical Community Care,
+which is a zero-tolerance error under ADR 0025. The report's Administrative Provisions
+rows name the account and section of each such figure, which makes them an official
+answer key for that attribution.
 
 ## Files
 
