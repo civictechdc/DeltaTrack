@@ -27,7 +27,7 @@ This is a navigation and handoff document, not an implementation specification. 
 | A | Agreed financial acceptance boundaries | Adoption recorded separately; no financial shipping approval | Apply the accepted criteria to future financial proposals | #796; `f3e80ffe` |
 | B | Useful XML structure work integrated | Provision-heading, nested-container and split-title successors merged | Retain remaining unsupported shapes as deferred | Source: #739; successors #856, #859, #861 |
 | C | Useful PDF structure work integrated | Comma-wrap successor merged; NATO scope investigation bounded without a repair | Accept the recorded limitation or supply new structural evidence before revisiting scope | Source: #734; successor #857 at `025d2248`, merged as `a4ca7944`; finding below |
-| D | Trustworthy individual financial figures | Existing research provides bounded evidence | Implement and validate one complete mixed-figure example; use what it reveals to choose the next slice | Sources: #736, #845, #854; stage 1 not demonstrated |
+| D | Trustworthy individual financial figures | Medical Services mixed-figure experiment open for review | Review #862 and trace its unresolved independent-source discrepancy | Sources: #736, #845, #854; successor #862; stage 1 not demonstrated |
 | E | Trustworthy financial totals | Existing rollup research exposes unresolved accounting and scope issues | After per-figure work clarifies the inputs, choose a bounded aggregation claim and test it independently | ADR stage 2; not ready |
 | F | Meaningful cross-version financial changes | Acceptance decision intentionally deferred | After stage 1 ships, settle the paired-change claim and its criteria, then plan implementation | ADR stage 3; not ready |
 
@@ -158,7 +158,7 @@ A new substantive review pass must name a plausible, currently untested failure 
 
 ## Next turn
 
-**Owner: Will reviews the Medical Services experiment; implementing agent next traces the CRS FY2024 discrepancy and verifies its official copy.** Choose a further financial research example from demonstrated gaps rather than broadening this prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
+**Owner: Will reviews [#862](https://github.com/civictechdc/DeltaTrack/pull/862); implementing agent next traces the CRS FY2024 discrepancy and verifies its official copy.** Choose a further financial research example from demonstrated gaps rather than broadening this prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
 
 This is the single authoritative repository copy, committed in `plans/` despite that directory's general ignore rule. The prior ignored primary-checkout copy has been moved here, not duplicated. Tracking it is temporary: when its remaining outcomes are delivered or explicitly disposed of, move any lasting outcome to its permanent home (README, ADR, code) and delete this file from the repository, with no archive copy.
 
