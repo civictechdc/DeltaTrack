@@ -159,7 +159,7 @@ A new substantive review pass must name a plausible, currently untested failure 
 
 ## Next turn
 
-**Owner: Will reviews the CRS reconciliation PR; implementing agent next takes SEC. 256 as the next financial example.** It names two accounts in one general-provision node, so each figure's account must come from the text rather than the heading path. S.Rept. 118-43's Administrative Provisions rows are its official answer key. Do not broaden the prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
+**Owner: Will reviews [#866](https://github.com/civictechdc/DeltaTrack/pull/866); implementing agent next takes SEC. 256 as the next financial example.** It names two accounts in one general-provision node, so each figure's account must come from the text rather than the heading path. S.Rept. 118-43's Administrative Provisions rows are its official answer key. Do not broaden the prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
 
 This is the single authoritative repository copy, committed in `plans/` despite that directory's general ignore rule. The prior ignored primary-checkout copy has been moved here, not duplicated. Tracking it is temporary: when its remaining outcomes are delivered or explicitly disposed of, move any lasting outcome to its permanent home (README, ADR, code) and delete this file from the repository, with no archive copy.
 
