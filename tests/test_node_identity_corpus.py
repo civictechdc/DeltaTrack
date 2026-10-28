@@ -75,7 +75,7 @@ XML_COUNTS = {
     "115-hr-5895/2_engrossed-in-house->4_engrossed-amendment-senate": (4, 241, 553),
     "115-hr-5895/4_engrossed-amendment-senate->5_enrolled-bill": (4, 236, 410),
     "117-hr-2471/1_introduced-in-house->6_enrolled-bill": (18, 1085, 3607),
-    "117-hr-4502/1_reported-in-house->2_engrossed-in-house": (19, 477, 1377),
+    "117-hr-4502/1_reported-in-house->2_engrossed-in-house": (19, 479, 1377),
     "118-hr-2882/1_introduced-in-house->4_engrossed-amendment-senate": (4, 1, 7),
     "118-hr-2882/4_engrossed-amendment-senate->5_engrossed-amendment-house": (4, 495, 1655),
     "118-hr-4366/1_reported-in-house->2_engrossed-in-house": (10, 60, 43),
