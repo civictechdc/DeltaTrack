@@ -12,12 +12,12 @@ classifier?
 Finding a figure is not the question. Dollar amounts were removed from the report in
 #681 (#671) because figures were found but given the wrong meaning, and a wrong
 meaning makes every total built on it wrong. The bar for bringing them back is
-[ADR 0025](../../decisions/0025-financial-confidence-criteria.md) (proposed); this
+[ADR 0025](../../decisions/0025-financial-confidence-criteria.md) (accepted); this
 folder is where the work to meet it happens. Tracking: epic #147.
 
 ## Exit criteria
 
-Under the proposed ADR, per-version financial interpretation is ready for product
+Under the accepted ADR, per-version financial interpretation is ready for product
 integration only when its stage 1 gate passes and the maintainer signs off. This does
 not establish readiness for totals, paired changes or their presentation:
 
@@ -43,7 +43,38 @@ placement can improve independently of financial displays. Representative bill k
 and reliable source placement are required capabilities, not dependencies on merging
 #734, #739 or #736. Neither PDF/XML agreement nor parity with this notebook independently
 proves financial meaning. The research paths below provide bounded evidence, not a
-claim that these exit criteria have been met; adopting the ADR would not make them met.
+claim that these exit criteria have been met.
+
+## Per-figure experiment: Medical Services
+
+`figure_example.py` is a deliberately bounded experiment, not a general classifier or
+product output. `uv run pytest tests/test_research_figure_example.py -v` reproduces the
+H.R. 4366 Senate-engrossed amendment v4 example and the repeated-occurrence control.
+It enumerates figures in the selected parsed node's serialized body, retaining exact
+character ranges, the source hash, parser revision, node ordinal and complete display
+path. The scope is the serialized text, not raw XML bytes. Unknown effects and years
+remain unresolved; the rules are not validated on other drafting shapes.
+
+The bill text distinguishes $71 billion of FY2025 advance appropriations, $2 billion
+of extended availability within that amount, a $74.004 billion prior FY2024
+appropriation reference, and a $4.933113 billion rescission from that prior amount.
+The year in the availability clause is not its later expiration year. A printed source
+confirms placement, not financial correctness: Senate amendment pages 35–36 put the
+text under Veterans Health Administration / Medical Services.
+
+CRS [R48056](https://www.congress.gov/crs-product/R48056), pp. 24–25, states that the
+Senate-passed bill provides $71 billion for Medical Services as FY2025 advance
+appropriations. The report was inspected through [a mirror](https://www.everycrsreport.com/reports/R48056.html)
+after the official site returned HTTP 403. It does not establish an exact independent
+match for the other three figures. Its $68.1 billion Senate-passed FY2024 account amount
+does not reconcile directly with the cited $74.004 billion less the $4.933113 billion
+rescission, approximately $69.1 billion; the difference and accounting basis remain
+unresolved. The records accordingly say `not_checked` rather than claiming each figure
+is independently validated. This known development example is not a holdout or stage 1
+readiness evidence.
+
+History: Matt Zamora's #736 supplied per-version coverage and source drill-down ideas;
+this experiment does not import its paragraph-level classifier, financial views or export.
 
 ## Files
 
@@ -57,7 +88,8 @@ claim that these exit criteria have been met; adopting the ADR would not make th
 | `stress_test_analysis.py` | Script: parses all 7 reference bills, reports unknowns and FP risks |
 | `stress_test_detail.py` | Script: shows full text of unknown nodes per bill type |
 | `classifier_notes.md` | Design rationale: pattern decisions and intentionally-unknown categories |
-| `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, proposed, #796) |
+| `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, #796) |
+| `figure_example.py` | Bounded per-figure Medical Services experiment with source occurrence and explicit uncertainty |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
 | `appropriation_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
@@ -82,7 +114,7 @@ exclusion behavior.
 ## Does the typed appropriation equal the committee report's?
 
 ADR 0009's recall check asks whether a committee report's figure for an account appears anywhere
-under its agency. ADR 0025 (proposed, #796) asks more: that the figure we **type** as the account's
+under its agency. ADR 0025 (#796) asks more: that the figure we **type** as the account's
 appropriation **equals** the report's. `committee_agreement.py` measures that over every account
 the answer keys (`tests/data/validation_*.json`) map to a bill node. The keys come from two kinds
 of source, and the script reports them separately:
@@ -345,4 +377,3 @@ report as no account's figure. `tests/test_appropriation_precision.py` pins both
   the 101 with no paragraph to score (99 the builder could not map, two mapped to a node with
   no text). The Legislative Branch spreadsheet key is left out, as it has no report to check
   the other direction against.
-
