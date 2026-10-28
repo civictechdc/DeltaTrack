@@ -86,7 +86,7 @@ XML_COUNTS = {
     "118-hr-8752/1_reported-in-house->2_engrossed-in-house": (10, 155, 57),
     "118-hr-8774/1_reported-in-house->2_engrossed-in-house": (10, 96, 53),
     "118-hr-9468/1_introduced-in-house->4_enrolled-bill": (12, 10, 2),
-    "119-hr-1/1_reported-in-house->2_engrossed-in-house": (8, 653, 766),
+    "119-hr-1/1_reported-in-house->2_engrossed-in-house": (8, 655, 766),
 }
 PDF_COUNTS = {
     "113-hr-3547/1_introduced-in-house->2_engrossed-in-house": (2, 3, 1),

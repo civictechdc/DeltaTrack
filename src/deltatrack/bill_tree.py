@@ -1044,6 +1044,29 @@ def _process_section_element(
 _STRUCTURAL_TAGS = {"subtitle", "part", "chapter", "subchapter", "subpart"}
 
 
+def _show_container(
+    nodes: list[BillNode], start: int, at: int, segment: str, shown: tuple[str, ...], occurrence: str
+) -> None:
+    """Display one container's breadcrumb segment on the nodes it emitted, ``nodes[start:]``.
+
+    ``segment`` is what the walk put at position ``at``; it becomes ``shown``, whose last
+    heading is this container's and takes ``occurrence``. A node whose segment there is
+    something else (an account that took over the slot) keeps its breadcrumb.
+    Display-only: match_path is untouched.
+    """
+    for i in range(start, len(nodes)):
+        node = nodes[i]
+        path = node.display_path
+        if len(path) <= at or path[at] != segment:
+            continue
+        keys = node.display_path_occurrences or ("",) * len(path)
+        nodes[i] = replace(
+            node,
+            display_path=(*path[:at], *shown, *path[at + 1 :]),
+            display_path_occurrences=(*keys[:at], *("",) * (len(shown) - 1), occurrence, *keys[at + 1 :]),
+        )
+
+
 def _walk_structural_children(
     parent: ET.Element,
     title_header: str,
@@ -1064,7 +1087,14 @@ def _walk_structural_children(
     ladder below title). Structural containers
     recurse with scoped context and their header mapped into the path:
     - First container level: header -> current_major
-    - Deeper levels: header -> current_intermediate
+    - Deeper levels: header -> current_intermediate. From the third level on,
+      match_path joins the levels into that one key (``medicaid - preventing
+      wasteful spending``); the breadcrumb shows each container as its own level.
+
+    A container's header segment carries its element's source occurrence, so two
+    containers that share a header stay two headings and two jump targets. A headerless
+    container adds no segment, and nodes after an account that took over the slot keep
+    the account's segment unkeyed.
     """
     provision_heading: ET.Element | None = None
     for child in parent:
@@ -1114,7 +1144,7 @@ def _walk_structural_children(
                         continue
                     at = len(node.display_path) - (2 if node.tag == "subsection" else 1)
                     path = node.display_path
-                    occurrences = ("",) * len(path)
+                    occurrences = node.display_path_occurrences or ("",) * len(path)
                     nodes[i] = replace(
                         node,
                         display_path=(*path[:at], heading, *path[at:]),
@@ -1133,18 +1163,26 @@ def _walk_structural_children(
             # Container header always becomes new major for its children.
             # If we're already inside a container (major was set by parent
             # container), push the existing major to intermediate.
+            # ``at`` is the breadcrumb segment the header lands in, ``shown`` the
+            # source headings that segment displays.
+            at = (1 if division.label else 0) + (1 if title_header else 0)
+            shown: tuple[str, ...] = (container_header,)
             if _in_structural_container and current_major is not None:
                 sub_major = current_major
+                at += 1 if sub_major else 0
                 if current_intermediate is not None:
-                    # Third+ level: concatenate into intermediate
+                    # Third+ level: one match key joins the levels; the breadcrumb splits it
                     sub_intermediate: str | None = (
                         f"{current_intermediate} - {container_header}" if container_header else current_intermediate
                     )
+                    if current_intermediate:
+                        shown = (current_intermediate, container_header)
                 else:
                     sub_intermediate = container_header
             else:
                 sub_major = container_header
                 sub_intermediate = None
+            start = len(nodes)
             _walk_structural_children(
                 child,
                 title_header,
@@ -1157,6 +1195,9 @@ def _walk_structural_children(
                 _in_structural_container=True,
                 _heading_ordinals=_heading_ordinals,
             )
+            if container_header:
+                occurrence = f"xml-heading-{(_heading_ordinals or {})[id(child)]}"
+                _show_container(nodes, start, at, sub_intermediate or sub_major, shown, occurrence)
             current_major = saved_major
             current_intermediate = saved_intermediate
             prev_name = saved_prev

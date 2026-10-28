@@ -1,4 +1,5 @@
-"""Source-bounded provision headings, adapted from Matt Zamora's #739 cases."""
+"""Source-bounded XML display headings: provision headings and nested containers,
+adapted from Matt Zamora's #739 cases."""
 
 import xml.etree.ElementTree as ET
 
@@ -89,3 +90,96 @@ def test_repeated_headings_in_separate_bill_bodies_do_not_share_a_target(tmp_pat
     assert spans[0]["start"] < spans[1]["start"]
     for span in spans:
         assert text["v1"][span["start"] : span["end"]] == "Administrative provisions"
+
+
+def test_nested_containers_show_each_level_and_keep_same_named_parts_apart():
+    title = ET.fromstring(
+        "<title><enum>IV</enum><header>Programs</header>"
+        "<subtitle><enum>D</enum><header>Health</header>"
+        "<part><enum>1</enum><header>General provisions</header>"
+        "<subpart><enum>A</enum><header>Eligibility</header>"
+        '<section id="s1"><enum>1.</enum><text>First.</text></section></subpart>'
+        "<subpart><enum>B</enum><header>Financing</header>"
+        '<section id="s2"><enum>2.</enum><text>Second.</text></section></subpart>'
+        "</part>"
+        "<part><enum>2</enum><header>General provisions</header>"
+        "<subpart><enum>A</enum><header>Eligibility</header>"
+        "<subchapter><enum>I</enum><header>Transition</header>"
+        '<section id="s3"><enum>3.</enum><text>Third.</text></section></subchapter></subpart>'
+        "</part>"
+        "</subtitle>"
+        '<section id="s4"><enum>4.</enum><text>Fourth.</text></section>'
+        "</title>"
+    )
+    nodes = walk_title(title, "TITLE IV—Programs", NO_DIVISION)
+    by_id = {n.element_id: n for n in nodes}
+    part = ("TITLE IV—Programs", "Health", "General provisions")
+    assert by_id["s1"].display_path == (*part, "Eligibility", "Sec. 1")
+    assert by_id["s2"].display_path == (*part, "Financing", "Sec. 2")
+    assert by_id["s3"].display_path == (*part, "Eligibility", "Transition", "Sec. 3")
+    assert by_id["s4"].display_path == ("TITLE IV—Programs", "Sec. 4")
+    # Display only: from the third level on, the match key stays joined.
+    assert by_id["s1"].match_path == ("programs", "health", "general provisions - eligibility", "sec. 1")
+    assert by_id["s3"].match_path[2] == "general provisions - eligibility - transition"
+
+    bill = BillTree(119, "hr", 1, "test", nodes)
+    text, _, trees, node_ids = build_xml_full_text(bill, bill)
+    parts = [n for n in _preorder(trees["v1"]) if n["label"] == "General provisions"]
+    assert [[c["label"] for c in p["children"]] for p in parts] == [["Eligibility", "Financing"], ["Eligibility"]]
+    spans = [p["heading_span"] for p in parts]
+    assert spans[0]["start"] < spans[1]["start"]
+    for span in spans:
+        assert text["v1"][span["start"] : span["end"]] == "General provisions"
+    # The second part's subpart owns the third section, not an alias of the first part's.
+    [transition] = parts[1]["children"][0]["children"]
+    assert transition["label"] == "Transition"
+    assert transition["children"][0]["id"] == node_ids["v1"][nodes.index(by_id["s3"])]
+
+
+def test_account_that_takes_over_a_container_slot_keeps_its_breadcrumb():
+    title = ET.fromstring(
+        "<title><enum>IV</enum><header>Programs</header>"
+        "<subtitle><enum>D</enum><header>Health</header>"
+        '<section id="s1"><enum>1.</enum><text>Before the account.</text></section>'
+        '<appropriations-major id="a1"><header>Grants to States</header>'
+        "<text>For grants, $5,000,000.</text></appropriations-major>"
+        '<section id="s2"><enum>2.</enum><text>After the account.</text></section>'
+        "<part><enum>1</enum><header>General provisions</header>"
+        '<section id="s3"><enum>3.</enum><text>Inside a part.</text></section></part>'
+        "</subtitle>"
+        "</title>"
+    )
+    nodes = walk_title(title, "TITLE IV—Programs", NO_DIVISION)
+    by_id = {n.element_id: n for n in nodes}
+    root = ("TITLE IV—Programs",)
+    assert by_id["s1"].display_path == (*root, "Health", "Sec. 1")
+    # The account replaced the subtitle in the slot; the subtitle must not reclaim it.
+    assert by_id["a1"].display_path == (*root, "Grants to States")
+    assert by_id["s2"].display_path == (*root, "Grants to States", "Sec. 2")
+    assert by_id["s3"].display_path == (*root, "Grants to States", "General provisions", "Sec. 3")
+
+
+@pytest.mark.slow
+def test_medicaid_subparts_nest_under_their_part():
+    bill = normalize_bill(fixture_path("119-hr-1", "1_reported-in-house.xml"))
+    by_number = {n.section_number: n for n in bill.nodes if n.tag == "section"}
+    health = ("TITLE IV—Energy and Commerce", "Health")
+    first = by_number["Sec. 44101"]
+    subpart = "Reducing fraud and improving enrollment processes"
+    assert first.display_path == (*health, "Medicaid", subpart, "Sec. 44101")
+    assert first.match_path[2] == f"medicaid - {subpart.lower()}"
+    # Part 1 ends before Part 2's first section.
+    assert by_number["Sec. 44201"].display_path == (*health, "Affordable Care Act", "Sec. 44201")
+
+    text, _, trees, _ = build_xml_full_text(bill, bill)
+    [medicaid] = [n for n in _preorder(trees["v1"]) if n["label"] == "Medicaid"]
+    assert [c["label"] for c in medicaid["children"]] == [
+        "Reducing fraud and improving enrollment processes",
+        "Preventing wasteful spending",
+        "Stopping abusive financing practices",
+        "Increasing personal accountability",
+    ]
+    for node in (medicaid, *medicaid["children"]):
+        span = node["heading_span"]
+        assert text["v1"][span["start"] : span["end"]] == node["label"]
+    assert medicaid["heading_span"]["start"] < medicaid["children"][0]["heading_span"]["start"]
