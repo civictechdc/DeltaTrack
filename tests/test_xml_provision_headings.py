@@ -2,10 +2,12 @@
 adapted from Matt Zamora's #739 cases."""
 
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 
 import pytest
 
 from deltatrack.bill_tree import NO_DIVISION, BillTree, normalize_bill, walk_title
+from deltatrack.compare.xml import compare_xml_trees
 from deltatrack.formatters.text_serializer import build_xml_full_text
 from tests.corpus_paths import fixture_path
 
@@ -14,6 +16,83 @@ def _preorder(nodes):
     for node in nodes:
         yield node
         yield from _preorder(node["children"])
+
+
+def test_split_titles_are_immediate_scoped_and_occurrence_distinct(tmp_path):
+    path = tmp_path / "bill.xml"
+    path.write_text(
+        "<bill><legis-body><division><enum>A</enum><header>Programs</header>"
+        "<title><enum>I</enum><header>Same</header></title>"
+        '<title><section id="s1"><enum>1.</enum><text>First.</text></section></title>'
+        "<title><enum>I</enum><header>Same</header></title>"
+        '<title><section id="s2"><enum>2.</enum><text>Second.</text></section></title>'
+        '<title><section id="s3"><enum>3.</enum><text>Unrelated.</text></section></title>'
+        "<title><enum>II</enum><header>Interrupted</header></title>"
+        '<section id="intervening"><enum>4.</enum><text>Intervening.</text></section>'
+        '<title><section id="s4"><enum>5.</enum><text>After interruption.</text></section></title>'
+        "<title><enum>III</enum><header>Conflict A</header></title>"
+        "<title><enum>IV</enum><header>Conflict B</header></title>"
+        '<title><section id="s5"><enum>6.</enum><text>Ambiguous.</text></section></title>'
+        '<title><enum>V</enum><header>Named</header><section id="s6"><enum>7.</enum>'
+        "<text>Own content.</text></section></title>"
+        "</division></legis-body></bill>"
+    )
+    bill = normalize_bill(path)
+    by_id = {n.element_id: n for n in bill.nodes}
+    for name in ("s1", "s2"):
+        assert "TITLE I—Same" in by_id[name].display_path
+    for name in ("s3", "s4", "s5"):
+        assert not any(x.startswith("TITLE ") for x in by_id[name].display_path)
+    assert "TITLE V—Named" in by_id["s6"].display_path
+    text, _, trees, node_ids = build_xml_full_text(bill, bill)
+    headings = [n for n in _preorder(trees["v1"]) if n["label"] == "TITLE I—Same"]
+    assert len(headings) == 2
+    assert [h["children"][0]["id"] for h in headings] == [
+        node_ids["v1"][bill.nodes.index(by_id["s1"])],
+        node_ids["v1"][bill.nodes.index(by_id["s2"])],
+    ]
+    for heading in headings:
+        span = heading["heading_span"]
+        assert text["v1"][span["start"] : span["end"]] == "TITLE I—Same"
+    assert headings[0]["heading_span"]["start"] < headings[1]["heading_span"]["start"]
+
+    changed = replace(
+        bill, nodes=[replace(n, body_text=n.body_text + " Changed.", display_text="") for n in bill.nodes]
+    )
+    doc = compare_xml_trees(bill, changed)
+    tree_nodes = {n["id"]: n for n in _preorder(doc["tree"]["v2"])}
+    for label, heading in zip(("Sec. 1", "Sec. 2"), headings):
+        [change] = [c for c in doc["changes"] if c["path"]["v2"][-1] == label]
+        target = tree_nodes[change["node"]["v2"]]
+        assert target["label"] == label
+        span = change["full_text_span"]["v2"]
+        assert target["body_span"]["start"] <= span["start"] < span["end"] <= target["body_span"]["end"]
+        assert target["id"] == heading["children"][0]["id"].replace("v1.", "v2.")
+
+
+@pytest.mark.slow
+def test_split_titles_follow_the_house_engrossed_print():
+    path = fixture_path("117-hr-4502", "2_engrossed-in-house.xml")
+    bill = normalize_bill(path)
+    root = ET.parse(path).getroot()
+    text, _, trees, _ = build_xml_full_text(bill, bill)
+    for heading, first in (
+        ("TITLE II—Environmental protection agency", "Science and technology"),
+        ("TITLE I—Department of Transportation", "Office of the Secretary"),
+    ):
+        matches = [n for n in bill.nodes if heading in n.display_path]
+        assert matches and any(first in n.display_path for n in matches)
+        [label] = [t for t in root.iter("title") if t.findtext("header") == heading.split("—", 1)[1]]
+        parent = next(p for p in root.iter() if label in list(p))
+        siblings = list(parent)
+        i = siblings.index(label)
+        expected = walk_title(siblings[i + 1], "", NO_DIVISION)
+        following = walk_title(siblings[i + 2], "", NO_DIVISION)
+        assert [n.element_id for n in matches] == [n.element_id for n in expected]
+        assert not set(n.element_id for n in matches) & set(n.element_id for n in following)
+        [node] = [n for n in _preorder(trees["v1"]) if n["label"] == heading]
+        span = node["heading_span"]
+        assert text["v1"][span["start"] : span["end"]] == heading
 
 
 def test_repeated_provision_headings_keep_their_scope_and_own_jump_targets():

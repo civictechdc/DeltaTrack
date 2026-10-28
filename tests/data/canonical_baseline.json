@@ -142,9 +142,9 @@
     }
   },
   "117-hr-4502/1_reported-in-house->2_engrossed-in-house": {
-    "bytes": 3929591,
+    "bytes": 3936473,
     "changes": 1415,
-    "sha256": "824b4517bfb83839eb298cf60f534953c00122b9af9ea00312956511631ccdb5",
+    "sha256": "bc925c71188939bca1d97f4d10900f4084bcc13c86dfcab08a0a97b9f00a5ec0",
     "summary": {
       "added": 1366,
       "modified": 48,

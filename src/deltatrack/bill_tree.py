@@ -1678,6 +1678,53 @@ def _amendment_opening_clause(body: ET.Element, body_index: int = 0) -> list[Bil
     ]
 
 
+def _walk_sibling_titles(parent: ET.Element, division: Division, heading_ordinals: dict[int, int]) -> list[BillNode]:
+    """Associate only an unambiguous adjacent label/content pair in one parent.
+
+    The DTD permits both halves, but does not specify their association. The printed
+    H.R. 4502 examples support this limited reading, not carry across other siblings.
+    """
+    siblings = list(parent)
+    nodes: list[BillNode] = []
+
+    def label_only(element: ET.Element) -> bool:
+        return (
+            element.tag == "title"
+            and bool(element.findtext("enum", "").strip())
+            and bool(get_header_text(element))
+            and all(child.tag in ("enum", "header") for child in element)
+        )
+
+    for i, title in enumerate(siblings):
+        if title.tag != "title":
+            continue
+        title_nodes = walk_title(title, build_title_label(title), division, _heading_ordinals=heading_ordinals)
+        if (
+            title_nodes
+            and i > 0
+            and label_only(siblings[i - 1])
+            and not (i > 1 and label_only(siblings[i - 2]))
+            and title.find("enum") is None
+            and title.find("header") is None
+            and title.find("toc") is None
+        ):
+            label = build_title_label(siblings[i - 1])
+            occurrence = f"xml-heading-{heading_ordinals[id(siblings[i - 1])]}"
+            at = 1 if division.label else 0
+            for node in title_nodes:
+                keys = node.display_path_occurrences or ("",) * len(node.display_path)
+                nodes.append(
+                    replace(
+                        node,
+                        display_path=(*node.display_path[:at], label, *node.display_path[at:]),
+                        display_path_occurrences=(*keys[:at], occurrence, *keys[at:]),
+                    )
+                )
+        else:
+            nodes.extend(title_nodes)
+    return nodes
+
+
 def _walk_one_body(body: ET.Element, body_index: int = 0) -> list[BillNode]:
     """Every content node under one top-level body, in document order."""
     all_nodes: list[BillNode] = _amendment_opening_clause(body, body_index)
@@ -1731,11 +1778,7 @@ def _walk_one_body(body: ET.Element, body_index: int = 0) -> list[BillNode]:
                 # left them in no node, no full-bill view and no money diff, silently.
                 all_nodes.extend(walk_body_sections(child, current_division))
 
-                for title in child.findall("title"):
-                    title_header = build_title_label(title)
-                    all_nodes.extend(
-                        walk_title(title, title_header, current_division, _heading_ordinals=heading_ordinals)
-                    )
+                all_nodes.extend(_walk_sibling_titles(child, current_division, heading_ordinals))
             elif child.tag == "title":
                 title_header = build_title_label(child)
                 all_nodes.extend(walk_title(child, title_header, current_division, _heading_ordinals=heading_ordinals))
@@ -1745,9 +1788,7 @@ def _walk_one_body(body: ET.Element, body_index: int = 0) -> list[BillNode]:
     titles = body.findall("title")
     if titles:
         all_nodes.extend(walk_body_sections(body))
-        for title in titles:
-            title_header = build_title_label(title)
-            all_nodes.extend(walk_title(title, title_header, NO_DIVISION, _heading_ordinals=heading_ordinals))
+        all_nodes.extend(_walk_sibling_titles(body, NO_DIVISION, heading_ordinals))
         return all_nodes
 
     # Fallback: sections directly under body

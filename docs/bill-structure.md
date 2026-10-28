@@ -93,10 +93,17 @@ their own jump targets, rather than merging by name. These keys are internal,
 not cross-version matching keys; `match_path`, content order and observation
 ordinals are unchanged. The canonical schema and renderer are unchanged.
 
-This recovery is deliberately partial. Same-level account-heading chains (NATO,
-FDA), headings inside a preceding section, split titles and header-only sections
-remain separate work from #739 and #525. A parenthetical
-or a heading with its own body is not a recovered provision heading.
+Split titles are recovered for display when an enum-and-header-only title is immediately
+followed by an unlabeled content-bearing title under the same body or division. The label
+applies only to that content title, and competing adjacent labels are declined. GPO's bill
+DTD permits the elements but does not establish their association; the printed H.R. 4502
+examples support this bounded inference. Occurrence keys preserve repeated labels without
+changing matching or content observations. Titles directly beside divisions in a body are
+not covered by this recovery.
+
+Recovery is deliberately partial. Same-level account-heading chains (NATO, FDA), headings
+inside a preceding section and header-only sections remain separate work from #739 and #525.
+A parenthetical or a heading with its own body is not a recovered provision heading.
 
 ## Glossary
 
