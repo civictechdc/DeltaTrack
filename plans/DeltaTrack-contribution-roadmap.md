@@ -24,7 +24,7 @@ This is a navigation and handoff document, not an implementation specification. 
 | ID | Outcome | Current position | Next useful step | PRs / evidence |
 |---|---|---|---|---|
 | A | Agreed financial acceptance boundaries | Adoption recorded separately; no financial shipping approval | Apply the accepted criteria to future financial proposals | #796; `f3e80ffe` |
-| B | Useful XML structure work integrated | Provision-heading and nested-container successors merged; bounded split-title repair ready for review | Review the independent split-title successor; retain other shapes as deferred | Source: #739; successors #856, #859, split-title PR |
+| B | Useful XML structure work integrated | Provision-heading and nested-container successors merged; bounded split-title repair ready for review | Review the independent split-title successor; retain other shapes as deferred | Source: #739; successors #856, #859, #861 |
 | C | Useful PDF structure work integrated | Comma-wrap successor merged; NATO scope investigation bounded without a repair | Accept the recorded limitation or supply new structural evidence before revisiting scope | Source: #734; successor #857 at `025d2248`, merged as `a4ca7944`; finding below |
 | D | Trustworthy individual financial figures | Existing research provides bounded evidence | Implement and validate one complete mixed-figure example; use what it reveals to choose the next slice | Sources: #736, #845, #854; stage 1 not demonstrated |
 | E | Trustworthy financial totals | Existing rollup research exposes unresolved accounting and scope issues | After per-figure work clarifies the inputs, choose a bounded aggregation claim and test it independently | ADR stage 2; not ready |
@@ -153,7 +153,7 @@ A new substantive review pass must name a plausible, currently untested failure 
 
 ## Next turn
 
-**Owner: Will reviews the split-title successor; implementing agent next selects the first mixed-figure research example** with independently reliable placement and spans. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
+**Owner: Will reviews [#861](https://github.com/civictechdc/DeltaTrack/pull/861); implementing agent next selects the first mixed-figure research example** with independently reliable placement and spans. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
 
 This is the single authoritative repository copy, committed in `plans/` despite that directory's general ignore rule. The prior ignored primary-checkout copy has been moved here, not duplicated. Tracking it is temporary: when its remaining outcomes are delivered or explicitly disposed of, move any lasting outcome to its permanent home (README, ADR, code) and delete this file from the repository, with no archive copy.
 
