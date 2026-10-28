@@ -333,6 +333,7 @@ jobs:
           uv run --locked --project "$GITHUB_WORKSPACE" pytest -v -m slow
           "$GITHUB_WORKSPACE/tests/test_classify_bill.py"
           "$GITHUB_WORKSPACE/tests/test_research_financial_report.py"
+          "$GITHUB_WORKSPACE/tests/test_research_figure_example.py"
           "$GITHUB_WORKSPACE/tests/test_appropriation_resolver.py"
           "$GITHUB_WORKSPACE/tests/test_rollup_agreement.py"
           "$GITHUB_WORKSPACE/tests/test_appropriation_precision.py"
