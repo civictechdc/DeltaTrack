@@ -69,7 +69,7 @@ fetch = [
 dev = [
     "jsonschema>=4.21",  # canonical-diff schema validation tests; importorskip silently skips without it
     "pandas>=2.0",  # research notebooks and financial-classifier coverage tests
-    "pymupdf==1.28.2",  # PINNED EXACTLY, and result-bearing: the external-validity oracle renders adjudication stimuli through it and the cross-engine control re-measures through it, so a different version can move a PDFIUM-CONDITIONED FRAME qualification. It was previously undeclared, so a clean `uv sync` did not install it and `uv run python probes/...` failed with ModuleNotFoundError while Run 1 had used an ambient 1.28.2. DEV-ONLY: the published engine must not gain a second PDF engine (#367), and x04 G7 asserts this exact version.
+    "pymupdf==2.0",  # PINNED EXACTLY, and result-bearing: the external-validity oracle renders adjudication stimuli through it and the cross-engine control re-measures through it, so a different version can move a PDFIUM-CONDITIONED FRAME qualification. It was previously undeclared, so a clean `uv sync` did not install it and `uv run python probes/...` failed with ModuleNotFoundError while Run 1 had used an ambient 1.28.2. DEV-ONLY: the published engine must not gain a second PDF engine (#367), and x04 G7 asserts this exact version.
     "pytest>=9.1.1",
     "pytest-cov>=6.0",
     "pytest-playwright>=0.5",
