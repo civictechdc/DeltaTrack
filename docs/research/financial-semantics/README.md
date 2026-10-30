@@ -45,14 +45,15 @@ and reliable source placement are required capabilities, not dependencies on mer
 proves financial meaning. The research paths below provide bounded evidence, not a
 claim that these exit criteria have been met.
 
-## Per-figure experiment: Medical Services
+## Per-figure experiment: Medical Services and SEC. 256
 
 `figure_example.py` is a deliberately bounded experiment, not a general classifier or
 product output. `uv run pytest tests/test_research_figure_example.py -v` reproduces the
-H.R. 4366 Senate-engrossed amendment v4 example and the repeated-occurrence control.
-It enumerates figures in the selected parsed node's serialized body, retaining exact
-character ranges, the source hash, parser revision, node ordinal and complete display
-path. The scope is the serialized text, not raw XML bytes. Unknown effects and years
+H.R. 4366 Senate-engrossed amendment v4 examples and their controls. It enumerates
+figures in the selected parsed node's serialized body, retaining exact character ranges,
+the source hash, parser revision, node ordinal and complete heading path. The heading
+path records where a figure sits; the record never calls it the figure's account. The
+scope is the serialized text, not raw XML bytes. Unknown effects, years and accounts
 remain unresolved; the rules are not validated on other drafting shapes.
 
 The bill text distinguishes $71 billion of FY2025 advance appropriations, $2 billion
@@ -127,22 +128,75 @@ What this corroborates for each occurrence in the experiment:
 | $4,933,113,000 | removes, FY2024 | Report's FY2024 −4,933,113 for the account | Amount, sign, account and year corroborated by the report; CRS shows it only inside its combined row |
 
 Availability end years are not corroborated for any occurrence. The account-level
-reconciliation does not validate SEC. 256's own figures, which the experiment does not
-inspect. `independent_evidence` reports implemented checks only. None exists, so every
+reconciliation does not validate SEC. 256's own figures; the next section does.
+`independent_evidence` reports implemented checks only. None exists, so every
 record still says `not_checked`, and the manual findings are recorded here, not in the
 record. This known development example is not a holdout and is not stage 1 readiness
 evidence.
 
-**Gap this exposes.** The parser gives SEC. 256 one node, with a path ending
-`Administrative provisions › Sec. 256`, and both accounts' figures sit in that node.
-Only the text names the account each figure belongs to. A figure that took its account
-from the path would be filed under neither Medical Services nor Medical Community Care,
-which is a zero-tolerance error under ADR 0025. The report's Administrative Provisions
-rows name the account and section of each such figure, which makes them an official
-answer key for that attribution. A record of these figures needs to keep three things
-apart: where the provision sits (its heading path), the account it explicitly names, and
-the funding years of the rescinded balances. The source leaves those years unresolved,
-and "prior Acts" alone does not settle them.
+### SEC. 256: accounts named only in the text
+
+The parser gives SEC. 256 (element `id3887A33BE65840BBBAF6286558009337`, printed p. 80,
+lines 1–14) one node, with a path ending `Administrative provisions › Sec. 256`. Both
+figures sit in that node's body; its two list items are not separate nodes. A figure that
+took its account from that path would be filed under neither account, which is a
+zero-tolerance error under ADR 0025. So the record keeps three facts apart: the
+provision's position (`heading_path`, with the source occurrence's ordinal, hash and
+parser revision), the account the text names (`text_account`, with its own span), and
+the funding year of the rescinded balances (`fiscal_year`), which is unresolved.
+
+`text_account` is filled only inside a "hereby rescinded from the following accounts in
+the amounts specified:" list in which every item is exactly one name and one figure
+(`Name, $X;` … `Name, $X:`). Any malformed item leaves the whole list unresolved, with no
+account and no effect. Everywhere else it is None, including the Medical Services
+paragraph, whose text names no account. Other provisions in the same title show what that
+costs. SEC. 251 names four accounts for one figure and correctly gets none. SEC. 255 does
+name its account ("under the heading Departmental Administration—Veterans Electronic Health
+Record in division J of" P.L. 117-328), but in another shape. Its None is an unresolved
+gap, not a correct abstention.
+
+| Figure | Record | S.Rept. 118-43, Administrative Provisions (thousands) | Corroborated |
+|---|---|---|---|
+| $1,000,000,000 | removes; `Veterans Health Administration—Medical Services`; funding year None | "Medical Services (MS) (Sec 238 (Req)/Sec 256) (rescission)", −1,000,000 | Account by name, amount and sign; not the funding years |
+| $976,005,000 | removes; `Veterans Health Administration—Medical Community Care`; funding year None | "Medical Community Care (MCC) (Sec 238 (Req)/Sec 256) (rescission)", −976,005 | Account by name, amount and sign; not the funding years |
+
+How the report applies to v4, checked rather than assumed:
+
+- **Columns.** The figures are in the "Committee recommendation" column of the
+  comparative statement of new budget authority for FY2024. "Sec 238 (Req)" names the
+  request's section, whose budget-estimate figures (−4,933,113 and −1,909,069) are
+  different.
+- **Same text.** The report accompanies S. 2127 as reported, not the floor amendment.
+  [`BILLS-118s2127rs.xml`](https://www.govinfo.gov/content/pkg/BILLS-118s2127rs/xml/BILLS-118s2127rs.xml)
+  (sha256 `c75017649096a12530ce1b9c05d71576e8895ce81804d6e34988856311084aa0`) has SEC. 255
+  and SEC. 256 under the same numbers, with the same element ids. Their text is identical to
+  v4's once whitespace is ignored. In the rest of the title, the floor added SECs. 261–268
+  and a $10,000,000 "of which" to SEC. 251, and changed nothing else. No other v4 node
+  rescinds from either account.
+- **Report retrieved** from
+  [govinfo](https://www.govinfo.gov/content/pkg/CRPT-118srpt43/html/CRPT-118srpt43.htm)
+  (sha256 `a17c6d439afe62e20b33c242822366c9f0963ba20253c41a9a97962226b13d15`). Neither file
+  is committed.
+
+**Funding years: unresolved.** `fiscal_year` is the funding year of the money a figure
+adds, removes or refers to. SEC. 256 rescinds "unobligated balances ... from prior
+appropriations Acts". That names no year and does not exclude the FY2024 advance, so both
+records hold None. Neither source states the years either. The report lists the
+rescissions in its FY2024 budget-authority statement, which places them in this bill, not
+in a year of the balances. CRS's FY2024 subtotal is no evidence of them, as above.
+
+**Evidence status.** The test's expected accounts and amounts were read from the report by
+hand. That makes them an acceptance case under ADR 0025, not independent evidence. No
+implemented check reads the report's rescission rows, so `independent_evidence` stays
+`not_checked`. The emergency-designation proviso has no figure and produces none.
+
+**A recorded name, not yet an attributed account.** Both figures are referential under
+ADR 0025: they count as attributed only when the named account resolves to an account in
+the bill's structure. `text_account` is the name, not that resolution. Resolving
+`Veterans Health Administration—Medical Services` to the bill's own Medical Services
+heading needs a resolver that abstains when a name does not match, which this experiment
+does not attempt. Matching the report's abbreviated row name ("Medical Services (MS)") is
+a further step.
 
 ## Files
 
@@ -157,7 +211,7 @@ and "prior Acts" alone does not settle them.
 | `stress_test_detail.py` | Script: shows full text of unknown nodes per bill type |
 | `classifier_notes.md` | Design rationale: pattern decisions and intentionally-unknown categories |
 | `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, #796) |
-| `figure_example.py` | Bounded per-figure Medical Services experiment with source occurrence and explicit uncertainty |
+| `figure_example.py` | Bounded per-figure experiment (Medical Services, SEC. 256) with source occurrence, text-named accounts and explicit uncertainty |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
 | `appropriation_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
