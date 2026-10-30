@@ -1,6 +1,6 @@
 # DeltaTrack: contribution recovery and financial readiness
 
-Living work plan · Updated October 27, 2026 · Maintainer: Will Hea
+Living work plan · Updated October 28, 2026 · Maintainer: Will Hea
 
 ## Purpose
 
@@ -19,6 +19,7 @@ This is a navigation and handoff document, not an implementation specification. 
 - [#858, bounded NATO agency-scope finding](https://github.com/civictechdc/DeltaTrack/pull/858) merged as `754a4dea` (documentation only).
 - [#859, nested XML container display](https://github.com/civictechdc/DeltaTrack/pull/859) merged as `14b793c2`, containing reviewed `04efba1`. It recovers #739's deep-container breadcrumb shape and preserves distinct removed-section occurrences; see below.
 - [#861, split XML title labels](https://github.com/civictechdc/DeltaTrack/pull/861) merged as `e3f7da84`, containing `2a7cfd66` and the roadmap link update.
+- [#862, per-figure Medical Services experiment](https://github.com/civictechdc/DeltaTrack/pull/862) merged as `0518c059`. Its CRS discrepancy is resolved below (documentation only).
 
 ## Outcomes to track
 
@@ -27,7 +28,7 @@ This is a navigation and handoff document, not an implementation specification. 
 | A | Agreed financial acceptance boundaries | Adoption recorded separately; no financial shipping approval | Apply the accepted criteria to future financial proposals | #796; `f3e80ffe` |
 | B | Useful XML structure work integrated | Provision-heading, nested-container and split-title successors merged | Retain remaining unsupported shapes as deferred | Source: #739; successors #856, #859, #861 |
 | C | Useful PDF structure work integrated | Comma-wrap successor merged; NATO scope investigation bounded without a repair | Accept the recorded limitation or supply new structural evidence before revisiting scope | Source: #734; successor #857 at `025d2248`, merged as `a4ca7944`; finding below |
-| D | Trustworthy individual financial figures | Medical Services mixed-figure experiment open for review | Review #862 and trace its unresolved independent-source discrepancy | Sources: #736, #845, #854; successor #862; stage 1 not demonstrated |
+| D | Trustworthy individual financial figures | Medical Services experiment merged; its CRS discrepancy is explained by a separate SEC. 256 rescission | Type a general-provision figure whose account is named in its text, not its heading path | Sources: #736, #845, #854; successor #862; stage 1 not demonstrated |
 | E | Trustworthy financial totals | Existing rollup research exposes unresolved accounting and scope issues | After per-figure work clarifies the inputs, choose a bounded aggregation claim and test it independently | ADR stage 2; not ready |
 | F | Meaningful cross-version financial changes | Acceptance decision intentionally deferred | After stage 1 ships, settle the paired-change claim and its criteria, then plan implementation | ADR stage 3; not ready |
 
@@ -99,7 +100,7 @@ The first proposed slice is a real provision containing both an appropriation an
 
 Bounded experiment: H.R. 4366 Senate-engrossed amendment v4, Medical Services, source element `id329E342A01664C9E8E19C02E0090DE3B`. The printed account starts on page 35, lines 19–21; page 36, lines 16–25 identifies four dollar occurrences: $71 billion available beginning FY2025, $2 billion of that amount with availability extended through FY2026, $74.004 billion previously appropriated for FY2024, and $4.933113 billion rescinded from that prior amount. `docs/research/financial-semantics/figure_example.py` enumerates them with effects, fiscal and expiry years, the parser's complete account path and ordinal, source hash, parser revision, serialized-text spans and explicit independent-evidence status. It abstains on unrecognized wording; this is not a general classifier or product data. The real and repeated-occurrence controls went red under removed proviso boundaries, duplicate-value deduplication, wrong source occurrence, wrong account, wrong effect and wrong year. Matt's #736 contributed source-span drill-down and occurrence coverage; its paragraph-level classifier is not adopted.
 
-CRS [R48056](https://www.congress.gov/crs-product/R48056), pp. 24–25, says the Senate-passed bill provides $71 billion in FY2025 advance Medical Services appropriations, corroborating that one effect, account and year. Congress.gov direct retrieval returned HTTP 403; the full report was inspected through an [independent mirror](https://www.everycrsreport.com/reports/R48056.html), so verify the official copy when accessible. It discusses an approximately $4.9 billion rescission in the President's request, not an exact Senate-passed rescission figure; it also reports $68.1 billion for the Senate-passed FY2024 account, while subtracting the bill's stated rescission from its cited prior amount yields approximately $69.1 billion. Do not equate those accounting bases without tracing the discrepancy. No independent per-figure corroboration has been established for the other three occurrences. Records conservatively carry `not_checked` independent-evidence status. This selected development example is not complete validation or stage 1 readiness.
+CRS discrepancy, resolved: CRS R48056's $68.1 billion Senate-passed FY2024 Medical Services figure is the provision's $69.070887 billion less SEC. 256's separate $1.0 billion rescission of unobligated balances from prior appropriations Acts. CRS combines both rescissions into one row, while S.Rept. 118-43 keeps SEC. 256 under Administrative Provisions. Medical Community Care reconciles the same way, to the thousand. This settles the arithmetic only. Which funding years or balances SEC. 256 rescinds is unresolved: "prior Acts" does not exclude the FY2024 advance, which the 2023 Act appropriated. Neither source explains why CRS counts it in FY2024. The official CRS PDFs were retrieved directly. The financial-semantics README records the evidence chain, the inference separated from source statements, and which of the four occurrences each source corroborates. The $2 billion availability figure and all availability end years remain unresolved, and records keep `not_checked` because no implemented check exists. This selected development example is not complete validation or stage 1 readiness. No executable check was added, because no consumer depends on the reconciliation.
 
 Choose subsequent slices from the failures and evidence gaps that matter most. Reuse current research and Matt’s source-inspection ideas where useful; avoid maintaining a copied legacy classifier as a second competing implementation.
 
@@ -158,7 +159,7 @@ A new substantive review pass must name a plausible, currently untested failure 
 
 ## Next turn
 
-**Owner: Will reviews [#862](https://github.com/civictechdc/DeltaTrack/pull/862); implementing agent next traces the CRS FY2024 discrepancy and verifies its official copy.** Choose a further financial research example from demonstrated gaps rather than broadening this prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
+**Owner: Will reviews [#866](https://github.com/civictechdc/DeltaTrack/pull/866); implementing agent next takes SEC. 256 as the next financial example.** It names two accounts in one general-provision node, so each figure's account must come from the text rather than the heading path. Keep the provision's position (its heading path), the account it explicitly names, and the funding years of the rescinded balances as separate facts. Leave those years unresolved unless a source states them; do not infer them from "prior Acts". S.Rept. 118-43's Administrative Provisions rows are the official answer key for the account attribution. Do not broaden the prototype by assumption. Do not merge or close #734, #736 or #739 as an inferred cleanup step.
 
 This is the single authoritative repository copy, committed in `plans/` despite that directory's general ignore rule. The prior ignored primary-checkout copy has been moved here, not duplicated. Tracking it is temporary: when its remaining outcomes are delivered or explicitly disposed of, move any lasting outcome to its permanent home (README, ADR, code) and delete this file from the repository, with no archive copy.
 
