@@ -104,8 +104,8 @@ report invites a staffer to upload `diff.json` to an AI assistant), and a caveat
 report or the documentation does not travel with the file. A "not authoritative" banner
 over typed figures, as #736 proposes, runs into the same problem.
 [0018](0018-text-triggers-are-financial-only.md) lets appropriations wording interpret a
-figure but never decide which account it belongs to, so a figure filed under the wrong
-account is a structure defect, not a typing one.
+figure but never shape the tree, so a heading placed wrongly is a structure defect, not a
+typing one. Which account a figure affects is a separate question, answered below.
 
 ## Decision
 
@@ -165,12 +165,70 @@ the source's accounting basis govern the type.
 Two further properties are part of a figure's type, because a total is wrong without
 them:
 
-- **The fiscal year it funds.** An advance appropriation and a current-year appropriation
-  in the same account are not summed together.
-- **The account it belongs to**, identified by its full position in the bill's
-  structure and source occurrence, not its leaf heading. Repeated headings must not
-  collapse distinct occurrences ([0019](0019-observation-identity.md)). Per 0018 placement
-  comes from the tree, never from financial wording.
+- **The fiscal year it funds**: the fiscal year of the appropriation whose money the
+  figure adds, removes or refers to. An advance appropriation and a current-year
+  appropriation in the same account are not summed together. This is not the fiscal year
+  of the bill that enacts the figure: a rescission in an FY2024 bill can remove money
+  appropriated for FY2023. Where the text does not state the year, as in "unobligated
+  balances ... from prior appropriations Acts", it is unresolved. It is not inferred from
+  the bill's year or from how a secondary source nets the figure.
+- **The account it affects.** An account is an appropriation account, the unit Congress
+  funds. Its official identifier is the Treasury Account Symbol: in "Surface
+  Transportation Priorities account (69 X 0538)", 69 is the agency, X marks money with no
+  expiry year and 0538 is the account. Within a bill, an account is identified by its full
+  position in the bill's structure and source occurrence, not its leaf heading. Repeated
+  headings must not collapse distinct occurrences ([0019](0019-observation-identity.md)).
+  Per 0018 the structure comes from the tree, never from financial wording.
+
+### A figure reaches its account by position or by name
+
+A figure's position and the account it affects are different facts that usually
+coincide. *Positional* and *referential* are terms defined here, for a distinction the
+budget vocabulary does not name ([0021](0021-naming-authority-and-boundaries.md)):
+
+| Attribution | Where the figure is | Example (H.R. 4366, Senate amendment) |
+|---|---|---|
+| Positional | In its account's own paragraph, which refers to itself as "this heading" | Medical Services: "$71,000,000,000 …" |
+| Referential | Elsewhere, usually a general or administrative provision, whose text names the account | SEC. 256: "rescinded from the following accounts …: Veterans Health Administration—Medical Services, $1,000,000,000" |
+
+Referential figures are routine. Rescissions of unobligated balances in general
+provisions are drafted this way across agencies and years. Requiring every figure to be
+positional would leave them all unresolved, and an unresolved figure that the source
+types counts as our error, so no bill containing such a provision could pass stage 1.
+
+A referential figure is attributed only when both of these hold:
+
+1. **The text names exactly one account for that figure**, in a drafting shape the reader
+   recognises. Unrecognised or ambiguous wording leaves the account unresolved. It never
+   falls back to the heading the provision sits under: "Administrative provisions › Sec.
+   256" is not an account.
+2. **The name resolves to an account in the bill's structure**, so the account is still
+   identified by its position in the tree. "Veterans Health Administration—Medical
+   Services" resolves to the Medical Services paragraph under Veterans Health
+   Administration. A name with no matching account in the bill stays unresolved until an
+   independent identifier settles it, such as a Treasury Account Symbol in the text or an
+   official account table. Examples are an account this bill does not fund, or one that
+   has been renamed or abbreviated.
+
+This reads appropriations wording to attribute a figure, which 0018 permits: the wording
+interprets the figure and never changes the tree. The stakes are higher than for most
+interpretation, because a wrong reading files money under the wrong account. Condition 2
+therefore checks the reading against the structure instead of trusting the words.
+
+### Three causes of an unresolved account or year
+
+| Cause | Example | Response |
+|---|---|---|
+| The drafting shape is not recognised | "in the specified amounts—(1) …" when the reader knows only "in the amounts specified:" | Add the shape to the deterministic reader, checked against official sources |
+| The name does not resolve | "Medical Services (MS)", or an account renamed since an earlier Act | Resolve it against the bill's structure or an official account identifier |
+| The text does not state it | Which years' balances "prior appropriations Acts" covers | It stays unresolved unless an official source states it |
+
+The first two are coverage gaps in a deterministic reader, and closing them is ordinary
+work. The third is not a gap in the reader: the bill does not contain the answer, so no
+method can recover it from the bill. A language model would supply a plausible year where
+the bill states none, which is the wrong-year error below. [0008](0008-deterministic-engine.md)
+already keeps models out of computing the diff. An unresolved value of this kind is not
+our error when the official source does not state it either.
 
 ### The evidence is official sources, matched on meaning
 
@@ -301,6 +359,10 @@ gate, not by judgement.
   it targets and shows that stage's gate passing.
 - **The research classifier needs a per-figure data model** before any stage can pass.
   That is a design change, not a pattern change. Its labels carry over.
+- **Account name resolution is a required capability.** A referential figure is
+  attributed only by resolving its named account to the bill's structure, so stage 1
+  needs that resolver, and the resolver must abstain when a name does not resolve. The
+  research experiment records the name the text gives (#869) but does not resolve it.
 - **The validation harness needs new work.** Matching on meaning against committee-report
   tables means parsing the rescission and limitation rows that the recall check
   currently excludes, and checking which figure was typed, not just whether it was
