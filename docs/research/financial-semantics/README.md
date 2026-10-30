@@ -190,16 +190,13 @@ hand. That makes them an acceptance case under ADR 0025, not independent evidenc
 implemented check reads the report's rescission rows, so `independent_evidence` stays
 `not_checked`. The emergency-designation proviso has no figure and produces none.
 
-**Open questions.**
-
-- ADR 0025 identifies a figure's account "by its full position in the bill's structure".
-  SEC. 256 is a figure whose structural position is not its account. Whether a text-named
-  account satisfies that property needs a maintainer decision before anything here
-  reaches product. This does not touch ADR 0018, since the tree and the heading path are
-  unchanged.
-- Linking `Veterans Health Administration—Medical Services` to the bill's own Medical
-  Services heading, or to the report's abbreviated row name, would need a cross-node
-  account resolver, which this experiment does not attempt.
+**A recorded name, not yet an attributed account.** Both figures are referential under
+ADR 0025: they count as attributed only when the named account resolves to an account in
+the bill's structure. `text_account` is the name, not that resolution. Resolving
+`Veterans Health Administration—Medical Services` to the bill's own Medical Services
+heading needs a resolver that abstains when a name does not match, which this experiment
+does not attempt. Matching the report's abbreviated row name ("Medical Services (MS)") is
+a further step.
 
 ## Files
 
