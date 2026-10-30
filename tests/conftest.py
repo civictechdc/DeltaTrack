@@ -616,6 +616,13 @@ ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
     "tests/test_govinfo_corpus_parity.py::test_govinfo_enumeration_reproduces_corpus_filenames": (
         "needs a live network (run with --run-network)"
     ),
+    # Builds the offline page, which downloads the pinned Pyodide tarball; CI's browser step
+    # does not pass `--run-network`, and publish-offline.yml runs it with both flags before
+    # each publish. With `--run-network` and no Chromium the fixture's skip reason differs
+    # and fails the session, which is right: a network run asked for this test to assert.
+    "tests/test_offline_html.py::test_the_page_opened_from_disk_matches_the_command_line": (
+        "needs a live network (run with --run-network)"
+    ),
     # Compares freshly-downloaded bulk-ZIP bytes against the curated corpus; both sides are
     # gitignored working material, so no fixture can make this runnable in CI.
     "tests/test_fetch_govinfo.py::test_govinfo_bytes_identical_to_curated_corpus": (
