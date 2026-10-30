@@ -216,6 +216,11 @@ and V), and its "NATO Security Investment Program" does not match the heading "S
 investment program". Matching the committee report's abbreviated row name ("Medical
 Services (MS)") is a further step.
 
+The reach is one drafting shape. In the corpus only Military Construction and Veterans Affairs
+divisions draft rescissions as "following accounts in the amounts specified:". Other
+subcommittees name accounts as "under the heading X", or in numbered "(1) X, $N;" lists,
+which `text_account` does not read yet.
+
 ## Files
 
 | File | Purpose |
