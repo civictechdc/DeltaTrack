@@ -33,7 +33,7 @@ def test_medical_services_figures_keep_effect_year_and_source_occurrence():
         ("$4,933,113,000", "removes", 2024, "rescission"),
     ]
     assert all(
-        r.account_path
+        r.heading_path
         == (
             "Division A: Military Construction, Veterans Affairs, and Related Agencies Appropriations Act, 2024",
             "TITLE II",
@@ -46,8 +46,40 @@ def test_medical_services_figures_keep_effect_year_and_source_occurrence():
     )
     assert all(r.source_sha256 == sha and r.parser_revision == parser_revision() for r in rows)
     assert [r.availability_end_year for r in rows] == [2025, 2026, None, None]
+    assert all(r.text_account is None for r in rows)
     assert all(text["v1"][r.start : r.end] == r.amount for r in rows)
     assert all(r.independent_evidence == "not_checked" for r in rows)
+
+
+@pytest.mark.slow
+def test_sec_256_figures_take_their_accounts_from_the_text_not_the_heading_path():
+    # Expected accounts and amounts: S.Rept. 118-43's Administrative Provisions rows for
+    # Sec 256, read by hand. v4's SEC. 256 is the committee bill's text unchanged.
+    path = fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml")
+    bill = normalize_bill(path)
+    index = next(i for i, n in enumerate(bill.nodes) if n.element_id == "id3887A33BE65840BBBAF6286558009337")
+    text, _, trees, ids = build_xml_full_text(bill, bill)
+    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    rows = inspect_node(
+        bill, index, text["v1"], trees["v1"], ids["v1"], source_sha256=sha, parser_revision=parser_revision()
+    )
+    # The year of the rescinded balances is unstated, so it stays None; the proviso has no figure.
+    assert [(r.amount, r.effect, r.role, r.fiscal_year, r.text_account) for r in rows] == [
+        ("$1,000,000,000", "removes", "rescission", None, "Veterans Health Administration—Medical Services"),
+        ("$976,005,000", "removes", "rescission", None, "Veterans Health Administration—Medical Community Care"),
+    ]
+    assert all(text["v1"][slice(*r.text_account_span)] == r.text_account for r in rows)
+    assert rows[0].text_account_span[1] < rows[0].start < rows[1].text_account_span[0] < rows[1].start
+    assert all(
+        r.heading_path[-2:] == ("Administrative provisions", "Sec. 256")
+        and r.ordinal == index
+        and r.element_id == "id3887A33BE65840BBBAF6286558009337"
+        and r.source_sha256 == sha
+        and r.parser_revision == parser_revision()
+        and text["v1"][r.start : r.end] == r.amount
+        and r.independent_evidence == "not_checked"
+        for r in rows
+    )
 
 
 def test_repeated_occurrences_remain_separate_and_unknown_is_not_guessed():
@@ -65,3 +97,20 @@ def test_repeated_occurrences_remain_separate_and_unknown_is_not_guessed():
     other_rows = inspect_node(bill, 1, text["v1"], trees["v1"], ids["v1"], source_sha256="test", parser_revision="test")
     assert all(r.ordinal == 1 and r.element_id == "other" for r in other_rows)
     assert other_rows[0].start > rows[-1].end
+
+
+def test_account_list_abstains_when_an_item_does_not_name_one_figure():
+    from tests.conftest import make_bill_node, make_bill_tree
+
+    lead = "The following funds are hereby rescinded from the following accounts in the amounts specified: "
+    unnamed = make_bill_node(("A",), element_id="unnamed", body_text=lead + "$5; and Account B, $6:")
+    ambiguous = make_bill_node(
+        ("A",), element_id="ambiguous", body_text=lead + "Account A, $5; and Account B, $6, and Account C, $7:"
+    )
+    bill = make_bill_tree(nodes=[unnamed, ambiguous])
+    text, _, trees, ids = build_xml_full_text(bill, bill)
+    for ordinal in (0, 1):
+        rows = inspect_node(
+            bill, ordinal, text["v1"], trees["v1"], ids["v1"], source_sha256="test", parser_revision="test"
+        )
+        assert rows and all(r.text_account is None and r.effect == "unresolved" for r in rows)
