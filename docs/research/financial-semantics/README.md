@@ -260,23 +260,26 @@ On the 1,163 mapped accounts (of 1,267), reproduced by the first command:
 
 | | `classify_bill` (first figure of the primary clause) | `structured` (one figure per paragraph) | `ledger` (plus itemised lines) | `summed` (plus an account's added pieces) |
 |---|---|---|---|---|
-| Agrees with the answer key | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,061 (91.2%) |
+| Agrees with the answer key | 920 (79.1%) | 969 (83.3%) | 1,065 (91.6%) | 1,078 (92.7%) |
 | Typed a different figure while the answer key's is in the text | 37 | 2 | 1 | 1 |
-| Typed nothing while the answer key's figure is in the text | 21 | 21 | 21 | 21 |
-| Typed a figure the answer key does not state (no single figure in the text matches) | 46 | 46 | 46 | 36 |
+| Typed nothing while the answer key's figure is in the text | 21 | 7 | 7 | 7 |
+| Typed a figure the answer key does not state (no single figure in the text matches) | 46 | 46 | 46 | 33 |
 | Answer key finer than the figure typed (several answer-key lines, one paragraph) | 122 | 122 | 27 | 27 |
 
 The same agreement by evidence source (the summary's last lines):
 
 | Agrees with the answer key | `classify_bill` | `structured` | `ledger` | `summed` |
 |---|---|---|---|---|
-| Committee reports (752 accounts) | 636 (84.6%) | 648 (86.2%) | 648 (86.2%) | 658 (87.5%) |
+| Committee reports (752 accounts) | 636 (84.6%) | 662 (88.0%) | 662 (88.0%) | 675 (89.8%) |
 | Legislative Branch spreadsheet (411 accounts) | 284 (69.1%) | 307 (74.7%) | 403 (98.1%) | 403 (98.1%) |
-| Combined (1,163 accounts) | 920 (79.1%) | 955 (82.1%) | 1,051 (90.4%) | 1,061 (91.2%) |
+| Combined (1,163 accounts) | 920 (79.1%) | 969 (83.3%) | 1,065 (91.6%) | 1,078 (92.7%) |
 
-Against committee reports alone, `summed` agrees on 87.5%. The step from 82.1% to 90.4% is
-entirely the spreadsheet's itemised lines, and every figure `summed` types that its source
-contradicts or does not confirm (37) is on a committee-report account.
+These tables are the current code's; the sections below give each step's effect when it was made,
+so their before-and-after numbers are history, not the current counts.
+
+Against committee reports alone, `summed` agrees on 89.8%. The step from `structured` to
+`ledger` (83.3% to 91.6%) is entirely the spreadsheet's itemised lines, and every figure `summed` types that its source
+contradicts or does not confirm (34) is on a committee-report account.
 
 The resolver changes which figure is chosen, never which paragraphs count as appropriations, so it
 reads the paragraph as drafted: nothing after the first proviso (an "in all" there caps one use
@@ -376,6 +379,65 @@ now joins an account only within its own sentence. That distinction rests on one
 and these rules were written after the held-out keys had been read: HELD_OUT moves from 83.5% to
 85.5%, which is not an unbiased estimate.
 
+**Money a Labor-HHS account gets from elsewhere.** Fifteen Labor-HHS accounts typed a figure their
+committee report does not state, twelve of them health agencies whose report figure is the bill's
+top line plus a block of money from somewhere else. Reading them found three phrases that add
+money to an account and say so, now added by `resolve_total`:
+
+- a proviso that adds rather than qualifies: "Provided further, That in addition to amounts
+  provided herein, $31,428,000 shall be available under section 241 of the PHS Act ..." (the
+  evaluation tap), or "the following amounts shall be available ...: (1) $79,200,000 ...; (2)
+  $2,000,000 ...". It is the one exception to reading nothing after the first proviso;
+- "together with" naming its source in two more ways: "together with $55,242,000 to be
+  transferred from the Federal Hospital Insurance Trust Fund ..." and "together with $64,828,000
+  from the amounts available under section 241 of the PHS Act";
+- a later sentence that appropriates and says so: "In addition to other funds appropriated for
+  the Common Fund ..., $12,600,000 is appropriated to the Common Fund ...".
+
+Three accounts now agree (NIH Office of the Director, Substance Abuse Treatment, Health
+Surveillance and Program Support), no account that agreed is lost, and the wrong figures stay at
+the one gross-versus-net account; committee-report agreement goes from 658 to 661 of 752. Three
+more come closer without agreeing (Mental Health, Aging and Disability Services, General
+Departmental Management). HELD_OUT, where Labor-HHS sits, moves to 86.2%, after reading it.
+
+What the rest need is outside a paragraph or outside a rule:
+
+- The five CDC accounts carry no cue in their own text. Their report figure includes Prevention
+  and Public Health Fund transfers, which a general provision elsewhere in the bill assigns to
+  them; reading those needs a cross-paragraph step this research does not have.
+- "In addition, for <purpose>, $X." sentences are counted by some reports and not others, by
+  budget-scoring convention. HHS's "In addition, for expenses necessary to ..., $118,983,000" is
+  in its report figure; a trust-fund reimbursement ("..., $22,700,000, to be appropriated from the
+  Vaccine Injury Compensation Trust Fund"), next year's advance (Medicaid's "for the first quarter
+  of fiscal year 2026, $261,063,820,000"), a fee-offset amount and a payment to a separate fund are
+  not. Reading every such sentence lost nine agreements to wrong figures. Excluding those four
+  kinds would add seven agreements with no loss (668 of 752 against committee reports), but the
+  exclusions were written from the same nine failures, so they wait for a fresh answer key. They
+  are also what ADR 0025 proposes a figure's type should carry: its effect.
+
+**Paragraphs `classify_bill` does not type.** Of the 19 committee-report accounts where the
+resolver typed nothing although the report's figure was in the text, 16 were paragraphs
+`classify_bill` never types as appropriations, so the resolver never read them: its APPROP rule
+reads only a "For ..." opening and "there is appropriated". Each of 14 states that it appropriates
+in another form, and `appropriates` reads those four forms beside `classify_bill`'s typing:
+
+- an appropriating verb on the figure: "..., $24,000,000 is hereby appropriated to the Department
+  of Defense" (four Defense general provisions), "$2,000,000 is provided.", "$75,000,000 is
+  provided to the Election Assistance Commission";
+- "is additional new budget authority" (the two wildfire suppression reserve funds);
+- a purpose opening "To carry out / make / conduct ...": "To make grants to qualified shipyards
+  ..., $20,000,000, to remain available until expended" (five accounts);
+- an opening that adds to other funds: "In addition to funds made available from any other source
+  to carry out the essential air service program ..., $423,000,000".
+
+All 14 now agree and no other account changes: committee reports go from 661 to 675 of 752, the
+wrong figures stay at the one gross-versus-net account, and no figure the source does not confirm
+is added. The remaining five are one-offs left alone: a fuel-cost increase to a whole title, GSA's
+revenue limitation, a "such sums" trust fund with a capped administrative amount, a reserve derived
+from fees, and a "For ..." paragraph `classify_bill` types as a rescission. `classify_bill`'s rules
+are #736's, copied into the package with a parity check, so the four forms are recorded here for
+that classifier rather than changed in it.
+
 ## Do typed figures add up to the report's agency totals?
 
 The account figures exist to be rolled up: account, agency, department. `rollup_agreement.py`
@@ -399,14 +461,16 @@ command:
 
 | | `classify_bill` | `appropriation_resolver` |
 |---|---|---|
-| Equals the report's net total | 109 | 113 |
+| Equals the report's net total | 109 | 119 |
 | Equals it with the report's negative rows added back (gross) | 7 | 8 |
 | Equals it once accounts' second figures ("together with $X from the ... Trust Fund") are added | 2 | 2 |
-| Complete, and none of these | 41 | 31 |
-| Incomplete (an appropriating account abstained, or none was typed) | 31 | 36 |
+| Complete, and none of these | 35 | 27 |
+| Incomplete (an appropriating account abstained, or none was typed) | 37 | 34 |
 
-So 121 of the resolver's 154 complete roll-ups reproduce the report's agency total. With
-`resolve_total` (an account's added pieces summed in), 124 do (116 net, 8 gross), 30 do not.
+So 127 of the resolver's 156 complete roll-ups reproduce the report's agency total. With
+`resolve_total` (an account's added pieces summed in), 130 do (122 net, 8 gross), 26 do not. The
+roll-up sums the same paragraphs the account check reads (`appropriates`), so `classify_bill`'s
+first figure is incomplete wherever it does not type a paragraph the resolver reads.
 `tests/test_rollup_agreement.py` pins the attribution and these counts.
 
 **Why the other 31 do not, hand-traced:**
@@ -443,29 +507,33 @@ uv run python docs/research/financial-semantics/appropriation_precision.py --res
 
 A typed figure is **confirmed** when it equals the report's figure for its answer-key account, or,
 where no key line maps to the paragraph, when it is one of the report's account figures (a
-committee-recommendation row or summary block). Reproduced by the first command, on the 971
+committee-recommendation row or summary block). Reproduced by the first command, on the 987
 figures `summed` types:
 
 | | `classify_bill` | `structured` | `summed` |
 |---|---|---|---|
-| Figures typed | 985 | 971 | 971 |
-| Confirmed: the key's figure for the account | 636 | 648 | 658 |
-| Confirmed: no key line, but a report account figure | 257 | 252 | 249 |
-| Not the key's figure for the account | 59 | 47 | 37 |
+| Figures typed | 985 | 987 | 987 |
+| Confirmed: the key's figure for the account | 636 | 662 | 675 |
+| Confirmed: no key line, but a report account figure | 257 | 254 | 250 |
+| Not the key's figure for the account | 59 | 47 | 34 |
 | No key line, printed in the report but as no account's figure | 30 | 22 | 22 |
-| No key line, printed nowhere in the report | 3 | 2 | 5 |
-| **Precision** (confirmed / typed) | 90.7% | 92.7% | 93.4% |
-| **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 74.6% | 76.0% | 77.1% |
+| No key line, printed nowhere in the report | 3 | 2 | 6 |
+| **Precision** (confirmed / typed) | 90.7% | 92.8% | 93.7% |
+| **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 74.6% | 77.6% | 79.1% |
 
 **What the precision direction finds that recall cannot.** The FDA's Salaries and Expenses
 appropriates $6,872,405,000 after a long purpose clause that allows "not to exceed $25,000" for
 enforcement expenses on the Secretary's certificate. The baseline strips the cap phrase and types
 $6,872,405,000, which the report's comparative statement carries as a row. The structured and
-summed resolvers type the $25,000: it is the first figure after a semicolon that another semicolon
-closes, and the cap phrase is further back than the forty characters the closing-figure rule looks.
-The answer-key builder never mapped that account (its `bureau` field is narrative text), so
-`committee_agreement.py` cannot see the regression. Here it is one of the 22 figures printed in the
-report as no account's figure. `tests/test_appropriation_precision.py` pins both readings.
+summed resolvers typed the $25,000: their rule that a ceiling straight after the purposes is the
+appropriation stated as a cap (", not to exceed $349,000, to be derived from receipts.") read the
+allowance that closes one purpose with a semicolon as that ceiling. The answer key has no line for
+that account (the report sets its figures in a table of appropriation, user fees and total rather
+than the summary block the builder reads), so `committee_agreement.py` could not see the
+regression; this direction listed it among the figures printed in the report as no account's
+figure. The ceiling reading now applies only when no plain figure closes the purposes
+after it, which changes no other typed figure in the thirteen bills, and all three resolvers type
+the $6,872,405,000. `tests/test_appropriation_precision.py` pins it.
 
 **How far to trust the numbers.**
 
@@ -473,28 +541,35 @@ report as no account's figure. `tests/test_appropriation_precision.py` pins both
   ADR 0009's recall strength, not ADR 0025's. The 249 confirmed that way are mostly accounts the
   builder could not map by name (the Under Secretaries' offices, FAA research, transit formula
   grants); each is a figure the report states for some account, not necessarily this one.
-- The 37 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 36
-  `report_not_in_text/typed`: in 36 the key's figure appears nowhere in the paragraph, so the
-  resolver typed what the bill states and the key states something else. Four of the 36 were
-  spot-checked against their reports; the other 32 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
+- The 34 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 33
+  `report_not_in_text/typed`: in 33 the key's figure appears nowhere in the paragraph, so the
+  resolver typed what the bill states and the key states something else. Four of the 33 were
+  spot-checked against their reports; the other 29 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
   recommendation, where the key carries the $7,400,729,000 net of $2,620,000,000 in aviation
-  security fees; SAMHSA Mental Health is typed at the bill's $2,869,507,000 where the report's
-  $2,902,546,000 program level includes $21,039,000 in section 241 transfers; the Copyright Office
+  security fees; SAMHSA Mental Health is typed at $2,890,546,000, the bill's $2,869,507,000 plus the $21,039,000
+  in section 241 funds its paragraph makes available, where the report's program level is
+  $2,902,546,000; the Copyright Office
   is typed at the bill's $106,133,000 total where the key carries the $60,238,000 direct
   appropriation without receipts; and Nuclear Energy is typed at $1,675,000,000, the figure the
   report's text recommends, where the key's $1,525,000,000 is the comparative statement's
   non-defense line without the defense-function line beneath it. Three are the bill and the report
   counting differently; the fourth is the key, not the resolver.
-- The 22 "printed, but as no account's figure" split between resolver errors (the FDA allowance;
-  PHMSA's "not more than $46,825,000 shall remain available" limitation) and rows the report
-  parser does not read (VA Compensation and Pensions, $214,302,452,000, is in the report's text
-  and not in `parse_summary_blocks`' output). Separating them is a `parsers/committee_report.py`
+- The 22 "printed, but as no account's figure" split between resolver errors (PHMSA's "not more
+  than $46,825,000 shall remain available" limitation) and rows the report parser does not read
+  (VA Compensation and Pensions, $214,302,452,000, is in the report's text and not in
+  `parse_summary_blocks`' output; the CDFI Fund's $354,000,000 is its summary block's committee
+  recommendation, under a mixed-case heading the parser does not take for an account's). Separating them is a `parsers/committee_report.py`
   question as much as a resolver one.
-- The 5 printed nowhere include liquidating and contract-authority payments ("For payment of
+- The 6 printed nowhere include liquidating and contract-authority payments ("For payment of
   obligations incurred ... to be derived from the Highway Trust Fund") that a report keeps out of
   new budget authority: the roll-up found the FTA one; this direction lists the FMCSA and NHTSA
-  ones beside it.
-- Recall here is `committee_agreement.py`'s 658 of 752 against committee reports (87.5%) with
+  ones beside it. CDC Public Health Scientific Services is typed at $591,597,000: its $481,564,000
+  plus the $110,033,000 in section 241 evaluation funds its paragraph makes available "in addition
+  to amounts provided herein". The report prints that money beneath the $481,564,000 row as a
+  non-add memo, "(110,033)", where SAMHSA's summary blocks count the same kind of money in; the
+  report is not consistent about section 241 money, which is ADR 0025's question of a figure's
+  effect, not this resolver's.
+- Recall here is `committee_agreement.py`'s 675 of 752 against committee reports (89.8%) with
   the denominator widened to every answer-key line of these thirteen jurisdictions, including
   the 101 with no paragraph to score (99 the builder could not map, two mapped to a node with
   no text). The Legislative Branch spreadsheet key is left out, as it has no report to check

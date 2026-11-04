@@ -19,14 +19,16 @@ line of an itemised total. This resolver reads the paragraph the way it is draft
    "to be derived", "shall be available". A figure followed by "for ..." is an allowance
    inside the purposes, and one after "including" or "of which" is a carve-out. A ceiling
    straight after the purposes (", not to exceed $X, to remain available") is the
-   appropriation itself, stated as a cap; anywhere else "not to exceed" is a limit.
+   appropriation itself, stated as a cap, unless a plain figure closes the purposes after it
+   (then the ceiling was one purpose's allowance); anywhere else "not to exceed" is a limit.
 5. **Loan levels are skipped.** A sentence that sets "the principal amount of" loans, or
    "gross obligations", is a limitation; the appropriation is the "For the cost of" sentence.
 6. **Abstain otherwise.** No figure is better than a wrong one (ADR 0025, proposed): a figure
    typed as an appropriation is one a reader will add up.
 
-Only a paragraph `classify_bill` types as an appropriation is read, so this changes which
-figure is chosen, never what counts as an appropriating paragraph.
+A paragraph is read when `classify_bill` types it as an appropriation, or when it states that it
+appropriates in a form `classify_bill`'s opening rules do not reach (`appropriates` below). The
+resolver otherwise changes which figure is chosen, never what counts as an appropriating paragraph.
 
 Why not the net figure: a fee-funded account also states "a final fiscal year appropriation
 from the general fund estimated at $X", net of its collections. Committee reports are not
@@ -81,12 +83,47 @@ LOAN_LEVEL = re.compile(r"\b(?:principal amount of|gross obligations)\b", re.IGN
 SENTENCE_START = re.compile(r"(?:(?<=[.:])\s+|\n)(?=For\b)")
 
 
+# Paragraphs that appropriate in a form classify_bill's APPROP rule (a "For ..." opening, or
+# "there is appropriated") does not read. Each states it: an appropriating verb on the figure,
+# "is additional new budget authority", a purpose opening "To carry out / make / conduct ...", or
+# an opening that adds to other funds ("In addition to funds made available from any other source
+# ..., $423,000,000"). classify_bill's rules are #736's, copied into the package with a parity
+# check, so the wider reading lives here; the README records it for that classifier.
+STATES_APPROPRIATION = re.compile(
+    _MONEY + r"(?:,[^.;:$]{0,80},)?\s+(?:is|are)\s+(?:hereby\s+)?(?:appropriated|provided)\b"
+    r"|\bis additional new budget authority\b",
+    re.IGNORECASE,
+)
+PURPOSE_OPENING = re.compile(r"^\s*To\s+(?:carry out|make|conduct)\b", re.IGNORECASE)
+IN_ADDITION_OPENING = re.compile(r"^\s*In addition to (?:the )?(?:amounts|funds)\b", re.IGNORECASE)
+
+
+def appropriates(text: str) -> bool:
+    """Whether a paragraph appropriates: classify_bill's typing, or a form it states plainly."""
+    if not text:
+        return False
+    if cb.classify_text(text) == "appropriation":
+        return True
+    flat = " ".join(text.split())
+    operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
+    return bool(
+        STATES_APPROPRIATION.search(operative) or PURPOSE_OPENING.match(flat) or IN_ADDITION_OPENING.match(flat)
+    )
+
+
 def _value(digits: str) -> int:
     return int(digits.replace(",", ""))
 
 
 def _closing_figure(sentence: str) -> int | None:
-    """The first figure in a sentence that closes its purpose clause, or None."""
+    """The first figure in a sentence that closes its purpose clause, or None.
+
+    A ceiling closes it only when no plain figure does later: in "...for miscellaneous and
+    emergency expenses of enforcement activities ..., not to exceed $25,000; and notwithstanding
+    section 521 ...; $6,872,405,000:" (the FDA) the ceiling is one purpose's allowance, and the
+    figure after the last purpose is the appropriation.
+    """
+    ceiling_figure = None
     for m in FIGURE.finditer(sentence):
         before = sentence[max(0, m.start() - 40) : m.start()]
         ceiling = CEILING_LEAD.search(before)
@@ -96,12 +133,15 @@ def _closing_figure(sentence: str) -> int | None:
             if LIMITED.search(before.rstrip(" ,:;")):
                 continue
         if CLOSES.match(sentence, m.end()):
-            return _value(m.group(1))
-    return None
+            if not ceiling:
+                return _value(m.group(1))
+            if ceiling_figure is None:
+                ceiling_figure = _value(m.group(1))
+    return ceiling_figure
 
 
 def resolve(text: str) -> int | None:
-    if not text or cb.classify_text(text) != "appropriation":
+    if not appropriates(text):
         return None
     flat = " ".join(strip_amendment_annotations(text).split())
     operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
@@ -152,7 +192,7 @@ def _name_score(name: str, text: str) -> float:
 
 def ledger(text: str) -> list[tuple[str, int]]:
     """(line text, figure) for each itemised line of an appropriating paragraph."""
-    if not text or cb.classify_text(text) != "appropriation":
+    if not appropriates(text):
         return []
     flat = " ".join(strip_amendment_annotations(text).split())
     operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
@@ -201,10 +241,14 @@ def resolve_named(text: str, name: str, heading: str) -> int | None:
 # addition", a second purpose ("$345,000,000 and, for carrying out ... section 437, $72,515,000"),
 # or an advance appropriation from last year's act that becomes available this year.
 # `resolve_total` adds those pieces, each by its own phrase, to the top line.
+# "together with $X" joins the account when it says where the money comes from: "which may be
+# expended from", "to be transferred from" a trust fund, or "from the amounts available under"
+# section 241 of the PHS Act (the evaluation tap).
 TOGETHER_WITH = re.compile(
     r"\btogether with\s+(?:not to exceed\s+)?"
     + _MONEY
-    + r",?\s+which\s+(?:may|shall)\s+be\s+(?:expended|available)\s+from\b",
+    + r",?\s+(?:which\s+(?:may|shall)\s+be\s+(?:expended|available)\s+from|to be transferred from"
+    r"|from the amounts available under)\b",
     re.IGNORECASE,
 )
 # Only "in addition" that continues the account's own sentence (", and in addition $X") joins it;
@@ -217,6 +261,49 @@ PREVIOUSLY = re.compile(
 SECOND_PURPOSE = re.compile(
     _MONEY + r",?\s+and,?\s+for\b[^$]{0,300}?,\s+" + _MONEY + r"(?=\s*(?:[,:;.]|$)|\s+to remain)", re.IGNORECASE
 )
+
+
+# A proviso that adds money to the account rather than qualifying it: "Provided further, That in
+# addition to amounts provided herein, $31,428,000 shall be available under section 241 of the
+# PHS Act ..." (or "the following amounts shall be available ...: (1) $79,200,000 ...; (2) ...").
+# The one exception to "nothing after the first proviso is the appropriation".
+HEREIN_PROVISO = re.compile(
+    r"^\s*in addition to (?:the )?amounts? (?:provided|made available|appropriated) (?:herein|under this heading)\b",
+    re.IGNORECASE,
+)
+# A later sentence of the same paragraph that appropriates more and says so: "In addition to other
+# funds appropriated for the Common Fund ..., $12,600,000 is appropriated to the Common Fund ...".
+#
+# Why not every "In addition, for <purpose>, $X." sentence: reports count some and not others by
+# budget-scoring convention. They leave out a trust-fund reimbursement ("..., $22,700,000, to be
+# appropriated from the Vaccine Injury Compensation Trust Fund"), next year's advance ("for the
+# first quarter of fiscal year 2026, $261,063,820,000"), a fee-offset amount and a payment to a
+# separate fund, while counting HHS's "In addition, for expenses necessary to ..., $118,983,000".
+# Read all of them and nine accounts that agreed became wrong figures; excluding those four kinds
+# recovers seven more agreements, but the exclusions were written from the same nine failures,
+# so they wait for a fresh answer key (README).
+ADDITIONAL_SENTENCE = re.compile(r"(?<=\.)\s+(?=In addition\b)")
+IN_ADDITION_TO_FUNDS = re.compile(r"^In addition to (?:other )?(?:funds|amounts)\b", re.IGNORECASE)
+
+
+def _added_by_provisos(flat: str) -> int:
+    added = 0
+    for proviso in cb.PROVIDED_RE.split(flat)[1:]:
+        if not HEREIN_PROVISO.match(proviso):
+            continue
+        for m in FIGURE.finditer(proviso):
+            if not LIMITED.search(proviso[max(0, m.start() - 40) : m.start()].rstrip(" ,:;")):
+                added += _value(m.group(1))
+    return added
+
+
+def _added_by_sentences(flat: str) -> int:
+    added = 0
+    for sentence in ADDITIONAL_SENTENCE.split(flat)[1:]:
+        explicit = EXPLICIT.search(sentence) if IN_ADDITION_TO_FUNDS.match(sentence) else None
+        if explicit:
+            added += _value(explicit.group(1) or explicit.group(2))
+    return added
 
 
 def resolve_total(text: str) -> int | None:
@@ -234,7 +321,7 @@ def resolve_total(text: str) -> int | None:
         total = _value(second.group(1)) + _value(second.group(2))
     for pattern in (TOGETHER_WITH, IN_ADDITION, PREVIOUSLY):
         total += sum(_value(m.group(1)) for m in pattern.finditer(operative))
-    return total
+    return total + _added_by_provisos(flat) + _added_by_sentences(flat)
 
 
 def select_named_total(text: str, name: str, heading: str) -> Selection:

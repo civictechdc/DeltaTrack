@@ -46,6 +46,7 @@ HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parents[2])]
 
 import classify_bill as cb  # noqa: E402
+from appropriation_resolver import appropriates  # noqa: E402
 from committee_agreement import TEXT_RESOLVERS as RESOLVERS  # noqa: E402
 from committee_agreement import account_texts  # noqa: E402
 
@@ -162,7 +163,9 @@ def measure(resolver) -> list[TotalResult]:
                 for path, text in texts.items():
                     if path[: len(prefix)] != prefix:
                         continue
-                    if cb.classify_text(text) != "appropriation":
+                    # The paragraphs the account check reads: classify_bill's appropriations, and
+                    # those that state they appropriate in a form its opening rules miss.
+                    if not appropriates(text):
                         if cb.classify_text(text) == "unknown" and cb.DOLLAR.search(text):
                             untyped.append(path[-1])
                         continue
