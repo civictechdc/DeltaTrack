@@ -123,6 +123,34 @@ def test_the_engine_bundle_imports_the_xml_path_with_pdfium_stubbed(tmp_path):
     assert result.returncode == 0, f"exit {result.returncode}: {result.stderr[-3000:]}"
 
 
+# --- What the page declares, checked without a browser ---------------------------------
+
+
+def _policy() -> dict[str, str]:
+    template = build.TEMPLATE.read_text(encoding="utf-8")
+    content = re.search(r'http-equiv="Content-Security-Policy"\s+content="([^"]+)"', template).group(1)
+    return dict(part.strip().split(" ", 1) for part in content.split(";") if part.strip())
+
+
+def test_the_page_declares_a_policy_that_allows_no_connection():
+    """The browser, not the fetch wrapper, keeps the page offline (ADR 0011): no default,
+    connection or frame source, and the report frame (srcdoc) inherits the policy."""
+    policy = _policy()
+    assert policy["default-src"] == "'none'"
+    assert policy["connect-src"] == "'none'"
+    assert policy["frame-src"] == "'none'"
+    assert "'unsafe-eval'" not in policy["script-src"]
+
+
+def test_the_report_frame_is_sandboxed_away_from_the_page():
+    """Without allow-same-origin the report's script cannot reach the runtime or the picked files."""
+    template = build.TEMPLATE.read_text(encoding="utf-8")
+    frame = re.search(r'<iframe[^>]*id="report-frame"[^>]*>', template, re.DOTALL).group(0)
+    sandbox = re.search(r'sandbox="([^"]*)"', frame).group(1).split()
+    assert "allow-scripts" in sandbox
+    assert "allow-same-origin" not in sandbox
+
+
 # --- The real page, opened from disk --------------------------------------------------
 
 
@@ -143,24 +171,72 @@ def chromium(request):
         pytest.skip(f"Chromium unavailable (run 'playwright install chromium'): {exc}")
 
 
+@pytest.fixture(scope="module")
+def offline_page(request, tmp_path_factory) -> Path:
+    """The page under test: the file `--offline-page` names, else a fresh build.
+
+    publish-offline.yml builds once, passes that file here, and uploads the same file, so
+    the page that is published is the page that was tested.
+    """
+    prebuilt = request.config.getoption("--offline-page")
+    if prebuilt:
+        return Path(prebuilt).resolve()
+    out = tmp_path_factory.mktemp("offline") / "deltatrack-offline.html"
+    assert build.main(["-o", str(out)]) == 0
+    return out
+
+
+PAIR = (
+    FIXTURES_DIR / "118-hr-4366" / "1_reported-in-house.xml",
+    FIXTURES_DIR / "118-hr-4366" / "2_engrossed-in-house.xml",
+)
+
+
+def _as_utf16(source: Path, folder: Path) -> Path:
+    """The same bill, encoded as UTF-16 with a byte-order mark and saying so in its declaration."""
+    text = source.read_text(encoding="utf-8").replace(
+        '<?xml version="1.0"?>', '<?xml version="1.0" encoding="UTF-16"?>', 1
+    )
+    assert 'encoding="UTF-16"' in text, "the fixture's XML declaration changed shape"
+    out = folder / source.name
+    out.write_bytes(text.encode("utf-16"))
+    return out
+
+
+def _compare_in_page(page, page_path: Path, old: Path, new: Path) -> str:
+    """Open the page from disk, compare two files, return the report it shows.
+
+    Uses selectors and attributes only: the page's policy forbids eval, which Playwright's
+    string-evaluating helpers rely on.
+    """
+    page.goto(page_path.as_uri())
+    page.wait_for_selector("#status.is-ready, #status.is-error", timeout=60_000)
+    assert "is-ready" in page.get_attribute("#status", "class"), page.inner_text("#status")
+    page.set_input_files("#start-input", str(old))
+    page.set_input_files("#end-input", str(new))
+    page.click("#compare-btn")
+    page.wait_for_selector("#report-view:not([hidden]), #upload-error:not([hidden])", timeout=60_000)
+    assert not page.is_visible("#upload-error"), page.inner_text("#upload-error")
+    return page.get_attribute("#report-frame", "srcdoc")
+
+
 @pytest.mark.browser
 @pytest.mark.network
-def test_the_page_opened_from_disk_matches_the_command_line(tmp_path, chromium):
-    """Double-clicked, the page writes the report the CLI writes, and requests nothing.
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
+def test_the_page_opened_from_disk_matches_the_command_line(tmp_path, chromium, offline_page, encoding):
+    """Double-clicked, the page writes the report the CLI writes, whatever encoding the bill uses.
 
-    Builds the real file with the pinned Pyodide, opens it at a ``file://`` address
-    (origin ``null``, where neighbouring files cannot be fetched), compares a committed
-    pair and requires the report to be byte-identical to ``compare_xml_html`` with the
-    labels every surface derives from the filenames. Every request the page made must
-    stay on the machine (ADR 0011).
+    Opens the page at a ``file://`` address (origin ``null``, where neighbouring files cannot
+    be fetched), compares a committed pair and requires the report to be byte-identical to
+    ``compare_xml_html`` on the same bytes, with the labels every surface derives from the
+    filenames. The UTF-16 case is the regression for an ASCII-only pre-check the page used to
+    run before the XML parser saw the file. Every request the page made must stay on the
+    machine (ADR 0011).
     """
     from deltatrack.compare.xml import compare_xml_html
     from deltatrack.version_stems import version_identity_from_filename
 
-    out = tmp_path / "deltatrack-offline.html"
-    assert build.main(["-o", str(out)]) == 0
-    old = FIXTURES_DIR / "118-hr-4366" / "1_reported-in-house.xml"
-    new = FIXTURES_DIR / "118-hr-4366" / "2_engrossed-in-house.xml"
+    old, new = PAIR if encoding == "utf-8" else (_as_utf16(PAIR[0], tmp_path), _as_utf16(PAIR[1], tmp_path))
     start = version_identity_from_filename(old.name, fallback="Start version")
     end = version_identity_from_filename(new.name, fallback="End version")
     expected = compare_xml_html(
@@ -176,22 +252,69 @@ def test_the_page_opened_from_disk_matches_the_command_line(tmp_path, chromium):
     requested: list[str] = []
     page.on("request", lambda request: requested.append(request.url))
     try:
-        page.goto(out.as_uri())
-        page.wait_for_function(
-            "['is-ready', 'is-error'].some(c => document.getElementById('status').classList.contains(c))",
-            timeout=60_000,
-        )
-        assert "is-ready" in page.get_attribute("#status", "class"), page.inner_text("#status")
-        # Offering to download the page only makes sense when it came from a web address.
-        assert not page.is_visible("#save-tool"), "the download button shows on a page opened from disk"
-        page.set_input_files("#start-input", str(old))
-        page.set_input_files("#end-input", str(new))
-        page.click("#compare-btn")
-        page.wait_for_selector("#report-view:not([hidden])", timeout=60_000)
-        report = page.evaluate("document.getElementById('report-frame').srcdoc")
+        report = _compare_in_page(page, offline_page, old, new)
     finally:
         page.close()
 
-    assert report == expected, "the offline page's report differs from the command line's"
+    assert report == expected, f"the offline page's report differs from the command line's for {encoding} input"
     off_device = [url for url in requested if not url.startswith(("file:", "blob:", "data:", "about:"))]
     assert not off_device, f"the offline page made network requests: {off_device}"
+
+
+# Run in the page and in the report frame: every way the probe knows to reach a server.
+_PROBE = """(() => {
+  const mark = (key, value) => document.documentElement.setAttribute('data-probe-' + key, value);
+  fetch('URL/fetch').then(() => mark('fetch', 'loaded'), () => mark('fetch', 'blocked'));
+  const xhr = new XMLHttpRequest();
+  xhr.onload = () => mark('xhr', 'loaded');
+  xhr.onerror = () => mark('xhr', 'blocked');
+  try { xhr.open('GET', 'URL/xhr'); xhr.send(); } catch (e) { mark('xhr', 'blocked'); }
+  new Image().src = 'URL/img';
+  try { mark('parent', typeof window.parent.document.body); } catch (e) { mark('parent', 'blocked'); }
+})();"""
+
+
+@pytest.mark.browser
+@pytest.mark.network
+def test_the_browser_blocks_every_connection_from_the_page_and_its_report(chromium, offline_page):
+    """The page's policy, not its fetch wrapper, is what keeps bill text on the machine.
+
+    A local server counts what reaches it while script in the page and in the report frame
+    tries fetch, XMLHttpRequest and an image. Without the policy those requests arrive (a
+    page opened from disk may still send them); with it none does. Also requires that the
+    sandboxed report frame cannot read the page.
+    """
+    import http.server
+    import threading
+
+    hits: list[str] = []
+
+    class Counter(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            hits.append(self.path)
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Counter)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    probe = _PROBE.replace("URL", f"http://127.0.0.1:{server.server_address[1]}")
+    page = chromium.new_page()
+    try:
+        _compare_in_page(page, offline_page, *PAIR)
+        report_frame = next(frame for frame in page.frames if frame.url == "about:srcdoc")
+        for target in (page, report_frame):
+            try:
+                target.add_script_tag(content=probe)
+            except Exception:  # noqa: BLE001 -- Playwright raises on the policy's console errors
+                pass
+        page.wait_for_timeout(1_500)
+        report_reads_page = report_frame.locator("html").get_attribute("data-probe-parent")
+    finally:
+        page.close()
+        server.shutdown()
+
+    assert hits == [], f"requests reached the server: {hits}"
+    assert report_reads_page == "blocked", "the report frame can read the page"

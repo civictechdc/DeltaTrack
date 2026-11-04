@@ -616,13 +616,19 @@ ALLOWED_DEFAULT_SKIPS: dict[str, str] = {
     "tests/test_govinfo_corpus_parity.py::test_govinfo_enumeration_reproduces_corpus_filenames": (
         "needs a live network (run with --run-network)"
     ),
-    # Builds the offline page, which downloads the pinned Pyodide tarball; CI's browser step
-    # does not pass `--run-network`, and publish-offline.yml runs it with both flags before
-    # each publish. With `--run-network` and no Chromium the fixture's skip reason differs
-    # and fails the session, which is right: a network run asked for this test to assert.
-    "tests/test_offline_html.py::test_the_page_opened_from_disk_matches_the_command_line": (
-        "needs a live network (run with --run-network)"
-    ),
+    # These build the offline page, which downloads the pinned Pyodide tarball (or reads the
+    # cached copy). CI's browser step and publish-offline.yml pass `--run-network`; a local
+    # run without it skips them. With `--run-network` and no Chromium the fixture's skip
+    # reason differs and fails the session, which is right: a network run asked for these
+    # to assert.
+    **{
+        f"tests/test_offline_html.py::{name}": "needs a live network (run with --run-network)"
+        for name in (
+            "test_the_page_opened_from_disk_matches_the_command_line[utf-8]",
+            "test_the_page_opened_from_disk_matches_the_command_line[utf-16]",
+            "test_the_browser_blocks_every_connection_from_the_page_and_its_report",
+        )
+    },
     # Compares freshly-downloaded bulk-ZIP bytes against the curated corpus; both sides are
     # gitignored working material, so no fixture can make this runnable in CI.
     "tests/test_fetch_govinfo.py::test_govinfo_bytes_identical_to_curated_corpus": (
@@ -882,6 +888,14 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Run tests marked `network` (live external fetches). They are skipped by default.",
+    )
+    parser.addoption(
+        "--offline-page",
+        default=None,
+        help=(
+            "Test this prebuilt offline page instead of building one (tests/test_offline_html.py). "
+            "publish-offline.yml passes the file it then uploads, so the published file is the tested one."
+        ),
     )
     parser.addoption(
         "--run-browser",

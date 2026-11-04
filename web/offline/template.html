@@ -5,13 +5,19 @@
 
   Everything runs in this page: Pyodide (Python compiled to WebAssembly) boots from the
   inlined assets, the DeltaTrack engine compares the two files the user picks, and the
-  report is shown in a frame and saved through a Blob download. The page makes no network
-  requests: the fetch wrapper below answers Pyodide's two asset requests from memory and
-  refuses everything else (ADR 0011).
+  report is shown in a sandboxed frame and saved through a Blob download.
+
+  The page makes no network requests, and the browser enforces it (ADR 0011). The
+  Content-Security-Policy below allows no connection, frame, font or object source; the
+  report frame, a srcdoc document, inherits it. The fetch wrapper in the script only answers
+  Pyodide's two asset requests from memory: it is how the wasm and stdlib load from a page
+  opened from disk, not what keeps the page offline.
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'unsafe-inline' blob: 'wasm-unsafe-eval'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DeltaTrack — Compare two bill versions on your computer</title>
   <style>
@@ -23,10 +29,6 @@
       font-size: 0.95rem; }
     .offline-status.is-ready { background: var(--diff-add); color: var(--diff-add-foreground); }
     .offline-status.is-error { background: var(--diff-remove); color: var(--diff-remove-foreground); }
-    .offline-save { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 28px;
-      padding-top: 20px; border-top: 1px solid var(--border); }
-    .offline-save[hidden] { display: none; }
-    .offline-save .button { text-decoration: none; }
     .offline-help { margin-top: 24px; color: var(--muted-foreground); }
     .offline-help summary { cursor: pointer; color: var(--foreground); font-weight: 600; }
     .offline-help li { margin: 6px 0; }
@@ -85,14 +87,6 @@
         <span class="upload-note">Bill XML · the report opens on this page</span>
       </div>
 
-      <div class="offline-save" id="save-tool" hidden>
-        <a class="button" id="save-tool-link" href="#" download="deltatrack-offline.html">Download for offline use</a>
-        <span class="upload-note">
-          Saves this page as one file. Open it from your computer any time, even with no
-          internet. Use the downloaded copy for drafts and other non-public text.
-        </span>
-      </div>
-
       <details class="offline-help">
         <summary>Where do I get a bill's XML?</summary>
         <ol>
@@ -114,7 +108,11 @@
       <span class="report-bar__title" id="report-title"></span>
       <button class="button button--primary button--small" id="save-report-btn">Save report</button>
     </div>
-    <iframe class="report-frame" id="report-frame" title="Comparison report"></iframe>
+    <!-- The report embeds text from the user's files. Without allow-same-origin it runs in an
+         opaque origin, so its script cannot reach this page (the runtime, the picked files).
+         It keeps what its own controls need: its script, its JSON download, its clipboard copy. -->
+    <iframe class="report-frame" id="report-frame" title="Comparison report"
+            sandbox="allow-scripts allow-downloads" allow="clipboard-write"></iframe>
   </section>
 
   <footer class="site-footer" role="contentinfo">
@@ -157,12 +155,18 @@
     // Each <script id="asset-*"> holds gzip-compressed bytes as base64, written by
     // scripts/build_offline_html.py. The element is removed once read to free its text.
 
+    function fromBase64(text) {
+      if (typeof Uint8Array.fromBase64 === 'function') return Uint8Array.fromBase64(text);
+      const raw = atob(text); // browsers without Uint8Array.fromBase64: copy byte by byte
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      return bytes;
+    }
+
     async function unpack(id) {
       const el = $(`asset-${id}`);
-      const raw = atob(el.textContent.trim());
+      const packed = fromBase64(el.textContent.trim());
       el.remove();
-      const packed = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i++) packed[i] = raw.charCodeAt(i);
       const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'));
       return new Uint8Array(await new Response(stream).arrayBuffer());
     }
@@ -170,10 +174,11 @@
     const unpackText = async (id) => new TextDecoder().decode(await unpack(id));
     const moduleUrl = (source) => URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
 
-    // --- No network ----------------------------------------------------------
+    // --- Pyodide's assets ------------------------------------------------------
     // Pyodide fetches its wasm binary and standard library by URL, and a page opened from
     // disk may not fetch a file beside it. Answer those two by file name from memory and
-    // refuse every other request, so nothing this page does can reach the network.
+    // refuse every other request. The CSP in <head> is what blocks the network; this only
+    // keeps a refused request from waiting on it.
 
     const bundled = new Map();
     globalThis.fetch = async (input) => {
@@ -234,12 +239,9 @@ def dt_compare(start_name, start_data, end_name, end_data):
 
     // --- File slots ------------------------------------------------------------
 
-    function looksLikeXml(bytes) {
-      let i = 0;
-      if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) i = 3;
-      while (i < bytes.length && ' \t\r\n'.includes(String.fromCharCode(bytes[i]))) i++;
-      return bytes[i] === 0x3c; // '<'
-    }
+    // A PDF says so in its first bytes; the name alone misses one renamed to .xml.
+    const isPdf = (name, bytes) =>
+      /\.pdf$/i.test(name) || String.fromCharCode(...bytes.subarray(0, 5)) === '%PDF-';
 
     function wireSlot(which) {
       const slot = $(`${which}-slot`);
@@ -270,12 +272,11 @@ def dt_compare(start_name, start_data, end_name, end_data):
     async function readXml(which) {
       const file = files[which];
       const bytes = new Uint8Array(await file.arrayBuffer());
-      if (/\.pdf$/i.test(file.name)) {
+      if (isPdf(file.name, bytes)) {
         throw new Error(`${file.name} is a PDF. This offline version compares bill XML only.`);
       }
-      if (!looksLikeXml(bytes)) {
-        throw new Error(`${file.name} doesn't look like an XML file.`);
-      }
+      // Anything else goes to the XML parser, which reads every encoding a bill's declaration
+      // or byte-order mark can name (UTF-8, UTF-16, ...) and rejects what is not XML.
       return bytes;
     }
 
@@ -328,12 +329,6 @@ def dt_compare(start_name, start_data, end_name, end_data):
     $('compare-btn').addEventListener('click', runCompare);
     $('save-report-btn').addEventListener('click', saveReport);
     $('back-btn').addEventListener('click', closeReport);
-
-    // Opened from a web address rather than from disk: offer to save this same file.
-    if (location.protocol === 'http:' || location.protocol === 'https:') {
-      $('save-tool-link').href = location.href.split('#')[0];
-      $('save-tool').hidden = false;
-    }
 
     try {
       const ms = await boot();
