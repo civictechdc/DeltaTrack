@@ -147,12 +147,23 @@ jobs:
       - name: Install Playwright browser
         if: ${{ !cancelled() }}
         run: uv run --locked playwright install --with-deps chromium
+      # The offline page's browser tests build it with the pinned Pyodide tarball. The build
+      # checks the tarball's SHA-256, so a cached copy is as safe as a fresh download; the key
+      # follows the build script, where the pin lives.
+      - name: Cache the Pyodide tarball
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/deltatrack
+          key: pyodide-${{ hashFiles('scripts/build_offline_html.py') }}
       - name: Run browser tests
         if: ${{ !cancelled() }}
         # --run-browser: this step runs on dedicated hardware where Chromium is
         # guaranteed, so a launch failure must fail the run rather than skip every
-        # test into a green no-op (#599).
-        run: uv run --locked pytest -m browser --run-browser -v
+        # test into a green no-op (#599). --run-network: the only browser tests marked
+        # `network` are the offline page's, which download the Pyodide tarball (cached
+        # above); running them here catches a change that breaks the engine under Pyodide
+        # before it reaches main, rather than at the first publish after promotion.
+        run: uv run --locked pytest -m browser --run-browser --run-network -v
 
   # External-validation suite: committee reports + legislative branch validation.
   external-validation:

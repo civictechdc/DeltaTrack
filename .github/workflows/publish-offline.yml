@@ -11,27 +11,30 @@ name: Publish offline page
 # public surfaces move together at promotion (docs/release.md).
 #
 # Why not the Pages job: update-examples.yml publishes committed files and must not build
-# anything (#42, #547). Why not commit the file: it is about 9 MB and changes with every
+# anything (#42, #547). Why not commit the file: it is several MB and changes with every
 # engine change. A release asset is neither.
 #
-# The page is tested before it is published: the browser test opens the built file from
-# disk and requires its report to be byte-identical to the command line's. A failure stops
-# the job before the upload, so the previous build stays up.
+# Two jobs, so the write token never sits beside third-party code. `build` installs the
+# dependencies, builds the page once and tests that file from disk in a browser, all with a
+# read-only token; a dependency running there cannot touch the release. `publish` holds the
+# write token and runs nothing but `gh` on the artifact `build` handed over, so the file it
+# uploads is the file that was tested. A failed test stops the run before `publish`, and the
+# previous build stays up.
 on:
   push:
     branches: [main]
 
 concurrency:
   group: publish-offline
-  # Never cancel: a run stopped between deleting the old asset and uploading the new
-  # one would leave the release with no file.
+  # Never cancel: a run stopped partway through `publish` could leave the release mid-swap.
   cancel-in-progress: false
 
 jobs:
-  publish-offline:
-    runs-on: ubuntu-latest
+  build:
+    # The same tested Ubuntu release as CI's browser job, for the locked Playwright installer.
+    runs-on: ubuntu-24.04
     permissions:
-      contents: write # create the release, move its tag and replace its asset
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -47,21 +50,61 @@ jobs:
       - name: Install Playwright browser
         run: uv run --locked playwright install --with-deps chromium
 
-      - name: Test the offline page
-        run: uv run --locked pytest tests/test_offline_html.py --run-browser --run-network -v
-
       - name: Build the offline page
         run: uv run --locked python scripts/build_offline_html.py -o dist/deltatrack-offline.html
+
+      - name: Test that file from disk
+        run: >
+          uv run --locked pytest tests/test_offline_html.py --run-browser --run-network
+          --offline-page dist/deltatrack-offline.html -v
+
+      - name: Hand the tested file to the publish job
+        uses: actions/upload-artifact@v7
+        with:
+          name: offline-page
+          path: dist/deltatrack-offline.html
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the release, upload and rename its asset, move its tag
+    steps:
+      - name: Download the tested file
+        uses: actions/download-artifact@v8
+        with:
+          name: offline-page
 
       - name: Attach it to the offline-latest release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
+          set -euo pipefail
           notes="DeltaTrack in one HTML file: download it, open it in a browser, and compare two versions of a bill's XML on your own computer. Nothing is uploaded and no internet connection is needed. Built from ${GITHUB_SHA}."
-          if gh release view offline-latest >/dev/null 2>&1; then
-            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/offline-latest" -f sha="${GITHUB_SHA}" -F force=true
-            gh release upload offline-latest dist/deltatrack-offline.html --clobber
-            gh release edit offline-latest --notes "${notes}"
-          else
-            gh release create offline-latest dist/deltatrack-offline.html --target "${GITHUB_SHA}" --title "DeltaTrack offline page" --notes "${notes}" --latest=false
+          if ! gh release view offline-latest >/dev/null 2>&1; then
+            gh release create offline-latest deltatrack-offline.html --target "${GITHUB_SHA}" \
+              --title "DeltaTrack offline page" --notes "${notes}" --latest=false
+            exit 0
           fi
+          # Upload beside the old file under a temporary name, retrying a transient failure;
+          # until the swap below, the published file stays the old one.
+          cp deltatrack-offline.html deltatrack-offline-next.html
+          for attempt in 1 2 3; do
+            gh release upload offline-latest deltatrack-offline-next.html --clobber && break
+            [ "${attempt}" = 3 ] && exit 1
+            sleep 15
+          done
+          assets="repos/${GH_REPO}/releases/tags/offline-latest"
+          old_id=$(gh api "${assets}" --jq '.assets[] | select(.name == "deltatrack-offline.html") | .id')
+          next_id=$(gh api "${assets}" --jq '.assets[] | select(.name == "deltatrack-offline-next.html") | .id')
+          # The swap: two calls, so the download address is missing for moments, not for the
+          # whole upload. Only then does the tag move to the commit the file was built from.
+          if [ -n "${old_id}" ]; then
+            gh api -X DELETE "repos/${GH_REPO}/releases/assets/${old_id}"
+          fi
+          gh api -X PATCH "repos/${GH_REPO}/releases/assets/${next_id}" -f name=deltatrack-offline.html
+          gh api -X PATCH "repos/${GH_REPO}/git/refs/tags/offline-latest" -f sha="${GITHUB_SHA}" -F force=true
+          gh release edit offline-latest --notes "${notes}"
