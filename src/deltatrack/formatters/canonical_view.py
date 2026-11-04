@@ -184,6 +184,28 @@ def _removed_path(canonical_change: dict) -> tuple[str, ...]:
     return tuple((canonical_change.get("path") or {}).get("v1") or ())
 
 
+def _removed_node_ids(canonical_change: dict, earlier_chains: dict) -> tuple[str, ...]:
+    """The earlier tree node behind each ``removed_path`` segment, or () (#859).
+
+    The breadcrumb of ``changes[].node.v1`` can hold steps the path does not (the
+    synthesized Front Matter), so each path label takes the next chain step with that
+    label. A label with no such step means the two disagree, and nothing is claimed.
+    """
+    path = _removed_path(canonical_change)
+    ref = (canonical_change.get("node") or {}).get("v1")
+    chain = earlier_chains.get(ref) if ref else None
+    if not path or not chain:
+        return ()
+    steps = iter(chain)
+    ids = []
+    for label in path:
+        node_id = next((step_id for step_id, step_label, _level in steps if step_label == label.strip()), None)
+        if node_id is None:
+            return ()
+        ids.append(node_id)
+    return tuple(ids)
+
+
 def _removed_offset(canonical_change: dict) -> int | None:
     """A removed change's start in the earlier full text, for ordering only."""
     if canonical_change["change_type"] != "removed":
@@ -192,7 +214,7 @@ def _removed_offset(canonical_change: dict) -> int | None:
     return span["start"] if span else None
 
 
-def _change_view_from_canonical(canonical_change: dict, chains: dict) -> ChangeView:
+def _change_view_from_canonical(canonical_change: dict, chains: dict, earlier_chains: dict) -> ChangeView:
     heading_html, nav_label_html, degraded = _heading_and_nav(canonical_change)
     # The document's text is what a reader sees, on both pipelines (#810).
     old_text = canonical_change["text"].get("old") or ""
@@ -210,6 +232,7 @@ def _change_view_from_canonical(canonical_change: dict, chains: dict) -> ChangeV
         group_label=_group_label_from_path(canonical_change),
         node_path=_node_path_for_change(canonical_change, chains),
         removed_path=_removed_path(canonical_change),
+        removed_node_ids=_removed_node_ids(canonical_change, earlier_chains),
         removed_offset=_removed_offset(canonical_change),
     )
 
@@ -246,6 +269,7 @@ def view_from_canonical(canonical: dict) -> DiffView:
     _reject_unknown_major(canonical)
     tree = canonical.get("tree") or {}  # .get: pre-1.3 canonicals omit it → degrade
     chains, node_order = _node_chains(tree.get("v2") or [])
+    earlier_chains, _ = _node_chains(tree.get("v1") or [])
     return DiffView(
         bill_type=canonical["bill"]["type"],
         bill_number=canonical["bill"]["number"],
@@ -255,6 +279,6 @@ def view_from_canonical(canonical: dict) -> DiffView:
         v1_version_number=canonical["versions"]["v1"]["version_number"],
         v2_version_number=canonical["versions"]["v2"]["version_number"],
         summary=dict(canonical.get("summary") or {}),
-        changes=tuple(_change_view_from_canonical(c, chains) for c in canonical.get("changes") or ()),
+        changes=tuple(_change_view_from_canonical(c, chains, earlier_chains) for c in canonical.get("changes") or ()),
         node_order=node_order,
     )

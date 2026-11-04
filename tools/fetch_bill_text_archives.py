@@ -42,6 +42,7 @@ from shared.bill_types import BILL_TYPES, resolve_bill_types
 # resolving them beside the script in `tools/` would escape those rules (#367, #308).
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_BILLS_DIR = PROJECT_DIR / "bills"
+FAILURE_STATS = frozenset({"download_failed", "corrupt_zip_skipped", "read_error_skipped"})
 
 # govinfo BILLS member filename, e.g. BILLS-119hr1eh.xml, BILLS-119hconres14enr.xml.
 # Groups: congress, bill_type, number, version_code.
@@ -112,11 +113,15 @@ def download_zip(client: httpx.Client, url: str, dest: Path) -> bool:
         raise
 
 
-def download_archives(congresses: list[int], bill_types: list[str] | None, zip_dir: Path) -> list[Path]:
-    """Download BILLS ZIPs for each (congress, session, type); skip existing."""
+def download_archives(congresses: list[int], bill_types: list[str] | None, zip_dir: Path) -> tuple[list[Path], int]:
+    """Return saved ZIP paths and the number of download exceptions; skip existing.
+
+    Missing combinations (404s) do not count as failures.
+    """
     bill_types = resolve_bill_types(bill_types)
     zip_dir.mkdir(parents=True, exist_ok=True)
     saved: list[Path] = []
+    failures = 0
     tasks = [(c, s, t) for c in congresses for s in gi.sessions_for_congress(c) for t in bill_types]
     with httpx.Client(timeout=300) as client:
         for i, (congress, session, bill_type) in enumerate(tasks, 1):
@@ -131,6 +136,7 @@ def download_archives(congresses: list[int], bill_types: list[str] | None, zip_d
             try:
                 ok = download_zip(client, url, dest)
             except Exception as exc:
+                failures += 1
                 print(f"{prefix} FAILED {dest.name}: {exc}", file=sys.stderr)
                 continue
             if not ok:
@@ -138,7 +144,7 @@ def download_archives(congresses: list[int], bill_types: list[str] | None, zip_d
                 continue
             saved.append(dest)
             print(f"{prefix} saved {dest.name}", file=sys.stderr)
-    return saved
+    return saved, failures
 
 
 # ---- STEP 2: convert ZIP members into the bills/<id>/<index>_<slug>.xml layout
@@ -193,7 +199,7 @@ def convert_archives(
         # Pass 1: index members by bill (no byte reads). A code appearing twice
         # across session ZIPs is the same version; keep the first (identical
         # contents). A corrupt/truncated ZIP (e.g. an interrupted prior run) is
-        # skipped, not fatal -- one bad file must not abort the whole convert.
+        # skipped so the remaining archives still convert; main reports failure.
         for zp in sorted(zip_dir.glob("BILLS-*.zip")):
             try:
                 zf = zipfile.ZipFile(zp)
@@ -213,7 +219,8 @@ def convert_archives(
                 by_bill[bill_id].setdefault(code, (zp, name))
 
         # Pass 2: read bytes only for bills that survive the filter. A bill whose
-        # members fail to read/decompress is skipped, not fatal.
+        # members fail to read/decompress is skipped; main reports failure after
+        # processing the remaining bills.
         for bill_id, code_refs in by_bill.items():
             version_hist[len(code_refs)] += 1
             if len(code_refs) < min_versions:
@@ -317,21 +324,29 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     congresses = list(range(args.from_congress, args.to_congress + 1))
+    stats: Counter[str] = Counter()
     if not args.convert_only:
-        download_archives(congresses, args.types, args.zip_dir)
+        _, stats["download_failed"] = download_archives(congresses, args.types, args.zip_dir)
     if not args.download_only:
-        stats = convert_archives(
+        convert_stats = convert_archives(
             args.zip_dir,
             args.out_dir,
             min_versions=args.min_versions,
             skip_existing_dirs=not args.overwrite_existing,
             billstatus_dir=args.billstatus_dir,
         )
-        print(f"convert stats: {stats}", file=sys.stderr)
+        stats.update(convert_stats)
+        print(f"convert stats: {convert_stats}", file=sys.stderr)
+    failures = {key: stats[key] for key in sorted(FAILURE_STATS) if stats[key]}
+    if failures:
+        summary = ", ".join(f"{key}={count}" for key, count in failures.items())
+        print(f"Error: bill text batch incomplete: {summary}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -24,7 +24,12 @@ in-file signal read from the input the user already supplied.
 - **PDF** (`src/deltatrack/parsers/pdf_text.py`, `src/deltatrack/parsers/pdf_anchors.py`): codepoints; per-glyph
   char boxes → baseline clustering (visual lines), x-gaps (word spacing), line extent
   (justified column width, line-fullness split); text-matrix scale → glyph **size**
-  (body/heading/major size bands). That is the complete set of PDFium signals we read.
+  (body/heading/major size bands). The same walk records whether heading words have
+  larger initial letters (title-case small caps) or even capitals. Matching case
+  patterns, centering, continuation commas and available line width support bounded wrapped-account
+  recovery (`tests/test_pdf_wrapped_accounts.py`, adapted from Matt Zamora's #734).
+  Unknown typography preserves existing segmentation. This signal does not establish
+  an agency's scope or distinguish every stacked heading from a wrapped name.
 - **XML** (`src/deltatrack/bill_tree.py`, `src/deltatrack/structure_tree.py`, `src/deltatrack/diff_bill.py`): the structural tag
   hierarchy + text, the `form` metadata block, and three attributes — `@id` (stored on
   `BillNode.element_id`, **not** used for matching), `@display-inline`,

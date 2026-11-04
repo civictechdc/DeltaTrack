@@ -867,7 +867,7 @@ class TestCompareLegacyTwoPathForm:
         assert data["versions"]["v1"]["label"] == "reported-in-house"
         assert data["versions"]["v2"]["label"] == "enrolled-bill"
         assert data["bill"] == {"type": "hr", "number": 4366, "congress": 118, "title": None}
-        assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
+        assert data["summary"] == {"modified": 1}
         assert [c["path"]["v2"] for c in data["changes"]] == [
             ["TITLE I\u2014DEPARTMENT OF DEFENSE", "Military construction, army"]
         ]
@@ -924,7 +924,7 @@ class TestCompareLegacyTwoPathForm:
         _run_compare(monkeypatch, *paths, "--format", "json", "--filter", "family housing")
         data = json.loads(capsys.readouterr().out)
         assert data["changes"] == []
-        assert data["summary"] == {"added": 0, "removed": 0, "modified": 0, "unchanged": 0, "moved": 0}
+        assert data["summary"] == {}
 
     def test_financial_still_reaches_cmd_compare_and_only_filters(self, tmp_path, monkeypatch, capsys):
         """`--financial` filters, and after #693 that is the whole of what it does.
@@ -1129,7 +1129,7 @@ class TestCompareVersionAddressableForm:
             "v1": {"label": "reported-in-house", "version_number": 1, "source": "xml", "bill": SYNTHETIC_BILL},
             "v2": {"label": "enrolled-bill", "version_number": 6, "source": "xml", "bill": SYNTHETIC_BILL},
         }
-        assert data["summary"] == {"added": 0, "removed": 0, "modified": 1, "unchanged": 0, "moved": 0}
+        assert data["summary"] == {"modified": 1}
 
     def test_the_ordinals_pick_the_versions_named(self, synthetic_bills_dir, monkeypatch, capsys):
         """The middle version, so "resolved" cannot mean "took the first and last file"."""

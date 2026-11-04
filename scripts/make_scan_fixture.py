@@ -14,7 +14,7 @@ project dependency, so supply it for the run:
 
     uv run --with pypdf python scripts/make_scan_fixture.py --out /tmp/scans
 
-Then, to reproduce the defect:
+History: Before the scan decline, this comparison reproduced the defect:
 
     from deltatrack.compare.pdf import compare_pdfs
     canon = compare_pdfs(Path("/tmp/scans/scan20.pdf").read_bytes(),
@@ -74,6 +74,35 @@ def rasterize(src: Path, pages: range, dest: Path, work: Path) -> None:
     print(f"  {dest.name}: {len(imgs)} rasterized pages", file=sys.stderr)
 
 
+def report_comparison(out: Path) -> None:
+    """Report extracted scan evidence and whether comparison explicitly declines it."""
+    from deltatrack.compare.pdf import (
+        _MIN_LINES_FOR_GUARD,
+        UnsupportedLayoutError,
+        _is_unnumbered_layout,
+        compare_pdfs,
+    )
+    from deltatrack.parsers.pdf_text import extract_clean_pages
+
+    for name in WINDOWS:
+        pages = extract_clean_pages(out / name)
+        lines = [ln for pg in pages for ln in pg.lines]
+        print(
+            f"{name:12} pages={len(pages)} extracted_lines={len(lines):3} "
+            f"unnumbered_guard_declines={_is_unnumbered_layout(pages)}"
+        )
+    try:
+        canon = compare_pdfs((out / "scan20.pdf").read_bytes(), (out / "scan20b.pdf").read_bytes())
+    except UnsupportedLayoutError as exc:
+        print("\nDEFECT FIXED: scan decline raised")
+        print(exc.message)
+        return
+    n = len(canon.get("changes") or [])
+    print(f"\ncompare_pdfs(two disjoint 20-page scans) -> changes={n}, summary={canon.get('summary')}")
+    print(f"(unnumbered guard exemption threshold: fewer than {_MIN_LINES_FOR_GUARD} extracted lines)")
+    print("\nDEFECT REPRODUCED" if n == 0 else "\ndid NOT reproduce -- behaviour may have changed")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True)
@@ -88,20 +117,7 @@ def main() -> None:
         for name, pages in WINDOWS.items():
             rasterize(SOURCE, pages, args.out / name, Path(tmp) / name)
 
-    from deltatrack.compare.pdf import _MIN_LINES_FOR_GUARD, _is_unnumbered_layout, compare_pdfs
-    from deltatrack.parsers.pdf_text import extract_clean_pages
-
-    for name in WINDOWS:
-        pages = extract_clean_pages(args.out / name)
-        lines = [ln for pg in pages for ln in pg.lines]
-        print(
-            f"{name:12} pages={len(pages)} extracted_lines={len(lines):3} guard_declines={_is_unnumbered_layout(pages)}"
-        )
-    canon = compare_pdfs((args.out / "scan20.pdf").read_bytes(), (args.out / "scan20b.pdf").read_bytes())
-    n = len(canon.get("changes") or [])
-    print(f"\ncompare_pdfs(two disjoint 20-page scans) -> changes={n}, summary={canon.get('summary')}")
-    print(f"(guard exemption threshold: fewer than {_MIN_LINES_FOR_GUARD} extracted lines)")
-    print("\nDEFECT REPRODUCED" if n == 0 else "\ndid NOT reproduce -- behaviour may have changed")
+    report_comparison(args.out)
 
 
 if __name__ == "__main__":

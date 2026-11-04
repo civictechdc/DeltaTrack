@@ -69,6 +69,12 @@ class ChangeView:
     removal under it in the removed section (#784). Empty for every other change
     type, and for a removal the document gives no earlier path."""
 
+    removed_node_ids: tuple[str, ...] = ()
+    """The earlier tree node each ``removed_path`` segment names, read from
+    ``changes[].node.v1``'s breadcrumb, so two same-named earlier headings stay two
+    removed groups. Empty when the document names no earlier node or its breadcrumb
+    does not spell ``removed_path``: the removal then groups by labels alone."""
+
     removed_offset: int | None = None
     """A removed change's start in the earlier version's full text
     (``full_text_span.v1.start``), used only to order the removed section by

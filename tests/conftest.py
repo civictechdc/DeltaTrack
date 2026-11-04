@@ -185,6 +185,16 @@ def manifest_version_pairs() -> list[tuple[Path, Path]]:
                 versions = sorted(bill_dir.glob("[0-9]*_*.xml"), key=_stage_num)
                 pairs += [(versions[i], versions[i + 1]) for i in range(len(versions) - 1)]
         return pairs
+    return committed_version_pairs()
+
+
+def committed_version_pairs() -> list[tuple[Path, Path]]:
+    """Adjacent XML version pairs from the committed manifest, ignoring CORPUS_SWEEP.
+
+    Stored per-pair tables cover the committed corpus, so their checks and regeneration
+    use this set even when exploratory corpus tests sweep locally downloaded bills.
+    """
+    pairs: list[tuple[Path, Path]] = []
     for bill in _manifest_bills():
         versions = sorted(
             (FIXTURES_DIR / bill["id"] / f"{ver['stage']}.xml" for ver in bill["versions"] if "xml" in ver["formats"]),
@@ -448,9 +458,12 @@ ALLOWED_CORPUS_SKIPS = {
 # has to be declared, not just the part the slow step collects — see the
 # test_bill_tree.py entry below, which skips in the fast tier.
 CI_SLOW_MODULES = (
+    "tests/test_research_financial_report.py",
     "tests/test_pdf_corpus_smoke.py",
     "tests/test_bill_tree.py",
     "tests/test_structure_tree.py",
+    "tests/test_xml_provision_headings.py",
+    "tests/test_pdf_wrapped_accounts.py",
     "tests/test_diff_bill.py",
     "tests/test_pdf_compare.py",
     "tests/test_financial_diff.py",

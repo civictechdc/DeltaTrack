@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 import statistics
+from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Literal
 
@@ -59,6 +60,7 @@ class SizeBands:
 # Size comparison tolerance (points). Per-line medians wobble ~0.1pt; eps must
 # exceed that rounding granularity. Body↔heading separation must exceed 2·eps.
 _SIZE_EPS = 0.3
+_CENTERED_HEADING_INSET_MIN = 10.0
 # A document needs at least this fraction of its numbered lines to carry an
 # attached glyph size before we trust size-based detection; below it no account
 # anchors are emitted at all (a partial join would silently drop headings, and
@@ -457,11 +459,11 @@ def _account_anchors_by_size(pages: list[Page], bands: SizeBands) -> list[Anchor
     parenthetical qualifiers are never accounts. The account/grouping anchor keeps
     the heading's own page/line; the agency anchor takes the run's FIRST line.
 
-    The agency signal is bounded: a *leaf account* name that itself wraps across
-    heading lines is indistinguishable from an agency by size/position, so the join
-    can absorb a wrapped account fragment. The dangle guard (`_dangles`) rejects the
-    worst of these; the rest is the leveled-tree problem (#54/#108). Exact on the
-    clean bill (118-hr-8752), a tolerant floor on the hard one (118-s-4795).
+    A leaf's comma-ended wrapped name is recovered only when adjacent printed lines share
+    known small-cap typography, are centered, and the next word could not fit on the upper
+    line. A repeated standalone lower heading vetoes the join. Ambiguous runs retain
+    the existing agency/account reading; the dangle guard rejects dangling agency
+    fragments. This does not decide how far an agency's scope extends (#54/#108).
 
     Body must be confirmed positively (at body size) rather than "anything that
     isn't a heading": a wrapped run-in header continuation can sit in the heading
@@ -527,6 +529,70 @@ def _account_anchors_by_size(pages: list[Page], bands: SizeBands) -> list[Anchor
             return True
         return abs(line.glyph_size - bands.body) <= _SIZE_EPS
 
+    # Body geometry defines the column independently of the headings being judged.
+    edges = {}
+    for page in pages:
+        body = [ln.geom for ln in page.lines if ln.geom is not None and _has_lowercase(ln.text)]
+        if body:
+            edges[page.page_number] = (min(g.content_left for g in body), max(g.content_right for g in body))
+
+    def centered_inset(page_no, line):
+        g = line.geom
+        if g is None or page_no not in edges:
+            return None
+        left, right = edges[page_no]
+        li, ri = g.content_left - left, right - g.content_right
+        return min(li, ri) if min(li, ri) >= _CENTERED_HEADING_INSET_MIN and abs(li - ri) <= 6 else None
+
+    # A repeated standalone heading is stronger evidence than a possible soft wrap.
+    lone = Counter(
+        ln.text.strip()
+        for i, (_, ln) in enumerate(flat)
+        if 0 < i < n - 1
+        and is_account_candidate(ln)
+        and is_body(flat[i - 1][1])
+        and is_body(flat[i + 1][1])
+        and len(ln.text.split()) > 1
+    )
+
+    def wrapped_start(leaf_idx):
+        """Join only same-style, centered account lines whose next word could not fit.
+
+        Unknown evidence, differing case patterns and intentional short lines keep the
+        existing segmentation. Same-style stacks remain ambiguous, not guessed from names.
+        """
+        start = leaf_idx
+        while start > 0:
+            p, upper = flat[start - 1]
+            q, lower = flat[start]
+            if (
+                p != q
+                or not is_account_candidate(upper)
+                or not upper.text.rstrip().endswith(",")
+                or upper.line_number + 1 != lower.line_number
+                or centered_inset(p, upper) is None
+                or centered_inset(q, lower) is None
+                or upper.geom.initial_caps is None
+                or upper.geom.initial_caps != lower.geom.initial_caps
+                or abs(upper.glyph_size - lower.glyph_size) > _SIZE_EPS
+                or lone[lower.text.strip()] >= 2
+            ):
+                break
+            left, right = edges[p]
+            needed = (
+                upper.geom.content_right
+                - upper.geom.content_left
+                + 4
+                + lower.geom.first_word_right
+                - lower.geom.content_left
+            )
+            # Use the entire eligible centered-heading region, not an observed line's
+            # inset: a candidate cannot narrow this bound to certify its own wrap.
+            if needed <= right - left - 2 * _CENTERED_HEADING_INSET_MIN:
+                break
+            start -= 1
+        return start
+
     def agency_before_leaf(leaf_idx: int) -> Anchor | None:
         """Join the contiguous heading-band run immediately preceding a leaf account
         into one carry-over agency anchor, or None when there is no such run.
@@ -578,8 +644,11 @@ def _account_anchors_by_size(pages: list[Page], bands: SizeBands) -> list[Anchor
         if nxt is not None and _SECTION_PATTERN.match(nxt.text.strip()):
             anchors.append(Anchor(page_number, line.line_number, "grouping", line.text.strip()))
         elif nxt is None or is_body(nxt):
-            anchors.append(Anchor(page_number, line.line_number, "account", line.text.strip()))
-            agency = agency_before_leaf(idx)
+            start = wrapped_start(idx)
+            account_page, account_line = flat[start]
+            text = " ".join(ln.text.strip() for _, ln in flat[start : idx + 1])
+            anchors.append(Anchor(account_page, account_line.line_number, "account", text))
+            agency = agency_before_leaf(start)
             if agency is not None:
                 anchors.append(agency)
         # else: candidate followed by another heading ⇒ part of a carry-over agency

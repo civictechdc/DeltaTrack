@@ -1,6 +1,6 @@
 """Guardrails on the triggers of the workflows that own a required status check.
 
-Seven properties are pinned here: that the test suite runs when a commit lands on the
+These tests pin that the suite runs when a commit lands on the
 integration branch (#412), that both required checks answer the merge_group event so
 a merge queue can complete a merge (#416), that every module carrying a @slow test
 is named by some workflow, since the marker alone makes a gate runnable but never run,
@@ -12,8 +12,9 @@ and that the slow tier's hand-maintained partition stays a partition (#672) -- n
 listed explicitly by two pytest invocations, and every `CI_SLOW_MODULES` entry
 explicitly selected by a slow step -- that ci.yml runs only the interpreter
 `.python-version` pins, and that its non-browser test steps run from outside the
-checkout (#404). Also pinned: the required audit in security.yml reports when a pull
-request's base is changed to a protected branch, not only when one is opened there.
+checkout (#404), and that the browser runner uses an explicit Ubuntu release. Also pinned:
+the required audit in security.yml reports when a pull request's base is changed to a
+protected branch, not only when one is opened there.
 
 
 Nothing ran the test suite when a commit landed on ``develop``, so a broken integration
@@ -107,6 +108,15 @@ def test_required_checks_report_to_a_merge_queue(filename: str, context: str) ->
         f"{filename} no longer answers the merge_group event, so the required "
         f"'{context}' check would never report for a queued pull request and the merge "
         "queue would stall on every merge -- see #416."
+    )
+
+
+def test_browser_job_uses_an_explicit_ubuntu_release() -> None:
+    """A moving runner image must not outrun the locked Playwright browser installer."""
+    runner = _workflow()["jobs"]["browser-tests"]["runs-on"]
+    assert isinstance(runner, str) and re.fullmatch(r"ubuntu-\d{2}\.\d{2}", runner), (
+        "Pin the browser job to a tested Ubuntu release. A moving runner label can select "
+        "a distribution the locked Playwright version cannot install Chromium on."
     )
 
 

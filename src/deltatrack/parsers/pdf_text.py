@@ -110,6 +110,8 @@ class LineGeom:
     content_left: float
     content_right: float
     first_word_right: float
+    # True: title-case small caps; False: even capitals; None: unavailable/prose.
+    initial_caps: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -537,7 +539,7 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
     `(bottom, left, right, cp, size)` tuples in left-to-right x order.
 
     A word boundary is the first SPACE GLYPH (cp == 32) or, as a fallback, an x-gap
-    wider than SPACE_FACTOR × size. The space-glyph test is load-bearing: PDFium
+    wider than _WORD_GAP × size. The space-glyph test is load-bearing: PDFium
     emits real space glyphs that sit IN the inter-word gap, so the gap between the
     last glyph of word one and the first of word two is bridged — a gap-only test
     never fires and silently returns the whole line as one word (this bit the #106
@@ -550,7 +552,7 @@ def _first_word_right(content_glyphs: list[tuple[float, float, float, int, float
             if first_word_right is None:
                 continue  # leading space before any word; skip it
             break
-        if prev_right is not None and left - prev_right > _SPACE_FACTOR * size:
+        if prev_right is not None and left - prev_right > _WORD_GAP * size:
             break  # fallback: wide x-gap with no emitted space glyph
         first_word_right = right
         prev_right = right
@@ -574,6 +576,55 @@ def _unchecked(function):
 
 _GET_CHAR_BOX = _unchecked(pdfium_raw.FPDFText_GetCharBox)
 _GET_MATRIX = _unchecked(pdfium_raw.FPDFText_GetMatrix)
+
+
+TITLE_CASE_SMALL_WORDS = frozenset({"AND", "OF", "THE", "FOR", "TO", "IN", "ON", "AT", "BY", "OR", "A", "AN"})
+_INITIAL_CAP_MARGIN = 0.5
+_WORD_GAP = 0.2
+
+
+def _initial_caps(content_glyphs: list[tuple[float, float, float, int, float]]) -> bool | None:
+    """Read small-cap typography from letter sizes, not the capitalized text layer.
+
+    Word gaps also work when PDFium's generated spaces have no usable geometry.
+    Function words and large-cap acronyms do not vote. Prose is not judged.
+    Adapted from Matt Zamora's #734.
+    """
+    if any(chr(glyph[3]).islower() for glyph in content_glyphs):
+        return None
+    words: list[list[tuple[str, float]]] = []
+    current: list[tuple[str, float]] = []
+    prev = None
+    for glyph in content_glyphs:
+        ch = chr(glyph[3])
+        if ch.isspace():
+            if current:
+                words.append(current)
+            current, prev = [], None
+            continue
+        if prev is not None and current and glyph[1] - prev[2] > _WORD_GAP * max(glyph[4], prev[4]):
+            words.append(current)
+            current = []
+        if ch.isalpha():
+            current.append((ch, glyph[4]))
+        prev = glyph
+    if current:
+        words.append(current)
+    letters = [s for w in words for _, s in w]
+    if not letters:
+        return None
+    small = min(letters)
+    judged = [
+        w
+        for w in words
+        if len(w) > 1
+        and "".join(c for c, _ in w).upper() not in TITLE_CASE_SMALL_WORDS
+        and not min(s for _, s in w) > small + _INITIAL_CAP_MARGIN
+    ]
+    if not judged:
+        return None
+    large = sum(1 for w in judged if w[0][1] > min(s for _, s in w[1:]) + _INITIAL_CAP_MARGIN)
+    return large / len(judged) >= 0.5
 
 
 def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGeom]]:
@@ -680,7 +731,7 @@ def _page_glyph_sizes(textpage, page_text: str) -> dict[int, tuple[float, LineGe
         # finds it ⇒ never None here (it only returns None on no content glyphs at all).
         first_word_right = _first_word_right(content_glyphs)
         assert first_word_right is not None
-        geom = LineGeom(content_left, content_right, first_word_right)
+        geom = LineGeom(content_left, content_right, first_word_right, _initial_caps(content_glyphs))
         if line_number in sizes or line_number in ambiguous:
             ambiguous.add(line_number)
             sizes.pop(line_number, None)

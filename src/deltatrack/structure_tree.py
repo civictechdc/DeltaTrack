@@ -30,6 +30,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from itertools import repeat
 
 from deltatrack.amounts import extract_amounts
 from deltatrack.bill_tree import BillNode, BillTree, amount_text
@@ -128,9 +129,14 @@ class TreeNode:
     gate). PDF own_amounts attach in step 4, where block char-offsets exist; until
     then PDF nodes carry ()."""
 
+    occurrence_key: tuple[tuple[str, str], ...] = ()
+    """Internal per-version path identity; repeated XML heading labels can differ."""
+
 
 def _build_tree(
     items: Iterable[tuple[tuple[str, ...], str, object, tuple[int, ...]]],
+    *,
+    occurrence_keys: Iterable[tuple[tuple[str, str], ...]] | None = None,
 ) -> list[TreeNode]:
     """Shared trie builder over ``(path, level, source, own_amounts)`` items in
     document order.
@@ -144,41 +150,51 @@ def _build_tree(
     every item is conserved as exactly one content node.
     """
     roots: list[TreeNode] = []
-    by_path: dict[tuple[str, ...], TreeNode] = {}
+    by_path: dict[tuple[tuple[str, str], ...], TreeNode] = {}
 
-    def ensure_interior(path: tuple[str, ...]) -> TreeNode:
-        node = by_path.get(path)
+    def ensure_interior(key: tuple[tuple[str, str], ...]) -> TreeNode:
+        node = by_path.get(key)
         if node is not None:
             return node
-        node = TreeNode(label=path[-1], level=_interior_level(path[-1]), display_path=path)
-        by_path[path] = node
+        path = tuple(label for label, _occurrence in key)
+        node = TreeNode(label=path[-1], level=_interior_level(path[-1]), display_path=path, occurrence_key=key)
+        by_path[key] = node
         if len(path) == 1:
             roots.append(node)
         else:
-            ensure_interior(path[:-1]).children.append(node)
+            ensure_interior(key[:-1]).children.append(node)
         return node
 
-    for path, level, source, own_amounts in items:
+    keys = occurrence_keys if occurrence_keys is not None else repeat(())
+    for (path, level, source, own_amounts), key in zip(items, keys):
+        key = key or tuple((label, "") for label in path)
         if not path:
             # Empty-path content (front matter, body-level "Sec. 1"): a top-level leaf.
             roots.append(TreeNode(label="", level=level, display_path=path, source=source, own_amounts=own_amounts))
             continue
 
-        existing = by_path.get(path)
+        existing = by_path.get(key)
         if existing is not None and existing.source is None:
             existing.source = source
             existing.level = level
             existing.own_amounts = own_amounts
             continue
 
-        leaf = TreeNode(label=path[-1], level=level, display_path=path, source=source, own_amounts=own_amounts)
+        leaf = TreeNode(
+            label=path[-1],
+            level=level,
+            display_path=path,
+            source=source,
+            own_amounts=own_amounts,
+            occurrence_key=key,
+        )
         if len(path) == 1:
             roots.append(leaf)
         else:
-            ensure_interior(path[:-1]).children.append(leaf)
+            ensure_interior(key[:-1]).children.append(leaf)
         # Register the first occurrence so deeper nodes nest under it; a later
         # item at the same path is a genuine duplicate -> distinct sibling (above).
-        by_path.setdefault(path, leaf)
+        by_path.setdefault(key, leaf)
 
     return roots
 
@@ -204,12 +220,15 @@ def build_xml_tree(bill: BillTree) -> list[TreeNode]:
     """
     roots = _build_tree(
         (
-            n.display_path,
-            _leaf_level(n.tag),
-            n,
-            extract_amounts(amount_text(n)),
-        )
-        for n in bill.nodes
+            (
+                n.display_path,
+                _leaf_level(n.tag),
+                n,
+                extract_amounts(amount_text(n)),
+            )
+            for n in bill.nodes
+        ),
+        occurrence_keys=(n.display_key for n in bill.nodes),
     )
     return _group_front_matter(roots)
 

@@ -110,14 +110,17 @@ def _with_ids(nodes, side):
     return by_path
 
 
-def canonical(change_list=None, *, later_tree=None):
+def canonical(change_list=None, *, later_tree=None, earlier_tree=None):
     """A document whose changes name their nodes, the way a producer states them.
 
     The builder resolves each change's node from its path, and refuses a path that
     names two nodes; a producer resolves it from the parse (#785). A change that
     already carries ``node`` keeps it.
     """
-    trees = {"v1": tree_v1(), "v2": tree_v2() if later_tree is None else later_tree}
+    trees = {
+        "v1": tree_v1() if earlier_tree is None else earlier_tree,
+        "v2": tree_v2() if later_tree is None else later_tree,
+    }
     ids = {side: _with_ids(trees[side], side) for side in ("v1", "v2")}
     change_list = changes() if change_list is None else change_list
 

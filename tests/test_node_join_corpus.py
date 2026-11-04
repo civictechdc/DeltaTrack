@@ -425,13 +425,20 @@ def test_every_table_of_contents_link_reaches_its_heading_row(kind, key, old, ne
 
 
 def test_receipts_collected_links_to_its_heading_not_its_body():
-    """#766: the label search chose the body row (904750); the heading is at 904730."""
+    """#766: the jump target is the heading row, not the account's body row."""
     import re
+
+    from deltatrack.formatters.diff_html import _walk_tree
+    from deltatrack.formatters.print_layout import printed_document
 
     enrolled = BILLS / "116-hr-1865" / "6_enrolled-bill.xml"
     canonical = compare_xml(enrolled.read_bytes(), enrolled.read_bytes())
     html = format_diff_html(canonical)
-    text = canonical["full_text"]["v2"]
-    assert text[904730:904748] == "Receipts collected"
+    printed, _ = printed_document(canonical)
+    text = printed["full_text"]["v2"]
+    [node] = [n for n in _walk_tree(printed["tree"]["v2"]) if n["label"] == "Receipts collected"]
+    heading, body = node["heading_span"], node["body_span"]
+    assert text[heading["start"] : heading["end"]] == "Receipts collected"
+    assert heading["end"] < body["start"]
     links = re.findall(r'href="#fb-off-(\d+)">Receipts collected<', html)
-    assert "904730" in links and "904750" not in links
+    assert str(heading["start"]) in links and str(body["start"]) not in links

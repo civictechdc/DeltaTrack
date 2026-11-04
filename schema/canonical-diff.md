@@ -130,6 +130,10 @@ Top-level field: `schema_version: "3.0"`.
   it used to be `null`. And a `tree` label of `""` is defined as a node with no heading
   of its own, not only an empty-path root.
 
+  Summary producers now omit zero-count keys and the non-canonical `unchanged`
+  key (#706). The contract already permits omitting zeros; unchanged entries are
+  excluded from `changes`, so their count has no referent in the canonical document.
+
 - **2.0** — **Breaking:** removed the deprecated `amounts` field from each change
   object and from its `required` list (#274). `amount_entries` fully supersedes it.
   `amounts` held only the `changed`-kind subset, so it structurally could not
