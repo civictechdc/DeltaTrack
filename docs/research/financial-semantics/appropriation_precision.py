@@ -5,9 +5,8 @@ figure typed for its paragraph the report's figure? That is the recall direction
 only see paragraphs an answer-key line maps to. This starts from the resolver: every paragraph
 it types with a figure in the thirteen Senate-reported bills, and what that bill's committee
 report says about the figure. A wrong figure in a paragraph the answer-key builder never mapped
-(the FDA's Salaries and Expenses, which the structured and summed resolvers type at its $25,000
-allowance while the baseline types the appropriation) is invisible to the first direction and
-visible here.
+is invisible to the first direction and visible here: the FDA's Salaries and Expenses, which the
+structured and summed resolvers typed at its $25,000 allowance until this direction listed it.
 
 Each typed figure lands in one outcome:
 

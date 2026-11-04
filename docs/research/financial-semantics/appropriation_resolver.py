@@ -19,7 +19,8 @@ line of an itemised total. This resolver reads the paragraph the way it is draft
    "to be derived", "shall be available". A figure followed by "for ..." is an allowance
    inside the purposes, and one after "including" or "of which" is a carve-out. A ceiling
    straight after the purposes (", not to exceed $X, to remain available") is the
-   appropriation itself, stated as a cap; anywhere else "not to exceed" is a limit.
+   appropriation itself, stated as a cap, unless a plain figure closes the purposes after it
+   (then the ceiling was one purpose's allowance); anywhere else "not to exceed" is a limit.
 5. **Loan levels are skipped.** A sentence that sets "the principal amount of" loans, or
    "gross obligations", is a limitation; the appropriation is the "For the cost of" sentence.
 6. **Abstain otherwise.** No figure is better than a wrong one (ADR 0025, proposed): a figure
@@ -115,7 +116,14 @@ def _value(digits: str) -> int:
 
 
 def _closing_figure(sentence: str) -> int | None:
-    """The first figure in a sentence that closes its purpose clause, or None."""
+    """The first figure in a sentence that closes its purpose clause, or None.
+
+    A ceiling closes it only when no plain figure does later: in "...for miscellaneous and
+    emergency expenses of enforcement activities ..., not to exceed $25,000; and notwithstanding
+    section 521 ...; $6,872,405,000:" (the FDA) the ceiling is one purpose's allowance, and the
+    figure after the last purpose is the appropriation.
+    """
+    ceiling_figure = None
     for m in FIGURE.finditer(sentence):
         before = sentence[max(0, m.start() - 40) : m.start()]
         ceiling = CEILING_LEAD.search(before)
@@ -125,8 +133,11 @@ def _closing_figure(sentence: str) -> int | None:
             if LIMITED.search(before.rstrip(" ,:;")):
                 continue
         if CLOSES.match(sentence, m.end()):
-            return _value(m.group(1))
-    return None
+            if not ceiling:
+                return _value(m.group(1))
+            if ceiling_figure is None:
+                ceiling_figure = _value(m.group(1))
+    return ceiling_figure
 
 
 def resolve(text: str) -> int | None:

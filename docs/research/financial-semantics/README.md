@@ -514,22 +514,26 @@ figures `summed` types:
 |---|---|---|---|
 | Figures typed | 985 | 987 | 987 |
 | Confirmed: the key's figure for the account | 636 | 662 | 675 |
-| Confirmed: no key line, but a report account figure | 257 | 253 | 249 |
+| Confirmed: no key line, but a report account figure | 257 | 254 | 250 |
 | Not the key's figure for the account | 59 | 47 | 34 |
-| No key line, printed in the report but as no account's figure | 30 | 23 | 23 |
+| No key line, printed in the report but as no account's figure | 30 | 22 | 22 |
 | No key line, printed nowhere in the report | 3 | 2 | 6 |
-| **Precision** (confirmed / typed) | 90.7% | 92.7% | 93.6% |
+| **Precision** (confirmed / typed) | 90.7% | 92.8% | 93.7% |
 | **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 74.6% | 77.6% | 79.1% |
 
 **What the precision direction finds that recall cannot.** The FDA's Salaries and Expenses
 appropriates $6,872,405,000 after a long purpose clause that allows "not to exceed $25,000" for
 enforcement expenses on the Secretary's certificate. The baseline strips the cap phrase and types
 $6,872,405,000, which the report's comparative statement carries as a row. The structured and
-summed resolvers type the $25,000: it is the first figure after a semicolon that another semicolon
-closes, and the cap phrase is further back than the forty characters the closing-figure rule looks.
-The answer-key builder never mapped that account (its `bureau` field is narrative text), so
-`committee_agreement.py` cannot see the regression. Here it is one of the 22 figures printed in the
-report as no account's figure. `tests/test_appropriation_precision.py` pins both readings.
+summed resolvers typed the $25,000: their rule that a ceiling straight after the purposes is the
+appropriation stated as a cap (", not to exceed $349,000, to be derived from receipts.") read the
+allowance that closes one purpose with a semicolon as that ceiling. The answer key has no line for
+that account (the report sets its figures in a table of appropriation, user fees and total rather
+than the summary block the builder reads), so `committee_agreement.py` could not see the
+regression; this direction listed it among the figures printed in the report as no account's
+figure. The ceiling reading now applies only when no plain figure closes the purposes
+after it, which changes no other typed figure in the thirteen bills, and all three resolvers type
+the $6,872,405,000. `tests/test_appropriation_precision.py` pins it.
 
 **How far to trust the numbers.**
 
@@ -537,27 +541,34 @@ report as no account's figure. `tests/test_appropriation_precision.py` pins both
   ADR 0009's recall strength, not ADR 0025's. The 249 confirmed that way are mostly accounts the
   builder could not map by name (the Under Secretaries' offices, FAA research, transit formula
   grants); each is a figure the report states for some account, not necessarily this one.
-- The 37 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 36
-  `report_not_in_text/typed`: in 36 the key's figure appears nowhere in the paragraph, so the
-  resolver typed what the bill states and the key states something else. Four of the 36 were
-  spot-checked against their reports; the other 32 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
+- The 34 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 33
+  `report_not_in_text/typed`: in 33 the key's figure appears nowhere in the paragraph, so the
+  resolver typed what the bill states and the key states something else. Four of the 33 were
+  spot-checked against their reports; the other 29 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
   recommendation, where the key carries the $7,400,729,000 net of $2,620,000,000 in aviation
-  security fees; SAMHSA Mental Health is typed at the bill's $2,869,507,000 where the report's
-  $2,902,546,000 program level includes $21,039,000 in section 241 transfers; the Copyright Office
+  security fees; SAMHSA Mental Health is typed at $2,890,546,000, the bill's $2,869,507,000 plus the $21,039,000
+  in section 241 funds its paragraph makes available, where the report's program level is
+  $2,902,546,000; the Copyright Office
   is typed at the bill's $106,133,000 total where the key carries the $60,238,000 direct
   appropriation without receipts; and Nuclear Energy is typed at $1,675,000,000, the figure the
   report's text recommends, where the key's $1,525,000,000 is the comparative statement's
   non-defense line without the defense-function line beneath it. Three are the bill and the report
   counting differently; the fourth is the key, not the resolver.
-- The 22 "printed, but as no account's figure" split between resolver errors (the FDA allowance;
-  PHMSA's "not more than $46,825,000 shall remain available" limitation) and rows the report
-  parser does not read (VA Compensation and Pensions, $214,302,452,000, is in the report's text
-  and not in `parse_summary_blocks`' output). Separating them is a `parsers/committee_report.py`
+- The 22 "printed, but as no account's figure" split between resolver errors (PHMSA's "not more
+  than $46,825,000 shall remain available" limitation) and rows the report parser does not read
+  (VA Compensation and Pensions, $214,302,452,000, is in the report's text and not in
+  `parse_summary_blocks`' output; the CDFI Fund's $354,000,000 is its summary block's committee
+  recommendation, under a mixed-case heading the parser does not take for an account's). Separating them is a `parsers/committee_report.py`
   question as much as a resolver one.
-- The 5 printed nowhere include liquidating and contract-authority payments ("For payment of
+- The 6 printed nowhere include liquidating and contract-authority payments ("For payment of
   obligations incurred ... to be derived from the Highway Trust Fund") that a report keeps out of
   new budget authority: the roll-up found the FTA one; this direction lists the FMCSA and NHTSA
-  ones beside it.
+  ones beside it. CDC Public Health Scientific Services is typed at $591,597,000: its $481,564,000
+  plus the $110,033,000 in section 241 evaluation funds its paragraph makes available "in addition
+  to amounts provided herein". The report prints that money beneath the $481,564,000 row as a
+  non-add memo, "(110,033)", where SAMHSA's summary blocks count the same kind of money in; the
+  report is not consistent about section 241 money, which is ADR 0025's question of a figure's
+  effect, not this resolver's.
 - Recall here is `committee_agreement.py`'s 675 of 752 against committee reports (89.8%) with
   the denominator widened to every answer-key line of these thirteen jurisdictions, including
   the 101 with no paragraph to score (99 the builder could not map, two mapped to a node with

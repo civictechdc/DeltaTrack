@@ -99,6 +99,19 @@ def test_a_ceiling_straight_after_the_purposes_is_the_appropriation():
     assert resolve(limited) == 10_000_000
 
 
+def test_a_ceiling_on_one_purpose_gives_way_to_the_figure_after_the_last_purpose():
+    # The FDA's Salaries and Expenses: the allowance closes one purpose with a semicolon, and the
+    # appropriation closes the list. The ceiling reading is for a ceiling no plain figure follows.
+    text = (
+        "For necessary expenses of the Food and Drug Administration; for miscellaneous and emergency "
+        "expenses of enforcement activities, to be accounted for solely on the Secretary's certificate, "
+        "not to exceed $25,000; and notwithstanding section 521 of Public Law 107-188; $6,872,405,000: "
+        "Provided, That of the amount provided under this heading, $1,472,210,000 shall be derived from fees."
+    )
+    assert resolve(text) == 6_872_405_000
+    assert resolve_total(text) == 6_872_405_000
+
+
 def test_it_abstains_rather_than_guess():
     assert resolve("For necessary expenses, such sums as may be necessary.") is None
     assert resolve("None of the funds made available may be used for $5,000,000 of travel.") is None
