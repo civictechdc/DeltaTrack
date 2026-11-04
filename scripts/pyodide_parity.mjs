@@ -35,9 +35,23 @@ class _Tripwire:
     def __getattr__(self, attr): return _Tripwire(f"{self._name}.{attr}")
 def __getattr__(name): return _Tripwire(name)
 `;
+// parsers/pdf_text.py wraps two `raw` bindings with ctypes at import (#794), so `raw`
+// hands out real ctypes function pointers: a _Tripwire there sends ctypes.cast into
+// endless `_as_parameter_` lookups. Each pointer calls back into Python and raises; ctypes
+// reports an exception in a callback rather than propagating it, so a reached call shows
+// up as a hash MISMATCH rather than an error.
+const RAW_TRIPWIRE = `
+import ctypes
+def __getattr__(name):
+    def _tripwire(*args):
+        raise RuntimeError(f"PDFium call {name} reached under Pyodide")
+    binding = ctypes.CFUNCTYPE(ctypes.c_int)(_tripwire)
+    globals()[name] = binding
+    return binding
+`;
 fs.mkdirSync(path.join(SHIM, "pypdfium2"), { recursive: true });
 fs.writeFileSync(path.join(SHIM, "pypdfium2", "__init__.py"), TRIPWIRE);
-fs.writeFileSync(path.join(SHIM, "pypdfium2", "raw.py"), TRIPWIRE);
+fs.writeFileSync(path.join(SHIM, "pypdfium2", "raw.py"), RAW_TRIPWIRE);
 
 const tBoot = performance.now();
 const pyodide = await loadPyodide();

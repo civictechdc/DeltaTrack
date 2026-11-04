@@ -145,7 +145,7 @@ where = "Removed badges and text, the upload error message"
 foreground = "--diff-modified-foreground"
 background = "--diff-modified"
 kind = "text"
-where = "Modified badges, the 'Coming soon' badge"
+where = "Modified badges"
 
 [[pair]]
 foreground = "--diff-moved-foreground"

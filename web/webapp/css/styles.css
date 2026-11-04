@@ -34,7 +34,6 @@
   --primary-foreground: #ffffff;
   --primary-hover: #173d6f;
   --secondary: #e6edf6;
-  --muted: #f0f2f5;
   --muted-foreground: #5a626d;
   --diff-add: #e3f4e9;
   --diff-add-foreground: #1c6e3a;
@@ -144,16 +143,13 @@ a { color: var(--primary); }
 }
 .path-card--active { border-color: var(--primary); }
 .path-card--active:hover { box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
-.path-card--disabled { opacity: 0.7; background: var(--muted); cursor: not-allowed; }
 
 .path-card__badge { margin-bottom: 14px; }
 .path-card__badge--ready { background: var(--diff-add); color: var(--diff-add-foreground); }
-.path-card__badge--soon { background: var(--diff-modified); color: var(--diff-modified-foreground); }
 .path-card__title { font-size: 20px; margin: 0 0 4px; }
 .path-card__tagline { font-weight: 600; color: var(--foreground); margin: 0 0 10px; }
 .path-card__body { font-size: 14px; color: var(--muted-foreground); margin: 0 0 18px; }
 .path-card__cta { font-weight: 600; color: var(--primary); }
-.path-card__cta--disabled { color: var(--muted-foreground); font-weight: 500; }
 
 .landing__sample { text-align: center; color: var(--muted-foreground); margin-top: 36px; }
 
