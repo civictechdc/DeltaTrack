@@ -16,7 +16,7 @@ Promotion updates all three at once. None tracks `develop`.
 |---|---|---|
 | The hosted comparison app | The FastAPI upload app | `.github/workflows/deploy.yml`, on push to `main`. What it builds and where it deploys: [deployment.md](deployment.md) |
 | The example reports | Static reports linked from the README's "See it in action" | `.github/workflows/update-examples.yml`, on push to `main`. Copies the already-committed `examples/` directory into a Pages artifact and deploys it |
-| The offline page | One HTML file that compares bill XML in the browser, linked from the hosted app's home page | `.github/workflows/publish-offline.yml`, on push to `main`. Tests the page from disk in a browser, builds it with `scripts/build_offline_html.py` and attaches it to the `offline-latest` release |
+| The offline page | One HTML file that compares bill XML in the browser, linked from the hosted app's home page | `.github/workflows/publish-offline.yml`, on push to `main`. A read-only job builds the page with `scripts/build_offline_html.py` and tests that file from disk in a browser; a separate job with the write token attaches it to the `offline-latest` release |
 
 **The workflow does not render anything.** It used to, and that is worth stating plainly
 because the older behaviour is still what is running on `main` today and is the version
