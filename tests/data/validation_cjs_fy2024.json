@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "International Trade Administration",
+      "office": null,
       "excel_name": "OPERATIONS AND ADMINISTRATION",
       "match_path": [
         "department of commerce",
@@ -24,6 +25,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Bureau of Industry and Security",
+      "office": null,
       "excel_name": "OPERATIONS AND ADMINISTRATION",
       "match_path": [
         "department of commerce",
@@ -39,6 +41,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Economic Development Administration",
+      "office": null,
       "excel_name": "ECONOMIC DEVELOPMENT ASSISTANCE PROGRAMS",
       "match_path": [
         "department of commerce",
@@ -53,9 +56,14 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Native American Tourism and Improving Visitor Experience",
+      "bureau": "Economic Development Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
-      "match_path": null,
+      "match_path": [
+        "department of commerce",
+        "economic development administration",
+        "salaries and expenses"
+      ],
       "expected_amount": 70000000
     },
     {
@@ -65,6 +73,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Minority Business Development Agency",
+      "office": null,
       "excel_name": "MINORITY BUSINESS DEVELOPMENT",
       "match_path": [
         "department of commerce",
@@ -80,6 +89,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Economic and Statistical Analysis",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of commerce",
@@ -95,6 +105,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Bureau of the Census",
+      "office": null,
       "excel_name": "CURRENT SURVEYS AND PROGRAMS",
       "match_path": [
         "department of commerce",
@@ -110,8 +121,13 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Bureau of the Census",
+      "office": null,
       "excel_name": "PERIODIC CENSUSES AND PROGRAMS",
-      "match_path": null,
+      "match_path": [
+        "department of commerce",
+        "bureau of the census",
+        "periodic censuses and programs"
+      ],
       "expected_amount": 1155000000
     },
     {
@@ -121,6 +137,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "National Telecommunications and Information Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of commerce",
@@ -136,6 +153,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "National Telecommunications and Information Administration",
+      "office": null,
       "excel_name": "FACILITIES MANAGEMENT AND CONSTRUCTION",
       "match_path": [
         "department of commerce",
@@ -151,6 +169,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "United States Patent and Trademark Office",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of commerce",
@@ -166,6 +185,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "National Institute of Standards and Technology",
+      "office": null,
       "excel_name": "SCIENTIFIC AND TECHNICAL RESEARCH AND SERVICES",
       "match_path": [
         "department of commerce",
@@ -180,7 +200,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Monitoring, and",
+      "bureau": "National Institute of Standards and Technology",
+      "office": null,
       "excel_name": "INDUSTRIAL TECHNOLOGY SERVICES",
       "match_path": [
         "department of commerce",
@@ -195,7 +216,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Hollings Manufacturing Extension Partnership Program",
+      "bureau": "National Institute of Standards and Technology",
+      "office": null,
       "excel_name": "CONSTRUCTION OF RESEARCH FACILITIES",
       "match_path": [
         "department of commerce",
@@ -211,6 +233,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "National Oceanic and Atmospheric Administration",
+      "office": null,
       "excel_name": "OPERATIONS, RESEARCH, AND FACILITIES",
       "match_path": [
         "department of commerce",
@@ -225,9 +248,14 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Maine's Lobster",
+      "bureau": "National Oceanic and Atmospheric Administration",
+      "office": null,
       "excel_name": "NOAA PROCUREMENT, ACQUISITION AND CONSTRUCTION",
-      "match_path": null,
+      "match_path": [
+        "department of commerce",
+        "national oceanic and atmospheric administration",
+        "procurement, acquisition and construction"
+      ],
       "expected_amount": 1927296000
     },
     {
@@ -236,7 +264,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Committee",
+      "bureau": "National Oceanic and Atmospheric Administration",
+      "office": null,
       "excel_name": "PACIFIC COASTAL SALMON RECOVERY FUND",
       "match_path": [
         "department of commerce",
@@ -251,7 +280,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Committee",
+      "bureau": "National Oceanic and Atmospheric Administration",
+      "office": null,
       "excel_name": "FISHERIES DISASTER ASSISTANCE",
       "match_path": [
         "department of commerce",
@@ -266,7 +296,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Committee",
+      "bureau": "National Oceanic and Atmospheric Administration",
+      "office": null,
       "excel_name": "FISHERMEN'S CONTINGENCY FUND",
       "match_path": [
         "department of commerce",
@@ -282,6 +313,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
       "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of commerce",
@@ -296,7 +328,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Enhancing Microelectronics Fabrication with Advanced",
+      "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "RENOVATION AND MODERNIZATION",
       "match_path": [
         "department of commerce",
@@ -311,7 +344,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF COMMERCE",
-      "bureau": "Enhancing Microelectronics Fabrication with Advanced",
+      "bureau": "Departmental Management",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of commerce",
@@ -326,11 +360,12 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Law Enforcement in the United States Antarctic Program",
+      "bureau": null,
+      "office": "JUSTICE OPERATIONS, MANAGEMENT, AND ACCOUNTABILITY",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
-        "related agencies",
-        "office of the united states trade representative",
+        "department of justice",
+        "justice operations, management, and accountability",
         "salaries and expenses"
       ],
       "expected_amount": 140000000
@@ -341,7 +376,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Timely Responses to Committee Inquiries and Meeting Report",
+      "bureau": null,
+      "office": null,
       "excel_name": "JUSTICE INFORMATION SHARING TECHNOLOGY",
       "match_path": [
         "department of justice",
@@ -356,7 +392,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Timely Responses to Committee Inquiries and Meeting Report",
+      "bureau": null,
+      "office": null,
       "excel_name": "EXECUTIVE OFFICE FOR IMMIGRATION REVIEW",
       "match_path": [
         "department of justice",
@@ -371,6 +408,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "United States Parole Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -386,6 +424,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES, GENERAL LEGAL ACTIVITIES",
       "match_path": [
         "department of justice",
@@ -400,7 +439,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "THE NATIONAL CHILDHOOD VACCINE INJURY ACT",
       "match_path": null,
       "expected_amount": 22700000
@@ -411,7 +451,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES, ANTITRUST DIVISION",
       "match_path": [
         "department of justice",
@@ -426,12 +467,13 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": "UNITED STATES ATTORNEYS",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
-        "related agencies",
-        "commission on civil rights",
-        "salaries and expenses"
+        "department of justice",
+        "legal activities",
+        "salaries and expenses, united states attorneys"
       ],
       "expected_amount": 2670000000
     },
@@ -441,7 +483,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "UNITED STATES TRUSTEE SYSTEM FUND",
       "match_path": [
         "department of justice",
@@ -456,7 +499,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES, FOREIGN CLAIMS SETTLEMENT COMMISSION",
       "match_path": [
         "department of justice",
@@ -471,7 +515,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "FEES AND EXPENSES OF WITNESSES",
       "match_path": [
         "department of justice",
@@ -486,7 +531,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES, COMMUNITY RELATIONS SERVICE",
       "match_path": [
         "department of justice",
@@ -501,7 +547,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Civil Rights Violations in State and Local Prisons and",
+      "bureau": "Legal Activities",
+      "office": null,
       "excel_name": "ASSETS FORFEITURE FUND",
       "match_path": [
         "department of justice",
@@ -517,6 +564,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "United States Marshals Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -532,6 +580,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "United States Marshals Service",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "department of justice",
@@ -547,6 +596,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "United States Marshals Service",
+      "office": null,
       "excel_name": "FEDERAL PRISONER DETENTION",
       "match_path": [
         "department of justice",
@@ -562,6 +612,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "National Security Division",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -577,6 +628,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Federal Bureau of Investigation",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -591,9 +643,14 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Terrorist Explosive Device Analytical Center [TEDAC] and",
+      "bureau": "Federal Bureau of Investigation",
+      "office": null,
       "excel_name": "CONSTRUCTION",
-      "match_path": null,
+      "match_path": [
+        "department of justice",
+        "federal bureau of investigation",
+        "construction"
+      ],
       "expected_amount": 60000000
     },
     {
@@ -603,6 +660,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Drug Enforcement Administration",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -618,6 +676,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Bureau of Alcohol, Tobacco, Firearms and Explosives",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -633,6 +692,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Federal Prison System",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of justice",
@@ -647,7 +707,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Swift-Certain-Fair [SCF] Model in the Federal Prison",
+      "bureau": "Federal Prison System",
+      "office": null,
       "excel_name": "BUILDINGS AND FACILITIES",
       "match_path": [
         "department of justice",
@@ -662,7 +723,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Swift-Certain-Fair [SCF] Model in the Federal Prison",
+      "bureau": "Federal Prison System",
+      "office": null,
       "excel_name": "FEDERAL PRISON INDUSTRIES, INCORPORATED",
       "match_path": [
         "department of justice",
@@ -678,6 +740,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Office on Violence Against Women",
+      "office": null,
       "excel_name": "VIOLENCE AGAINST WOMEN PREVENTION AND PROSECUTION PROGRAMS",
       "match_path": [
         "department of justice",
@@ -693,6 +756,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Office of Justice Programs",
+      "office": null,
       "excel_name": "RESEARCH, EVALUATION AND STATISTICS",
       "match_path": [
         "department of justice",
@@ -707,7 +771,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Committee",
+      "bureau": "Office of Justice Programs",
+      "office": null,
       "excel_name": "STATE AND LOCAL LAW ENFORCEMENT ASSISTANCE",
       "match_path": [
         "department of justice",
@@ -722,7 +787,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Income Victims of",
+      "bureau": "Office of Justice Programs",
+      "office": null,
       "excel_name": "JUVENILE JUSTICE PROGRAMS",
       "match_path": [
         "department of justice",
@@ -737,7 +803,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
-      "bureau": "Committee",
+      "bureau": "Office of Justice Programs",
+      "office": null,
       "excel_name": "PUBLIC SAFETY OFFICERS BENEFITS",
       "match_path": null,
       "expected_amount": 208800000
@@ -749,6 +816,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF JUSTICE",
       "bureau": "Community Oriented Policing Services",
+      "office": null,
       "excel_name": "COMMUNITY ORIENTED POLICING SERVICES PROGRAMS",
       "match_path": [
         "department of justice",
@@ -763,13 +831,10 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "For Exploration and Space Operations, the Committee's",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "SCIENCE",
-      "match_path": [
-        "science",
-        "national aeronautics and space administration",
-        "science, technology, engineering, and mathematics engagement"
-      ],
+      "match_path": null,
       "expected_amount": 7340920000
     },
     {
@@ -778,7 +843,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Diversify, Realize, Integrate, Venture, Educate [DRIVE]",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "AERONAUTICS",
       "match_path": [
         "science",
@@ -793,7 +859,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Diversify, Realize, Integrate, Venture, Educate [DRIVE]",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "SPACE TECHNOLOGY",
       "match_path": [
         "science",
@@ -808,7 +875,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Diversify, Realize, Integrate, Venture, Educate [DRIVE]",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "EXPLORATION",
       "match_path": [
         "science",
@@ -823,7 +891,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Diversify, Realize, Integrate, Venture, Educate [DRIVE]",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "SPACE OPERATIONS",
       "match_path": [
         "science",
@@ -838,7 +907,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Rocket Propulsion Test Program and Testing",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "SCIENCE, TECHNOLOGY, ENGINEERING, AND MATHEMATICS ENGAGEMENT",
       "match_path": [
         "science",
@@ -853,7 +923,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Minority University Research and Education Project",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "SAFETY, SECURITY, AND MISSION SERVICES",
       "match_path": [
         "science",
@@ -868,7 +939,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Cluster for Research",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "CONSTRUCTION AND ENVIRONMENTAL COMPLIANCE AND RESTORATION",
       "match_path": [
         "science",
@@ -883,9 +955,14 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Cluster for Research",
+      "bureau": "National Aeronautics and Space Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
-      "match_path": null,
+      "match_path": [
+        "science",
+        "national aeronautics and space administration",
+        "office of inspector general"
+      ],
       "expected_amount": 47600000
     },
     {
@@ -895,6 +972,7 @@
       "chamber": "senate",
       "title": "SCIENCE",
       "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "RESEARCH AND RELATED ACTIVITIES",
       "match_path": [
         "science",
@@ -910,6 +988,7 @@
       "chamber": "senate",
       "title": "SCIENCE",
       "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "MAJOR RESEARCH EQUIPMENT AND FACILITIES CONSTRUCTION",
       "match_path": [
         "science",
@@ -925,6 +1004,7 @@
       "chamber": "senate",
       "title": "SCIENCE",
       "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "STEM EDUCATION",
       "match_path": [
         "science",
@@ -939,7 +1019,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Eddie Bernice Johnson Inclusion Across the Nation of",
+      "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "AGENCY OPERATIONS AND AWARD MANAGEMENT",
       "match_path": [
         "science",
@@ -954,7 +1035,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Eddie Bernice Johnson Inclusion Across the Nation of",
+      "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "OFFICE OF THE NATIONAL SCIENCE BOARD",
       "match_path": [
         "science",
@@ -969,9 +1051,14 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "SCIENCE",
-      "bureau": "Eddie Bernice Johnson Inclusion Across the Nation of",
+      "bureau": "National Science Foundation",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
-      "match_path": null,
+      "match_path": [
+        "science",
+        "national science foundation",
+        "office of inspector general"
+      ],
       "expected_amount": 23393000
     },
     {
@@ -981,6 +1068,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Commission on Civil Rights",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -996,6 +1084,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Equal Employment Opportunity Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1011,6 +1100,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "International Trade Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1026,6 +1116,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Legal Services Corporation",
+      "office": null,
       "excel_name": "PAYMENT TO THE LEGAL SERVICES CORPORATION",
       "match_path": [
         "related agencies",
@@ -1041,6 +1132,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Marine Mammal Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1056,6 +1148,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Office of the United States Trade Representative",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1070,7 +1163,8 @@
       "fy": "FY 2024",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "U.S. European Union [EU] Trade and Technology Council",
+      "bureau": "Office of the United States Trade Representative",
+      "office": null,
       "excel_name": "TRADE ENFORCEMENT TRUST FUND",
       "match_path": [
         "related agencies",
@@ -1086,6 +1180,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "State Justice Institute",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",

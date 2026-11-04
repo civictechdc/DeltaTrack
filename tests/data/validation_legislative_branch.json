@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE VICE PRESIDENT",
       "match_path": [
         "legislative branch",
@@ -25,6 +26,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE PRESIDENT PRO TEMPORE",
       "match_path": [
         "legislative branch",
@@ -41,6 +43,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE PRESIDENT PRO TEMPORE EMERITUS",
       "match_path": [
         "legislative branch",
@@ -57,6 +60,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICES OF THE MAJORITY AND MINORITY LEADERS",
       "match_path": [
         "legislative branch",
@@ -73,6 +77,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICES OF THE MAJORITY AND MINORITY WHIPS",
       "match_path": [
         "legislative branch",
@@ -89,6 +94,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "COMMITTEE ON APPROPRIATIONS",
       "match_path": [
         "legislative branch",
@@ -105,6 +111,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "CONFERENCE COMMITTEES",
       "match_path": [
         "legislative branch",
@@ -121,7 +128,8 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
-      "excel_name": "CONFERENCE OF THE MINORITY",
+      "office": null,
+      "excel_name": "OFFICES OF THE SECRETARIES OF THE CONFERENCE OF THE MAJORITY AND THE CONFERENCE OF THE MINORITY",
       "match_path": [
         "legislative branch",
         "senate",
@@ -137,6 +145,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "POLICY COMMITTEES",
       "match_path": [
         "legislative branch",
@@ -153,6 +162,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE CHAPLAIN",
       "match_path": [
         "legislative branch",
@@ -169,6 +179,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE SECRETARY",
       "match_path": [
         "legislative branch",
@@ -185,6 +196,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICE OF THE SERGEANT AT ARMS AND DOORKEEPER",
       "match_path": [
         "legislative branch",
@@ -200,7 +212,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Capitol Police Board and Chief Law Enforcement Officer",
+      "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "OFFICES OF THE SECRETARIES FOR THE MAJORITY AND MINORITY",
       "match_path": [
         "legislative branch",
@@ -216,7 +229,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Capitol Police Board and Chief Law Enforcement Officer",
+      "bureau": "Salaries, Officers, and Employees",
+      "office": null,
       "excel_name": "AGENCY CONTRIBUTIONS",
       "match_path": [
         "legislative branch",
@@ -233,6 +247,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "INQUIRIES AND INVESTIGATIONS",
       "match_path": [
         "legislative branch",
@@ -249,6 +264,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "U.S. SENATE CAUCUS ON INTERNATIONAL NARCOTICS CONTROL",
       "match_path": [
         "legislative branch",
@@ -265,6 +281,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "SECRETARY OF THE SENATE",
       "match_path": [
         "legislative branch",
@@ -280,7 +297,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Contractual Legal and Administrative Services and",
+      "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "SERGEANT AT ARMS AND DOORKEEPER OF THE SENATE",
       "match_path": [
         "legislative branch",
@@ -296,7 +314,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Enhancing Effectiveness of Constituent Casework",
+      "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "MISCELLANEOUS ITEMS",
       "match_path": [
         "legislative branch",
@@ -312,7 +331,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Senate Employees' Child Care Center: Training Classes and",
+      "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "SENATORS' OFFICIAL PERSONNEL AND OFFICE EXPENSE ACCOUNT",
       "match_path": [
         "legislative branch",
@@ -328,7 +348,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Administrative",
+      "bureau": "Contingent Expenses of the Senate",
+      "office": null,
       "excel_name": "OFFICIAL MAIL COSTS",
       "match_path": [
         "legislative branch",
@@ -345,6 +366,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Office of Congressional Accessibility Services",
+      "office": null,
       "excel_name": "CAPITOL POLICE",
       "match_path": null,
       "expected_amount": 832556000
@@ -356,8 +378,13 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "General Expenses",
+      "office": "OFFICE OF CONGRESSIONAL WORKPLACE RIGHTS",
       "excel_name": "SALARIES AND EXPENSES",
-      "match_path": null,
+      "match_path": [
+        "legislative branch",
+        "office of congressional workplace rights",
+        "salaries and expenses"
+      ],
       "expected_amount": 8200000
     },
     {
@@ -367,8 +394,13 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "General Expenses",
+      "office": "CONGRESSIONAL BUDGET OFFICE",
       "excel_name": "SALARIES AND EXPENSES",
-      "match_path": null,
+      "match_path": [
+        "legislative branch",
+        "congressional budget office",
+        "salaries and expenses"
+      ],
       "expected_amount": 73000000
     },
     {
@@ -378,8 +410,13 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Administrative Provision",
+      "office": "LIBRARY OF CONGRESS",
       "excel_name": "SALARIES AND EXPENSES",
-      "match_path": null,
+      "match_path": [
+        "legislative branch",
+        "library of congress",
+        "salaries and expenses"
+      ],
       "expected_amount": 611948000
     },
     {
@@ -389,6 +426,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Copyright Office",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "legislative branch",
@@ -405,6 +443,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "Congressional Research Service",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "legislative branch",
@@ -421,6 +460,7 @@
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
       "bureau": "National Library Services for the Blind and Print Disabled",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "legislative branch",
@@ -436,7 +476,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "Documents",
+      "bureau": "Public Information Programs of the Office of Superintendent of Documents",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "legislative branch",
@@ -452,7 +493,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "GAO Study on Agency Responsiveness to Congressional",
+      "bureau": "Salaries and Expenses",
+      "office": null,
       "excel_name": "CONGRESSIONAL OFFICE FOR INTERNATIONAL LEADERSHIP FUND",
       "match_path": [
         "legislative branch",
@@ -466,7 +508,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "LEGISLATIVE BRANCH APPROPRIATIONS",
-      "bureau": "GAO Study on Agency Responsiveness to Congressional",
+      "bureau": "Salaries and Expenses",
+      "office": null,
       "excel_name": "JOHN C. STENNIS CENTER FOR PUBLIC SERVICE TRAINING AND DEVELOPMENT",
       "match_path": [
         "legislative branch",

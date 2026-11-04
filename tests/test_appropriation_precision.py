@@ -72,8 +72,8 @@ def test_precision_scores_confirmed_figures_and_leaves_finer_ones_out():
 def test_the_fda_allowance_typed_as_its_appropriation_is_seen_from_this_direction(resolver, expected):
     """Salaries and Expenses of the FDA appropriates $6,872,405,000, after a purpose clause that
     allows "not to exceed $25,000" for enforcement expenses. The baseline strips the cap phrase and
-    types the appropriation; the structured and summed resolvers type the allowance. The answer-key
-    builder never mapped the account, so committee_agreement cannot see the regression; this
+    types the appropriation; the structured and summed resolvers type the allowance. The answer key
+    has no line for the account, so committee_agreement cannot see the regression; this
     direction lists the allowance as a typed figure the report states as no account's figure."""
     results = ap.measure(ca.TEXT_RESOLVERS[resolver])
     fda = [
@@ -90,9 +90,9 @@ def test_precision_and_recall_match_the_measurement_the_readme_quotes():
     them is seen. Re-measure with `uv run python docs/research/financial-semantics/appropriation_precision.py`
     and update the README table and this expectation together."""
     for name, confirmed, unconfirmed, recalled in (
-        ("baseline", 893, 92, 636),
-        ("structured", 900, 71, 648),
-        ("summed", 907, 64, 658),
+        ("baseline", 894, 91, 693),
+        ("structured", 901, 70, 705),
+        ("summed", 908, 63, 715),
     ):
         resolver = ca.TEXT_RESOLVERS[name]
         counts = Counter(r.outcome for r in ap.measure(resolver))
