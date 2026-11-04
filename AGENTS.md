@@ -129,6 +129,7 @@ Every **accepted** ADR, title as written. The titles are claims, so this list is
 - [19. Identify a parsed observation by its source, its parser revision and its ordinal; never by its text](docs/decisions/0019-observation-identity.md)
 - [20. Separate retrieval, correspondence evidence, correspondence assignment and change classification](docs/decisions/0020-matching-stages.md)
 - [21. Name things in the vocabulary an outside reader already speaks, scoped to the boundary being named](docs/decisions/0021-naming-authority-and-boundaries.md)
+- [25. Bring dollar figures back only when each one is typed and its type agrees with an official source](docs/decisions/0025-financial-confidence-criteria.md)
 
 ## Key architecture concepts
 

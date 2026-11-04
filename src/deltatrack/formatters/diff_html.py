@@ -204,28 +204,53 @@ def _group_removed(view: DiffView) -> tuple[dict, list[int]]:
     """Nest removed change indices by their earlier breadcrumb (#784).
 
     Returns ``(root, outside)``: ``root`` has the same shape as
-    ``_group_changes_by_node``'s, keyed by ``removed_path`` labels, and each node
-    also records ``first``, the smallest ``removed_offset`` in its subtree (None
-    when none has one); ``outside`` holds the removals the document gives no
-    earlier path. A removal exists only in the earlier version, so it is listed
-    where the document says it was, never filed inside the later outline by
-    matching heading labels (ADR 0007).
+    ``_group_changes_by_node``'s, keyed by ``(label, earlier node id)`` along
+    ``removed_path``. Each node also records ``first``, the smallest
+    ``removed_offset`` in its subtree (None when none has one); ``outside`` holds the
+    removals the document gives no earlier path. A removal exists only in the earlier
+    version, so it is listed where the document says it was, never filed inside the
+    later outline by matching heading labels (ADR 0007).
     """
-    root: dict = {"children": {}, "items": [], "first": None}
     outside: list[int] = []
+    entries: list[tuple[int, tuple[str, ...], tuple[str, ...], int | None]] = []
     for i, c in enumerate(view.changes):
         if c.change_type != "removed":
             continue
         if not c.removed_path:
             outside.append(i)
             continue
-        node = root
-        for label in c.removed_path:
-            node = node["children"].setdefault(label, {"children": {}, "items": [], "first": None})
-            if c.removed_offset is not None and (node["first"] is None or c.removed_offset < node["first"]):
-                node["first"] = c.removed_offset
-        node["items"].append(i)
+        entries.append((i, c.removed_path, c.removed_node_ids, c.removed_offset))
+    root = _removed_group(entries, 0)
+    root["first"] = None
     return root, outside
+
+
+def _removed_group(entries: list, depth: int) -> dict:
+    """One removed group: the removals whose earlier path ends here, and child groups.
+
+    A label is one group unless the document names two or more earlier nodes for it
+    here (#859); only then does each named node get its own group, and a removal with
+    no node named keeps a label-only group beside them rather than joining one.
+    """
+    named: dict[str, set[str]] = {}
+    for _i, path, ids, _offset in entries:
+        if len(path) > depth and ids:
+            named.setdefault(path[depth], set()).add(ids[depth])
+    node: dict = {"children": {}, "items": [], "first": None}
+    buckets: dict[tuple[str, str], list] = {}
+    for entry in entries:
+        i, path, ids, _offset = entry
+        if len(path) == depth:
+            node["items"].append(i)
+            continue
+        label = path[depth]
+        split = len(named.get(label, ())) > 1
+        buckets.setdefault((label, ids[depth] if split and ids else ""), []).append(entry)
+    for key, group in buckets.items():
+        node["children"][key] = _removed_group(group, depth + 1)
+    offsets = [offset for _i, _path, _ids, offset in entries if offset is not None]
+    node["first"] = min(offsets) if offsets else None
+    return node
 
 
 def _ordered_removed_children(node: dict, path: tuple, removed_order: dict[tuple[str, ...], int] | None):
@@ -339,7 +364,7 @@ def _ordered_children(node: dict, path: tuple, order_map: dict[tuple, int] | Non
     last = len(order_map)
     ranked = sorted(
         enumerate(items),
-        key=lambda pair: (order_map.get(path + (pair[1][0],), last), pair[0]),
+        key=lambda pair: (order_map.get(path + (pair[1][0][0],), last), pair[0]),
     )
     return [item for _, item in ranked]
 
@@ -392,13 +417,14 @@ def _removed_nav_html(view: DiffView, removed_order: dict[tuple[str, ...], int] 
     if not root["children"] and not outside:
         return ""
 
-    def render(label: str, node: dict, path: tuple) -> str:
+    def render(key: tuple[str, str], node: dict, path: tuple) -> str:
+        label = key[0]
         p = path + (label,)
         items = "".join(_build_nav_item(view.changes[i], i) for i in node["items"])
         kids = "".join(render(s, c, p) for s, c in _ordered_removed_children(node, p, removed_order))
         return _nav_group_html(label, _subtree_count(node), f"<ul>{items}</ul>{kids}")
 
-    blocks = [render(label, node, ()) for label, node in _ordered_removed_children(root, (), removed_order)]
+    blocks = [render(key, node, ()) for key, node in _ordered_removed_children(root, (), removed_order)]
     if outside:
         items = "".join(_build_nav_item(view.changes[i], i) for i in outside)
         blocks.append(_nav_group_html(NO_PATH_LABEL, len(outside), f"<ul>{items}</ul>"))
@@ -662,7 +688,8 @@ def _cards_section_html(
         _id, label, _level = seg
         labels = (*labels, label)
         unique = shared.get(labels) == 1
-        pointer = _pointer_html(pointers[labels], removed_ids[labels]) if labels in pointers and unique else ""
+        target = removed_ids.get(labels)
+        pointer = _pointer_html(pointers[labels], target) if labels in pointers and unique and target else ""
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
         kids = "\n".join(render(s, c, labels) for s, c in _in_tree_order(node, view.node_order))
         return _card_group_html(label, "\n".join(part for part in (pointer, cards, kids) if part), node_id=seg[0])
@@ -696,23 +723,28 @@ def _removed_cards_html(
     document order (``_ordered_removed_children``), then a "(no heading path recorded)" group
     for removals the document gives no earlier path. Returns the section ("" when
     nothing was removed) and each nested group's element id by breadcrumb, which
-    the later-version pointers link to. Ids number groups in render order, so they
+    the later-version pointers link to; a breadcrumb two groups share maps to None,
+    since it names neither alone. Ids number groups in render order, so they
     depend on the removals alone.
     """
     root, outside = _group_removed(view)
-    ids: dict[tuple[str, ...], str] = {}
+    ids: dict[tuple[str, ...], str | None] = {}
     if not root["children"] and not outside:
         return "", ids
+    counter = 0
 
-    def render(label: str, node: dict, path: tuple) -> str:
+    def render(key: tuple[str, str], node: dict, path: tuple) -> str:
+        nonlocal counter
+        label = key[0]
         p = path + (label,)
-        ids[p] = f"removed-group-{len(ids)}"
-        group_id = ids[p]
+        group_id = f"removed-group-{counter}"
+        counter += 1
+        ids[p] = None if p in ids else group_id
         cards = "\n".join(_build_card(view.changes[i], i) for i in node["items"])
         kids = "\n".join(render(s, c, p) for s, c in _ordered_removed_children(node, p, removed_order))
         return _card_group_html(label, "\n".join(part for part in (cards, kids) if part), group_id=group_id)
 
-    blocks = [render(label, node, ()) for label, node in _ordered_removed_children(root, (), removed_order)]
+    blocks = [render(key, node, ()) for key, node in _ordered_removed_children(root, (), removed_order)]
     if outside:
         blocks.append(_card_group_html(NO_PATH_LABEL, "\n".join(_build_card(view.changes[i], i) for i in outside)))
     return _card_group_html(REMOVED_SECTION_LABEL, "\n".join(blocks), " removed-section"), ids

@@ -280,7 +280,7 @@ def test_xml_an_unnumbered_section_that_gained_a_number_is_moved_not_renumbered(
 
 @pytest.mark.slow
 def test_pdf_a_heading_that_wrapped_differently_is_moved_not_renumbered():
-    """118-hr-4366 3→4: "NAVY AND MARINE CORPS" printed as "AND MARINE CORPS" after a wrap."""
+    """118-hr-4366 3→4: a recovered housing name still meets a split Senate heading."""
     from deltatrack.compare.pdf import _build_canonical
     from deltatrack.diff_pdf import diff_pdfs
     from tests.corpus_paths import fixture_path
@@ -289,7 +289,12 @@ def test_pdf_a_heading_that_wrapped_differently_is_moved_not_renumbered():
     old = cached_pages(fixture_path("118-hr-4366", "3_placed-on-calendar-senate.pdf"))
     new = cached_pages(fixture_path("118-hr-4366", "4_engrossed-amendment-senate.pdf"))
     document = _build_canonical(diff_pdfs(old, new), old, new, "v1", "v2")
-    wrapped = [c for c in document["changes"] if c["move"] and (c["path"]["v1"] or [""])[-1] == "NAVY AND MARINE CORPS"]
+    wrapped = [
+        c
+        for c in document["changes"]
+        if c["move"]
+        and (c["path"]["v1"] or [""])[-1] == "FAMILY HOUSING OPERATION AND MAINTENANCE, NAVY AND MARINE CORPS"
+    ]
     assert wrapped and all(c["move"]["kind"] == RELOCATED for c in wrapped)
 
 

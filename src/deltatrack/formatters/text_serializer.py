@@ -118,9 +118,9 @@ def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[
     # The node each heading path names: content nodes by the path they were emitted
     # under (the Front Matter regrouping relabels display_path afterwards), first in
     # preorder, which is the first one registered for that path.
-    owners: dict[tuple[str, ...], TreeNode] = {}
+    owners: dict[tuple[tuple[str, str], ...], TreeNode] = {}
     for n in order:
-        owners.setdefault(tuple(n.source.display_path) if n.source is not None else n.display_path, n)
+        owners.setdefault(n.occurrence_key, n)
     # Each row belongs to one node: a heading printed for a node's own full path while
     # that node was written is that node's (so a later node on a repeated path keeps its
     # own row); one printed for a shorter path, while writing something inside it, is the
@@ -132,10 +132,11 @@ def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[
         heading[id(node)] = min(start, heading.get(id(node), start))
 
     for start, ordinal, path in layout.heading_rows:
+        key = bill.nodes[ordinal].display_key[: len(path)]
         if path == tuple(bill.nodes[ordinal].display_path):
             give(by_ordinal[ordinal], start)
-        elif path in owners:
-            give(owners[path], start)
+        elif key in owners:
+            give(owners[key], start)
     for start, ordinal in layout.run_in_rows:
         give(by_ordinal[ordinal], start)
 
@@ -146,8 +147,8 @@ def _xml_tree_payload(bill: BillTree, layout: _Layout, side: str) -> tuple[list[
         if element_id and element_id in layout.spans:
             start, end = layout.spans[element_id]
             span = {"start": start, "end": end}
-        elif n.display_path in layout.heading_offsets:
-            start = layout.heading_offsets[n.display_path]
+        elif id(n) in heading:
+            start = heading[id(n)]
             span = {"start": start, "end": start + len(n.label)}
         else:
             child_spans = [c["full_text_span"] for c in children if c["full_text_span"]]
@@ -241,6 +242,7 @@ def _serialize_layout(tree: BillTree) -> _Layout:
     # (out-index, node ordinal, element_id, prefix_len, body_len) for each body block.
     body_markers: list[tuple[int, int, str, int, int]] = []
     prev_path: tuple[str, ...] = ()
+    prev_key: tuple[tuple[str, str], ...] = ()
     for ordinal, node in enumerate(tree.nodes):
         new_path = tuple(node.display_path)
         # For section nodes, the trailing display_path segment is the section's
@@ -253,9 +255,10 @@ def _serialize_layout(tree: BillTree) -> _Layout:
             heading_path = new_path[:-2] if node.section_number else new_path[:-1]
         else:
             heading_path = new_path[:-1] if node.section_number and new_path else new_path
+        heading_key = node.display_key[: len(heading_path)]
         # Find the longest common prefix between previous and new path.
         common = 0
-        while common < len(prev_path) and common < len(heading_path) and prev_path[common] == heading_path[common]:
+        while common < len(prev_path) and common < len(heading_path) and prev_key[common] == heading_key[common]:
             common += 1
         # Emit any newly entered path segments as headings. The top-level segment
         # (absolute index 0) is the title/division heading — in XML that's the
@@ -303,6 +306,7 @@ def _serialize_layout(tree: BillTree) -> _Layout:
             body_markers.append((idx, ordinal, node.element_id, prefix_len, len(display)))
             out.append("")
         prev_path = heading_path
+        prev_key = heading_key
     # Trim trailing blank lines.
     while out and out[-1] == "":
         out.pop()

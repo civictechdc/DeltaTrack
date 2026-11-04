@@ -129,6 +129,8 @@ def group_financial_rows(df):
     clause is labeled 'sub' still forms its own group. Grouping on level=='primary'
     would silently merge such a node into the preceding node's group.
     """
+    if df.empty:
+        return []
     return [[row for _, row in grp.iterrows()] for _, grp in df.groupby("node_idx", sort=False)]
 
 

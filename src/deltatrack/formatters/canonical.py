@@ -260,6 +260,9 @@ def xml_diff_to_canonical(
     `node_ids` raises: the schema makes `node` null only when there is no tree (#816).
     """
     diffed = [c for c in (diff_dict.get("changes") or []) if c.get("change_type") != "unchanged"]
+    # Canonical output excludes unchanged entries and omits empty categories, as the
+    # PDF producer does. Internal counts stay intact for legacy consumers (#706).
+    summary = {k: v for k, v in (diff_dict.get("summary") or {}).items() if k != "unchanged" and v}
     normalized_full_text = _normalize_full_text(full_text)
     normalized_tree = _normalize_tree(tree, normalized_full_text)
     front_matter = _front_matter_node_ids(normalized_tree)
@@ -281,7 +284,7 @@ def xml_diff_to_canonical(
             {"v1": diff_dict.get("old_version_number"), "v2": diff_dict.get("new_version_number")},
             version_identities,
         ),
-        "summary": dict(diff_dict.get("summary") or {}),
+        "summary": summary,
         "full_text": normalized_full_text,
         "full_text_layout": "paragraphs" if normalized_full_text is not None else None,
         "print_breaks": None,  # XML text has no printed line breaks

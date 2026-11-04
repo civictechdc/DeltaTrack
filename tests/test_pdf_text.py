@@ -256,6 +256,12 @@ class TestFirstWordRight:
         glyphs = self._glyphs(" RELATED")  # stray leading space
         assert _first_word_right(glyphs) == glyphs[-1][2]  # 'RELATED' right edge
 
+    def test_word_gap_below_text_reconstruction_threshold(self):
+        left = self._glyphs("FIRST")
+        start = left[-1][2] + 0.22 * 11.0
+        right = [(0.0, start, start + 6.0, ord("N"), 11.0)]
+        assert _first_word_right(left + right) == left[-1][2]
+
     def test_none_when_no_content(self):
         assert _first_word_right([]) is None
 
