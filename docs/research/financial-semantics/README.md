@@ -190,13 +190,36 @@ hand. That makes them an acceptance case under ADR 0025, not independent evidenc
 implemented check reads the report's rescission rows, so `independent_evidence` stays
 `not_checked`. The emergency-designation proviso has no figure and produces none.
 
-**A recorded name, not yet an attributed account.** Both figures are referential under
-ADR 0025: they count as attributed only when the named account resolves to an account in
-the bill's structure. `text_account` is the name, not that resolution. Resolving
-`Veterans Health Administration—Medical Services` to the bill's own Medical Services
-heading needs a resolver that abstains when a name does not match, which this experiment
-does not attempt. Matching the report's abbreviated row name ("Medical Services (MS)") is
-a further step.
+**Resolving the name to an account.** Both figures are referential under ADR 0025: they
+count as attributed only when the named account resolves to an account in the bill's
+structure. `resolve_text_account` maps a `text_account` to the one parsed node whose
+trailing whole headings spell the name, ignoring only case, whitespace and the separator
+(an em dash or a comma, on both sides, so a heading's own comma matches too). It records
+that node's ordinal, which with the record's source hash and parser revision is its ADR
+0019 identity, and its heading path, kept apart from the figure's own `heading_path`. It
+abstains when no node or more than one matches, and never falls back to the figure's
+position. There is no fuzzy, substring or leaf-only matching, and a match never starts
+inside a heading. The tree is unchanged, so ADR 0018 is unaffected.
+
+Development examples, not holdouts. The expected nodes were read from each bill by hand,
+so they are an acceptance case, not independent evidence; `independent_evidence` stays
+`not_checked`.
+
+| Provision | Names | Resolved | Abstains |
+|---|---|---|---|
+| H.R. 4366 v4 SEC. 256 | Em-dash form | Medical Services (`id329E…DE3B`) and Medical Community Care (`id718C…1041`), the paragraphs under Veterans health administration | None |
+| H.R. 1865 enrolled Sec. 253 | Comma form, seven names | Six, including the one-heading name "National Cemetery Administration" | "DOD-VA Health Care Sharing Incentive Fund": the bill funds no such account |
+
+Elsewhere in the same lists, abstentions show the resolver's limits rather than errors. H.R.
+1865 Sec. 125's "Military Construction, Defense-Wide" matches three headings (titles I, IV
+and V), and its "NATO Security Investment Program" does not match the heading "Security
+investment program". Matching the committee report's abbreviated row name ("Medical
+Services (MS)") is a further step.
+
+The reach is one drafting shape. In the corpus only Military Construction and Veterans Affairs
+divisions draft rescissions as "following accounts in the amounts specified:". Other
+subcommittees name accounts as "under the heading X", or in numbered "(1) X, $N;" lists,
+which `text_account` does not read yet.
 
 ## Files
 
@@ -211,7 +234,7 @@ a further step.
 | `stress_test_detail.py` | Script: shows full text of unknown nodes per bill type |
 | `classifier_notes.md` | Design rationale: pattern decisions and intentionally-unknown categories |
 | `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, #796) |
-| `figure_example.py` | Bounded per-figure experiment (Medical Services, SEC. 256) with source occurrence, text-named accounts and explicit uncertainty |
+| `figure_example.py` | Bounded per-figure experiment (Medical Services, SEC. 256) with source occurrence, text-named accounts resolved to the bill's account nodes, and explicit uncertainty |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
 | `appropriation_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |

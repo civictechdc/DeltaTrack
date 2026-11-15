@@ -4,6 +4,7 @@ Ranges address the XML serializer's full text, not raw XML byte offsets. The hea
 path and observation ordinal come from the parser, never from financial wording. The
 heading path is where a figure sits, not its account: a general provision can rescind from
 accounts it names only in its text, so `text_account` holds the name the text gives, or
+None, and `text_account_ordinal` the one node in the same parse that name resolves to, or
 None. `fiscal_year` is the funding year of the money a figure adds, removes or refers
 to, and None unless the text states it. `independent_evidence` reports implemented checks
 only; manual source inspection is recorded in the README.
@@ -25,6 +26,9 @@ _ACCOUNT_LIST = re.compile(
 _ACCOUNT_ITEM = re.compile(
     r"\s*(?:and\s+)?(?P<account>[^;:$]+?),\s+(?P<figure>\$\d[\d,]*(?:\.\d+)?)(?<![,.])(?P<end>[;:])"
 )
+# Names join their headings with an em dash ("Veterans Health Administration—Medical
+# Services") or a comma ("Veterans Health Administration, Medical Services").
+_SEPARATOR = re.compile(r"\s*[—,]\s*")
 
 
 @dataclass(frozen=True)
@@ -43,6 +47,8 @@ class Figure:
     availability_end_year: int | None
     text_account: str | None
     text_account_span: tuple[int, int] | None
+    text_account_ordinal: int | None
+    text_account_heading_path: tuple[str, ...] | None
     independent_evidence: str = "not_checked"
 
 
@@ -64,6 +70,26 @@ def _listed_accounts(clause):
         if item.group("end") == ":":
             return listed
     return {}
+
+
+def _account_key(text):
+    return _SEPARATOR.sub("—", " ".join(text.split())).casefold()
+
+
+def resolve_text_account(bill, name):
+    """Return the ordinal of the one node whose trailing whole headings spell `name`, else None.
+
+    Only case, whitespace and the separator are normalised. A heading's own commas count as
+    separators on both sides, so "Military Construction, Defense-Wide" matches that heading,
+    but a match never starts inside a heading.
+    """
+    key = _account_key(name)
+    hits = [
+        ordinal
+        for ordinal, node in enumerate(bill.nodes)
+        if any(_account_key("—".join(node.display_path[-k:])) == key for k in range(1, len(node.display_path) + 1))
+    ]
+    return hits[0] if len(hits) == 1 else None
 
 
 def inspect_node(bill, ordinal, full_text, tree, node_ids, *, source_sha256, parser_revision):
@@ -105,6 +131,8 @@ def inspect_node(bill, ordinal, full_text, tree, node_ids, *, source_sha256, par
                     effect, role, year = "neither", "availability", int(date.group(1)) + 1
                     last = _SEPTEMBER.search(after)
                     availability_end = int(last.group(1)) if last else None
+            text_account = clause[slice(*account_span)] if account_span else None
+            account_ordinal = resolve_text_account(bill, text_account) if text_account else None
             rows.append(
                 Figure(
                     amount=figure.group(),
@@ -119,11 +147,15 @@ def inspect_node(bill, ordinal, full_text, tree, node_ids, *, source_sha256, par
                     role=role,
                     fiscal_year=year,
                     availability_end_year=availability_end,
-                    text_account=clause[slice(*account_span)] if account_span else None,
+                    text_account=text_account,
                     text_account_span=(
                         (body_start + start + account_span[0], body_start + start + account_span[1])
                         if account_span
                         else None
+                    ),
+                    text_account_ordinal=account_ordinal,
+                    text_account_heading_path=(
+                        bill.nodes[account_ordinal].display_path if account_ordinal is not None else None
                     ),
                 )
             )

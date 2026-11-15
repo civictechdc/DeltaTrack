@@ -8,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "docs" / "research" / "financial-semantics"))
 
-from figure_example import inspect_node  # noqa: E402
+from figure_example import inspect_node, resolve_text_account  # noqa: E402
 
 from deltatrack.bill_tree import normalize_bill  # noqa: E402
 from deltatrack.formatters.text_serializer import build_xml_full_text  # noqa: E402
@@ -70,6 +70,17 @@ def test_sec_256_figures_record_the_account_their_text_names_not_the_heading_pat
     ]
     assert all(text["v1"][slice(*r.text_account_span)] == r.text_account for r in rows)
     assert rows[0].text_account_span[1] < rows[0].start < rows[1].text_account_span[0] < rows[1].start
+    # Each name resolves to the bill's own account paragraph, never to SEC. 256 itself.
+    accounts = [
+        next(i for i, n in enumerate(bill.nodes) if n.element_id == element_id)
+        for element_id in ("id329E342A01664C9E8E19C02E0090DE3B", "id718C424227D44391B8BBB737D3B71041")
+    ]
+    assert [r.text_account_ordinal for r in rows] == accounts
+    assert [r.text_account_heading_path for r in rows] == [bill.nodes[i].display_path for i in accounts]
+    assert [r.text_account_heading_path[-2:] for r in rows] == [
+        ("Veterans health administration", "MEDICAL SERVICES"),
+        ("Veterans health administration", "MEDICAL COMMUNITY CARE"),
+    ]
     assert all(
         r.heading_path[-2:] == ("Administrative provisions", "Sec. 256")
         and r.ordinal == index
@@ -80,6 +91,73 @@ def test_sec_256_figures_record_the_account_their_text_names_not_the_heading_pat
         and r.independent_evidence == "not_checked"
         for r in rows
     )
+
+
+@pytest.mark.slow
+def test_sec_253_comma_named_accounts_resolve_and_an_unfunded_account_abstains():
+    # Development example, not a holdout: expected nodes read from the bill by hand.
+    path = fixture_path("116-hr-1865", "6_enrolled-bill.xml")
+    bill = normalize_bill(path)
+    index = next(i for i, n in enumerate(bill.nodes) if n.element_id == "H00F953F267F54EA4BBB75D4FB4D7B3A1")
+    text, _, trees, ids = build_xml_full_text(bill, bill)
+    rows = inspect_node(bill, index, text["v1"], trees["v1"], ids["v1"], source_sha256="x", parser_revision="x")
+    element_ids = [
+        None if r.text_account_ordinal is None else bill.nodes[r.text_account_ordinal].element_id for r in rows
+    ]
+    resolved = [(r.amount, r.text_account, element_id) for r, element_id in zip(rows, element_ids, strict=True)]
+    # The bill funds no DOD-VA Health Care Sharing Incentive Fund, so that name stays unresolved.
+    assert resolved == [
+        ("$350,000,000", "Veterans Health Administration, Medical Services", "H6C9A4E6521354B8F86C8F96B8564D061"),
+        (
+            "$10,000,000",
+            "Veterans Health Administration, Medical Support and Compliance",
+            "HD18581BD1FCE478082117AD6D0604EAD",
+        ),
+        (
+            "$50,000,000",
+            "Veterans Health Administration, Medical and Prosthetic Research",
+            "HC3764AFBD78E42FA914627CC3D234676",
+        ),
+        ("$15,949,000", "Veterans Health Administration, DOD-VA Health Care Sharing Incentive Fund", None),
+        ("$1,000,000", "National Cemetery Administration", "HB8FDA016313249C6BA9F3D339722435E"),
+        ("$8,000,000", "Departmental Administration, Board of Veterans Appeals", "HC79DC254C6CB49F1B6F0A0B36D3F3246"),
+        (
+            "$70,000,000",
+            "Departmental Administration, Veterans Electronic Health Record",
+            "H7B19699A669548AB8AC54F0CC6230F31",
+        ),
+    ]
+    assert all(r.text_account_heading_path is None for r in rows if r.text_account_ordinal is None)
+    assert all(r.fiscal_year is None and r.heading_path[-1] == "Sec. 253" for r in rows)
+
+
+def test_text_account_resolves_only_to_exactly_one_whole_heading_match():
+    from tests.conftest import make_bill_node, make_bill_tree
+
+    bill = make_bill_tree(
+        nodes=[
+            make_bill_node(("Division A", "Agency A", "SALARIES AND EXPENSES")),
+            make_bill_node(("Division A", "Agency B", "SALARIES AND EXPENSES")),
+            make_bill_node(("Division A", "Agency C", "OPERATIONS")),
+            make_bill_node(("Division A", "Agency E", "GRANTS")),
+            make_bill_node(("Division B", "Agency E", "GRANTS")),
+            make_bill_node(("Division B", "Agency F", "Construction, Defense-Wide")),
+        ]
+    )
+    cases = {
+        "Agency A—Salaries and Expenses": 0,
+        "agency  b,\nsalaries and expenses": 1,
+        "Agency F—Construction, Defense-Wide": 5,
+        # Same leaf, another agency: a leaf-only match would pick the wrong account.
+        "Agency C—Salaries and Expenses": None,
+        "Agency D—Operations": None,
+        "Agency E—Grants": None,
+        "Agency A—Salaries": None,
+        "Agency C—Operation": None,
+        "Defense-Wide": None,
+        "Agency Z—Grants": None,
+    }
+    assert {name: resolve_text_account(bill, name) for name in cases} == cases
 
 
 def test_repeated_occurrences_remain_separate_and_unknown_is_not_guessed():
