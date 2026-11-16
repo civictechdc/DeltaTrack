@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -23,6 +24,7 @@ from rescission_agreement import (  # noqa: E402
     read_rows,
     report_titles,
     statement_rows,
+    wire,
 )
 
 from deltatrack.bill_tree import normalize_bill  # noqa: E402
@@ -195,7 +197,7 @@ def test_report_titles_follow_read_rows_title_and_section_precedence():
         ]
     )
     # A centered TITLE line also matches the section pattern; read_rows tests the title first.
-    # read_rows selects a title by name and stops at the first, so a repeated name reads neither.
+    # read_rows selects a title by name and reads only the first, so the run reads neither copy.
     assert report_titles(report) == [
         ReportTitle("AGENCY", "I", "read"),
         ReportTitle("OTHER", "II", "no_report_block"),
@@ -253,6 +255,8 @@ def test_statement_rows_count_rescission_lines_with_a_committee_figure():
             f"      Total, rescissions (rescission)...{_CELLS}",
             "Wrapped label with no rescission           1       2       3       4       5",
             " (Sec 106)..............................",
+            "Wrapped with its cells below (Sec 107)",
+            f" (rescission)..........................{_CELLS}",
             "              TITLE II--OTHER",
             f"Elsewhere (Sec 201) (rescission).......{_CELLS}",
         ]
@@ -266,6 +270,7 @@ def test_statement_rows_count_rescission_lines_with_a_committee_figure():
         "Wrapped label for an account",
         "Four columns",
         "A note on a",
+        "Wrapped with its cells below",
     ]
 
 
@@ -299,8 +304,14 @@ def test_wiring_reproduces_the_dev_pair():
     blocks, _ = bill_blocks(bill)
     assert BillBlock(BILL_BLOCK, "strict", "II") in blocks
     assert {b.form for b in blocks} == {"strict", "widened"}
-    assert report_titles(extract_pre_text(REPORT.read_text())) == [
+    assert report_titles(extract_pre_text(REPORT.read_bytes().decode("utf-8"))) == [
         ReportTitle("DEPARTMENT OF DEFENSE", "I", "read"),
         ReportTitle("DEPARTMENT OF VETERANS AFFAIRS", "II", "read"),
         ReportTitle("RELATED AGENCIES", "III", "no_report_block"),
     ]
+    # Titles are joined by numeral, which is ambiguous across divisions, so wiring refuses them.
+    dev_pair = SimpleNamespace(
+        slug="dev", report_html_path=REPORT, bill_xml_path=fixture_path(*BILL), bill_id=BILL[0], version=BILL[1]
+    )
+    with pytest.raises(ValueError, match="division"):
+        wire(dev_pair)

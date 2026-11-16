@@ -268,14 +268,20 @@ _NUMERAL = re.compile(r"TITLE (?P<numeral>[IVXLC]+)--")
 _BILL_TITLE = re.compile(r"^TITLE (?P<numeral>[IVXLC]+)(?:—|$)")
 _PHRASE = "administrative provisions"
 _WIDENED = re.compile(rf"^{_PHRASE}—\S")
-# The tail of a wrapped account line: one space of indent, then the label's end and leaders.
-_WRAP_TAIL = re.compile(r"^\s\S.*\.{2,}\s*$")
+# The tail of a wrapped account line is indented by one space.
+_WRAP_TAIL = re.compile(r"^\s\S")
 
 
 def _statement(report_text: str) -> list[str]:
     lines = report_text.split("\n")
     starts = [i for i, line in enumerate(lines) if _STATEMENT in line]
     return lines[max(starts) :] if starts else []
+
+
+def _bill_title(path: tuple[str, ...]):
+    """The index of a heading path's title, below at most one leading division, and its match."""
+    start = 1 if path and path[0].startswith("Division ") else 0
+    return start, _BILL_TITLE.match(path[start]) if len(path) > start else None
 
 
 def report_titles(report_text: str) -> list[ReportTitle]:
@@ -308,8 +314,7 @@ def bill_blocks(bill) -> tuple[list[BillBlock], list[tuple[str, ...]]]:
     named: dict[tuple[str, ...], None] = {}
     for node in bill.nodes:
         path = node.display_path
-        start = 1 if path and path[0].startswith("Division ") else 0
-        title = _BILL_TITLE.match(path[start]) if len(path) > start else None
+        start, title = _bill_title(path)
         for depth, heading in enumerate(path):
             folded = heading.casefold()
             if _PHRASE not in folded:
@@ -434,12 +439,14 @@ def wire(jurisdiction) -> PairWiring:
     """
     report_text = extract_pre_text(jurisdiction.report_html_path.read_bytes().decode("utf-8"))
     bill = normalize_bill(jurisdiction.bill_xml_path)
+    if any(_bill_title(node.display_path)[0] for node in bill.nodes):
+        raise ValueError(f"{jurisdiction.slug}: titles are joined by numeral, which a division makes ambiguous")
     blocks, unmatched = bill_blocks(bill)
     bill_titles: dict[str, str] = {}
     for node in bill.nodes:
         path = node.display_path
-        start = 1 if path and path[0].startswith("Division ") else 0
-        if len(path) > start and (title := _BILL_TITLE.match(path[start])):
+        start, title = _bill_title(path)
+        if title:
             bare = path[start] == title[0] and len(path) > start + 1
             bill_titles.setdefault(title["numeral"], " › ".join(path[start : start + 1 + bare]))
     return PairWiring(
