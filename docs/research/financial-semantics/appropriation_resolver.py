@@ -286,21 +286,31 @@ ADDITIONAL_SENTENCE = re.compile(r"(?<=\.)\s+(?=In addition\b)")
 IN_ADDITION_TO_FUNDS = re.compile(r"^In addition to (?:other )?(?:funds|amounts)\b", re.IGNORECASE)
 
 
-def _added_by_provisos(flat: str) -> int:
+# Each rule reads its own part of the paragraph, so no figure is added twice: the account's
+# sentence and each "In addition" sentence are read up to their first proviso by the phrase rules
+# and `_added_by_sentences`, and each proviso by `_added_by_provisos`, ending where the next
+# "In addition" sentence begins. Figures count by occurrence: two additions of the same amount are
+# two appropriations.
+def _clause(sentence: str) -> str:
+    return cb.PROVIDED_RE.split(sentence, maxsplit=1)[0]
+
+
+def _added_by_provisos(sentences: list[str]) -> int:
     added = 0
-    for proviso in cb.PROVIDED_RE.split(flat)[1:]:
-        if not HEREIN_PROVISO.match(proviso):
-            continue
-        for m in FIGURE.finditer(proviso):
-            if not LIMITED.search(proviso[max(0, m.start() - 40) : m.start()].rstrip(" ,:;")):
-                added += _value(m.group(1))
+    for sentence in sentences:
+        for proviso in cb.PROVIDED_RE.split(sentence)[1:]:
+            if not HEREIN_PROVISO.match(proviso):
+                continue
+            for m in FIGURE.finditer(proviso):
+                if not LIMITED.search(proviso[max(0, m.start() - 40) : m.start()].rstrip(" ,:;")):
+                    added += _value(m.group(1))
     return added
 
 
-def _added_by_sentences(flat: str) -> int:
+def _added_by_sentences(sentences: list[str]) -> int:
     added = 0
-    for sentence in ADDITIONAL_SENTENCE.split(flat)[1:]:
-        explicit = EXPLICIT.search(sentence) if IN_ADDITION_TO_FUNDS.match(sentence) else None
+    for sentence in sentences:
+        explicit = EXPLICIT.search(_clause(sentence)) if IN_ADDITION_TO_FUNDS.match(sentence) else None
         if explicit:
             added += _value(explicit.group(1) or explicit.group(2))
     return added
@@ -312,7 +322,8 @@ def resolve_total(text: str) -> int | None:
     if top is None:
         return None
     flat = " ".join(strip_amendment_annotations(text).split())
-    operative = cb.PROVIDED_RE.split(flat, maxsplit=1)[0]
+    sentences = ADDITIONAL_SENTENCE.split(flat)
+    operative = _clause(sentences[0])
     if IN_ALL.search(operative):
         return top  # an "in all" figure is already the total
     total = top
@@ -321,7 +332,7 @@ def resolve_total(text: str) -> int | None:
         total = _value(second.group(1)) + _value(second.group(2))
     for pattern in (TOGETHER_WITH, IN_ADDITION, PREVIOUSLY):
         total += sum(_value(m.group(1)) for m in pattern.finditer(operative))
-    return total + _added_by_provisos(flat) + _added_by_sentences(flat)
+    return total + _added_by_provisos(sentences) + _added_by_sentences(sentences[1:])
 
 
 def select_named_total(text: str, name: str, heading: str) -> Selection:

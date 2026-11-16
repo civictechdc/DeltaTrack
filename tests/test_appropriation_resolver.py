@@ -276,6 +276,20 @@ def test_a_later_sentence_adds_money_only_when_it_says_it_appropriates():
     assert resolve_total(reimbursement) == 1_130_000_000
 
 
+def test_a_proviso_and_a_later_sentence_that_both_add_count_each_figure_once():
+    """Each rule reads its own part of the paragraph: a proviso ends where the next "In addition"
+    sentence begins, so that sentence's figure is added once, by the sentence rule. Figures count by
+    occurrence, so two additions of the same amount both count."""
+    both = (
+        "For program support, $10,000,000: Provided further, That in addition to amounts provided herein, "
+        "$2,000,000 shall be available under section 241 of the PHS Act. In addition to other funds "
+        "appropriated for this account, $3,000,000 is appropriated to this account."
+    )
+    same_amount = both.replace("$2,000,000", "$3,000,000")
+    assert resolve_total(both) == 15_000_000
+    assert resolve_total(same_amount) == 16_000_000
+
+
 @pytest.mark.parametrize(
     ("text", "figure"),
     [
