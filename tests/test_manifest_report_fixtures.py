@@ -516,17 +516,25 @@ def test_no_committed_report_fixture_is_orphaned():
     hypothetical: tightening the pairing rule left H. Rept. 118-364 attached to no
     version, orphaning the fixture that had just been vendored for it.
 
-    Two reference sources, because report fixtures serve two consumers:
-    corpus_manifest.toml (the pairing gates) and tests/validation_sources.py (the
+    Three reference sources, because report fixtures serve three consumers:
+    corpus_manifest.toml (the pairing gates), tests/validation_sources.py (the
     amount-validation tiers), which builds its package IDs by f-string and so cannot
-    be found by grepping for them.
+    be found by grepping for them, and the research rescission-row check, which reads
+    S.Rept. 118-43 against a version the report does not explain, so no manifest
+    entry may name it.
     """
+    import sys
+
     import tests.validation_sources as validation_sources
     from scripts.report_pairing import fixture_stem
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "docs" / "research" / "financial-semantics"))
+    import rescission_agreement
 
     referenced = {
         fixture_stem(s["pkg"], s.get("granule")) for sources in _REPORT_PKGS.values() for s in sources if s.get("pkg")
     }
+    referenced.add(rescission_agreement.REPORT.stem)
     for name in dir(validation_sources):
         obj = getattr(validation_sources, name)
         if isinstance(obj, (list, tuple, dict)):
