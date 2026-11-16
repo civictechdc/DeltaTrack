@@ -54,7 +54,8 @@ def test_medical_services_figures_keep_effect_year_and_source_occurrence():
 @pytest.mark.slow
 def test_sec_256_figures_record_the_account_their_text_names_not_the_heading_path():
     # Expected accounts and amounts: S.Rept. 118-43's Administrative Provisions rows for
-    # Sec 256, read by hand. v4's SEC. 256 is the committee bill's text unchanged.
+    # Sec 256, read by hand; test_research_rescission_agreement reads them from the report.
+    # v4's SEC. 256 is the committee bill's text unchanged.
     path = fixture_path("118-hr-4366", "4_engrossed-amendment-senate.xml")
     bill = normalize_bill(path)
     index = next(i for i, n in enumerate(bill.nodes) if n.element_id == "id3887A33BE65840BBBAF6286558009337")

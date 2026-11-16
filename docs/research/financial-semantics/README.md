@@ -129,9 +129,9 @@ What this corroborates for each occurrence in the experiment:
 
 Availability end years are not corroborated for any occurrence. The account-level
 reconciliation does not validate SEC. 256's own figures; the next section does.
-`independent_evidence` reports implemented checks only. None exists, so every
-record still says `not_checked`, and the manual findings are recorded here, not in the
-record. This known development example is not a holdout and is not stage 1 readiness
+`independent_evidence` reports implemented checks only. No check reads the account-level
+rows, so these four records still say `not_checked`, and the manual findings are recorded
+here, not in the record. This known development example is not a holdout and is not stage 1 readiness
 evidence.
 
 ### SEC. 256: accounts named only in the text
@@ -175,8 +175,9 @@ How the report applies to v4, checked rather than assumed:
   rescinds from either account.
 - **Report retrieved** from
   [govinfo](https://www.govinfo.gov/content/pkg/CRPT-118srpt43/html/CRPT-118srpt43.htm)
-  (sha256 `a17c6d439afe62e20b33c242822366c9f0963ba20253c41a9a97962226b13d15`). Neither file
-  is committed.
+  (sha256 `a17c6d439afe62e20b33c242822366c9f0963ba20253c41a9a97962226b13d15`) and committed
+  as `tests/data/CRPT-118srpt43.htm`; the check refuses any other bytes. The S. 2127 XML is
+  not committed, so the same-text finding above is manual.
 
 **Funding years: unresolved.** `fiscal_year` is the funding year of the money a figure
 adds, removes or refers to. SEC. 256 rescinds "unobligated balances ... from prior
@@ -185,10 +186,10 @@ records hold None. Neither source states the years either. The report lists the
 rescissions in its FY2024 budget-authority statement, which places them in this bill, not
 in a year of the balances. CRS's FY2024 subtotal is no evidence of them, as above.
 
-**Evidence status.** The test's expected accounts and amounts were read from the report by
-hand. That makes them an acceptance case under ADR 0025, not independent evidence. No
-implemented check reads the report's rescission rows, so `independent_evidence` stays
-`not_checked`. The emergency-designation proviso has no figure and produces none.
+**Evidence status.** `figure_example.py`'s own test reads its expected accounts and amounts
+from the report by hand, an acceptance case under ADR 0025. The rescission-row check below
+reads them from the report, and is what moves `independent_evidence`. The
+emergency-designation proviso has no figure and produces none.
 
 **Resolving the name to an account.** Both figures are referential under ADR 0025: they
 count as attributed only when the named account resolves to an account in the bill's
@@ -213,13 +214,44 @@ so they are an acceptance case, not independent evidence; `independent_evidence`
 Elsewhere in the same lists, abstentions show the resolver's limits rather than errors. H.R.
 1865 Sec. 125's "Military Construction, Defense-Wide" matches three headings (titles I, IV
 and V), and its "NATO Security Investment Program" does not match the heading "Security
-investment program". Matching the committee report's abbreviated row name ("Medical
-Services (MS)") is a further step.
+investment program". The rescission-row check below matches the committee report's
+abbreviated row names.
 
 The reach is one drafting shape. In the corpus only Military Construction and Veterans Affairs
 divisions draft rescissions as "following accounts in the amounts specified:". Other
 subcommittees name accounts as "under the heading X", or in numbered "(1) X, $N;" lists,
 which `text_account` does not read yet.
+
+### SEC. 256 against S.Rept. 118-43's rescission rows
+
+`rescission_agreement.py` implements ADR 0025's rescission-row check for one block: the
+report's VA Administrative Provisions rows, "Committee recommendation" column, against
+every figure `figure_example.py` records under v4's `TITLE II › DEPARTMENT OF VETERANS
+AFFAIRS › Administrative provisions`. A row matches a figure typed as a rescission when the
+row's account resolves to the figure's `text_account_ordinal` and the row's thousands,
+converted to dollars and unsigned, equal the figure. Its docstring holds the outcome table
+and the rule that turns a row name into an account; `uv run python
+docs/research/financial-semantics/rescission_agreement.py` prints every row and figure.
+Only SEC. 255 and SEC. 256 are scored, the two provisions whose text was checked to be the
+same in S. 2127 as reported (above). Every other figure in the block is
+`text_not_compared`.
+
+| Report row (thousands) | Account it resolves to | Outcome |
+|---|---|---|
+| Medical Services (MS) (Sec 238 (Req)/Sec 256), −1,000,000 | Medical Services (`id329E…DE3B`) | `agree`: SEC. 256's $1,000,000,000 |
+| Medical Community Care (MCC) (Sec 238 (Req)/Sec 256), −976,005 | Medical Community Care (`id718C…1041`) | `agree`: SEC. 256's $976,005,000 |
+| Veterans Electronic Health Record (Sec 255), −439,750 | Veterans Electronic Health Record (`idDB9C…D0FA`) | `missed`: SEC. 255's $439,750,000 is typed as a rescission, but its "under the heading" account is unread |
+| Medical Facilities (Sec 238) and (Sec 239) | Medical Facilities | `not_recommended`: the column is blank |
+| Recurring Expenses Transformational Fund (Sec 257) | None: the bill funds no such account | `not_recommended` |
+| Asset and Infrastructure Review (Sec 255) | None: the title has no account line of that name | `not_recommended` |
+| Major Construction (Sec 255) | None: the title's line is "Construction, major projects" | `not_recommended` |
+
+So SEC. 256's two records move to `committee_report_agrees`. SEC. 255's figure stays
+`not_checked` with outcome `account_unresolved`, the same gap as above seen from the
+report's side. Funding years stay None. The match corroborates account, amount and sign
+for S. 2127's text, which carries to v4 only through the manual same-text finding. Accounts
+the bill funds in more than one paragraph are not handled: the name resolver abstains on
+them.
 
 ## Files
 
@@ -235,6 +267,7 @@ which `text_account` does not read yet.
 | `classifier_notes.md` | Design rationale: pattern decisions and intentionally-unknown categories |
 | `committee_agreement.py` | Scores the figure typed as each account's appropriation against the answer key's figure for that account (committee reports, and one Legislative Branch spreadsheet), reported per source (ADR 0025, #796) |
 | `figure_example.py` | Bounded per-figure experiment (Medical Services, SEC. 256) with source occurrence, text-named accounts resolved to the bill's account nodes, and explicit uncertainty |
+| `rescission_agreement.py` | Matches S.Rept. 118-43's VA Administrative Provisions rescission rows to figures by resolved account and exact amount, and moves `independent_evidence` where they match (ADR 0025) |
 | `appropriation_resolver.py` | Picks the one figure an appropriations paragraph appropriates, the way the paragraph is drafted, or abstains |
 | `rollup_agreement.py` | Adds the typed figures up per agency and checks them against the committee report's "Total, <agency>" lines |
 | `appropriation_precision.py` | Starts from every figure the resolver types, not from the answer key, and asks what the report says about it: precision beside `committee_agreement.py`'s recall |
