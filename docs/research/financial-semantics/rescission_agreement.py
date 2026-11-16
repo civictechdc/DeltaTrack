@@ -58,7 +58,9 @@ import argparse
 import dataclasses
 import hashlib
 import re
+import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -477,10 +479,158 @@ def print_wiring(wiring: PairWiring) -> None:
         print(f"  unmatched_heading_form  {' › '.join(path)}")
 
 
+# The frozen code's known raises: read_rows' two ValueErrors and a group-form label's None cells
+# (AttributeError); _cell's int(); inspect_node's missing body span and its one-target unpack.
+_FROZEN_ERRORS = (ValueError, AttributeError)
+RUNS = {"strict": {"strict"}, "widened": {"strict", "widened"}}
+
+
+@dataclass
+class PairRun:
+    wiring: PairWiring
+    bill: object
+    report_sha256: str
+    bill_sha256: str
+    errors: list[str]
+    statement: dict[str, StatementRows]  # title name -> its rescission lines
+    read: dict[str, list[Row]]  # title name -> rows read_rows returned
+    outcomes: dict[str, tuple[list[Outcome], list[Outcome]]]  # run -> pooled outcomes
+
+
+def held_out(wiring: PairWiring) -> PairRun:
+    """Run the frozen check once over one wired pair, for each of the strict and widened runs."""
+    report_text, bill, inputs, identity = load(wiring.report, wiring.bill_file, None)
+    errors, read, figures = [], {}, {}
+    for title in wiring.titles:
+        if title.outcome != "read":
+            continue
+        try:
+            read[title.name] = read_rows(report_text, title.name, bill)
+        except _FROZEN_ERRORS as e:
+            errors.append(f"report_reader_error  {title.numeral} {title.name}: {type(e).__name__}: {e}")
+    for block in wiring.blocks:
+        try:
+            figures[block] = block_figures(bill, block.path, *inputs, **identity)
+        except _FROZEN_ERRORS as e:
+            errors.append(f"bill_inspect_error  {' › '.join(block.path)}: {type(e).__name__}: {e}")
+    if wiring.blocks and not figures:
+        raise RuntimeError(f"{wiring.slug}: every bill block raised, a harness fault: {errors}")
+    statement = {t.name: statement_rows(report_text, t.name) for t in wiring.titles}
+    for name, rows in read.items():
+        recommended = Counter(r.label for r in rows if r.committee_thousands is not None)
+        if recommended - Counter(statement[name].counted):
+            raise RuntimeError(f"{wiring.slug} {name}: read_rows returned a row statement_rows does not count")
+    outcomes = {
+        run: pool(read, {b: f for b, f in figures.items() if b.form in forms}, same_text=None)
+        for run, forms in RUNS.items()
+    }
+    return PairRun(
+        wiring,
+        bill,
+        hashlib.sha256(wiring.report.read_bytes()).hexdigest(),
+        hashlib.sha256(fixture_path(*wiring.bill_file).read_bytes()).hexdigest(),
+        errors,
+        statement,
+        read,
+        outcomes,
+    )
+
+
+def _percent(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.0%}"
+
+
+def print_run(result: PairRun) -> None:
+    bill, wiring = result.bill, result.wiring
+    read_numerals = {t.numeral for t in wiring.titles if t.outcome == "read"}
+    numeral = {t.name: t.numeral for t in wiring.titles}
+
+    def account(ordinal):
+        return "—" if ordinal is None else " › ".join(bill.nodes[ordinal].display_path[-2:])
+
+    print_wiring(wiring)
+    print(f"  report sha256 {result.report_sha256}\n  bill sha256   {result.bill_sha256}")
+    for error in result.errors:
+        print(f"  {error}")
+    counted = sum(len(s.counted) for s in result.statement.values())
+    unparsed = sum(len(s.unparsed) for s in result.statement.values())
+    for run, (rows, figures) in result.outcomes.items():
+        agreed = [o.subject for o in figures if o.outcome == "agree"]
+        crossed = sum(
+            o.outcome == "agree"
+            and not any(
+                f.text_account_ordinal == o.subject.account_ordinal and b.numeral == numeral[o.where]
+                for f, b in ((f.subject, f.where) for f in figures if f.outcome == "agree")
+            )
+            for o in rows
+        )
+        scored = [o for o in figures if o.subject.role == "rescission" or o.outcome in EVIDENCE]
+        print(f"  -- {run} run")
+        print(f"     rows     {dict(Counter(o.outcome for o in rows))}")
+        print(f"     figures  {dict(Counter(o.outcome for o in figures))}")
+        print(
+            "     figures by whether the block's report title is read: "
+            f"read {dict(Counter(o.outcome for o in figures if o.where.numeral in read_numerals))}, "
+            f"not read {dict(Counter(o.outcome for o in figures if o.where.numeral not in read_numerals))}"
+        )
+        print(
+            f"     coverage {_percent(coverage(rows))}  statement-wide {_percent(coverage(rows, counted))}"
+            f" ({_percent(coverage(rows, counted + unparsed))} with {unparsed} unparsed)"
+            f"  cross-title agree {crossed}  agreed figures {len(agreed)}"
+        )
+        for o in rows:
+            amount = "—" if o.subject.committee_thousands is None else f"{o.subject.committee_thousands:,}"
+            print(
+                f"     row    {numeral[o.where]:>5} {o.outcome:19}{amount:>12}  {o.subject.label}"
+                f"  ->  {account(o.subject.account_ordinal)}"
+            )
+        for o in scored:
+            f = o.subject
+            print(
+                f"     figure {o.where.numeral:>5} {o.outcome:19}{f.amount:>16}  {f.heading_path[-1]}"
+                f"  ->  {account(f.text_account_ordinal)}  [{f.independent_evidence}]"
+            )
+    (strict_rows, strict_figures), (widened_rows, widened_figures) = result.outcomes.values()
+    for a, b in zip(strict_rows, widened_rows):
+        if a.outcome != b.outcome:
+            print(f"     strict->widened row    {a.outcome} -> {b.outcome}  {a.subject.label}")
+    strict_by_figure = {(o.subject.element_id, o.subject.start): o.outcome for o in strict_figures}
+    for o in widened_figures:
+        key = (o.subject.element_id, o.subject.start)
+        if key in strict_by_figure and strict_by_figure[key] != o.outcome:
+            print(f"     strict->widened figure {strict_by_figure[key]} -> {o.outcome}  {o.subject.amount}")
+    for name, lines in result.statement.items():
+        seen = Counter(r.label for r in result.read.get(name, []))
+        unread = list((Counter(lines.counted + lines.not_recommended) - seen).elements())
+        for label in unread:
+            print(f"     statement row not read {numeral[name]:>5}  {label}")
+        for line in lines.unparsed:
+            print(f"     statement unparsed     {numeral[name]:>5}  {line!r}")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--wiring", action="store_true", help="the held-out wiring only: no rows, no figures")
+    parser.add_argument("--held-out", action="store_true", help="run the check once over every held-out pair")
     args = parser.parse_args(argv)
+    if args.held_out:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=HERE).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=HERE).stdout
+        print(f"commit {head}  tree {'dirty' if dirty.strip() else 'clean'}  parser {parser_revision()}")
+        results = [held_out(wire(jurisdiction)) for jurisdiction in JURISDICTIONS]
+        for result in results:
+            print_run(result)
+        print("== pooled over the 13 pairs")
+        for run in RUNS:
+            rows = [o for r in results for o in r.outcomes[run][0]]
+            counted = sum(len(s.counted) for r in results for s in r.statement.values())
+            unparsed = sum(len(s.unparsed) for r in results for s in r.statement.values())
+            print(
+                f"  {run:8} rows {dict(Counter(o.outcome for o in rows))}  coverage {_percent(coverage(rows))}"
+                f"  statement-wide {_percent(coverage(rows, counted))} ({counted} counted,"
+                f" {_percent(coverage(rows, counted + unparsed))} with {unparsed} unparsed)"
+            )
+        return 0
     if args.wiring:
         for jurisdiction in JURISDICTIONS:
             print_wiring(wire(jurisdiction))
