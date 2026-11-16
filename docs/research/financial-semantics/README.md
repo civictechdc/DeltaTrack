@@ -355,10 +355,10 @@ office of an itemised paragraph).
 **How far to trust the numbers.** The rules were written from six answer keys (`DEV` in the
 script) and frozen at d394669 before the other eight (`HELD_OUT`) were scored. That frozen version
 typed 0 wrong figures on the held-out accounts (the baseline 3) but agreed on 389 against the
-baseline's 401, because it abstained more. Reading those abstentions produced the current rules,
-which agreed on 404, still with 0 wrong figures (on the keys before the rebuild; on the rebuilt
-keys, which map 17 more held-out accounts, they agree on 432 of 501, still with 0), but the
-held-out set has now been seen, so that is no longer an unbiased estimate. A fresh answer key (`scripts/build_validation.py` on another
+baseline's 401, because it abstained more. Reading those abstentions produced rules that agreed
+on 404, still with 0 wrong figures, on the keys before the rebuild. On the rebuilt keys, which map
+17 more held-out accounts, the current rules agree on 441 of 501, still with 0 wrong figures, but
+the held-out set has now been seen, so that is no longer an unbiased estimate. A fresh answer key (`scripts/build_validation.py` on another
 fiscal year or the House-reported bills) is the next honest test.
 
 **Open questions this leaves.**
@@ -393,14 +393,14 @@ uv run python tools/fetch_bills.py download 118 hr 4366
 
 The scripts use only stdlib and the project's core dependencies. The Jupyter notebooks use `pandas`, which is in the `dev` dependency group. Running `uv sync` installs everything — no extra steps needed.
 
-**What the 84% is made of.** It is not a quality score for the resolver. Of the 1,203 accounts,
+**What the 85% is made of.** It is not a quality score for the resolver. Of the 1,203 accounts,
 105 are answer-key lines finer than the bill's paragraph (several offices of one "including: ..."
 paragraph, 101 of them from the spreadsheet) and 61 have no single figure in the account's text
 equal to the answer key's, so no
 method that types one figure per account, rules or a model, can agree on those 166. Where one
-figure can, the resolver agrees on 1,012 of 1,037 (97.6%). Typing **every** figure (naming the
+figure can, the resolver agrees on 1,026 of 1,037 (98.9%). Typing **every** figure (naming the
 itemised lines, summing an account's appropriating figures) would raise the ceiling to at most
-1,124 (93.4%): 101 of the 105 are a figure printed in the paragraph, and 11 of the 61 are a sum
+1,138 (94.6%): 101 of the 105 are a figure printed in the paragraph, and 11 of the 61 are a sum
 of two to four figures before its first proviso. The rest are report-versus-bill differences
 that only hand-tracing settles.
 
@@ -464,7 +464,8 @@ money to an account and say so, now added by `resolve_total`:
 
 Three accounts now agree (NIH Office of the Director, Substance Abuse Treatment, Health
 Surveillance and Program Support), no account that agreed is lost, and the wrong figures stay at
-the one gross-versus-net account; committee-report agreement goes from 658 to 661 of 752. Three
+the one gross-versus-net account; committee-report agreement goes from 658 to 661 of 752 (on the
+keys before the rebuild, as is this section's held-out figure). Three
 more come closer without agreeing (Mental Health, Aging and Disability Services, General
 Departmental Management). HELD_OUT, where Labor-HHS sits, moves to 86.2%, after reading it.
 
@@ -498,7 +499,8 @@ in another form, and `appropriates` reads those four forms beside `classify_bill
 - an opening that adds to other funds: "In addition to funds made available from any other source
   to carry out the essential air service program ..., $423,000,000".
 
-All 14 now agree and no other account changes: committee reports go from 661 to 675 of 752, the
+All 14 now agree and no other account changes: committee reports go from 661 to 675 of 752 (on the
+keys before the rebuild), the
 wrong figures stay at the one gross-versus-net account, and no figure the source does not confirm
 is added. The remaining five are one-offs left alone: a fuel-cost increase to a whole title, GSA's
 revenue limitation, a "such sums" trust fund with a capped administrative amount, a reserve derived
