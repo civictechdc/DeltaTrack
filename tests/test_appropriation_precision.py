@@ -61,27 +61,21 @@ def test_precision_scores_confirmed_figures_and_leaves_finer_ones_out():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    ("resolver", "expected"),
-    [
-        ("baseline", (6_872_405_000, "unkeyed/row")),
-        ("structured", (25_000, "unkeyed/text")),
-        ("summed", (25_000, "unkeyed/text")),
-    ],
-)
-def test_the_fda_allowance_typed_as_its_appropriation_is_seen_from_this_direction(resolver, expected):
+@pytest.mark.parametrize("resolver", ["baseline", "structured", "summed"])
+def test_the_fda_appropriation_found_from_this_direction_stays_typed(resolver):
     """Salaries and Expenses of the FDA appropriates $6,872,405,000, after a purpose clause that
-    allows "not to exceed $25,000" for enforcement expenses. The baseline strips the cap phrase and
-    types the appropriation; the structured and summed resolvers type the allowance. The answer key
-    has no line for the account, so committee_agreement cannot see the regression; this
-    direction lists the allowance as a typed figure the report states as no account's figure."""
+    allows "not to exceed $25,000" for enforcement expenses. Every resolver types the appropriation,
+    a row of the report's comparative statement. The answer key has no line for the account, so
+    committee_agreement cannot check it; this direction does.
+
+    History: the structured and summed resolvers typed the $25,000 allowance until #879."""
     results = ap.measure(ca.TEXT_RESOLVERS[resolver])
     fda = [
         r
         for r in results
         if r.jurisdiction == "agriculture" and r.path[-1] == "salaries and expenses" and "Food and Drug" in r.text
     ]
-    assert [(r.typed, r.outcome) for r in fda] == [expected]
+    assert [(r.typed, r.outcome) for r in fda] == [(6_872_405_000, "unkeyed/row")]
 
 
 @pytest.mark.slow
@@ -91,8 +85,8 @@ def test_precision_and_recall_match_the_measurement_the_readme_quotes():
     and update the README table and this expectation together."""
     for name, confirmed, unconfirmed, recalled in (
         ("baseline", 894, 91, 693),
-        ("structured", 901, 70, 705),
-        ("summed", 908, 63, 715),
+        ("structured", 917, 70, 719),
+        ("summed", 926, 61, 732),
     ):
         resolver = ca.TEXT_RESOLVERS[name]
         counts = Counter(r.outcome for r in ap.measure(resolver))
