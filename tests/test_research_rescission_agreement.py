@@ -8,9 +8,27 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "docs" / "research" / "financial-semantics"))
 
 from figure_example import Figure  # noqa: E402
-from rescission_agreement import Row, check, match, read_rows  # noqa: E402
+from rescission_agreement import (  # noqa: E402
+    BILL,
+    BILL_BLOCK,
+    REPORT,
+    BillBlock,
+    ReportTitle,
+    Row,
+    bill_blocks,
+    check,
+    coverage,
+    match,
+    pool,
+    read_rows,
+    report_titles,
+    statement_rows,
+)
 
+from deltatrack.bill_tree import normalize_bill  # noqa: E402
+from deltatrack.parsers.committee_report import extract_pre_text  # noqa: E402
 from tests.conftest import make_bill_node, make_bill_tree  # noqa: E402
+from tests.corpus_paths import fixture_path  # noqa: E402
 
 MS, MCC = "id329E342A01664C9E8E19C02E0090DE3B", "id718C424227D44391B8BBB737D3B71041"
 MF, VEHR = "id4119630F675443D6A229064C1782BEC6", "idDB9CAE63DF1147359D348836471FD0FA"
@@ -151,4 +169,138 @@ def test_a_row_name_resolves_only_through_one_account_line_in_the_same_title():
         ("Salaries and expenses (Sec 102) (rescission)", -4_000, None),
         ("Operations (Sec 103) (rescission)", -4_000, None),
         ("Construction (Sec 104) (rescission)", -4_000, None),
+    ]
+
+
+# The held-out run's wiring. These pin what the run reads, never what it finds.
+_CELLS = "....  ...............       -5,000       -4,000       -4,000       +1,000"
+_BLANK = "....  ...............       -5,000  ...............  ...............       +5,000"
+
+
+def test_report_titles_follow_read_rows_title_and_section_precedence():
+    report = "\n".join(
+        [
+            "  COMPARATIVE STATEMENT OF NEW BUDGET (OBLIGATIONAL) AUTHORITY (in the summary)",
+            "              TITLE IX--BEFORE THE STATEMENT",
+            "                     Administrative Provisions",
+            "  COMPARATIVE STATEMENT OF NEW BUDGET (OBLIGATIONAL) AUTHORITY",
+            "              TITLE I--AGENCY",
+            "                   Bureau A",
+            "                     Administrative Provisions",
+            "              TITLE II--OTHER",
+            "                   Bureau C",
+            "              TITLE III--SAME",
+            "                     Administrative Provisions",
+            "              TITLE IV--SAME",
+        ]
+    )
+    # A centered TITLE line also matches the section pattern; read_rows tests the title first.
+    # read_rows selects a title by name and stops at the first, so a repeated name reads neither.
+    assert report_titles(report) == [
+        ReportTitle("AGENCY", "I", "read"),
+        ReportTitle("OTHER", "II", "no_report_block"),
+        ReportTitle("SAME", "III", "duplicate_title_name"),
+        ReportTitle("SAME", "IV", "duplicate_title_name"),
+    ]
+    assert report_titles("no comparative statement here") == []
+
+
+def test_bill_blocks_are_each_distinct_admin_provisions_prefix_labelled_strict_or_widened():
+    division = "Division A: An Act"
+    strict = (division, "TITLE I", "AGENCY", "Administrative provisions")
+    widened = (division, "TITLE I", "AGENCY", "Bureau", "ADMINISTRATIVE PROVISIONS—BUREAU")
+    hyphen = (division, "TITLE I", "AGENCY", "ADMINISTRATIVE PROVISIONS-OFFICE")
+    contains = (division, "TITLE I", "AGENCY", "Other administrative provisions")
+    untitled = ("GENERAL PROVISIONS", "Administrative provisions")
+    second = ("TITLE II—OTHER", "Administrative provisions")
+    bill = make_bill_tree(
+        nodes=[
+            make_bill_node(("Short title",)),
+            make_bill_node((*strict, "Sec. 101")),
+            make_bill_node((*strict, "Sec. 102")),
+            make_bill_node((*strict, "Administrative provisions—Nested", "Sec. 103")),
+            make_bill_node((*widened, "Sec. 104")),
+            make_bill_node((*hyphen, "Sec. 105")),
+            make_bill_node((*contains, "Sec. 106")),
+            make_bill_node((*untitled, "Sec. 107")),
+            make_bill_node((*second, "Sec. 201")),
+        ]
+    )
+    # Widened is an em dash and an agency name; a hyphen, a heading that merely contains the
+    # phrase, and a block outside any title are listed for review, never collected.
+    assert bill_blocks(bill) == (
+        [BillBlock(strict, "strict", "I"), BillBlock(widened, "widened", "I"), BillBlock(second, "strict", "II")],
+        [hyphen, contains, untitled],
+    )
+
+
+def test_statement_rows_count_rescission_lines_with_a_committee_figure():
+    report = "\n".join(
+        [
+            "  COMPARATIVE STATEMENT OF NEW BUDGET (OBLIGATIONAL) AUTHORITY (in the summary)",
+            f"Before the statement (Sec 100) (rescission)....{_CELLS}",
+            "  COMPARATIVE STATEMENT OF NEW BUDGET (OBLIGATIONAL) AUTHORITY",
+            "              TITLE I--AGENCY",
+            "                     Administrative Provisions",
+            f"Grants (Sec 101) (rescission)..........{_CELLS}",
+            f"Blank (Sec 102) (rescission)...........{_BLANK}",
+            "Group (Sec 103) (rescission):",
+            # A wrapped row prints its cells on the first line and its label's tail below.
+            "Wrapped label for an account (Sec 104)     -5,000       -4,000       -4,000       +1,000  ....",
+            " (rescission)...........................",
+            "Four columns (Sec 105) (rescission)....       1       2       3       4",
+            "A note on a (rescission) in prose",
+            f"      Total, rescissions (rescission)...{_CELLS}",
+            "Wrapped label with no rescission           1       2       3       4       5",
+            " (Sec 106)..............................",
+            "              TITLE II--OTHER",
+            f"Elsewhere (Sec 201) (rescission).......{_CELLS}",
+        ]
+    )
+    rows = statement_rows(report, "AGENCY")
+    assert rows.counted == ["Grants (Sec 101) (rescission)"]
+    assert rows.not_recommended == ["Blank (Sec 102) (rescission)"]
+    # Lines the account pattern cannot read are counted against coverage, not parsed a second way.
+    assert [line.split(" (")[0] for line in rows.unparsed] == [
+        "Group",
+        "Wrapped label for an account",
+        "Four columns",
+        "A note on a",
+    ]
+
+
+def test_a_pair_is_matched_once_across_titles():
+    rows = {
+        "I": [Row("A", -1_000, 1)],
+        "II": [Row("B", -2_000, 2)],
+        "III": [Row("C", -3_000, 3), Row("D", None, 4)],
+    }
+    figures = {
+        ("TITLE I", "Administrative provisions"): [_figure("$2,000,000", 2, element_id="x")],
+        ("TITLE II", "Administrative provisions"): [_figure("$1,000,000", 1, element_id="y")],
+    }
+    row_outcomes, figure_outcomes = pool(rows, figures, same_text=None)
+    # Each row's rescission sits in another title's block, and title III has no block at all.
+    assert [(o.where, o.subject.label, o.outcome) for o in row_outcomes] == [
+        ("I", "A", "agree"),
+        ("II", "B", "agree"),
+        ("III", "C", "missed"),
+        ("III", "D", "not_recommended"),
+    ]
+    assert [(o.where[0], o.outcome) for o in figure_outcomes] == [("TITLE I", "agree"), ("TITLE II", "agree")]
+    assert coverage(row_outcomes) == 2 / 3
+    assert coverage(row_outcomes, denominator=4) == 2 / 4
+    assert coverage([]) is None
+
+
+@pytest.mark.slow
+def test_wiring_reproduces_the_dev_pair():
+    bill = normalize_bill(fixture_path(*BILL))
+    blocks, _ = bill_blocks(bill)
+    assert BillBlock(BILL_BLOCK, "strict", "II") in blocks
+    assert {b.form for b in blocks} == {"strict", "widened"}
+    assert report_titles(extract_pre_text(REPORT.read_text())) == [
+        ReportTitle("DEPARTMENT OF DEFENSE", "I", "read"),
+        ReportTitle("DEPARTMENT OF VETERANS AFFAIRS", "II", "read"),
+        ReportTitle("RELATED AGENCIES", "III", "no_report_block"),
     ]

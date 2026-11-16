@@ -40,13 +40,21 @@ is converted to dollars and its sign removed before the exact comparison. Only `
 other figure keeps `not_checked`. Funding years are not touched: the report does not state
 them.
 
+The held-out run matches a pair once: the rows of every title `read_rows` reads, against the
+figures of every block `bill_blocks` collects (`pool`). There "the block" in the table means
+any read title or any collected block, so `missed` is "in no collected block" and
+`not_in_report` is "in no read title", and a match can cross titles. `--wiring` prints which
+titles and blocks each pair gets, and nothing else.
+
     uv run python docs/research/financial-semantics/rescission_agreement.py
+    uv run python docs/research/financial-semantics/rescission_agreement.py --wiring
 
 Reads only committed fixtures, so it needs no download.
 """
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import hashlib
 import re
@@ -64,6 +72,7 @@ from deltatrack.formatters.text_serializer import build_xml_full_text  # noqa: E
 from deltatrack.parsers.committee_report import extract_pre_text  # noqa: E402
 from tests.corpus_paths import DATA_DIR, fixture_path  # noqa: E402
 from tests.round1_identity import parser_revision  # noqa: E402
+from tests.validation_sources import JURISDICTIONS  # noqa: E402
 
 ROW_OUTCOMES = ("agree", "wrong_figure", "missed", "account_unresolved", "not_recommended")
 FIGURE_OUTCOMES = (
@@ -234,6 +243,132 @@ def match(rows: list[Row], figures: list[Figure], same_text) -> tuple[list[Outco
     return row_outcomes, figure_outcomes
 
 
+@dataclass(frozen=True)
+class ReportTitle:
+    name: str
+    numeral: str
+    outcome: str  # read, no_report_block or duplicate_title_name
+
+
+@dataclass(frozen=True)
+class BillBlock:
+    path: tuple[str, ...]
+    form: str  # strict or widened
+    numeral: str
+
+
+@dataclass(frozen=True)
+class StatementRows:
+    counted: list[str]
+    not_recommended: list[str]
+    unparsed: list[str]
+
+
+_NUMERAL = re.compile(r"TITLE (?P<numeral>[IVXLC]+)--")
+_BILL_TITLE = re.compile(r"^TITLE (?P<numeral>[IVXLC]+)(?:—|$)")
+_PHRASE = "administrative provisions"
+_WIDENED = re.compile(rf"^{_PHRASE}—\S")
+# The tail of a wrapped account line: one space of indent, then the label's end and leaders.
+_WRAP_TAIL = re.compile(r"^\s\S.*\.{2,}\s*$")
+
+
+def _statement(report_text: str) -> list[str]:
+    lines = report_text.split("\n")
+    starts = [i for i, line in enumerate(lines) if _STATEMENT in line]
+    return lines[max(starts) :] if starts else []
+
+
+def report_titles(report_text: str) -> list[ReportTitle]:
+    """Each comparative-statement title, scanned in `read_rows`' order, and whether it is read."""
+    found = []  # [name, numeral, has a block]
+    for line in _statement(report_text):
+        if heading := _TITLE.match(line):
+            found.append([heading["name"], _NUMERAL.search(line)["numeral"], False])
+        elif found and (heading := _SECTION.match(line)) and heading["name"] == _BLOCK:
+            found[-1][2] = True
+    names = [name for name, _, _ in found]
+    return [
+        ReportTitle(
+            name,
+            numeral,
+            "duplicate_title_name" if names.count(name) > 1 else "read" if has_block else "no_report_block",
+        )
+        for name, numeral, has_block in found
+    ]
+
+
+def bill_blocks(bill) -> tuple[list[BillBlock], list[tuple[str, ...]]]:
+    """The bill's administrative-provisions blocks, and the headings naming one in another form.
+
+    A block is the outermost heading under a title (below at most one leading division) that reads
+    "Administrative provisions" (strict, the development example's form) or "Administrative
+    provisions—" and an agency (widened), ignoring case.
+    """
+    blocks: dict[tuple[str, ...], BillBlock] = {}
+    named: dict[tuple[str, ...], None] = {}
+    for node in bill.nodes:
+        path = node.display_path
+        start = 1 if path and path[0].startswith("Division ") else 0
+        title = _BILL_TITLE.match(path[start]) if len(path) > start else None
+        for depth, heading in enumerate(path):
+            folded = heading.casefold()
+            if _PHRASE not in folded:
+                continue
+            prefix = path[: depth + 1]
+            form = "strict" if folded == _PHRASE else "widened" if _WIDENED.match(folded) else None
+            if title and depth > start and form:
+                blocks.setdefault(prefix, BillBlock(prefix, form, title["numeral"]))
+                break
+            named[prefix] = None
+    unmatched = [p for p in named if not any(p[: len(b)] == b for b in blocks)]
+    return list(blocks.values()), unmatched
+
+
+def statement_rows(report_text: str, title: str) -> StatementRows:
+    """Every first-column rescission line in `title` of the comparative statement.
+
+    Counted when the account pattern reads it with five cells and a committee figure; a blank
+    committee cell is not recommended; any other line naming a rescission is unparsed, including
+    a wrapped one, which `read_rows` cannot read.
+    """
+    counted, not_recommended, unparsed = [], [], []
+    lines, inside = _statement(report_text), False
+    for i, line in enumerate(lines):
+        if heading := _TITLE.match(line):
+            if inside:
+                break
+            inside = heading["name"] == title
+            continue
+        if not inside or not line[:1].strip():
+            continue
+        account = _ACCOUNT_LINE.match(line)
+        if not account:
+            tail = lines[i + 1] if i + 1 < len(lines) and _WRAP_TAIL.match(lines[i + 1]) else ""
+            if "(rescission)" in line + tail:
+                unparsed.append(f"{line.rstrip()}\n{tail.rstrip()}" if tail else line.rstrip())
+            continue
+        if "(rescission)" not in account["label"]:
+            continue
+        cells = (account["cells"] or "").split()
+        try:
+            if len(cells) != 5:
+                raise ValueError(len(cells))
+            committee = _cell(cells[_COMMITTEE])
+        except ValueError:
+            unparsed.append(line.rstrip())
+            continue
+        (not_recommended if committee is None else counted).append(account["label"])
+    return StatementRows(counted, not_recommended, unparsed)
+
+
+def coverage(row_outcomes, denominator=None) -> float | None:
+    """The share of rows with a committee figure that agree; None when there are none."""
+    agreed = sum(o.outcome == "agree" for o in row_outcomes)
+    if denominator is None:
+        denominator = sum(o.outcome != "not_recommended" for o in row_outcomes)
+    return agreed / denominator if denominator else None
+
+
 def pool(rows_by_title, figures_by_block, same_text) -> tuple[list[Outcome], list[Outcome]]:
     """Match a pair once: every read title's rows against every collected block's figures.
 
@@ -280,7 +415,70 @@ def check(
     return (bill, *pool(rows, figures, same_text))
 
 
-def main() -> int:
+@dataclass(frozen=True)
+class PairWiring:
+    slug: str
+    report: Path
+    bill_file: tuple[str, str]
+    titles: list[ReportTitle]
+    blocks: list[BillBlock]
+    unmatched: list[tuple[str, ...]]
+    bill_titles: dict[str, str]  # numeral -> the bill's title heading
+
+
+def wire(jurisdiction) -> PairWiring:
+    """Which report titles are read and which bill blocks are collected, for one held-out pair.
+
+    Reads heading lines and heading paths only: never `read_rows`, `block_figures` or
+    `statement_rows`, so printing it shows no row and no figure.
+    """
+    report_text = extract_pre_text(jurisdiction.report_html_path.read_bytes().decode("utf-8"))
+    bill = normalize_bill(jurisdiction.bill_xml_path)
+    blocks, unmatched = bill_blocks(bill)
+    bill_titles: dict[str, str] = {}
+    for node in bill.nodes:
+        path = node.display_path
+        start = 1 if path and path[0].startswith("Division ") else 0
+        if len(path) > start and (title := _BILL_TITLE.match(path[start])):
+            bare = path[start] == title[0] and len(path) > start + 1
+            bill_titles.setdefault(title["numeral"], " › ".join(path[start : start + 1 + bare]))
+    return PairWiring(
+        jurisdiction.slug,
+        jurisdiction.report_html_path,
+        (jurisdiction.bill_id, jurisdiction.version),
+        report_titles(report_text),
+        blocks,
+        unmatched,
+        bill_titles,
+    )
+
+
+def print_wiring(wiring: PairWiring) -> None:
+    print(f"== {wiring.slug}  {wiring.report.name}  {'/'.join(wiring.bill_file)}")
+    if not wiring.titles:
+        print("  no_report_titles")
+    read = {t.numeral: t.outcome for t in wiring.titles}
+    for t in wiring.titles:
+        forms = [b.form for b in wiring.blocks if b.numeral == t.numeral]
+        bill = wiring.bill_titles.get(t.numeral, "no bill title")
+        blocks = f"{forms.count('strict')} strict, {forms.count('widened')} widened" if forms else "no bill block"
+        print(f"  report {t.numeral:>5} {t.outcome:21} {t.name}  |  bill: {bill}  ({blocks})")
+    for b in wiring.blocks:
+        report = read.get(b.numeral, "no report title")
+        print(f"  block  {b.numeral:>5} {b.form:8} report: {report:21} {' › '.join(b.path)}")
+    for path in wiring.unmatched:
+        print(f"  unmatched_heading_form  {' › '.join(path)}")
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--wiring", action="store_true", help="the held-out wiring only: no rows, no figures")
+    args = parser.parse_args(argv)
+    if args.wiring:
+        for jurisdiction in JURISDICTIONS:
+            print_wiring(wire(jurisdiction))
+        return 0
+
     bill, rows, figures = check()
 
     def account(ordinal):
