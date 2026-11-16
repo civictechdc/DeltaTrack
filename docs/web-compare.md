@@ -13,7 +13,7 @@ The app's own redirect middleware is a backstop when the proxy signals cleartext
 
 | Path | Status | What it does |
 |---|---|---|
-| **Browser-only** (`index.html`, left card) | Coming soon | Future WebAssembly build — PDFs never leave the device. Not wired up yet. |
+| **Download and run it yourself** (`index.html`, left card) | **Available now** (XML only) | Downloads the offline page: one HTML file that runs the engine in the browser under Pyodide, so bill text never leaves the device. See [The offline page](#the-offline-page) below. |
 | **Process on our server** (`compare.html`, right card) | **Available now** (interim) | User uploads start + end PDFs; server runs the Python PDF diff and returns a standalone HTML report in a new tab. Stateless — PDFs are not stored. 
 
 Sample without uploading: `compare.html?example=1` loads a bundled report from `web/webapp/sample/example.html`.
@@ -112,6 +112,47 @@ JSON output (`?output=json`) still exists for tests and tooling; the compare UI 
 | `web/webapp/sample/example.html` | Bundled sample report for `?example=1` |
 | `web/app.py` | FastAPI app: `/api/compare` + static mount of `web/webapp/` |
 | `src/deltatrack/compare/pdf.py` | In-process call into `diff_pdf` + `format_diff_html` |
+| `web/offline/template.html` | The offline page, before `scripts/build_offline_html.py` inlines Pyodide and the engine into it. Not served |
+
+---
+
+## The offline page
+
+`scripts/build_offline_html.py` writes `deltatrack-offline.html`: a single file of several
+megabytes (the build prints its size), carrying Pyodide (Python compiled to WebAssembly), the
+`deltatrack` package and the upload pages' stylesheet. Opened from disk, it compares two bill XML
+files with the same `compare_xml_html` call the command line makes, in any encoding the XML
+parser reads (UTF-8, UTF-16, ...), shows the report in a frame and saves it with a download. It
+makes no network requests, so it satisfies ADR 0011 for the content a user picks.
+
+```bash
+uv run python scripts/build_offline_html.py    # -> dist/deltatrack-offline.html
+```
+
+- **How it loads from `file://`.** A page opened from disk may not fetch a neighbouring
+  file, so every Pyodide asset is inlined (gzip, then base64). The page passes them in
+  through Pyodide's own options where one exists, and answers the remaining two requests
+  (the wasm binary and the standard library) from a `fetch` wrapper. The wrapper is the
+  part an upgrade can break; the browser test catches it.
+- **No network, enforced by the browser.** The page's Content-Security-Policy allows no
+  connection, frame, font or object source, and the report frame (a `srcdoc` document)
+  inherits it, so fetch, XMLHttpRequest and images are all refused, from the page and from the
+  report. The report frame is also sandboxed without `allow-same-origin`, so the report's
+  script, which shows text from the user's files, cannot reach the page's runtime or the picked
+  files; it keeps its own controls (filters, find, the `diff.json` download, the clipboard copy).
+- **XML only.** `pypdfium2` has no Pyodide build. The bundle carries stand-ins for it,
+  because the XML path still imports it ([#751](https://github.com/civictechdc/DeltaTrack/issues/751)),
+  and the page refuses a PDF before the engine sees it.
+- **Main thread.** A page opened from disk cannot start a worker, so the page is busy
+  while it compares: a fraction of a second for most bills.
+- **Published** by `.github/workflows/publish-offline.yml` on push to `main`, to the
+  `offline-latest` release, which the home page's left card links to. A read-only job builds
+  the page once and tests that file; a separate job with the write token runs only `gh`, uploads
+  the tested file under a temporary name and swaps it in, so a failed upload leaves the old file
+  published. `tests/test_offline_html.py` holds the build together; its browser tests open a real
+  build from disk, require reports byte-identical to the command line's for UTF-8 and UTF-16
+  bills, and require that no connection from the page or the report reaches a local server.
+  CI's browser step runs them too, with the Pyodide tarball cached.
 
 Run locally:
 

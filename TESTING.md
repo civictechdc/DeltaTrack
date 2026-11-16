@@ -223,6 +223,13 @@ or `-m "not network"` to deselect it outright. It replaced the `REQUIRE_CORPUS=1
 environment variable in #278, whose name described neither of the two unrelated things
 it had come to gate.
 
+The offline page's browser tests in `test_offline_html.py` carry both `browser` and
+`network`: they build the page, which downloads the pinned Pyodide tarball. CI's browser step
+passes `--run-network` (with the tarball cached) and so runs them on every pull request;
+`.github/workflows/publish-offline.yml` runs them against the exact file it then publishes
+(`--offline-page`). A local run without `--run-network` skips them, which `ALLOWED_DEFAULT_SKIPS`
+declares, and the rest of that module runs in the fast group.
+
 `browser` skips when Chromium can't launch, which is right for the default tier (a
 contributor's machine may lack Playwright) but a silent no-op under CI's dedicated
 `-m browser` step, which exists to run these tests with Chromium guaranteed. CI passes
