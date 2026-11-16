@@ -113,6 +113,7 @@ class Row:
 class Outcome:
     subject: Row | Figure
     outcome: str
+    where: object = None  # the report title a row came from, or the bill block a figure did
 
 
 def _name(label: str) -> str:
@@ -233,25 +234,50 @@ def match(rows: list[Row], figures: list[Figure], same_text) -> tuple[list[Outco
     return row_outcomes, figure_outcomes
 
 
-def check() -> tuple[object, list[Outcome], list[Outcome]]:
-    """S.Rept. 118-43's VA Administrative Provisions rows against H.R. 4366 v4's block."""
-    raw = REPORT.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != REPORT_SHA256:
-        raise ValueError(f"{REPORT.name} is not the frozen input")
-    path = fixture_path(*BILL)
+def pool(rows_by_title, figures_by_block, same_text) -> tuple[list[Outcome], list[Outcome]]:
+    """Match a pair once: every read title's rows against every collected block's figures.
+
+    `same_text=None` scores every figure, for a report that explains exactly this bill.
+    """
+    rows = [(title, row) for title, title_rows in rows_by_title.items() for row in title_rows]
+    figures = [(block, f) for block, block_figs in figures_by_block.items() for f in block_figs]
+    if same_text is None:
+        same_text = {f.element_id for _, f in figures}
+    row_outcomes, figure_outcomes = match([r for _, r in rows], [f for _, f in figures], same_text)
+    return (
+        [dataclasses.replace(o, where=title) for (title, _), o in zip(rows, row_outcomes)],
+        [dataclasses.replace(o, where=block) for (block, _), o in zip(figures, figure_outcomes)],
+    )
+
+
+def load(report: Path, bill_file: tuple[str, str], report_sha256: str | None):
+    """The report's preformatted text, the bill, and the bill-wide arguments of `block_figures`."""
+    raw = report.read_bytes()
+    if report_sha256 is not None and hashlib.sha256(raw).hexdigest() != report_sha256:
+        raise ValueError(f"{report.name} is not the frozen input")
+    path = fixture_path(*bill_file)
     bill = normalize_bill(path)
     text, _, trees, ids = build_xml_full_text(bill, bill)
-    figures = block_figures(
-        bill,
-        BILL_BLOCK,
-        text["v1"],
-        trees["v1"],
-        ids["v1"],
-        source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-        parser_revision=parser_revision(),
-    )
-    rows = read_rows(extract_pre_text(raw.decode("utf-8")), REPORT_TITLE, bill)
-    return (bill, *match(rows, figures, SAME_TEXT))
+    identity = {"source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "parser_revision": parser_revision()}
+    return extract_pre_text(raw.decode("utf-8")), bill, (text["v1"], trees["v1"], ids["v1"]), identity
+
+
+def check(
+    report=REPORT,
+    titles=(REPORT_TITLE,),
+    bill_file=BILL,
+    blocks=(BILL_BLOCK,),
+    same_text=SAME_TEXT,
+    report_sha256=REPORT_SHA256,
+) -> tuple[object, list[Outcome], list[Outcome]]:
+    """A report's Administrative Provisions rows in `titles` against the bill's `blocks`.
+
+    The defaults are S.Rept. 118-43's VA rows against H.R. 4366 v4's VA block.
+    """
+    report_text, bill, inputs, identity = load(report, bill_file, report_sha256)
+    rows = {title: read_rows(report_text, title, bill) for title in titles}
+    figures = {block: block_figures(bill, block, *inputs, **identity) for block in blocks}
+    return (bill, *pool(rows, figures, same_text))
 
 
 def main() -> int:
