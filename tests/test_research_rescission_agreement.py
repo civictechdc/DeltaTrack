@@ -31,6 +31,7 @@ from deltatrack.bill_tree import normalize_bill  # noqa: E402
 from deltatrack.parsers.committee_report import extract_pre_text  # noqa: E402
 from tests.conftest import make_bill_node, make_bill_tree  # noqa: E402
 from tests.corpus_paths import fixture_path  # noqa: E402
+from tests.validation_sources import BY_SLUG  # noqa: E402
 
 MS, MCC = "id329E342A01664C9E8E19C02E0090DE3B", "id718C424227D44391B8BBB737D3B71041"
 MF, VEHR = "id4119630F675443D6A229064C1782BEC6", "idDB9CAE63DF1147359D348836471FD0FA"
@@ -253,25 +254,38 @@ def test_statement_rows_count_rescission_lines_with_a_committee_figure():
             "Four columns (Sec 105) (rescission)....       1       2       3       4",
             "A note on a (rescission) in prose",
             f"      Total, rescissions (rescission)...{_CELLS}",
-            "Wrapped label with no rescission           1       2       3       4       5",
+            "Wrapped label for an appropriation         1       2       3       4       5",
             " (Sec 106)..............................",
             "Wrapped with its cells below (Sec 107)",
             f" (rescission)..........................{_CELLS}",
+            f"Capital (Sec 108) (Rescission).........{_CELLS}",
+            # A blank first cell is a run of dots, so it can read as the label's leaders.
+            "Blank first cell, wrapped (Sec 109)  ................     -452      -452      -452  ................",
+            " (rescission)...........................",
+            f"Unclosed (Sec 110) (rescission.........{_CELLS}",
+            "Memo (Sec 111) (rescission)....      (-1)      (-2)      (-3)      (-4)      (-5)",
+            f"Rescission, Named Account..............{_CELLS}",
+            f"Unobligated balances rescission (Sec 112){_CELLS}",
             "              TITLE II--OTHER",
             f"Elsewhere (Sec 201) (rescission).......{_CELLS}",
         ]
     )
     rows = statement_rows(report, "AGENCY")
-    assert rows.counted == ["Grants (Sec 101) (rescission)"]
-    assert rows.not_recommended == ["Blank (Sec 102) (rescission)"]
-    # Lines the account pattern cannot read are counted against coverage, not parsed a second way.
-    assert [line.split(" (")[0] for line in rows.unparsed] == [
-        "Group",
-        "Wrapped label for an account",
-        "Four columns",
-        "A note on a",
-        "Wrapped with its cells below",
+    # The audit reads the five cells itself, so a row read_rows cannot read still counts.
+    assert rows.counted == [
+        "Grants (Sec 101) (rescission)",
+        "Wrapped label for an account (Sec 104) (rescission)",
+        "Wrapped with its cells below (Sec 107) (rescission)",
+        "Capital (Sec 108) (Rescission)",
+        "Blank first cell, wrapped (Sec 109) (rescission)",
+        "Unclosed (Sec 110) (rescission",
+        "Rescission, Named Account",
+        "Unobligated balances rescission (Sec 112)",
     ]
+    assert rows.not_recommended == ["Blank (Sec 102) (rescission)"]
+    assert [line.split(" (")[0] for line in rows.unparsed] == ["Group", "Four columns", "A note on a", "Memo"]
+    # With no title, for a statement whose titles the reader does not recognise: all of it.
+    assert statement_rows(report, None).counted == [*rows.counted, "Elsewhere (Sec 201) (rescission)"]
 
 
 def test_a_pair_is_matched_once_across_titles():
@@ -296,6 +310,25 @@ def test_a_pair_is_matched_once_across_titles():
     assert coverage(row_outcomes) == 2 / 3
     assert coverage(row_outcomes, denominator=4) == 2 / 4
     assert coverage([]) is None
+
+
+@pytest.mark.slow
+def test_statement_rows_count_rescission_rows_the_reader_cannot_read():
+    report = BY_SLUG["homeland_security"].report_html_path.read_bytes().decode("utf-8")
+    counted = statement_rows(extract_pre_text(report), "GENERAL PROVISIONS").counted
+    # A capital R, a wrapped label whose blank first cell reads as leaders, an unclosed paren.
+    assert {
+        "Coast Guard AC&I (70 x 0613) (Rescission)",
+        "CBP Air and Marine Interdiction, Operations, Maintenance, and Procurement (070 X 0544) (rescission)",
+        "FLETC PC&I (70 20/24 0510) (rescission",
+    } <= set(counted)
+    report = BY_SLUG["state_foreign_ops"].report_html_path.read_bytes().decode("utf-8")
+    counted = statement_rows(extract_pre_text(report), "GENERAL PROVISIONS").counted
+    # The word without the parenthesised tag, once wrapped onto a second line.
+    assert {
+        "Rescission, Debt Restructuring",
+        "Rescission, International Narcotics Control and Law Enforcement",
+    } <= set(counted)
 
 
 @pytest.mark.slow

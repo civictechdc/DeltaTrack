@@ -331,40 +331,58 @@ def bill_blocks(bill) -> tuple[list[BillBlock], list[tuple[str, ...]]]:
     return list(blocks.values()), unmatched
 
 
-def statement_rows(report_text: str, title: str) -> StatementRows:
-    """Every first-column rescission line in `title` of the comparative statement.
+# The audit splits a line's cells itself: `_ACCOUNT_LINE` reads a blank first cell (a run of dots)
+# as the label's leaders, which drops a wrapped row whose first cell is blank.
+_AUDIT_LINE = re.compile(r"^(?P<label>\S.*?)\s+(?P<cells>(?:\S+\s+){4}\S+)\s*$")
+_AUDIT_CELL = re.compile(r"^(?:\(?[+-]?[\d,]+\)?|\.{2,})$")
+_AUDIT_RESCISSION = re.compile(r"\brescission", re.IGNORECASE)
 
-    Counted when the account pattern reads it with five cells and a committee figure; a blank
-    committee cell is not recommended; any other line naming a rescission is unparsed, including
-    a wrapped one, which `read_rows` cannot read.
+
+def _audit_split(text: str) -> tuple[str, list[str]] | None:
+    """A line's label, leaders removed, and its five cells; None unless it ends in five cells."""
+    line = _AUDIT_LINE.match(text)
+    if not line or not all(_AUDIT_CELL.match(cell) for cell in line["cells"].split()):
+        return None
+    return line["label"].rstrip(". "), line["cells"].split()
+
+
+def statement_rows(report_text: str, title: str | None) -> StatementRows:
+    """Every first-column rescission line in `title` of the comparative statement, or in all of it.
+
+    An audit independent of `read_rows`: a line, or a wrapped line with its one-space-indented
+    tail, uses the word "rescission" in any case or form. Counted when it ends in five cells with
+    a committee figure; a blank committee cell is not recommended; any other such line is
+    unparsed. `title=None` reads the whole statement, for one whose titles the reader does not
+    recognise.
     """
     counted, not_recommended, unparsed = [], [], []
-    lines, inside = _statement(report_text), False
+    lines, inside = _statement(report_text), title is None
     for i, line in enumerate(lines):
-        if heading := _TITLE.match(line):
+        if title is not None and (heading := _TITLE.match(line)):
             if inside:
                 break
             inside = heading["name"] == title
             continue
         if not inside or not line[:1].strip():
             continue
-        account = _ACCOUNT_LINE.match(line)
-        if not account:
-            tail = lines[i + 1] if i + 1 < len(lines) and _WRAP_TAIL.match(lines[i + 1]) else ""
-            if "(rescission)" in line + tail:
-                unparsed.append(f"{line.rstrip()}\n{tail.rstrip()}" if tail else line.rstrip())
+        tail = lines[i + 1] if i + 1 < len(lines) and _WRAP_TAIL.match(lines[i + 1]) else ""
+        if not _AUDIT_RESCISSION.search(f"{line} {tail}"):
             continue
-        if "(rescission)" not in account["label"]:
+        split = _audit_split(line)
+        if split and tail:  # the cells print on the first line, the label's tail below
+            split = (f"{split[0]} {tail.strip().rstrip('. ')}", split[1])
+        elif tail:
+            split = _audit_split(f"{line.rstrip()} {tail.strip()}")
+        if split is None:
+            unparsed.append(f"{line.rstrip()}\n{tail.rstrip()}" if tail else line.rstrip())
             continue
-        cells = (account["cells"] or "").split()
+        label, cells = split
         try:
-            if len(cells) != 5:
-                raise ValueError(len(cells))
             committee = _cell(cells[_COMMITTEE])
-        except ValueError:
+        except ValueError:  # a parenthesised memo figure
             unparsed.append(line.rstrip())
             continue
-        (not_recommended if committee is None else counted).append(account["label"])
+        (not_recommended if committee is None else counted).append(label)
     return StatementRows(counted, not_recommended, unparsed)
 
 
@@ -492,7 +510,7 @@ class PairRun:
     report_sha256: str
     bill_sha256: str
     errors: list[str]
-    statement: dict[str, StatementRows]  # title name -> its rescission lines
+    statement: dict[str | None, StatementRows]  # title name (None: the whole statement) -> its rescission lines
     read: dict[str, list[Row]]  # title name -> rows read_rows returned
     outcomes: dict[str, tuple[list[Outcome], list[Outcome]]]  # run -> pooled outcomes
 
@@ -515,7 +533,10 @@ def held_out(wiring: PairWiring) -> PairRun:
             errors.append(f"bill_inspect_error  {' › '.join(block.path)}: {type(e).__name__}: {e}")
     if wiring.blocks and not figures:
         raise RuntimeError(f"{wiring.slug}: every bill block raised, a harness fault: {errors}")
-    statement = {t.name: statement_rows(report_text, t.name) for t in wiring.titles}
+    # A statement whose titles the reader does not recognise is audited whole.
+    statement = {t.name: statement_rows(report_text, t.name) for t in wiring.titles} or {
+        None: statement_rows(report_text, None)
+    }
     for name, rows in read.items():
         recommended = Counter(r.label for r in rows if r.committee_thousands is not None)
         if recommended - Counter(statement[name].counted):
@@ -603,9 +624,9 @@ def print_run(result: PairRun) -> None:
         seen = Counter(r.label for r in result.read.get(name, []))
         unread = list((Counter(lines.counted + lines.not_recommended) - seen).elements())
         for label in unread:
-            print(f"     statement row not read {numeral[name]:>5}  {label}")
+            print(f"     statement row not read {numeral.get(name, '—'):>5}  {label}")
         for line in lines.unparsed:
-            print(f"     statement unparsed     {numeral[name]:>5}  {line!r}")
+            print(f"     statement unparsed     {numeral.get(name, '—'):>5}  {line!r}")
 
 
 def main(argv=None) -> int:
