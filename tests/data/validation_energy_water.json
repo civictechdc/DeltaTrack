@@ -9,8 +9,14 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Investigations",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "investigations"
+      ],
       "expected_amount": 107800000
     },
     {
@@ -20,6 +26,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Planning, Engineering, and Design",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -36,11 +43,13 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Construction",
       "match_path": [
-        "department of energy",
-        "power marketing administrations",
-        "construction, rehabilitation, operation and maintenance, western area power administration"
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "construction"
       ],
       "expected_amount": 2979041000
     },
@@ -51,8 +60,14 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Mississippi River and Tributaries",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "mississippi river and tributaries"
+      ],
       "expected_amount": 375464000
     },
     {
@@ -62,8 +77,14 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Operation and Maintenance",
-      "match_path": null,
+      "match_path": [
+        "corps of engineers\u2014civil",
+        "department of the army",
+        "corps of engineers\u2014civil",
+        "operation and maintenance"
+      ],
       "expected_amount": 5849129000
     },
     {
@@ -73,6 +94,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Regulatory Program",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -89,6 +111,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Formerly Utilized Sites Remedial Action Program (FUSRAP)",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -105,6 +128,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Flood Control and Coastal Emergencies",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -121,6 +145,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Expenses",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -137,6 +162,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Office of Assistant Secretary of the Army (Civil Works)",
       "match_path": null,
       "expected_amount": 5500000
@@ -148,6 +174,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF DEFENSE--CIVIL",
       "bureau": "Corps of Engineers--Civil",
+      "office": null,
       "excel_name": "Water Infrastructure Finance and Innovation Program Account",
       "match_path": [
         "corps of engineers\u2014civil",
@@ -164,6 +191,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Central Utah Project",
+      "office": null,
       "excel_name": "Central Utah Project Completion Account",
       "match_path": [
         "department of the interior",
@@ -179,6 +207,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Reclamation",
+      "office": null,
       "excel_name": "Water and Related Resources",
       "match_path": [
         "department of the interior",
@@ -194,6 +223,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Reclamation",
+      "office": null,
       "excel_name": "Central Valley Project Restoration Fund",
       "match_path": [
         "department of the interior",
@@ -209,6 +239,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Reclamation",
+      "office": null,
       "excel_name": "California Bay-Delta Restoration",
       "match_path": [
         "department of the interior",
@@ -224,6 +255,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Reclamation",
+      "office": null,
       "excel_name": "Policy and Administration",
       "match_path": [
         "department of the interior",
@@ -239,6 +271,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Energy Efficiency and Renewable Energy",
       "match_path": [
         "department of energy",
@@ -254,6 +287,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Manufacturing and Energy Supply Chains",
       "match_path": [
         "department of energy",
@@ -269,6 +303,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Cybersecurity, Energy Security, and Emergency Response",
       "match_path": [
         "department of energy",
@@ -284,6 +319,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Electricity",
       "match_path": [
         "department of energy",
@@ -299,6 +335,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Grid Deployment",
       "match_path": [
         "department of energy",
@@ -314,6 +351,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Nuclear Energy",
       "match_path": [
         "department of energy",
@@ -329,6 +367,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Defense function",
       "match_path": null,
       "expected_amount": 150000000
@@ -340,6 +379,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Fossil Energy and Carbon Management",
       "match_path": [
         "department of energy",
@@ -355,6 +395,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Energy Projects",
       "match_path": [
         "department of energy",
@@ -370,6 +411,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Naval Petroleum and Oil Shale Reserves",
       "match_path": [
         "department of energy",
@@ -385,6 +427,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Strategic Petroleum Reserve",
       "match_path": [
         "department of energy",
@@ -400,6 +443,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "SPR Petroleum Account",
       "match_path": [
         "department of energy",
@@ -415,6 +459,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Northeast Home Heating Oil Reserve",
       "match_path": [
         "department of energy",
@@ -430,6 +475,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Energy Information Administration",
       "match_path": [
         "department of energy",
@@ -445,6 +491,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Non-defense Environmental Cleanup",
       "match_path": [
         "department of energy",
@@ -460,6 +507,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Uranium Enrichment Decontamination and Decommissioning Fund",
       "match_path": [
         "department of energy",
@@ -475,6 +523,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Science",
       "match_path": [
         "department of energy",
@@ -490,6 +539,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Nuclear Waste Disposal",
       "match_path": [
         "department of energy",
@@ -505,6 +555,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Technology Coordination and Commercialization",
       "match_path": [
         "department of energy",
@@ -520,6 +571,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Clean Energy Demonstrations",
       "match_path": [
         "department of energy",
@@ -535,6 +587,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Advanced Research Projects Agency-Energy",
       "match_path": [
         "department of energy",
@@ -550,6 +603,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Administrative costs",
       "match_path": null,
       "expected_amount": 55000000
@@ -561,6 +615,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Advanced Technology Vehicles Manufacturing Loan Program",
       "match_path": [
         "department of energy",
@@ -576,6 +631,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Administrative costs",
       "match_path": null,
       "expected_amount": 6300000
@@ -587,6 +643,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Indian Energy Policy and Programs",
       "match_path": [
         "department of energy",
@@ -602,6 +659,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Departmental Administration",
       "match_path": [
         "department of energy",
@@ -617,6 +675,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Net appropriation",
       "match_path": null,
       "expected_amount": 290422000
@@ -628,6 +687,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Energy Programs",
+      "office": null,
       "excel_name": "Office of the Inspector General",
       "match_path": [
         "department of energy",
@@ -643,6 +703,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "National Nuclear Security Administration",
+      "office": null,
       "excel_name": "Weapons Activities",
       "match_path": [
         "department of energy",
@@ -658,6 +719,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "National Nuclear Security Administration",
+      "office": null,
       "excel_name": "Defense Nuclear Nonproliferation",
       "match_path": [
         "department of energy",
@@ -673,6 +735,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "National Nuclear Security Administration",
+      "office": null,
       "excel_name": "Naval Reactors",
       "match_path": [
         "department of energy",
@@ -688,6 +751,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "National Nuclear Security Administration",
+      "office": null,
       "excel_name": "Federal Salaries and Expenses",
       "match_path": [
         "department of energy",
@@ -703,6 +767,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Environmental and Other Defense Activities",
+      "office": null,
       "excel_name": "Defense Environmental Cleanup",
       "match_path": [
         "department of energy",
@@ -718,6 +783,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Environmental and Other Defense Activities",
+      "office": null,
       "excel_name": "Defense UED&D",
       "match_path": null,
       "expected_amount": 577000000
@@ -729,6 +795,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Environmental and Other Defense Activities",
+      "office": null,
       "excel_name": "Other Defense Activities",
       "match_path": [
         "department of energy",
@@ -744,6 +811,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Power Marketing Administrations",
+      "office": null,
       "excel_name": "Administration",
       "match_path": null,
       "expected_amount": 9127000
@@ -755,6 +823,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Power Marketing Administrations",
+      "office": null,
       "excel_name": "Administration",
       "match_path": null,
       "expected_amount": 55070000
@@ -766,6 +835,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Power Marketing Administrations",
+      "office": null,
       "excel_name": "Falcon and Amistad Operating and Maintenance Fund",
       "match_path": [
         "department of energy",
@@ -781,6 +851,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "Federal Energy Regulatory Commission",
+      "office": null,
       "excel_name": "Salaries and expenses",
       "match_path": [
         "department of energy",
@@ -797,6 +868,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF ENERGY",
       "bureau": "General Provisions--Department of Energy",
+      "office": null,
       "excel_name": "Colorado River Basin Fund (sec 307)",
       "match_path": [
         "department of energy",
@@ -812,6 +884,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Appalachian Regional Commission",
       "match_path": [
         "independent agencies",
@@ -826,6 +899,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Defense Nuclear Facilities Safety Board",
       "match_path": null,
       "expected_amount": 47000000
@@ -837,6 +911,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Delta Regional Authority",
       "match_path": null,
       "expected_amount": 32500000
@@ -848,6 +923,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Denali Commission",
       "match_path": [
         "independent agencies",
@@ -862,6 +938,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Northern Border Regional Commission",
       "match_path": [
         "independent agencies",
@@ -876,6 +953,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Southeast Crescent Regional Commission",
       "match_path": [
         "independent agencies",
@@ -890,6 +968,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Southwest Border Regional Commission",
       "match_path": [
         "independent agencies",
@@ -904,6 +983,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Great Lakes Authority",
       "match_path": [
         "independent agencies",
@@ -918,6 +998,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Salaries and expenses",
       "match_path": null,
       "expected_amount": 942558000
@@ -929,6 +1010,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Office of Inspector General",
       "match_path": [
         "independent agencies",
@@ -944,6 +1026,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": null,
+      "office": null,
       "excel_name": "Nuclear Waste Technical Review Board",
       "match_path": null,
       "expected_amount": 4100000

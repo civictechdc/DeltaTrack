@@ -1,6 +1,6 @@
 {
   "source": "CRPT-118srpt199, Transportation-HUD explanatory statement for BILLS-118s4796rs",
-  "note": "Transportation-HUD FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks and validated against the bill XML. Committee-recommendation amounts are in actual dollars. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
+  "note": "Transportation-HUD FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks (committee-recommendation amounts, in actual dollars) and validated against the bill XML. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
   "accounts": [
     {
       "bill": "118-s-4796",
@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of transportation",
@@ -23,7 +24,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The Office of Intelligence, Security, and Emergency",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "RESEARCH AND TECHNOLOGY",
       "match_path": [
         "department of transportation",
@@ -38,7 +40,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The Office of the Assistant Secretary for Research and",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "NATIONAL INFRASTRUCTURE INVESTMENTS",
       "match_path": [
         "department of transportation",
@@ -53,7 +56,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "FINANCIAL MANAGEMENT CAPITAL",
       "match_path": [
         "department of transportation",
@@ -68,7 +72,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "CYBER SECURITY INITIATIVES",
       "match_path": [
         "department of transportation",
@@ -83,7 +88,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "OFFICE OF CIVIL RIGHTS",
       "match_path": [
         "department of transportation",
@@ -98,7 +104,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "TRANSPORTATION PLANNING, RESEARCH, AND DEVELOPMENT",
       "match_path": [
         "department of transportation",
@@ -113,7 +120,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "WORKING CAPITAL FUND",
       "match_path": [
         "department of transportation",
@@ -128,7 +136,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "SMALL AND DISADVANTAGED BUSINESS UTILIZATION AND OUTREACH",
       "match_path": [
         "department of transportation",
@@ -143,7 +152,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The National Surface Transportation and Innovative Finance",
+      "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "PAYMENTS TO AIR CARRIERS",
       "match_path": [
         "department of transportation",
@@ -158,7 +168,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Aviation Administration",
+      "office": null,
       "excel_name": "OPERATIONS",
       "match_path": [
         "department of transportation",
@@ -173,7 +184,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Zero-Emission Vehicle [ZEV] and Voluntary Airport Low",
+      "bureau": "Federal Aviation Administration",
+      "office": null,
       "excel_name": "GRANTS-IN-AID TO AIRPORTS",
       "match_path": null,
       "expected_amount": 521155000
@@ -184,7 +196,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "National Culvert Removal, Replacement, and Restoration",
+      "bureau": "Federal Highway Administration",
+      "office": null,
       "excel_name": "HIGHWAY TRUST FUND",
       "match_path": null,
       "expected_amount": 62011047545
@@ -195,7 +208,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "National Culvert Removal, Replacement, and Restoration",
+      "bureau": "Federal Highway Administration",
+      "office": null,
       "excel_name": "HIGHWAY INFRASTRUCTURE PROGRAMS",
       "match_path": [
         "department of transportation",
@@ -210,7 +224,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Railroad Administration",
+      "office": null,
       "excel_name": "SAFETY AND OPERATIONS",
       "match_path": [
         "department of transportation",
@@ -225,7 +240,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Railroad Administration",
+      "office": null,
       "excel_name": "RAILROAD RESEARCH AND DEVELOPMENT",
       "match_path": [
         "department of transportation",
@@ -240,7 +256,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Railroad Administration",
+      "office": null,
       "excel_name": "FEDERAL-STATE PARTNERSHIP FOR INTERCITY PASSENGER RAIL GRANTS",
       "match_path": [
         "department of transportation",
@@ -255,7 +272,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Railroad Administration",
+      "office": null,
       "excel_name": "CONSOLIDATED RAIL INFRASTRUCTURE AND SAFETY IMPROVEMENTS GRANTS",
       "match_path": [
         "department of transportation",
@@ -270,7 +288,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Federal Railroad Administration",
+      "office": null,
       "excel_name": "THE NATIONAL RAILROAD PASSENGER CORPORATION",
       "match_path": null,
       "expected_amount": 2638072000
@@ -281,7 +300,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Updates to the FTA's Best Practices Procurement and Lessons",
+      "bureau": "Federal Transit Administration",
+      "office": null,
       "excel_name": "TRANSIT INFRASTRUCTURE GRANTS",
       "match_path": [
         "department of transportation",
@@ -296,7 +316,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Updates to the FTA's Best Practices Procurement and Lessons",
+      "bureau": "Federal Transit Administration",
+      "office": null,
       "excel_name": "TECHNICAL ASSISTANCE AND TRAINING",
       "match_path": [
         "department of transportation",
@@ -311,7 +332,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Updates to the FTA's Best Practices Procurement and Lessons",
+      "bureau": "Federal Transit Administration",
+      "office": null,
       "excel_name": "CAPITAL INVESTMENT GRANTS",
       "match_path": [
         "department of transportation",
@@ -326,7 +348,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Updates to the FTA's Best Practices Procurement and Lessons",
+      "bureau": "Federal Transit Administration",
+      "office": null,
       "excel_name": "GRANTS TO THE WASHINGTON METROPOLITAN AREA TRANSIT AUTHORITY",
       "match_path": [
         "department of transportation",
@@ -341,7 +364,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "The Great Lakes St. Lawrence Seaway Development Corporation",
+      "bureau": "Great Lakes St. Lawrence Seaway Development Corporation",
+      "office": null,
       "excel_name": "OPERATIONS AND MAINTENANCE",
       "match_path": [
         "department of transportation",
@@ -357,8 +381,13 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "MARITIME SECURITY PROGRAM",
-      "match_path": null,
+      "match_path": [
+        "department of transportation",
+        "maritime administration",
+        "maritime security program"
+      ],
       "expected_amount": 318000000
     },
     {
@@ -368,6 +397,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "CABLE SECURITY FLEET",
       "match_path": [
         "department of transportation",
@@ -383,6 +413,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "TANKER SECURITY FLEET",
       "match_path": null,
       "expected_amount": 120000000
@@ -394,6 +425,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "OPERATIONS AND TRAINING",
       "match_path": [
         "department of transportation",
@@ -409,6 +441,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "STATE MARITIME ACADEMY OPERATIONS",
       "match_path": [
         "department of transportation",
@@ -424,6 +457,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "ASSISTANCE TO SMALL SHIPYARDS",
       "match_path": [
         "department of transportation",
@@ -439,6 +473,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "SHIP DISPOSAL",
       "match_path": [
         "department of transportation",
@@ -454,6 +489,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "MARITIME GUARANTEED LOAN PROGRAM [TITLE XI]",
       "match_path": null,
       "expected_amount": 5000000
@@ -465,6 +501,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Maritime Administration",
+      "office": null,
       "excel_name": "PORT INFRASTRUCTURE DEVELOPMENT PROGRAM",
       "match_path": [
         "department of transportation",
@@ -479,7 +516,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Pipeline and Hazardous Materials Safety Administration",
+      "office": null,
       "excel_name": "OPERATIONAL EXPENSES",
       "match_path": [
         "department of transportation",
@@ -494,7 +532,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
-      "bureau": "Advance          Committee",
+      "bureau": "Pipeline and Hazardous Materials Safety Administration",
+      "office": null,
       "excel_name": "HAZARDOUS MATERIALS SAFETY",
       "match_path": [
         "department of transportation",
@@ -510,6 +549,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF TRANSPORTATION",
       "bureau": "Office of Inspector General",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of transportation",
@@ -525,6 +565,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Management and Administration",
+      "office": null,
       "excel_name": "EXECUTIVE OFFICES",
       "match_path": [
         "department of housing and urban development",
@@ -540,6 +581,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Management and Administration",
+      "office": null,
       "excel_name": "ADMINISTRATIVE SUPPORT OFFICES",
       "match_path": [
         "department of housing and urban development",
@@ -554,7 +596,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Committee",
+      "bureau": "Management and Administration",
+      "office": null,
       "excel_name": "PROGRAM OFFICES",
       "match_path": [
         "department of housing and urban development",
@@ -569,7 +612,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Committee",
+      "bureau": "Management and Administration",
+      "office": null,
       "excel_name": "INFORMATION TECHNOLOGY FUND",
       "match_path": [
         "department of housing and urban development",
@@ -585,6 +629,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "TENANT-BASED RENTAL ASSISTANCE",
       "match_path": [
         "department of housing and urban development",
@@ -599,7 +644,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Contract Renewals and Pilot Demonstration on Tenant Leasing",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "PUBLIC HOUSING FUND",
       "match_path": [
         "department of housing and urban development",
@@ -614,7 +660,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Receiverships and Troubled, Substandard or Otherwise At-",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "ASSISTED HOUSING INSPECTIONS AND ASSESSMENTS",
       "match_path": null,
       "expected_amount": 50000000
@@ -625,7 +672,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Receiverships and Troubled, Substandard or Otherwise At-",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "CHOICE NEIGHBORHOODS INITIATIVE",
       "match_path": [
         "department of housing and urban development",
@@ -640,7 +688,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Receiverships and Troubled, Substandard or Otherwise At-",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "SELF-SUFFICIENCY PROGRAMS",
       "match_path": [
         "department of housing and urban development",
@@ -655,9 +704,14 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Receiverships and Troubled, Substandard or Otherwise At-",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "NATIVE AMERICAN PROGRAMS",
-      "match_path": null,
+      "match_path": [
+        "department of housing and urban development",
+        "public and indian housing",
+        "native american programs"
+      ],
       "expected_amount": 1455100000
     },
     {
@@ -666,7 +720,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Limitation on",
+      "bureau": "Public and Indian Housing",
+      "office": null,
       "excel_name": "NATIVE HAWAIIAN HOUSING BLOCK GRANT",
       "match_path": [
         "department of housing and urban development",
@@ -682,6 +737,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "HOUSING OPPORTUNITIES FOR PERSONS WITH AIDS",
       "match_path": [
         "department of housing and urban development",
@@ -697,6 +753,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "COMMUNITY DEVELOPMENT FUND",
       "match_path": [
         "department of housing and urban development",
@@ -711,7 +768,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Limitation on",
+      "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "HOME INVESTMENT PARTNERSHIPS PROGRAM",
       "match_path": [
         "department of housing and urban development",
@@ -726,7 +784,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Title II of the National Affordable Housing Act (Public Law",
+      "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "PRESERVATION AND REINVESTMENT INITIATIVE FOR COMMUNITY ENHANCEMENT",
       "match_path": [
         "department of housing and urban development",
@@ -741,7 +800,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Title II of the National Affordable Housing Act (Public Law",
+      "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "SELF-HELP AND ASSISTED HOMEOWNERSHIP OPPORTUNITY PROGRAM",
       "match_path": [
         "department of housing and urban development",
@@ -756,7 +816,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Capacity Building to Address the Needs of Tribal",
+      "bureau": "Community Planning and Development",
+      "office": null,
       "excel_name": "HOMELESS ASSISTANCE GRANTS",
       "match_path": [
         "department of housing and urban development",
@@ -772,6 +833,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Housing Programs",
+      "office": null,
       "excel_name": "PROJECT-BASED RENTAL ASSISTANCE",
       "match_path": [
         "department of housing and urban development",
@@ -786,7 +848,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Improving Properties with Health, Safety, or Operational",
+      "bureau": "Housing Programs",
+      "office": null,
       "excel_name": "HOUSING FOR THE ELDERLY",
       "match_path": [
         "department of housing and urban development",
@@ -801,9 +864,14 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Improving Properties with Health, Safety, or Operational",
+      "bureau": "Housing Programs",
+      "office": null,
       "excel_name": "HOUSING FOR PERSONS WITH DISABILITIES",
-      "match_path": null,
+      "match_path": [
+        "department of housing and urban development",
+        "housing programs",
+        "housing for persons with disabilities"
+      ],
       "expected_amount": 256700000
     },
     {
@@ -812,7 +880,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Improving Properties with Health, Safety, or Operational",
+      "bureau": "Housing Programs",
+      "office": null,
       "excel_name": "HOUSING COUNSELING ASSISTANCE",
       "match_path": [
         "department of housing and urban development",
@@ -827,7 +896,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
-      "bureau": "Improving Properties with Health, Safety, or Operational",
+      "bureau": "Housing Programs",
+      "office": null,
       "excel_name": "PAYMENT TO MANUFACTURED HOUSING FEES TRUST FUND",
       "match_path": [
         "department of housing and urban development",
@@ -843,6 +913,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Policy Development and Research",
+      "office": null,
       "excel_name": "RESEARCH AND TECHNOLOGY",
       "match_path": [
         "department of housing and urban development",
@@ -858,6 +929,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Fair Housing and Equal Opportunity",
+      "office": null,
       "excel_name": "FAIR HOUSING ACTIVITIES",
       "match_path": [
         "department of housing and urban development",
@@ -873,6 +945,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT",
       "bureau": "Office of Lead Hazard Control and Healthy Homes",
+      "office": null,
       "excel_name": "LEAD HAZARD REDUCTION",
       "match_path": [
         "department of housing and urban development",
@@ -888,6 +961,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Access Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -903,6 +977,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Federal Maritime Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -918,10 +993,11 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Railroad Passenger Corporation",
+      "office": "OFFICE OF INSPECTOR GENERAL",
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
-        "national transportation safety board",
+        "office of inspector general",
         "salaries and expenses"
       ],
       "expected_amount": 32100000
@@ -933,6 +1009,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "National Transportation Safety Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -948,6 +1025,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "Neighborhood Reinvestment Corporation",
+      "office": null,
       "excel_name": "PAYMENT TO THE NEIGHBORHOOD REINVESTMENT CORPORATION",
       "match_path": [
         "related agencies",
@@ -963,6 +1041,7 @@
       "chamber": "senate",
       "title": "INDEPENDENT AGENCIES",
       "bureau": "United States Interagency Council on Homelessness",
+      "office": null,
       "excel_name": "OPERATING EXPENSES",
       "match_path": [
         "related agencies",

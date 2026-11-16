@@ -214,20 +214,26 @@ def test_an_advance_appropriation_available_this_year_is_added_and_an_in_all_tot
 
 SPREADSHEET = "House_and_Senate_Appropriations_FY_1994_to_present.xlsx"  # validation_leg_branch.json's source
 
-# The two typing disagreements left where the report's figure is in the text. Neither is a
-# figure picked from the wrong place: each is a question the figure's type has to answer.
+# Gross versus net: the bill appropriates $10,020,729,000 and estimates the general-fund cost
+# after fees at $7,400,729,000; this report carries the net figure, the USPTO's the gross, so the
+# resolver returns gross (see the resolver's docstring).
+GROSS_VERSUS_NET = (
+    "homeland_security",
+    ("security, enforcement, and investigations", "transportation security administration", "operations and support"),
+)
+# The report contradicts itself: the bill appropriates $1,143,322,000, of which $1,118,322,000 is
+# designated an emergency requirement, and the report's comparative statement carries 1,143,322
+# (thousands) with the emergency 1,118,322 beneath it; its summary block, which the answer key
+# reads, states only the $1,118,322,000 emergency portion.
+EMERGENCY_PORTION_ONLY = (
+    "homeland_security",
+    ("security, enforcement, and investigations", "coast guard", "procurement, construction, and improvements"),
+)
+# The typing disagreements left where the report's figure is in the text. None is a figure
+# picked from the wrong place: each is a question the figure's type has to answer.
 KNOWN_WRONG_FIGURES = {
-    # Gross versus net: the bill appropriates $10,020,729,000 and estimates the general-fund
-    # cost after fees at $7,400,729,000; this report carries the net figure, the USPTO's the
-    # gross, so the resolver returns gross (see the resolver's docstring).
-    (
-        "homeland_security",
-        (
-            "security, enforcement, and investigations",
-            "transportation security administration",
-            "operations and support",
-        ),
-    ),  # noqa: E501
+    GROSS_VERSUS_NET,
+    EMERGENCY_PORTION_ONLY,
     # The Legislative Branch spreadsheet lists one office of an itemised paragraph ("...Office of
     # the Whistleblower Ombudsman, $750,000; ...") as an account; the paragraph appropriates its total.
     ("leg_branch", ("legislative branch", "house of representatives", "salaries, officers and employees")),
@@ -247,32 +253,32 @@ def test_no_wrong_figure_where_the_report_figure_is_in_the_text():
     assert wrong == KNOWN_WRONG_FIGURES, (
         f"new: {sorted(wrong - KNOWN_WRONG_FIGURES)}; no longer wrong: {sorted(KNOWN_WRONG_FIGURES - wrong)}"
     )
-    assert sum(r.outcome == "agree" for r in results) >= 955, "fewer accounts agree with their report than measured"
+    assert sum(r.outcome == "agree" for r in results) >= 1012, "fewer accounts agree with their report than measured"
 
 
 @pytest.mark.slow
-def test_summing_an_accounts_pieces_types_no_wrong_figure_but_gross_versus_net():
+def test_summing_an_accounts_pieces_types_no_wrong_figure_but_where_bill_and_report_differ():
     """Adding "together with", "in addition", second-purpose and advance figures must not cost
     an account that agreed on its top line alone (the Fiscal Service's separate "In addition,
     $235,000" sentence did, until in-addition was confined to the account's own sentence)."""
     results, _ = committee_agreement.measure(committee_agreement.RESOLVERS["summed"])
     wrong = {(r.jurisdiction, r.path) for r in results if r.outcome == "wrong_figure"}
-    assert wrong == {next(k for k in KNOWN_WRONG_FIGURES if k[0] == "homeland_security")}
+    assert wrong == {GROSS_VERSUS_NET, EMERGENCY_PORTION_ONLY}
     # Held per evidence source, as the README reports them: the spreadsheet's itemised lines
     # must not be counted as committee-report agreement.
     agree = Counter(r.source for r in results if r.outcome == "agree")
-    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 658, "fewer accounts agree with their committee report"
+    assert agree[committee_agreement.COMMITTEE_REPORTS] >= 715, "fewer accounts agree with their committee report"
     assert agree[SPREADSHEET] >= 403, "fewer accounts agree with the Legislative Branch spreadsheet"
 
 
 @pytest.mark.slow
-def test_the_ledger_types_no_wrong_figure_but_gross_versus_net():
+def test_the_ledger_types_no_wrong_figure_but_where_bill_and_report_differ():
     """Looking report lines up among itemised lines must not trade agreements for wrong figures.
 
-    The one left is the gross-versus-net account the structured gate also lists; the itemised
-    House office it lists is found by name here.
+    The two left are the accounts the structured gate also lists where the bill and the report
+    state different figures; the itemised House office it lists is found by name here.
     """
     results, _ = committee_agreement.measure(committee_agreement.RESOLVERS["ledger"])
     wrong = {(r.jurisdiction, r.path) for r in results if r.outcome == "wrong_figure"}
-    assert wrong == {next(k for k in KNOWN_WRONG_FIGURES if k[0] == "homeland_security")}
-    assert sum(r.outcome == "agree" for r in results) >= 1051, "fewer accounts agree with their report than measured"
+    assert wrong == {GROSS_VERSUS_NET, EMERGENCY_PORTION_ONLY}
+    assert sum(r.outcome == "agree" for r in results) >= 1108, "fewer accounts agree with their report than measured"

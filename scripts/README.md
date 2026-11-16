@@ -84,12 +84,15 @@ Things worth knowing before running any of it:
 - **`fetch_test_assets.py` is not part of this loop.** It restores committed bill-print
   PDFs you deleted locally and records their provenance; it touches neither the
   validation fixtures nor the report.
-- **Step 1 currently produces a nine-fixture diff you should not commit.** Six
-  committee-report fixtures have drifted from their sources and are never rebuilt
-  from them ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)); on the
-  current tree the rebuild regenerates `match_path` values as `null`, quietly
-  dropping those accounts to the agency-scoped fallback. Committing that diff
+- **Review every `match_path` in the step 1 diff.** Names and amounts come from the
+  report; `match_path` comes from our builder searching our own tree, so a parser change
+  moves it, and nothing yet checks that the committed fixtures still rebuild
+  ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)). A rebuilt path can be
+  `null` where the committed one was right, which quietly drops the account to the
+  agency-scoped fallback, or point at the wrong paragraph. Committing such a diff unread
   degrades the ground truth while looking like a refresh.
+  `test_mapped_accounts_sit_under_their_report_title` catches a mapping that leaves its
+  report title; nothing catches one that stays inside it.
 - **Adding a jurisdiction** is documented in
   [tests/validation_sources.py](../tests/validation_sources.py) — follow it, then run
   this loop.

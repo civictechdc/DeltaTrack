@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "MILITARY CONSTRUCTION",
       "bureau": "North Atlantic Treaty Organization",
+      "office": null,
       "excel_name": "SECURITY INVESTMENT PROGRAM",
       "match_path": [
         "department of defense",
@@ -22,7 +23,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Administrative",
+      "bureau": "Veterans Benefits Administration",
+      "office": null,
       "excel_name": "NATIVE AMERICAN VETERAN HOUSING LOAN PROGRAM ACCOUNT",
       "match_path": [
         "department of veterans affairs",
@@ -37,7 +39,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Administrative",
+      "bureau": "Veterans Benefits Administration",
+      "office": null,
       "excel_name": "GENERAL OPERATING EXPENSES, VETERANS BENEFITS ADMINISTRATION",
       "match_path": [
         "department of veterans affairs",
@@ -52,7 +55,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Compacts of Free Association Related to Care for Veterans",
+      "bureau": "Veterans Health Administration",
+      "office": null,
       "excel_name": "MEDICAL AND PROSTHETIC RESEARCH",
       "match_path": [
         "department of veterans affairs",
@@ -67,7 +71,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Compacts of Free Association Related to Care for Veterans",
+      "bureau": "Veterans Health Administration",
+      "office": "MEDICAL CARE COST RECOVERY COLLECTIONS",
       "excel_name": "MEDICAL CARE COLLECTION FUND",
       "match_path": null,
       "expected_amount": 4632000000
@@ -79,6 +84,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
       "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "GENERAL ADMINISTRATION",
       "match_path": [
         "department of veterans affairs",
@@ -93,7 +99,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Access to High-Quality Affordable Childcare for Federal",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "BOARD OF VETERANS APPEALS",
       "match_path": [
         "department of veterans affairs",
@@ -108,7 +115,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Access to High-Quality Affordable Childcare for Federal",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "INFORMATION TECHNOLOGY SYSTEMS",
       "match_path": [
         "department of veterans affairs",
@@ -123,7 +131,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Access to High-Quality Affordable Childcare for Federal",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "VETERANS ELECTRONIC HEALTH RECORD",
       "match_path": [
         "department of veterans affairs",
@@ -138,7 +147,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Access to High-Quality Affordable Childcare for Federal",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "OFFICE OF INSPECTOR GENERAL",
       "match_path": [
         "department of veterans affairs",
@@ -153,7 +163,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Access to High-Quality Affordable Childcare for Federal",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "CONSTRUCTION, MAJOR PROJECTS",
       "match_path": [
         "department of veterans affairs",
@@ -168,7 +179,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Project Management Support--Various",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "CONSTRUCTION, MINOR PROJECTS",
       "match_path": [
         "department of veterans affairs",
@@ -183,7 +195,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Project Management Support--Various",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "GRANTS FOR CONSTRUCTION OF STATE EXTENDED CARE FACILITIES",
       "match_path": [
         "department of veterans affairs",
@@ -198,7 +211,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF VETERANS AFFAIRS",
-      "bureau": "Project Management Support--Various",
+      "bureau": "Departmental Administration",
+      "office": null,
       "excel_name": "GRANTS FOR CONSTRUCTION OF VETERANS CEMETERIES",
       "match_path": [
         "department of veterans affairs",
@@ -214,6 +228,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "American Battle Monuments Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -229,6 +244,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "United States Court of Appeals for Veterans Claims",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -244,6 +260,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Cemeterial Expenses, Army",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -259,6 +276,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Cemeterial Expenses, Army",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "related agencies",
@@ -274,6 +292,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Trust Fund",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "related agencies",

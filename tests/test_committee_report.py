@@ -187,6 +187,165 @@ def test_parse_summary_blocks_ignores_run_in_directive_heading():
     assert block.bureau == "Federal Bureau of Investigation"
 
 
+# A run-in heading too long for one line wraps before its ".--" marker, leaving a first line
+# that is indented and Title-Cased like a bureau (Senate Report 118-198 has dozens). Read as
+# the bureau, it steered every Legal Activities account after it by the narrative's words,
+# and the builder mapped the $2.66 billion United States Attorneys line to the Commission on
+# Civil Rights. It is the first line of a paragraph, not a header standing alone.
+WRAPPED_RUN_IN_BLOCK = """\
+                                TITLE II
+
+                         DEPARTMENT OF JUSTICE
+
+                            Legal Activities
+
+    Civil Rights Violations in State and Local Prisons and
+Jails.--The Committee continues to be concerned by reports of
+civil rights violations in State and local prisons and jails.
+
+               SALARIES AND EXPENSES, ANTITRUST DIVISION
+
+Appropriations, 2024....................................    $233,000,000
+Budget estimate, 2025...................................     288,000,000
+Committee recommendation................................     288,000,000
+"""
+
+
+def test_parse_summary_blocks_ignores_wrapped_run_in_heading_as_bureau():
+    block = parse_summary_blocks(WRAPPED_RUN_IN_BLOCK)[0]
+    assert block.bureau == "Legal Activities"
+
+
+# A bureau name too long for one line wraps onto a second, centered line; the two are one
+# header (Interior's report, the Institute of American Indian Arts account).
+WRAPPED_BUREAU_BLOCK = """\
+              Office of Navajo and Hopi Indian Relocation
+
+    Institute of American Indian and Alaska Native Culture and Arts
+                              Development
+
+    The Institute of American Indian and Alaska Native Culture
+and Arts Development was established in 1962.
+
+                        PAYMENT TO THE INSTITUTE
+
+Appropriations, 2024....................................     $13,482,000
+Budget estimate, 2025...................................      13,642,000
+Committee recommendation................................      13,642,000
+"""
+
+
+def test_parse_summary_blocks_joins_wrapped_bureau_header():
+    block = parse_summary_blocks(WRAPPED_BUREAU_BLOCK)[0]
+    assert block.bureau == "Institute of American Indian and Alaska Native Culture and Arts Development"
+
+
+# An account name too long for one line wraps too, and GPO ends the line it wraps with a
+# space. Reading only the last line named the World Bank contribution "DEVELOPMENT", which
+# the builder then matched to Development Assistance. Two stacked headings with no such
+# space are a parent over its account instead (TITLED_BLOCK), and stay apart.
+WRAPPED_HEADING_BLOCK = (
+    "     CONTRIBUTION TO THE INTERNATIONAL BANK FOR RECONSTRUCTION AND \n"
+    "                              DEVELOPMENT\n"
+    "\n"
+    "Appropriations, 2024....................................    $206,500,000\n"
+    "Budget estimate, 2025...................................     233,322,000\n"
+    "Committee recommendation................................     206,500,000\n"
+)
+
+
+def test_parse_summary_blocks_joins_wrapped_heading():
+    block = parse_summary_blocks(WRAPPED_HEADING_BLOCK)[0]
+    assert block.heading == "CONTRIBUTION TO THE INTERNATIONAL BANK FOR RECONSTRUCTION AND DEVELOPMENT"
+    assert block.committee_recommendation == 206_500_000
+
+
+# Some reports head an office in ALL-CAPS, like an account. Stacked directly over the
+# account heading, it names the office the account belongs to; the mixed-case bureau above
+# is kept beside it (the bill names this account "Salaries and Expenses, United States
+# Attorneys", under Legal Activities).
+STACKED_OFFICE_BLOCK = """\
+                            Legal Activities
+
+                        UNITED STATES ATTORNEYS
+
+                         SALARIES AND EXPENSES
+
+Appropriations, 2024....................................  $2,624,000,000
+Budget estimate, 2025...................................   2,800,000,000
+Committee recommendation................................   2,664,000,000
+"""
+
+
+def test_parse_summary_blocks_reads_a_stacked_office_heading():
+    block = parse_summary_blocks(STACKED_OFFICE_BLOCK)[0]
+    assert block.office == "UNITED STATES ATTORNEYS"
+    assert block.bureau == "Legal Activities"
+
+
+# The Homeland Security report instead introduces an office: its heading stands alone, the
+# paragraph under it opens by naming it, and the account heading follows the narrative. The
+# bureau left over from earlier ("Management Directorate") is a sibling office, not its parent,
+# and steered the builder to the wrong paragraph.
+INTRODUCED_OFFICE_BLOCK = """\
+                         Management Directorate
+
+                         OPERATIONS AND SUPPORT
+
+Appropriations, 2023....................................  $1,630,000,000
+Budget estimate, 2024...................................   1,700,000,000
+Committee recommendation................................   1,690,000,000
+
+                      OFFICE OF INSPECTOR GENERAL
+
+    The Office of Inspector General [OIG] conducts audits,
+inspections, investigations, and other reviews of the
+Department's programs and operations.
+
+                         OPERATIONS AND SUPPORT
+
+Appropriations, 2023....................................    $214,879,000
+Budget estimate, 2024...................................     228,371,000
+Committee recommendation................................     237,000,000
+"""
+
+
+def test_parse_summary_blocks_reads_an_introduced_office_heading():
+    management, inspector_general = parse_summary_blocks(INTRODUCED_OFFICE_BLOCK)
+    assert management.office is None
+    assert inspector_general.office == "OFFICE OF INSPECTOR GENERAL"
+    assert inspector_general.bureau == "Management Directorate"
+
+
+_BLOCK_UNDER = """
+                         {account}
+
+Appropriations, 2024....................................     $10,000,000
+Budget estimate, 2025...................................      10,000,000
+Committee recommendation................................      10,000,000
+"""
+
+
+# The other ALL-CAPS lines between two summary blocks are not offices: the last line of a
+# paragraph, a funding qualifier set as a heading, a sub-program whose paragraph does not
+# name it, and a list of sub-programs, any of which would otherwise be "the" office.
+@pytest.mark.parametrize(
+    "lines_above",
+    [
+        "    The Committee directs a report on the work of the\nCJCC.\n",
+        "\n                 LIQUIDATION OF CONTRACT AUTHORIZATION\n",
+        "\n                         NIST EXTERNAL PROJECTS\n\n"
+        "    The Committee's recommendation provides $50,000,000.\n",
+        "\n                      NOAA NATIONAL OCEAN SERVICE\n\n    The NOAA National Ocean Service is funded.\n"
+        "\n                     NOAA NATIONAL WEATHER SERVICE\n\n    The NOAA National Weather Service is funded.\n",
+    ],
+    ids=["paragraph-tail", "qualifier", "unnamed-sub-program", "sub-program-list"],
+)
+def test_parse_summary_blocks_reads_no_office_from_other_capitals(lines_above):
+    block = parse_summary_blocks(lines_above + _BLOCK_UNDER.format(account="HIGHWAY TRUST FUND"))[0]
+    assert block.office is None
+
+
 # A parenthetical qualifier line sits between the heading and the summary rows; the
 # reader must walk past it to the real ALL-CAPS heading.
 PARENTHETICAL_BLOCK = """\

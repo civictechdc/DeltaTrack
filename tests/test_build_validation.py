@@ -1,4 +1,5 @@
-"""Tests for the comparative-statement ground-truth selection in scripts/build_validation.py.
+"""Tests for scripts/build_validation.py: the comparative-statement ground-truth selection,
+the name mapping to a bill node (`map_account_path`), and the command line.
 
 For tabular jurisdictions (source="comparative"), the builder turns the report's comparative
 statement into ground-truth account rows. The selection rules are load-bearing — they decide
@@ -41,21 +42,107 @@ def _comparative(text):
 
 
 def test_comparative_ground_truth_converts_thousands_to_dollars():
-    rows = {item: amount for _title, _bureau, item, amount in _comparative(_STATEMENT)}
+    rows = {item: amount for _title, _bureau, _office, item, amount in _comparative(_STATEMENT)}
     assert rows["Military Personnel, Army"] == 50_702_367_000
     assert rows["Military Personnel, Navy"] == 38_400_554_000
 
 
 def test_comparative_ground_truth_carries_agency_title():
-    titles = {title for title, _bureau, _item, _amount in _comparative(_STATEMENT)}
+    titles = {title for title, _bureau, _office, _item, _amount in _comparative(_STATEMENT)}
     assert titles == {"MILITARY PERSONNEL"}
 
 
 def test_comparative_ground_truth_drops_totals_and_negative_offsets():
-    items = {item for _title, _bureau, item, _amount in _comparative(_STATEMENT)}
+    items = {item for _title, _bureau, _office, item, _amount in _comparative(_STATEMENT)}
     assert "Total, title I, Military Personnel" not in items  # rollup total
     assert "Offsetting collections" not in items  # negative reduction line
     assert items == {"Military Personnel, Army", "Military Personnel, Navy"}
+
+
+def _nodes(*paths):
+    return [SimpleNamespace(match_path=p) for p in paths]
+
+
+# The bill tree carries subsection nodes labelled only by their enumerator. Normalized to a
+# single letter, "(a)" is a substring of nearly any account name, so the name-substring tier
+# must not consider them: they tied out Defense's general-provision accounts, which map to
+# their section, and won Energy-Water's "(Civil Works)" account outright on agency overlap.
+_GENERAL_PROVISIONS = _nodes(
+    ("revolving and management funds", "national defense stockpile transaction fund"),
+    ("general provisions", "sec. 8034"),
+    ("general provisions", "sec. 8034", "(a)"),
+    ("general provisions", "sec. 8035", "(c)"),
+    ("corps of engineers", "general provisions", "sec. 101", "(a)"),
+)
+
+
+def test_map_account_path_maps_a_general_provision_to_its_section():
+    path = bv.map_account_path(
+        _GENERAL_PROVISIONS,
+        "GENERAL PROVISIONS",
+        "GENERAL PROVISIONS",
+        "National Defense Stockpile Transaction Fund (Sec. 8034)",
+    )
+    assert path == ["general provisions", "sec. 8034"]
+
+
+def test_map_account_path_never_maps_to_a_bare_enumerator():
+    path = bv.map_account_path(
+        _GENERAL_PROVISIONS,
+        "TITLE I--CORPS OF ENGINEERS",
+        "Corps of Engineers",
+        "Office of Assistant Secretary of the Army (Civil Works)",
+    )
+    assert path is None
+
+
+# Same-named accounts across offices: the report's office heading over an account picks its
+# node where the bureau, left over from a sibling office, would pick the sibling's.
+_OPERATIONS_AND_SUPPORT = _nodes(
+    ("departmental management", "management directorate", "operations and support"),
+    ("departmental management", "office of the inspector general", "operations and support"),
+)
+
+
+def test_map_account_path_prefers_the_office_over_a_stale_bureau():
+    path = bv.map_account_path(
+        _OPERATIONS_AND_SUPPORT,
+        "DEPARTMENTAL MANAGEMENT",
+        "Management Directorate",
+        "OPERATIONS AND SUPPORT",
+        office="OFFICE OF INSPECTOR GENERAL",
+    )
+    assert path == ["departmental management", "office of the inspector general", "operations and support"]
+
+
+# An office counts as a whole name only. By its words, "OFFICE OF INSPECTOR GENERAL" is
+# nearer the Administrative Office of the U.S. Courts than the Postal Service, whose Inspector
+# General's account the bill calls just "Salaries and Expenses" under the Postal Service.
+def test_map_account_path_never_matches_an_office_by_its_words():
+    nodes = _nodes(
+        ("the judiciary", "administrative office of the united states courts", "salaries and expenses"),
+        ("independent agencies", "united states postal service", "salaries and expenses"),
+    )
+    path = bv.map_account_path(
+        nodes,
+        "INDEPENDENT AGENCIES",
+        "United States Postal Service",
+        "SALARIES AND EXPENSES",
+        office="OFFICE OF INSPECTOR GENERAL",
+    )
+    assert path == ["independent agencies", "united states postal service", "salaries and expenses"]
+
+
+def test_map_account_path_reads_an_account_named_with_its_office():
+    nodes = _nodes(
+        ("department of justice", "united states marshals service", "salaries and expenses"),
+        ("department of justice", "united states parole commission", "salaries and expenses"),
+        ("department of justice", "legal activities", "salaries and expenses, united states attorneys"),
+    )
+    path = bv.map_account_path(
+        nodes, "DEPARTMENT OF JUSTICE", "Legal Activities", "SALARIES AND EXPENSES", office="UNITED STATES ATTORNEYS"
+    )
+    assert path == ["department of justice", "legal activities", "salaries and expenses, united states attorneys"]
 
 
 def test_help_exits_zero_and_documents_both_arguments(capsys):

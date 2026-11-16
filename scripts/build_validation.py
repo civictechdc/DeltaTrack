@@ -40,6 +40,8 @@ _NON_LEAF_ITEM_RE = re.compile(
     r"^(?:total|subtotal|grand total|net grand total|less\b|available from prior)",
     re.IGNORECASE,
 )
+# A match_path element that is nothing but a subsection enumerator: "(a)", "(1)", "(iv)".
+_BARE_ENUMERATOR_RE = re.compile(r"^\(\w+\)$")
 
 
 def _norm(s: str | None) -> str:
@@ -50,17 +52,38 @@ def _toks(s: str | None) -> set[str]:
     return set(_norm(s).split())
 
 
-def map_account_path(nodes, title, bureau, heading) -> list[str] | None:
-    """Return the match_path of the unique bill node matching (title, bureau, heading).
+_FUNCTION_WORDS = {"of", "and", "the", "for", "to", "in", "a", "an", "on", "at", "by", "or", "with"}
+
+
+def _name_key(s: str | None) -> str:
+    """A name with its function words dropped: the report's "OFFICE OF INSPECTOR GENERAL"
+    and the bill's "Office of the Inspector General" are one office."""
+    return " ".join(w for w in _norm(s).split() if w not in _FUNCTION_WORDS)
+
+
+def map_account_path(nodes, title, bureau, heading, office=None) -> list[str] | None:
+    """Return the match_path of the unique bill node matching (title, bureau, office, heading).
 
     Mapping is by NAME only, independent of the amount, so the test's amount check stays an
     honest external comparison. Returns None when there is no confident single match (name
     divergence or an unresolvable same-name tie) — the test then falls back to agency-scoped
-    recall for that account. Match tiers: exact account-name, then substring; ties among
-    same-named accounts are broken by bureau/agency token overlap and must be unambiguous.
+    recall for that account. Match tiers: the account name qualified by its office, then the
+    exact account name, then substring. Ties among same-named accounts are broken by whether
+    the office over the account is the node's parent, then by token overlap with the bureau,
+    then with the title, and must be unambiguous.
+
+    An office counts only as a whole name, never by its words: "OFFICE OF INSPECTOR GENERAL"
+    shares "office" and "of" with the Administrative Office of the U.S. Courts, and
+    "...FOR TAX ADMINISTRATION" shares "tax" with the Alcohol and Tobacco Tax and Trade Bureau.
     """
     nh = _norm(heading)
-    cands = [n for n in nodes if _norm(n.match_path[-1]) == nh]
+    cands = []
+    if office:
+        # The bill sometimes names an account by its office as well as its kind:
+        # "Salaries and Expenses, United States Attorneys" under Legal Activities.
+        cands = [n for n in nodes if _norm(n.match_path[-1]) == _norm(f"{heading} {office}")]
+    if not cands:
+        cands = [n for n in nodes if _norm(n.match_path[-1]) == nh]
     if not cands and any(nh and nh == _norm(e) for n in nodes for e in n.match_path[:-1]):
         # The heading names an agency/bureau the bill itemizes rather than a leaf account:
         # it matches an *interior* path element, so no single node carries its amount.
@@ -74,16 +97,28 @@ def map_account_path(nodes, title, bureau, heading) -> list[str] | None:
         # sends whoever triages the miss to the wrong node.
         return None
     if not cands:
-        cands = [n for n in nodes if nh and (nh in _norm(n.match_path[-1]) or _norm(n.match_path[-1]) in nh)]
+        # A subsection labelled only by its enumerator ("(a)") names nothing, yet its
+        # one-letter normal form is a substring of nearly every account name; letting it in
+        # ties out real matches (Defense's "... (Sec. 8034)" against its "sec. 8034") and,
+        # where there are none, wins on agency overlap alone (Energy-Water's "Office of
+        # Assistant Secretary of the Army (Civil Works)" against a "sec. 101 > (a)").
+        cands = [
+            n
+            for n in nodes
+            if nh
+            and not _BARE_ENUMERATOR_RE.match(n.match_path[-1])
+            and (nh in _norm(n.match_path[-1]) or _norm(n.match_path[-1]) in nh)
+        ]
     if not cands:
         return None
     if len(cands) == 1:
         return list(cands[0].match_path)
-    bt, tt = _toks(bureau), _toks(title)
+    office_key, bt, tt = _name_key(office), _toks(bureau), _toks(title)
 
     def score(n):
+        under_office = bool(office_key) and len(n.match_path) > 1 and _name_key(n.match_path[-2]) == office_key
         path_tokens = _toks(" ".join(n.match_path))
-        return (len(bt & path_tokens), len(tt & _toks(n.match_path[0])))
+        return (under_office, len(bt & path_tokens), len(tt & _toks(n.match_path[0])))
 
     cands.sort(key=score, reverse=True)
     if score(cands[0]) == score(cands[1]):
@@ -106,20 +141,23 @@ def fetch_sources(j: Jurisdiction) -> None:
         _fetch(f"{_GOVINFO}/{j.bill_pkg}/xml/{j.bill_pkg}.xml", j.bill_xml_path)
 
 
-def _ground_truth(j: Jurisdiction, text: str) -> list[tuple[str | None, str | None, str, int]]:
-    """(title, bureau, excel_name, expected_amount_in_dollars) rows from the report."""
+def _ground_truth(j: Jurisdiction, text: str) -> list[tuple[str | None, str | None, str | None, str, int]]:
+    """(title, bureau, office, excel_name, expected_amount_in_dollars) rows from the report."""
     if j.source == "comparative":
         # Comparative amounts are in thousands; keep only leaf accounts (drop rollup totals
         # and the advance-appropriation component lines, which aren't single bill tokens).
         return [
-            (row.title, row.bureau, row.item, row.committee_recommendation_thousands * 1000)
+            (row.title, row.bureau, None, row.item, row.committee_recommendation_thousands * 1000)
             for row in parse_comparative_statement(text)
             # Negative committee recs are rescissions/offsetting collections/reductions, not
             # leaf appropriations; the bill states them as positive rescission amounts or
             # offsetting language, so they aren't recallable as the stated negative.
             if row.committee_recommendation_thousands > 0 and not _NON_LEAF_ITEM_RE.match(row.item)
         ]
-    return [(acc.title, acc.bureau, acc.heading, acc.committee_recommendation) for acc in parse_summary_blocks(text)]
+    return [
+        (acc.title, acc.bureau, acc.office, acc.heading, acc.committee_recommendation)
+        for acc in parse_summary_blocks(text)
+    ]
 
 
 def build_fixture(j: Jurisdiction) -> dict:
@@ -133,11 +171,12 @@ def build_fixture(j: Jurisdiction) -> dict:
             "chamber": j.chamber,
             "title": title,  # enclosing agency, e.g. "DEPARTMENT OF JUSTICE" / "MILITARY PERSONNEL"
             "bureau": bureau,  # enclosing bureau (summary source only); null for comparative
+            "office": office,  # ALL-CAPS office heading over this account (summary source only)
             "excel_name": excel_name,
-            "match_path": map_account_path(nodes, title, bureau, excel_name),
+            "match_path": map_account_path(nodes, title, bureau, excel_name, office),
             "expected_amount": amount,
         }
-        for title, bureau, excel_name, amount in _ground_truth(j, text)
+        for title, bureau, office, excel_name, amount in _ground_truth(j, text)
     ]
     src = (
         "comparative statement (committee-recommendation column, converted from thousands to dollars)"

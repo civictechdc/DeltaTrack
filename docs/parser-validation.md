@@ -15,7 +15,7 @@ report are written separately, by different people, for different purposes — s
 numbers match the report, that is real, independent evidence the tool got it right.
 
 Across **all 12 regular appropriations subcommittees**, the tool's amounts match the independent
-source about **94% of the time**. We then hand-checked every remaining case, and
+source about **95% of the time**. We then hand-checked every remaining case, and
 **none is a tool error.** Each is a spot where the report and the bill legitimately state a
 number differently — for example, the report gives one account total while the bill splits it
 into separate lines, or the amount is open-ended ("such sums as may be necessary") so there is
@@ -58,19 +58,19 @@ offsetting collections) are excluded — they are not leaf appropriation account
 |---|---|---:|---:|---:|
 | Commerce-Justice-Science | `118-s-4795` | 75 | 73 | 97% |
 | Agriculture-Rural Development-FDA | `118-s-4690` | 44 | 41 | 93% |
-| Transportation-HUD | `118-s-4796` | 67 | 64 | 96% |
+| Transportation-HUD | `118-s-4796` | 67 | 65 | 97% |
 | State-Foreign Operations | `118-s-4797` | 68 | 67 | 99% |
 | Interior-Environment | `118-s-4802` | 72 | 64 | 89% |
 | Financial Services-General Government | `118-s-4928` | 100 | 98 | 98% |
-| Labor-HHS-Education | `118-s-4942` | 123 | 108 | 88% |
+| Labor-HHS-Education | `118-s-4942` | 123 | 109 | 89% |
 | Military Construction-VA | `118-s-4677` | 19 | 18 | 95% |
 | Defense | `118-s-4921` | 77 | 77 | 100% |
 | Energy-Water | `118-s-4927` | 67 | 61 | 91% |
 | Commerce-Justice-Science (FY2024) | `118-s-2321` | 75 | 73 | 97% |
-| Homeland Security (FY2024) | `118-s-2625` | 35 | 30 | 86% |
+| Homeland Security (FY2024) | `118-s-2625` | 35 | 33 | 94% |
 | Legislative Branch | `118-s-4678` | 31 | 29 | 94% |
 
-**Overall: 803 / 853 accounts recalled (94.1%).**
+**Overall: 808 / 853 accounts recalled (94.7%).**
 
 ## Why the remainder is not a parser problem
 
@@ -98,10 +98,9 @@ The full current remainder:
   - FARM PRODUCTION AND CONSERVATION PROGRAMS / DAIRY INDEMNITY PROGRAM — $500,000
   - FARM PRODUCTION AND CONSERVATION PROGRAMS / REIMBURSEMENT FOR NET REALIZED LOSSES — $12,650,463,000
   - RELATED AGENCY AND FOOD AND DRUG ADMINISTRATION / FARM CREDIT ADMINISTRATION — $100,430,000
-**Transportation-HUD** (3)
+**Transportation-HUD** (2)
   - DEPARTMENT OF TRANSPORTATION / THE NATIONAL RAILROAD PASSENGER CORPORATION — $2,638,072,000
   - DEPARTMENT OF HOUSING AND URBAN DEVELOPMENT / COMMUNITY DEVELOPMENT FUND — $4,614,317,000
-  - INDEPENDENT AGENCIES / SALARIES AND EXPENSES — $32,100,000
 **State-Foreign Operations** (1)
   - DEPARTMENT OF STATE AND RELATED AGENCY / PAYMENT TO THE FOREIGN SERVICE RETIREMENT AND DISABILITY FUND — $60,000,000
 **Interior-Environment** (8)
@@ -116,7 +115,7 @@ The full current remainder:
 **Financial Services-General Government** (2)
   - EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE / SALARIES AND EXPENSES — $77,681,000
   - EXECUTIVE OFFICE OF THE PRESIDENT AND FUNDS APPROPRIATED TO THE / SALARIES AND EXPENSES — $133,290,000
-**Labor-HHS-Education** (15)
+**Labor-HHS-Education** (14)
   - DEPARTMENT OF LABOR / SPECIAL BENEFITS FOR DISABLED COAL MINERS — $31,367,000
   - DEPARTMENT OF LABOR / BLACK LUNG DISABILITY TRUST FUND — $485,706,000
   - DEPARTMENT OF LABOR / OFFICE OF THE INSPECTOR GENERAL — $97,028,000
@@ -131,7 +130,6 @@ The full current remainder:
   - DEPARTMENT OF HEALTH AND HUMAN SERVICES / REFUGEE AND ENTRANT ASSISTANCE — $6,428,214,000
   - DEPARTMENT OF HEALTH AND HUMAN SERVICES / AGING AND DISABILITY SERVICES PROGRAMS — $2,543,817,000
   - DEPARTMENT OF HEALTH AND HUMAN SERVICES / RETIREMENT PAY AND MEDICAL BENEFITS FOR COMMISSIONED OFFICERS — $894,795,000
-  - RELATED AGENCIES / OFFICE OF INSPECTOR GENERAL — $114,665,000
 **Military Construction-VA** (1)
   - DEPARTMENT OF VETERANS AFFAIRS / MEDICAL CARE COLLECTION FUND — $4,632,000,000
 **Energy-Water** (6)
@@ -144,10 +142,7 @@ The full current remainder:
 **Commerce-Justice-Science (FY2024)** (2)
   - DEPARTMENT OF JUSTICE / SALARIES AND EXPENSES — $3,210,719,000
   - DEPARTMENT OF JUSTICE / PUBLIC SAFETY OFFICERS BENEFITS — $208,800,000
-**Homeland Security (FY2024)** (5)
-  - DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT / PROCUREMENT, CONSTRUCTION, AND IMPROVEMENTS — $73,365,000
-  - DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT / OPERATIONS AND SUPPORT — $341,497,000
-  - DEPARTMENTAL MANAGEMENT, OPERATIONS, INTELLIGENCE, AND OVERSIGHT / OPERATIONS AND SUPPORT — $237,000,000
+**Homeland Security (FY2024)** (2)
   - SECURITY, ENFORCEMENT, AND INVESTIGATIONS / HEALTH CARE FUND CONTRIBUTION — $277,000,000
   - RESEARCH, DEVELOPMENT, TRAINING, AND SERVICES / OPERATIONS AND SUPPORT — $455,661,000
 **Legislative Branch** (2)
