@@ -253,6 +253,18 @@ for S. 2127's text, which carries to v4 only through the manual same-text findin
 the bill funds in more than one paragraph are not handled: the name resolver abstains on
 them.
 
+### Held-out run over the 13 validation pairs
+
+`rescission_agreement.py --wiring` prints which titles and blocks each pair in
+`tests/validation_sources.py` gets; `--held-out` runs the check over them, rules unchanged,
+with the wiring frozen at `841d0a21`. The pull request that added `--held-out` holds the
+run and its hand-trace. **That set has now been seen:** any rule change it prompts makes it
+development data, so a later claim that the rules generalise needs pairs nobody has looked
+at. The run found no false agreement and almost no coverage. Nearly every recommended
+rescission row sits outside an Administrative Provisions block, mostly in general-provisions
+titles the check does not read. The one recommended row it reads misses on "under the
+heading X" (S. 4677's Sec. 257), the shape SEC. 255 uses.
+
 ## Files
 
 | File | Purpose |
