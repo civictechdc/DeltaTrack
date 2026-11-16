@@ -64,11 +64,11 @@ def test_precision_scores_confirmed_figures_and_leaves_finer_ones_out():
 @pytest.mark.parametrize("resolver", ["baseline", "structured", "summed"])
 def test_the_fda_appropriation_found_from_this_direction_stays_typed(resolver):
     """Salaries and Expenses of the FDA appropriates $6,872,405,000, after a purpose clause that
-    allows "not to exceed $25,000" for enforcement expenses. The structured and summed resolvers
-    once typed the allowance, reading it as a ceiling that states the appropriation. The answer-key
-    builder never mapped the account, so committee_agreement could not see it; this direction listed
-    the allowance as a typed figure the report states as no account's figure. Every resolver now
-    types the appropriation, a row of the report's comparative statement."""
+    allows "not to exceed $25,000" for enforcement expenses. Every resolver types the appropriation,
+    a row of the report's comparative statement. The answer key has no line for the account, so
+    committee_agreement cannot check it; this direction does.
+
+    History: the structured and summed resolvers typed the $25,000 allowance until #879."""
     results = ap.measure(ca.TEXT_RESOLVERS[resolver])
     fda = [
         r
@@ -84,9 +84,9 @@ def test_precision_and_recall_match_the_measurement_the_readme_quotes():
     them is seen. Re-measure with `uv run python docs/research/financial-semantics/appropriation_precision.py`
     and update the README table and this expectation together."""
     for name, confirmed, unconfirmed, recalled in (
-        ("baseline", 893, 92, 636),
-        ("structured", 916, 71, 662),
-        ("summed", 925, 62, 675),
+        ("baseline", 894, 91, 693),
+        ("structured", 917, 70, 719),
+        ("summed", 926, 61, 732),
     ):
         resolver = ca.TEXT_RESOLVERS[name]
         counts = Counter(r.outcome for r in ap.measure(resolver))

@@ -298,7 +298,7 @@ the answer keys (`tests/data/validation_*.json`) map to a bill node. The keys co
 of source, and the script reports them separately:
 
 - **Committee reports**: thirteen keys, each built from a Senate committee report's account
-  figures (`source: CRPT-...`), FY2024-FY2025 reported bills; 752 mapped accounts.
+  figures (`source: CRPT-...`), FY2024-FY2025 reported bills; 792 mapped accounts.
 - **The Legislative Branch spreadsheet**: `validation_leg_branch.json` comes from
   `House_and_Senate_Appropriations_FY_1994_to_present.xlsx`, not a committee report, checked
   against the FY2014-FY2020 enrolled bills; 411 mapped accounts. (`validation_legislative_branch.json`
@@ -312,50 +312,58 @@ uv run python docs/research/financial-semantics/committee_agreement.py --split h
 uv run python docs/research/financial-semantics/committee_agreement.py --resolver structured --details wrong_figure
 ```
 
-On the 1,163 mapped accounts (of 1,267), reproduced by the first command:
+On the 1,203 mapped accounts (of 1,267), reproduced by the first command:
 
 | | `classify_bill` (first figure of the primary clause) | `structured` (one figure per paragraph) | `ledger` (plus itemised lines) | `summed` (plus an account's added pieces) |
 |---|---|---|---|---|
-| Agrees with the answer key | 920 (79.1%) | 969 (83.3%) | 1,065 (91.6%) | 1,078 (92.7%) |
-| Typed a different figure while the answer key's is in the text | 37 | 2 | 1 | 1 |
-| Typed nothing while the answer key's figure is in the text | 21 | 7 | 7 | 7 |
-| Typed a figure the answer key does not state (no single figure in the text matches) | 46 | 46 | 46 | 33 |
-| Answer key finer than the figure typed (several answer-key lines, one paragraph) | 122 | 122 | 27 | 27 |
+| Agrees with the answer key | 977 (81.2%) | 1,026 (85.3%) | 1,122 (93.3%) | 1,135 (94.3%) |
+| Typed a different figure while the answer key's is in the text | 38 | 3 | 2 | 2 |
+| Typed nothing while the answer key's figure is in the text | 22 | 8 | 8 | 8 |
+| Typed a figure the answer key does not state (no single figure in the text matches) | 44 | 44 | 44 | 31 |
+| Answer key finer than the figure typed (several answer-key lines, one paragraph) | 105 | 105 | 10 | 10 |
 
 The same agreement by evidence source (the summary's last lines):
 
 | Agrees with the answer key | `classify_bill` | `structured` | `ledger` | `summed` |
 |---|---|---|---|---|
-| Committee reports (752 accounts) | 636 (84.6%) | 662 (88.0%) | 662 (88.0%) | 675 (89.8%) |
+| Committee reports (792 accounts) | 693 (87.5%) | 719 (90.8%) | 719 (90.8%) | 732 (92.4%) |
 | Legislative Branch spreadsheet (411 accounts) | 284 (69.1%) | 307 (74.7%) | 403 (98.1%) | 403 (98.1%) |
-| Combined (1,163 accounts) | 920 (79.1%) | 969 (83.3%) | 1,065 (91.6%) | 1,078 (92.7%) |
+| Combined (1,203 accounts) | 977 (81.2%) | 1,026 (85.3%) | 1,122 (93.3%) | 1,135 (94.3%) |
 
 These tables are the current code's; the sections below give each step's effect when it was made,
 so their before-and-after numbers are history, not the current counts.
 
-Against committee reports alone, `summed` agrees on 89.8%. The step from `structured` to
-`ledger` (83.3% to 91.6%) is entirely the spreadsheet's itemised lines, and every figure `summed` types that its source
-contradicts or does not confirm (34) is on a committee-report account.
+Against committee reports alone, `summed` agrees on 92.4%. The step from `structured` to
+`ledger` (85.3% to 93.3%) is entirely the spreadsheet's itemised lines, and every figure `summed`
+types that its source contradicts or does not confirm (33) is on a committee-report account.
+
+History: before the committee-report keys were rebuilt (#293), they mapped 752 accounts, and
+`summed` agreed on 658 (87.5%), with 21 answer-key lines finer than their paragraph. The rebuild
+reads report headings the report reader had misread (narrative text taken as a bureau, wrapped
+account names, offices headed in capitals), so it maps 40 more accounts and corrects the
+paragraph for others; the resolver did not change.
 
 The resolver changes which figure is chosen, never which paragraphs count as appropriations, so it
 reads the paragraph as drafted: nothing after the first proviso (an "in all" there caps one use
 of the money); an "in all" total before it; an explicit
 "is hereby appropriated"; otherwise the figure that closes the purpose clause, skipping allowances
 inside it and loan levels; and abstaining when none fits. `tests/test_appropriation_resolver.py`
-pins each rule and fails on any wrong figure beyond the two listed there (gross versus net for a
-fee-funded account; one office of an itemised paragraph).
+pins each rule and fails on any wrong figure beyond the three listed there (gross versus net for a
+fee-funded account; a report whose summary block states only an account's emergency portion; one
+office of an itemised paragraph).
 
 **How far to trust the numbers.** The rules were written from six answer keys (`DEV` in the
 script) and frozen at d394669 before the other eight (`HELD_OUT`) were scored. That frozen version
 typed 0 wrong figures on the held-out accounts (the baseline 3) but agreed on 389 against the
 baseline's 401, because it abstained more. Reading those abstentions produced the current rules,
-which agree on 404, still with 0 wrong figures, but the held-out set has now been seen, so that is
-no longer an unbiased estimate. A fresh answer key (`scripts/build_validation.py` on another
+which agreed on 404, still with 0 wrong figures (on the keys before the rebuild; on the rebuilt
+keys, which map 17 more held-out accounts, they agree on 432 of 501, still with 0), but the
+held-out set has now been seen, so that is no longer an unbiased estimate. A fresh answer key (`scripts/build_validation.py` on another
 fiscal year or the House-reported bills) is the next honest test.
 
 **Open questions this leaves.**
 
-- The 46 figures neither resolver can confirm are not typing errors: the report's figure is not
+- The 44 figures neither resolver can confirm are not typing errors: the report's figure is not
   one figure in the account's text (a report total built from parts or transfers, one report typo:
   NASA's $3,044,440,000 against the bill's $3,044,400,000). Each needs hand-tracing, which is the
   ADR 0025 process, not a rule.
@@ -385,18 +393,18 @@ uv run python tools/fetch_bills.py download 118 hr 4366
 
 The scripts use only stdlib and the project's core dependencies. The Jupyter notebooks use `pandas`, which is in the `dev` dependency group. Running `uv sync` installs everything — no extra steps needed.
 
-**What the 82% is made of.** It is not a quality score for the resolver. Of the 1,163 accounts,
-122 are answer-key lines finer than the bill's paragraph (several offices of one "including: ..."
-paragraph, 101 of them from the spreadsheet) and 63 have no single figure in the account's text
+**What the 84% is made of.** It is not a quality score for the resolver. Of the 1,203 accounts,
+105 are answer-key lines finer than the bill's paragraph (several offices of one "including: ..."
+paragraph, 101 of them from the spreadsheet) and 61 have no single figure in the account's text
 equal to the answer key's, so no
-method that types one figure per account, rules or a model, can agree on those 185. Where one
-figure can, the resolver agrees on 955 of 978 (97.6%). Typing **every** figure (naming the
+method that types one figure per account, rules or a model, can agree on those 166. Where one
+figure can, the resolver agrees on 1,012 of 1,037 (97.6%). Typing **every** figure (naming the
 itemised lines, summing an account's appropriating figures) would raise the ceiling to at most
-1,066 (91.7%): 101 of the 122 are a figure printed in the paragraph, and 10 of the 63 are a sum
+1,124 (93.4%): 101 of the 105 are a figure printed in the paragraph, and 11 of the 61 are a sum
 of two to four figures before its first proviso. The rest are report-versus-bill differences
 that only hand-tracing settles.
 
-**Itemised lines (`ledger`).** Most of those 122 are spreadsheet lines for Legislative Branch
+**Itemised lines (`ledger`).** Most of those 105 are spreadsheet lines for Legislative Branch
 paragraphs that itemise their appropriation ("..., $22,278,891, including: Office of the
 Speaker, $6,645,417, ...; Office of the Majority Floor Leader, $2,180,048, ...") or carve out a
 named line ("and of which $6,000,000 shall be allocated solely for ... compensation to Senate
@@ -407,19 +415,23 @@ choose a figure. A figure selected for a line is scored against that line's figu
 other resolver types for the paragraph, so a wrong line or a wrong figure still scores as wrong
 (one does: the gross-versus-net account).
 
-Read the 90.4% with where it comes from. All 96 new agreements are in the Legislative Branch
+Read the 92.1% with where it comes from. All 96 new agreements are in the Legislative Branch
 spreadsheet key (`leg_branch`), whose 411 accounts are over a third of the answer keys, and the
 rule was written while reading them (they are in `DEV`). They are agreement with the spreadsheet,
-not with a committee report: committee-report agreement is unchanged at 648 of 752. DEV goes from
-81.1% to 95.3%; HELD_OUT is unchanged at 83.5%, because those bills do not itemise this way.
+not with a committee report: committee-report agreement is unchanged at 705 of 792. DEV goes from
+82.6% to 96.3%; HELD_OUT is unchanged at 86.2%, because those bills do not itemise this way.
 Outside the spreadsheet key the remaining gap is not a typing question:
 
-- figures no single figure in the account confirms (41 held out), which need hand-tracing;
-- answer-key lines the builder mapped to the wrong paragraph (for example "Civil Rights
-  Violations in State and Local Prisons", $2.66 billion, mapped to the Commission on Civil
-  Rights' $14.85 million paragraph, with narrative text in its `bureau` field), which is a
-  `scripts/build_validation.py` question;
-- accounts that appropriate several figures: the ten the sum bound above found are now typed (below).
+- figures no single figure in the account confirms (40 held out), which need hand-tracing;
+- accounts that appropriate several figures: ten of the eleven the sum bound above finds are now
+  typed (below); the eleventh, the Social Security Administration's Inspector General, was
+  first mapped by the rebuilt keys.
+
+History: answer-key lines the builder mapped to the wrong paragraph were a third part of that gap
+(the $2.66 billion United States Attorneys line, with the narrative heading "Civil Rights
+Violations in State and Local Prisons and" in its `bureau` field, was mapped to the Commission on
+Civil Rights' $14.85 million paragraph). Rebuilding the keys (#293) maps it to the bill's
+"Salaries and Expenses, United States Attorneys".
 
 **Accounts that appropriate in pieces (`summed`).** Ten accounts' report figure was a sum of figures
 in their paragraph, each added by its own phrase: a trust-fund amount "together with" the top line
@@ -432,8 +444,8 @@ pieces to the top line; all ten now agree. One account that had agreed on its to
 the first attempt: the Fiscal Service's separate sentence "In addition, $235,000, to be derived from
 the Oil Spill Liability Trust Fund to reimburse ..." is not counted by its report, so "in addition"
 now joins an account only within its own sentence. That distinction rests on one example each way,
-and these rules were written after the held-out keys had been read: HELD_OUT moves from 83.5% to
-85.5%, which is not an unbiased estimate.
+and these rules were written after the held-out keys had been read: HELD_OUT moves from 86.2% to
+88.2%, which is not an unbiased estimate.
 
 **Money a Labor-HHS account gets from elsewhere.** Fifteen Labor-HHS accounts typed a figure their
 committee report does not state, twelve of them health agencies whose report figure is the bill's
@@ -552,7 +564,7 @@ first figure is incomplete wherever it does not type a paragraph the resolver re
 
 `committee_agreement.py` starts from the report's accounts: for each one, was its paragraph typed
 with the report's figure? That is recall's direction, and it only sees the paragraphs an answer-key
-line maps to (1,163 of 1,267). `appropriation_precision.py` starts from the other end: every paragraph the
+line maps to (1,203 of 1,267). `appropriation_precision.py` starts from the other end: every paragraph the
 resolver types with a figure in the thirteen Senate-reported bills, and what that bill's report
 says about the figure. The two directions see different errors.
 
@@ -569,13 +581,13 @@ figures `summed` types:
 | | `classify_bill` | `structured` | `summed` |
 |---|---|---|---|
 | Figures typed | 985 | 987 | 987 |
-| Confirmed: the key's figure for the account | 636 | 662 | 675 |
-| Confirmed: no key line, but a report account figure | 257 | 254 | 250 |
-| Not the key's figure for the account | 59 | 47 | 34 |
+| Confirmed: the key's figure for the account | 693 | 719 | 732 |
+| Confirmed: no key line, but a report account figure | 201 | 198 | 194 |
+| Not the key's figure for the account | 58 | 46 | 33 |
 | No key line, printed in the report but as no account's figure | 30 | 22 | 22 |
 | No key line, printed nowhere in the report | 3 | 2 | 6 |
-| **Precision** (confirmed / typed) | 90.7% | 92.8% | 93.7% |
-| **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 74.6% | 77.6% | 79.1% |
+| **Precision** (confirmed / typed) | 90.8% | 92.9% | 93.8% |
+| **Recall** (agree / all 853 answer-key lines, unmapped counted as misses) | 81.2% | 84.3% | 85.8% |
 
 **What the precision direction finds that recall cannot.** The FDA's Salaries and Expenses
 appropriates $6,872,405,000 after a long purpose clause that allows "not to exceed $25,000" for
@@ -594,22 +606,25 @@ the $6,872,405,000. `tests/test_appropriation_precision.py` pins it.
 **How far to trust the numbers.**
 
 - "A report account figure" is matched by figure alone, without the account's name, which is
-  ADR 0009's recall strength, not ADR 0025's. The 249 confirmed that way are mostly accounts the
-  builder could not map by name (the Under Secretaries' offices, FAA research, transit formula
-  grants); each is a figure the report states for some account, not necessarily this one.
-- The 34 "not the key's figure" are `committee_agreement.py`'s one `wrong_figure` plus its 33
-  `report_not_in_text/typed`: in 33 the key's figure appears nowhere in the paragraph, so the
-  resolver typed what the bill states and the key states something else. Four of the 33 were
-  spot-checked against their reports; the other 29 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
+  ADR 0009's recall strength, not ADR 0025's. The 194 confirmed that way are mostly accounts the
+  builder could not map by name (the Under Secretaries' offices, FAA Facilities and Equipment);
+  each is a figure the report states for some account, not necessarily this one.
+- The 33 "not the key's figure" are `committee_agreement.py`'s two `wrong_figure` plus its 31
+  `report_not_in_text/typed`: in the 31 the key's figure appears nowhere in the paragraph, so the
+  resolver typed what the bill states and the key states something else. Five of the 33 were
+  spot-checked against their reports; the other 28 are unread. TSA Operations and Support is typed at the bill's $10,020,729,000, the report's gross
   recommendation, where the key carries the $7,400,729,000 net of $2,620,000,000 in aviation
-  security fees; SAMHSA Mental Health is typed at $2,890,546,000, the bill's $2,869,507,000 plus the $21,039,000
+  security fees; the Coast Guard's Procurement, Construction, and Improvements is typed at the
+  bill's $1,143,322,000, which the report's comparative statement also carries, where the key
+  reads the summary block's $1,118,322,000, only the part designated an emergency; SAMHSA Mental Health is typed at $2,890,546,000, the bill's $2,869,507,000 plus the $21,039,000
   in section 241 funds its paragraph makes available, where the report's program level is
   $2,902,546,000; the Copyright Office
   is typed at the bill's $106,133,000 total where the key carries the $60,238,000 direct
   appropriation without receipts; and Nuclear Energy is typed at $1,675,000,000, the figure the
   report's text recommends, where the key's $1,525,000,000 is the comparative statement's
   non-defense line without the defense-function line beneath it. Three are the bill and the report
-  counting differently; the fourth is the key, not the resolver.
+  counting differently, one is the report contradicting itself, and the fifth is the key, not the
+  resolver.
 - The 22 "printed, but as no account's figure" split between resolver errors (PHMSA's "not more
   than $46,825,000 shall remain available" limitation) and rows the report parser does not read
   (VA Compensation and Pensions, $214,302,452,000, is in the report's text and not in
@@ -625,8 +640,7 @@ the $6,872,405,000. `tests/test_appropriation_precision.py` pins it.
   non-add memo, "(110,033)", where SAMHSA's summary blocks count the same kind of money in; the
   report is not consistent about section 241 money, which is ADR 0025's question of a figure's
   effect, not this resolver's.
-- Recall here is `committee_agreement.py`'s 675 of 752 against committee reports (89.8%) with
+- Recall here is `committee_agreement.py`'s 732 of 792 against committee reports (92.4%) with
   the denominator widened to every answer-key line of these thirteen jurisdictions, including
-  the 101 with no paragraph to score (99 the builder could not map, two mapped to a node with
-  no text). The Legislative Branch spreadsheet key is left out, as it has no report to check
+  the 61 the builder could not map, which have no paragraph to score. The Legislative Branch spreadsheet key is left out, as it has no report to check
   the other direction against.

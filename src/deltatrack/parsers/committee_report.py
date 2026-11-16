@@ -22,6 +22,7 @@ Those (heading, amount) pairs feed `validation_cjs.json` (see scripts/build_vali
 from __future__ import annotations
 
 import html as _html
+import itertools
 import re
 from dataclasses import dataclass
 
@@ -58,8 +59,18 @@ _NUMERIC_CELL_RE = re.compile(r"^[+\-]?\(?-?[\d,]+\)?$")
 # (so they would otherwise pass the heading test) but name a funding mechanism, not an
 # account. GPO renders them with or without the enclosing parentheses, so match on the
 # leading keyword. Examples: "(INCLUDING TRANSFER OF FUNDS)", "INCLUDING TRANSFERS OF
-# FUNDS", "(LIMITATION ON ADMINISTRATIVE EXPENSES)", "(INCLUDING RESCISSION OF FUNDS)".
-_QUALIFIER_RE = re.compile(r"^\(?(?:INCLUDING|LIMITATION|RESCISSION)\b")
+# FUNDS", "(LIMITATION ON ADMINISTRATIVE EXPENSES)", "(INCLUDING RESCISSION OF FUNDS)",
+# "LIQUIDATION OF CONTRACT AUTHORIZATION".
+_QUALIFIER_RE = re.compile(r"^\(?(?:INCLUDING|LIMITATION|LIQUIDATION|RESCISSION)\b")
+# The line that closes an account's summary rows, whether or not it states an amount (a
+# zero recommendation prints as an unbroken dot leader).
+_BLOCK_END_RE = re.compile(r"^Committee recommendation\.{2,}", re.IGNORECASE)
+# ALL-CAPS labels a report sets over parts of an account's narrative. They head text about
+# the account, not an office, so they are never an office heading.
+_SECTION_LABEL_RE = re.compile(
+    r"^(?:COMMITTEE RECOMMENDATIONS?|PROGRAM DESCRIPTION|(?:ADMINISTRATION )?OVERVIEW"
+    r"|(?:ADMINISTRATIVE|GENERAL) PROVISIONS?\b.*)$"
+)
 
 
 @dataclass(frozen=True)
@@ -80,6 +91,7 @@ class ReportAccount:
     committee_recommendation: int  # dollars (actual, not thousands)
     title: str | None = None  # enclosing title/agency (e.g. "DEPARTMENT OF JUSTICE")
     bureau: str | None = None  # enclosing bureau (e.g. "Federal Bureau of Investigation")
+    office: str | None = None  # ALL-CAPS office heading over this account (e.g. "OFFICE OF INSPECTOR GENERAL")
 
 
 def extract_pre_text(html: str) -> str:
@@ -100,53 +112,78 @@ def parse_summary_blocks(text: str) -> list[ReportAccount]:
     accounts: list[ReportAccount] = []
     current_title: str | None = None
     current_bureau: str | None = None
+    floor = -1  # the last title, bureau header or summary block: where an office heading can start
     for i, line in enumerate(lines):
         if _TITLE_NUMERAL_RE.match(line.strip()):
             current_title = _title_name_after(lines, i) or current_title
             current_bureau = None  # bureau context resets at each new title/agency
+            floor = i
             continue
-        if _is_bureau_header(line):
-            current_bureau = line.strip()
+        bureau = _bureau_header(lines, i)
+        if bureau:
+            current_bureau = bureau
+            floor = i
+            continue
+        if not _BLOCK_END_RE.match(line.strip()):
             continue
         m = _COMMITTEE_REC_RE.match(line.strip())
-        if not m:
-            continue
-        amount = int(m.group(1).replace(",", ""))
-        heading = _heading_before(lines, i)
-        if heading:
+        found = _heading_before(lines, i) if m else None
+        if m and found:
+            heading, start = found
+            office = _office_heading(lines, start, floor, current_title)
             accounts.append(
                 ReportAccount(
                     heading=heading,
-                    committee_recommendation=amount,
+                    committee_recommendation=int(m.group(1).replace(",", "")),
                     title=current_title,
                     bureau=current_bureau,
+                    office=office,
                 )
             )
+        floor = i
     return accounts
 
 
-def _is_bureau_header(line: str) -> bool:
-    """True if a line is an indented, mixed-case bureau header (e.g. "Federal Bureau of
-    Investigation") — the sub-agency context between a title and an ALL-CAPS account.
+def _bureau_header(lines: list[str], idx: int) -> str | None:
+    """The bureau header that starts at `lines[idx]` (e.g. "Federal Bureau of
+    Investigation"), or None — the sub-agency context between a title and an ALL-CAPS account.
 
-    Distinguished from: titles/accounts (ALL-CAPS, no lowercase), qualifier lines
+    A bureau header is an indented, mixed-case block of one or two lines set off by blank
+    lines; a name too long for one line wraps onto a second, centered one ("Institute of
+    American Indian and Alaska Native Culture and Arts" over "Development"), and the two are
+    joined. Distinguished from: titles/accounts (ALL-CAPS, no lowercase), qualifier lines
     (parenthesized), and narrative prose (flush-left or only lightly indented, and long).
+    The block test is what separates a header from the first line of a paragraph that opens
+    with a wrapped run-in heading ("    Civil Rights Violations in State and Local Prisons
+    and" over "Jails.--The Committee ..."), from a stacked column label ("Committee" over
+    "recommendation") and from a wrapped table cell: each is indented and Title-Cased like
+    a header, but none is a short block of indented lines between blank lines.
     """
-    indent = len(line) - len(line.lstrip())
-    s = line.strip()
-    if indent < 4 or not s or "...." in s or _is_qualifier(s):
-        return False
+    if idx > 0 and lines[idx - 1].strip():
+        return None  # not the first line of a block
+    block: list[str] = []
+    for line in itertools.islice(lines, idx, None):
+        if not line.strip():
+            break
+        if len(block) == 2:
+            return None  # longer than a header
+        block.append(line)
+    if not block or any(len(line) - len(line.lstrip()) < 4 for line in block):
+        return None
+    s = " ".join(line.strip() for line in block)
+    if "...." in s or _is_qualifier(s):
+        return None
     if not (s[0].isupper() and any(c.islower() for c in s)):
-        return False
+        return None
     if _TABLE_HEADER_RE.search(s) or any(c.isdigit() for c in s):
-        return False  # embedded table header / data row, not a bureau name
+        return None  # embedded table header / data row, not a bureau name
     if re.search(r"\.\s*[-—–]", s):
-        return False  # GPO run-in directive heading ("Topic.--The Committee ...")
+        return None  # GPO run-in directive heading ("Topic.--The Committee ...")
     if len(s.split()) > 12 or s.endswith((".", ":", ";", ",")):
-        return False
+        return None
     # Title case (every content word capitalized) separates a bureau name from a sentence
     # of narrative prose, which long bureau names share the light indentation of.
-    return _is_title_case(s)
+    return s if _is_title_case(s) else None
 
 
 _BUREAU_FUNCTION_WORDS = {"of", "and", "the", "for", "to", "in", "a", "an", "on", "at", "by", "or", "with"}
@@ -198,8 +235,10 @@ def parse_comparative_statement(text: str) -> list[ComparativeRow]:
         if not m:
             # A non-data section header (ALL-CAPS agency or Title-Case bureau) refines the
             # agency context below the title; track the most recent one.
-            if _is_heading(line) or _is_bureau_header(line):
+            if _is_heading(line):
                 current_bureau = line.strip()
+            else:
+                current_bureau = _bureau_header(lines, i) or current_bureau
             continue
         cells = _parse_cells(m.group(2))
         if len(cells) >= 3 and cells[2] is not None:
@@ -247,14 +286,70 @@ def _is_heading(line: str) -> bool:
     return bool(letters) and sum(c.isupper() for c in letters) / len(letters) > 0.8
 
 
-def _heading_before(lines: list[str], idx: int) -> str | None:
+def _heading_before(lines: list[str], idx: int) -> tuple[str, int] | None:
     """Walk back from a summary block to its ALL-CAPS heading, skipping the dotted
-    summary rows, blank lines, and qualifier lines."""
+    summary rows, blank lines, and qualifier lines; returns it with the index of its first line.
+
+    A heading too long for one line wraps, and GPO ends the line it wraps with a space, so
+    a heading line above that ends in one is joined on: "CONTRIBUTION TO THE INTERNATIONAL
+    BANK FOR RECONSTRUCTION AND " over "DEVELOPMENT" is one account, not "DEVELOPMENT".
+    """
     for j in range(idx - 1, max(idx - 8, -1), -1):
         s = lines[j].strip()
         if not s or "...." in s or _is_qualifier(s):
             continue
         if _is_heading(lines[j]):
-            return s
+            parts = [s]
+            while j > 0 and lines[j - 1].endswith(" ") and _is_heading(lines[j - 1]):
+                j -= 1
+                parts.insert(0, lines[j].strip())
+            return " ".join(parts), j
         break
     return None
+
+
+def _office_heading(lines: list[str], start: int, floor: int, title: str | None) -> str | None:
+    """The ALL-CAPS office heading over the account heading at `lines[start]`, or None.
+
+    Most reports head a bureau in mixed case (`_bureau_header`); some head an office in
+    ALL-CAPS, like an account, and the ALL-CAPS lines between two summary blocks are
+    otherwise section labels, sibling accounts and lists of sub-programs. Two layouts mark
+    one as the office the account below belongs to:
+
+    - stacked: it sits directly over the account heading, nothing but blank lines between
+      ("UNITED STATES ATTORNEYS" over "SALARIES AND EXPENSES");
+    - introduced: it is the only standalone heading since `floor`, and the paragraph under it
+      opens by naming it ("The Office of Inspector General [OIG] conducts audits ...").
+
+    A stacked office is set off by a blank line above it too; the last line of a paragraph
+    can be ALL-CAPS ("CJCC."). The office heads that one account and is reported beside the
+    bureau rather than in place of it: "OFFICE OF INSPECTOR GENERAL" says whose only with
+    the bureau it sits under.
+    """
+
+    def is_office(k: int) -> bool:
+        s = lines[k].strip()
+        return _is_heading(lines[k]) and s != title and not _SECTION_LABEL_RE.match(s)
+
+    above = start - 1
+    while above > floor and (not lines[above].strip() or _is_qualifier(lines[above].strip())):
+        above -= 1
+    if above > floor and is_office(above) and not lines[above - 1].strip():
+        return lines[above].strip()
+    standalone = [
+        k for k in range(floor + 1, start) if is_office(k) and not lines[k - 1].strip() and not lines[k + 1].strip()
+    ]
+    if len(standalone) == 1 and _opens_by_naming(lines, standalone[0]):
+        return lines[standalone[0]].strip()
+    return None
+
+
+def _opens_by_naming(lines: list[str], idx: int) -> bool:
+    """True if the paragraph under the heading at `lines[idx]` opens with the heading's
+    words, after an optional "The"."""
+    after = [line.strip() for line in lines[idx + 1 : idx + 6] if line.strip()][:2]
+    words = re.sub(r"[^a-z0-9 ]", "", " ".join(after).lower()).split()
+    name = re.sub(r"[^a-z0-9 ]", "", lines[idx].lower()).split()
+    if words[:1] == ["the"]:
+        words = words[1:]
+    return bool(name) and words[: len(name)] == name

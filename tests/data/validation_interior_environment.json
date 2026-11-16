@@ -1,6 +1,6 @@
 {
   "source": "CRPT-118srpt201, Interior-Environment explanatory statement for BILLS-118s4802rs",
-  "note": "Interior-Environment FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks and validated against the bill XML. Committee-recommendation amounts are in actual dollars. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
+  "note": "Interior-Environment FY 2025 (Reported in Senate) account amounts, extracted from the committee report's 3-line summary blocks (committee-recommendation amounts, in actual dollars) and validated against the bill XML. `match_path` is the mapped bill node when the account name resolves uniquely (strict node-level check); null otherwise, where the test falls back to agency-scoped recall via `title`. External ground truth for GitHub #8. Regenerate with scripts/build_validation.py.",
   "accounts": [
     {
       "bill": "118-s-4802",
@@ -9,6 +9,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Land Management",
+      "office": null,
       "excel_name": "MANAGEMENT OF LANDS AND RESOURCES",
       "match_path": [
         "department of the interior",
@@ -24,6 +25,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Land Management",
+      "office": null,
       "excel_name": "OREGON AND CALIFORNIA GRANT LANDS",
       "match_path": [
         "department of the interior",
@@ -39,6 +41,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Land Management",
+      "office": null,
       "excel_name": "RANGE IMPROVEMENTS",
       "match_path": [
         "department of the interior",
@@ -54,6 +57,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Land Management",
+      "office": null,
       "excel_name": "SERVICE CHARGES, DEPOSITS, AND FORFEITURES",
       "match_path": [
         "department of the interior",
@@ -69,6 +73,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Land Management",
+      "office": null,
       "excel_name": "MISCELLANEOUS TRUST FUNDS",
       "match_path": [
         "department of the interior",
@@ -84,6 +89,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "RESOURCE MANAGEMENT",
       "match_path": [
         "department of the interior",
@@ -98,7 +104,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "department of the interior",
@@ -113,7 +120,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "COOPERATIVE ENDANGERED SPECIES CONSERVATION FUND",
       "match_path": [
         "department of the interior",
@@ -128,7 +136,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "NATIONAL WILDLIFE REFUGE FUND",
       "match_path": [
         "department of the interior",
@@ -143,7 +152,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "NORTH AMERICAN WETLANDS CONSERVATION FUND",
       "match_path": [
         "department of the interior",
@@ -158,7 +168,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "NEOTROPICAL MIGRATORY BIRD CONSERVATION FUND",
       "match_path": [
         "department of the interior",
@@ -173,7 +184,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "MULTINATIONAL SPECIES CONSERVATION FUND",
       "match_path": [
         "department of the interior",
@@ -188,7 +200,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Prioritization of Combatting Invasive Plant and Animal",
+      "bureau": "U.S. Fish and Wildlife Service",
+      "office": null,
       "excel_name": "STATE AND TRIBAL WILDLIFE GRANTS",
       "match_path": [
         "department of the interior",
@@ -204,6 +217,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "National Park Service",
+      "office": null,
       "excel_name": "OPERATION OF THE NATIONAL PARK SYSTEM",
       "match_path": [
         "department of the interior",
@@ -218,7 +232,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Honouliuli National Historic Site and Pearl Harbor National",
+      "bureau": "National Park Service",
+      "office": null,
       "excel_name": "NATIONAL RECREATION AND PRESERVATION",
       "match_path": [
         "department of the interior",
@@ -233,7 +248,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Native American Graves Protection and Repatriation Act",
+      "bureau": "National Park Service",
+      "office": null,
       "excel_name": "HISTORIC PRESERVATION FUND",
       "match_path": [
         "department of the interior",
@@ -248,11 +264,12 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Native American Graves Protection and Repatriation Act",
+      "bureau": "National Park Service",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "department of the interior",
-        "united states fish and wildlife service",
+        "national park service",
         "construction"
       ],
       "expected_amount": 202283000
@@ -263,7 +280,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "Native American Graves Protection and Repatriation Act",
+      "bureau": "National Park Service",
+      "office": null,
       "excel_name": "CENTENNIAL CHALLENGE",
       "match_path": [
         "department of the interior",
@@ -279,8 +297,13 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "U.S. Geological Survey",
+      "office": null,
       "excel_name": "SURVEYS, INVESTIGATIONS, AND RESEARCH",
-      "match_path": null,
+      "match_path": [
+        "department of the interior",
+        "united states geological survey",
+        "surveys, investigations, and research"
+      ],
       "expected_amount": 1481963000
     },
     {
@@ -290,6 +313,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Ocean Energy Management",
+      "office": null,
       "excel_name": "OCEAN ENERGY MANAGEMENT",
       "match_path": [
         "department of the interior",
@@ -304,7 +328,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "The Bureau of Safety and Environmental Enforcement [Bureau",
+      "bureau": "Bureau of Safety and Environmental Enforcement",
+      "office": null,
       "excel_name": "OFFSHORE SAFETY AND ENVIRONMENTAL ENFORCEMENT",
       "match_path": [
         "department of the interior",
@@ -319,7 +344,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "The Bureau of Safety and Environmental Enforcement [Bureau",
+      "bureau": "Bureau of Safety and Environmental Enforcement",
+      "office": null,
       "excel_name": "OIL SPILL RESEARCH",
       "match_path": [
         "department of the interior",
@@ -334,7 +360,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "The Office of Surface Mining Reclamation and Enforcement",
+      "bureau": "Office of Surface Mining Reclamation and Enforcement",
+      "office": null,
       "excel_name": "REGULATION AND TECHNOLOGY",
       "match_path": [
         "department of the interior",
@@ -349,7 +376,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "The Office of Surface Mining Reclamation and Enforcement",
+      "bureau": "Office of Surface Mining Reclamation and Enforcement",
+      "office": null,
       "excel_name": "ABANDONED MINE RECLAMATION FUND",
       "match_path": [
         "department of the interior",
@@ -365,6 +393,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
+      "office": null,
       "excel_name": "INDIAN LAND CONSOLIDATION",
       "match_path": [
         "department of the interior",
@@ -380,6 +409,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
+      "office": null,
       "excel_name": "CONTRACT SUPPORT COSTS",
       "match_path": [
         "department of the interior",
@@ -395,6 +425,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
+      "office": null,
       "excel_name": "PAYMENTS FOR TRIBAL LEASES",
       "match_path": [
         "department of the interior",
@@ -410,6 +441,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
+      "office": null,
       "excel_name": "CONSTRUCTION",
       "match_path": [
         "department of the interior",
@@ -425,12 +457,9 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
-      "excel_name": "INDIANS",
-      "match_path": [
-        "department of the interior",
-        "bureau of indian affairs",
-        "indian land and water claim settlements and miscellaneous payments to indians"
-      ],
+      "office": null,
+      "excel_name": "INDIAN LAND AND WATER CLAIMS SETTLEMENTS AND MISCELLANEOUS PAYMENTS TO INDIANS",
+      "match_path": null,
       "expected_amount": 45897000
     },
     {
@@ -440,6 +469,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Operation of Indian Programs",
+      "office": null,
       "excel_name": "INDIAN GUARANTEED LOAN PROGRAM ACCOUNT",
       "match_path": [
         "department of the interior",
@@ -454,7 +484,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
-      "bureau": "FERS Eligibility for Employees at BIE Tribally Controlled",
+      "bureau": "Operation of Indian Education Programs",
+      "office": null,
       "excel_name": "EDUCATION CONSTRUCTION",
       "match_path": [
         "department of the interior",
@@ -470,6 +501,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Bureau of Trust Fund Administration",
+      "office": null,
       "excel_name": "FEDERAL TRUST PROGRAMS",
       "match_path": [
         "department of the interior",
@@ -485,6 +517,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Office of the Secretary",
+      "office": null,
       "excel_name": "DEPARTMENTAL OPERATIONS",
       "match_path": [
         "department of the interior",
@@ -500,6 +533,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Insular Affairs",
+      "office": null,
       "excel_name": "ASSISTANCE TO TERRITORIES",
       "match_path": [
         "department of the interior",
@@ -515,8 +549,13 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Insular Affairs",
+      "office": null,
       "excel_name": "COMPACT OF FREE ASSOCIATION",
-      "match_path": null,
+      "match_path": [
+        "department of the interior",
+        "insular affairs",
+        "compact of free association"
+      ],
       "expected_amount": 813000
     },
     {
@@ -526,6 +565,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Office of the Solicitor",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of the interior",
@@ -541,6 +581,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Office of Inspector General",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "department of the interior",
@@ -556,6 +597,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": null,
       "excel_name": "WILDFIRE SUPPRESSION OPERATIONS RESERVE FUND",
       "match_path": [
         "department of the interior",
@@ -571,6 +613,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": null,
       "excel_name": "CENTRAL HAZARDOUS MATERIALS FUND",
       "match_path": [
         "department of the interior",
@@ -586,6 +629,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": null,
       "excel_name": "ENERGY COMMUNITY REVITALIZATION PROGRAM",
       "match_path": [
         "department of the interior",
@@ -601,6 +645,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": "NATURAL RESOURCE DAMAGE ASSESSMENT AND RESTORATION",
       "excel_name": "NATURAL RESOURCE DAMAGE ASSESSMENT FUND",
       "match_path": [
         "department of the interior",
@@ -616,6 +661,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": null,
       "excel_name": "WORKING CAPITAL FUND",
       "match_path": [
         "department of the interior",
@@ -631,6 +677,7 @@
       "chamber": "senate",
       "title": "DEPARTMENT OF THE INTERIOR",
       "bureau": "Department-Wide Programs",
+      "office": null,
       "excel_name": "OFFICE OF NATURAL RESOURCES REVENUE",
       "match_path": [
         "department of the interior",
@@ -646,6 +693,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "FOREST AND RANGELAND RESEARCH",
       "match_path": [
         "related agencies",
@@ -662,6 +710,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "STATE, PRIVATE, AND TRIBAL FORESTRY",
       "match_path": [
         "related agencies",
@@ -678,6 +727,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "NATIONAL FOREST SYSTEM",
       "match_path": [
         "related agencies",
@@ -694,6 +744,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "CAPITAL IMPROVEMENT AND MAINTENANCE",
       "match_path": [
         "related agencies",
@@ -710,6 +761,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "ACQUISITION OF LANDS FOR NATIONAL FORESTS, SPECIAL ACTS",
       "match_path": [
         "related agencies",
@@ -726,6 +778,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "ACQUISITION OF LANDS TO COMPLETE LAND EXCHANGES",
       "match_path": [
         "related agencies",
@@ -742,6 +795,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "RANGE BETTERMENT FUND",
       "match_path": [
         "related agencies",
@@ -758,6 +812,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "GIFTS, DONATIONS AND BEQUESTS FOR FOREST AND RANGELAND RESEARCH",
       "match_path": [
         "related agencies",
@@ -774,6 +829,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "MANAGEMENT OF NATIONAL FOREST LANDS FOR SUBSISTENCE USES",
       "match_path": [
         "related agencies",
@@ -790,6 +846,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Forest Service",
+      "office": null,
       "excel_name": "WILDFIRE SUPPRESSION OPERATIONS RESERVE FUND",
       "match_path": [
         "related agencies",
@@ -806,6 +863,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Indian Health Services",
+      "office": null,
       "excel_name": "CONTRACT SUPPORT COSTS",
       "match_path": [
         "related agencies",
@@ -822,6 +880,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Indian Health Services",
+      "office": null,
       "excel_name": "PAYMENTS FOR TRIBAL LEASES",
       "match_path": [
         "related agencies",
@@ -837,7 +896,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Agency for Toxic Substances and Disease Registry",
+      "bureau": "Agency for Toxic Substances and Disease Registry",
+      "office": null,
       "excel_name": "TOXIC SUBSTANCES AND ENVIRONMENTAL PUBLIC HEALTH",
       "match_path": [
         "related agencies",
@@ -854,6 +914,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Chemical Safety and Hazard Investigation Board",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -870,6 +931,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Office of Navajo and Hopi Indian Relocation",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -885,7 +947,8 @@
       "fy": "FY 2025",
       "chamber": "senate",
       "title": "RELATED AGENCIES",
-      "bureau": "The Institute of American Indian and Alaska Native Culture",
+      "bureau": "Institute of American Indian and Alaska Native Culture and Arts Development",
+      "office": null,
       "excel_name": "PAYMENT TO THE INSTITUTE",
       "match_path": [
         "related agencies",
@@ -902,6 +965,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Smithsonian Institution",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -918,6 +982,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Smithsonian Institution",
+      "office": null,
       "excel_name": "FACILITIES CAPITAL",
       "match_path": [
         "related agencies",
@@ -934,6 +999,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Gallery of Art",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -950,6 +1016,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Gallery of Art",
+      "office": null,
       "excel_name": "REPAIR, RESTORATION, AND RENOVATION OF BUILDINGS",
       "match_path": [
         "related agencies",
@@ -966,6 +1033,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "John F. Kennedy Center For The Performing Arts",
+      "office": null,
       "excel_name": "OPERATIONS AND MAINTENANCE",
       "match_path": [
         "related agencies",
@@ -982,6 +1050,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "John F. Kennedy Center For The Performing Arts",
+      "office": null,
       "excel_name": "CAPITAL REPAIR AND RESTORATION",
       "match_path": [
         "related agencies",
@@ -998,6 +1067,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Woodrow Wilson International Center for Scholars",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1014,6 +1084,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Endowment for the Arts",
+      "office": null,
       "excel_name": "GRANTS AND ADMINISTRATION",
       "match_path": [
         "related agencies",
@@ -1030,6 +1101,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Endowment for the Humanities",
+      "office": null,
       "excel_name": "GRANTS AND ADMINISTRATION",
       "match_path": [
         "related agencies",
@@ -1046,6 +1118,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "Commission of Fine Arts",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1062,6 +1135,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "National Capital Planning Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",
@@ -1078,6 +1152,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "United States Holocaust Memorial Museum",
+      "office": null,
       "excel_name": "HOLOCAUST MEMORIAL MUSEUM",
       "match_path": [
         "related agencies",
@@ -1094,6 +1169,7 @@
       "chamber": "senate",
       "title": "RELATED AGENCIES",
       "bureau": "United States Semiquincentennial Commission",
+      "office": null,
       "excel_name": "SALARIES AND EXPENSES",
       "match_path": [
         "related agencies",

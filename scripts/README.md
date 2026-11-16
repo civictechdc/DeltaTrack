@@ -84,12 +84,15 @@ Things worth knowing before running any of it:
 - **`fetch_test_assets.py` is not part of this loop.** It restores committed bill-print
   PDFs you deleted locally and records their provenance; it touches neither the
   validation fixtures nor the report.
-- **Step 1 currently produces a nine-fixture diff you should not commit.** Six
-  committee-report fixtures have drifted from their sources and are never rebuilt
-  from them ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)); on the
-  current tree the rebuild regenerates `match_path` values as `null`, quietly
-  dropping those accounts to the agency-scoped fallback. Committing that diff
+- **Review every `match_path` in the step 1 diff.** Names and amounts come from the
+  report; `match_path` comes from our builder searching our own tree, so a parser change
+  moves it, and nothing yet checks that the committed fixtures still rebuild
+  ([#293](https://github.com/civictechdc/DeltaTrack/issues/293)). A rebuilt path can be
+  `null` where the committed one was right, which quietly drops the account to the
+  agency-scoped fallback, or point at the wrong paragraph. Committing such a diff unread
   degrades the ground truth while looking like a refresh.
+  `test_mapped_accounts_sit_under_their_report_title` catches a mapping that leaves its
+  report title; nothing catches one that stays inside it.
 - **Adding a jurisdiction** is documented in
   [tests/validation_sources.py](../tests/validation_sources.py) — follow it, then run
   this loop.
@@ -165,6 +168,7 @@ and open both reports ([TESTING.md](../TESTING.md#comparing-the-two-pipelines-by
 | `render_examples.py` | Regenerate the committed example HTML diffs and landing page under `examples/`. The only renderer of the published examples; CI deploys what it wrote, and `tests/test_committed_examples.py` fails if they're stale. |
 | `render_webapp_css.py` | Regenerate the three generated blocks in `web/webapp/css/styles.css`: the design tokens from `src/deltatrack/styles/tokens.css`, and copies of the shared reset, body and heading rules in `base.css` and the button and badge rules in `components.css`; and the processing tab's copy of `base.css` in `web/webapp/js/compare.js`. Rerun after changing any of those files, or after an upload-page rule or the processing tab in `web/webapp/js/compare.js` starts or stops using a token. `tests/test_webapp_css.py` fails if a block is stale (#773, #774, #804). |
 | `pyodide_parity.py --node-dir <dir>` | Run the XML comparison on three committed bill pairs under native CPython and under Pyodide, and fail unless the canonical JSON and HTML are byte-identical. This is the check that the engine still runs in a web page (#112, #751). Needs Node and `npm install pyodide` in `<dir>`, kept outside the checkout; `pyodide_parity.mjs` is its Pyodide half. Run `--mutate` once first: it corrupts the native HTML, so every HTML row must read MISMATCH (exit 0); a pass under `--mutate` means the check is broken (exit 1). Not in CI. |
+| `build_offline_html.py [-o <out.html>]` | Build the offline page, `dist/deltatrack-offline.html` by default: one HTML file carrying Pyodide and the engine that compares two bill XML files in the browser, from disk, with no network ([web-compare.md](../docs/web-compare.md#the-offline-page)). Downloads the pinned Pyodide tarball once into `~/.cache/deltatrack` and checks its hash; `--pyodide-tgz` uses a local copy. `.github/workflows/publish-offline.yml` publishes it; `tests/test_offline_html.py` tests it. |
 | `make_scan_fixture.py --out <dir>` | Reproduce [#550](https://github.com/civictechdc/DeltaTrack/issues/550): rasterize two disjoint 20-page windows of a committed bill into image-only PDFs, compare them, and print whether the comparison still answers "no changes" instead of declining. Synthetic stand-in for a scanned draft. macOS only (`qlmanage`, `sips`); run with `uv run --with pypdf`, since `pypdf` is not a project dependency. Delete it once a test owns #550. |
 
 ## Smoke test
