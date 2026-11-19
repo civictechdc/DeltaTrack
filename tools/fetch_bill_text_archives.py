@@ -314,8 +314,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_BILLS_DIR,
         help="Dir of BILLSTATUS date ZIPs (as fetch_bill_archives.py writes them, e.g. 118-hr.zip); default bills/",
     )
-    p.add_argument("--download-only", action="store_true", help="Download ZIPs, skip conversion")
-    p.add_argument("--convert-only", action="store_true", help="Convert already-downloaded ZIPs")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--download-only", action="store_true", help="Download ZIPs, skip conversion")
+    mode.add_argument("--convert-only", action="store_true", help="Convert already-downloaded ZIPs")
     p.add_argument(
         "--overwrite-existing",
         action="store_true",
