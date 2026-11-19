@@ -108,6 +108,17 @@ def _assert_failure_summary(result: subprocess.CompletedProcess[str], **counts: 
     assert result.stderr.splitlines()[-1] == errors[0]
 
 
+def test_download_only_and_convert_only_are_rejected(tmp_path):
+    result = _run(tmp_path, "--download-only", "--convert-only")
+
+    assert result.returncode == 2, result.stderr
+    assert "usage:" in result.stderr
+    assert "not allowed with argument" in result.stderr
+    assert not (tmp_path / "offline_guard" / "attempted").exists()
+    assert not (tmp_path / "zips").exists()
+    assert not (tmp_path / "output").exists()
+
+
 @pytest.mark.parametrize("overwrite_args", [(), ("--overwrite-existing",)], ids=["default", "overwrite"])
 def test_corrupt_archive_fails_after_writing_healthy_bill(tmp_path, overwrite_args):
     _archive(tmp_path / "zips" / "BILLS-119-2-hr.zip")
